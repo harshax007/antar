@@ -1,0 +1,45 @@
+{
+  "1": {
+    "threads_env": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "cpu_count": 12,
+    "private_start_mb": 12.1,
+    "import_s": 10.56,
+    "private_after_imports_mb": 102.1,
+    "blas_pools": [
+      [
+        "openblas",
+        1
+      ],
+      [
+        "openmp",
+        1
+      ]
+    ],
+    "forecast_s": 94.1,
+    "forecast_as_of": "2024-03-10",
+    "forecast_models": 72,
+    "forecast_rows": 257345,
+    "private_after_forecast_mb": 370.7,
+    "golden": [
+      {
+        "s": 487.9,
+        "passed": 35,
+        "total": 35
+      },
+      {
+        "s": 12.03,
+        "passed": 35,
+        "total": 35
+      }
+    ],
+    "private_after_queries_mb": 398.7,
+    "peak_wset_mb": 823.1,
+    "private_end_mb": 398.7,
+    "wall_s": 611.8,
+    "vs_1": null
+  }
+}

@@ -1,0 +1,643 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLang, useTheme } from "@/components/Providers";
+import { User } from "lucide-react";
+
+const API = (process.env.NEXT_PUBLIC_API_URL || "");
+
+// Two demo identities so the screen can be shown as a normal officer OR an admin.
+// The role switch (top of the sidebar) flips between them and re-gates admin-only settings.
+const OFFICERS = {
+  Admin:     { name: "Officer Arjun", id: "U-7001", initials: "A", unit: "Crime Intelligence Unit · Bengaluru City", rank: "Officer · Admin Access" },
+  Inspector: { name: "Officer Arjun", id: "U-7001", initials: "A", unit: "Crime Intelligence Unit · Bengaluru City", rank: "Officer · Admin Access" },
+};
+
+const PREF_KEY = "antar_prefs";
+const NOTIF_KEY = "antar_notifs";
+const DEFAULT_PREFS = { landing: "/ask", mapView: "Bengaluru Urban", dateFormat: "YYYY-MM-DD", displayName: "" };
+const DEFAULT_NOTIFS = { brain: true, patrol: true, risk: true, system: false };
+
+const METHOD_CLS = { GET: "sx-risk-l", POST: "sx-risk-m", DELETE: "sx-risk-h" };
+
+function Icon({ name }) {
+  const p = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" };
+  switch (name) {
+    case "gear": return <svg {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
+    case "bell": return <svg {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
+    case "shield": return <svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
+    case "file": return <svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>;
+    case "download": return <svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;
+    case "db": return <svg {...p}><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>;
+    case "star": return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>;
+    case "brief": return <svg {...p}><rect x="4" y="4" width="16" height="18" rx="2" /><path d="M9 2h6v4H9z" /><path d="M8 12h8M8 16h5" /></svg>;
+    default: return null;
+  }
+}
+
+function Toggle({ on, onChange, label, sub }) {
+  return (
+    <div className="ac-toggle-row">
+      <div className="ac-tr-label"><div className="ac-tr-name">{label}</div>{sub && <div className="ac-tr-sub">{sub}</div>}</div>
+      <button type="button" className={`ac-tsw ${on ? "on" : ""}`} role="switch" aria-checked={on} aria-label={label} onClick={onChange}><b /></button>
+    </div>
+  );
+}
+
+export default function AccountPage() {
+  const router = useRouter();
+  const { lang, toggleLang } = useLang();
+  const { theme, toggleTheme } = useTheme();
+  const kn = lang === "kn";
+
+  const [role, setRoleState] = useState("Admin");
+  useEffect(() => {
+    try {
+      const s = JSON.parse(sessionStorage.getItem("antar_session") || "null");
+      if (s?.role) setRoleState(s.role === "Admin" ? "Admin" : "Admin");
+    } catch {}
+  }, []);
+
+  function setRole(next) {
+    setRoleState(next);
+    try {
+      const s = JSON.parse(sessionStorage.getItem("antar_session") || "null") || { officer: "DEMO-OFF", ts: Date.now() };
+      sessionStorage.setItem("antar_session", JSON.stringify({ ...s, role: next }));
+      window.dispatchEvent(new CustomEvent("antar-role"));
+      window.dispatchEvent(new Event("storage"));
+    } catch {}
+  }
+
+  const isAdmin = role === "Admin";
+  const officer = OFFICERS[role];
+
+  const [section, setSection] = useState("briefing");
+  const [brief, setBrief] = useState(null);
+  const [briefZone, setBriefZone] = useState("all");
+  const [briefWindow, setBriefWindow] = useState("12h");
+  const [briefErr, setBriefErr] = useState(false);
+  const [prefs, setPrefs] = useState(DEFAULT_PREFS);
+  const [draftPrefs, setDraftPrefs] = useState(DEFAULT_PREFS);
+  const [notifs, setNotifs] = useState(DEFAULT_NOTIFS);
+  const [saved, setSaved] = useState(false);
+  const [vigil, setVigil] = useState({
+    section91Audit: true,
+    piiDemographicRedaction: true,
+    unsubGeometryOnly: true,
+    dwaniBilingualStream: true,
+  });
+  const [certDownloaded, setCertDownloaded] = useState(false);
+
+  const [auditRows, setAuditRows] = useState(null);
+  const [auditStatus, setAuditStatus] = useState(null);
+  const [sessions, setSessions] = useState([
+    { id: "s1", device: "Windows · Chrome 125", ip: "Bengaluru HQ · 192.168.1.10", last_seen: "active now", this: true },
+    { id: "s2", device: "Android · Antar Field App", ip: "Field Unit 4 · 10.20.4.88", last_seen: "2 hours ago", this: false },
+  ]);
+  const [revoking, setRevoking] = useState(null);
+  const [ingestFile, setIngestFile] = useState(null);
+  const [ingestStatus, setIngestStatus] = useState(null);
+  const [pwOpen, setPwOpen] = useState(false);
+  const [alertsList, setAlertsList] = useState([]);
+  const [hitlPending, setHitlPending] = useState(0);
+
+  // Pending approvals, for the sidebar badge. Same source as the ACCOUNT badge in the nav.
+  useEffect(() => {
+    let alive = true;
+    const pull = () => fetch(`${API}/api/hitl/stats`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s) => { if (alive && s) setHitlPending(s.pending || 0); })
+      .catch(() => {});
+    pull();
+    const t = setInterval(pull, 15000);
+    const onUpdate = () => pull();
+    window.addEventListener("antar-hitl", onUpdate);
+    return () => { alive = false; clearInterval(t); window.removeEventListener("antar-hitl", onUpdate); };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sec = params.get("section");
+    if (sec) setSection(sec);
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API}/api/sentinel`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setAlertsList(d?.alerts || []))
+      .catch(() => {});
+  }, []);
+
+  // Load persisted settings from backend, fallback to local
+  useEffect(() => {
+    fetch(`${API}/api/profile`, { headers: { "X-Officer": officer.id } })
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((d) => {
+        if (d.preferences) {
+          setPrefs({ ...DEFAULT_PREFS, ...d.preferences });
+          setDraftPrefs({ ...DEFAULT_PREFS, ...d.preferences });
+        }
+        if (d.notifications) setNotifs({ ...DEFAULT_NOTIFS, ...d.notifications });
+      })
+      .catch(() => {
+        try {
+          const p = JSON.parse(localStorage.getItem(PREF_KEY) || "null");
+          if (p) { setPrefs({ ...DEFAULT_PREFS, ...p }); setDraftPrefs({ ...DEFAULT_PREFS, ...p }); }
+          const n = JSON.parse(localStorage.getItem(NOTIF_KEY) || "null");
+          if (n) setNotifs({ ...DEFAULT_NOTIFS, ...n });
+        } catch {}
+      });
+  }, [officer.id]);
+
+  // Shift brief (A4) - compiled from real FIRs + hotspots; re-fetch on zone/window change
+  useEffect(() => {
+    if (section !== "briefing") return;
+    setBrief(null); setBriefErr(false);
+    fetch(`${API}/api/briefing/shift?zone=${encodeURIComponent(briefZone)}&window=${briefWindow}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setBrief)
+      .catch(() => setBriefErr(true));
+  }, [section, briefZone, briefWindow]);
+
+  // Audit log (re-fetch when role changes → Inspector 403, Admin rows)
+  useEffect(() => {
+    if (section !== "activity") return;
+    setAuditRows(null); setAuditStatus(null);
+    fetch(`${API}/api/audit?limit=80`, { headers: { "X-Role": role, "X-Officer": officer.id } })
+      .then((r) => { setAuditStatus(r.status); return r.ok ? r.json() : null; })
+      .then((d) => setAuditRows(d?.rows || null))
+      .catch(() => setAuditStatus(0));
+  }, [section, role, officer.id]);
+
+  function savePrefs() {
+    setPrefs(draftPrefs);
+    try { localStorage.setItem(PREF_KEY, JSON.stringify(draftPrefs)); } catch {}
+    fetch(`${API}/api/profile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Officer": officer.id },
+      body: JSON.stringify({ preferences: draftPrefs, notifications: notifs })
+    }).catch(() => {});
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2200);
+  }
+  function toggleNotif(key) {
+    setNotifs((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem(NOTIF_KEY, JSON.stringify(next)); } catch {}
+      fetch(`${API}/api/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Officer": officer.id },
+        body: JSON.stringify({ preferences: prefs, notifications: next })
+      }).catch(() => {});
+      return next;
+    });
+  }
+  async function revokeSession(id) {
+    setRevoking(id);
+    await new Promise((r) => setTimeout(r, 350));
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+    setRevoking(null);
+  }
+  async function handleIngest() {
+    if (!ingestFile) return;
+    setIngestStatus("loading");
+    try {
+      const form = new FormData();
+      form.append("file", ingestFile);
+      const res = await fetch(`${API}/api/upload`, { method: "POST", body: form });
+      await res.json().catch(() => {});
+      setIngestStatus(res.ok ? "ok" : "error");
+    } catch { setIngestStatus("error"); }
+  }
+
+  const perms = [
+    { name: kn ? "ಚಾಟ್ · ಪ್ರಶ್ನೆ" : "Chat · Query", level: "Full", color: "var(--green)" },
+    { name: kn ? "ನಕ್ಷೆ · ವೀಕ್ಷಣೆ" : "Map · View & Filter", level: "Full", color: "var(--green)" },
+    { name: kn ? "ಹುಡುಕಾಟ · DB" : "Search · Internal DB", level: "Full", color: "var(--green)" },
+    { name: kn ? "ಮೆದುಳು" : "Brain · Graph", level: isAdmin ? "Full" : "Read", color: isAdmin ? "var(--green)" : "var(--amber)" },
+    { name: kn ? "OSINT" : "OSINT · Open-web", level: isAdmin ? "Full" : "Locked", color: isAdmin ? "var(--cyan)" : "var(--muted)" },
+    { name: kn ? "ಡೇಟಾ ಇಂಜೆಸ್ಟ್" : "Export · Case Dossier", level: isAdmin ? "Full" : "Locked", color: isAdmin ? "var(--cyan)" : "var(--muted)" },
+  ];
+
+  const unread = (notifs.brain ? 1 : 0) + (notifs.patrol ? 1 : 0);
+  const SECTIONS = [
+    { key: "briefing", en: "Shift Brief", kn: "ಶಿಫ್ಟ್ ಬ್ರೀಫ್", icon: "brief" },
+    // Approvals moved off the top nav: the queue is the officer's own work, and its
+    // pending count is what the ACCOUNT badge in PillNav is counting.
+    { key: "approvals", en: "Approvals", kn: "ಅನುಮೋದನೆಗಳು", icon: "shield", badge: hitlPending },
+    { key: "alerts", en: "Antar Alerts", kn: "Antar ಎಚ್ಚರಿಕೆಗಳು", icon: "bell", badge: alertsList.length },
+    { key: "preferences", en: "Preferences", kn: "ಆದ್ಯತೆಗಳು", icon: "gear" },
+    { key: "vigil", en: "Vigil Constitutional Guardrails", kn: "ವಿಜಿಲ್ ಸಂವಿಧಾನಿಕ ಭದ್ರತೆ", icon: "shield" },
+    { key: "trace", en: "Trace (AI Observability)", kn: "ಟ್ರೇಸ್ (AI ವೀಕ್ಷಣೆ)", icon: "shield" },
+    { key: "notifications", en: "Notifications", kn: "ಅಧಿಸೂಚನೆಗಳು", icon: "bell", badge: unread },
+    { key: "security", en: "Security", kn: "ಭದ್ರತೆ", icon: "shield" },
+    { key: "activity", en: "Activity Log", kn: "ಚಟುವಟಿಕೆ", icon: "file" },
+    { key: "export", en: "Export Centre", kn: "ರಫ್ತು ಕೇಂದ್ರ", icon: "download" },
+    ...(isAdmin ? [{ key: "admin", en: "Admin · Data", kn: "ನಿರ್ವಾಹಕ · ಡೇಟಾ", icon: "db" }] : []),
+  ];
+  // If a non-admin somehow lands on the admin section (after switching role back), bounce to preferences.
+  const activeSection = section === "admin" && !isAdmin ? "preferences" : section;
+
+  return (
+    <div className="ac-page">
+      {/* ── LEFT SIDEBAR ── */}
+      <aside className="ac-sidebar">
+        <div className="ac-prof">
+          <div className="ac-av-wrap">
+            <div className="ac-av" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+              <User size={32} strokeWidth={1.5} style={{ color: "#ffffff" }} />
+            </div>
+            <div className="ac-av-ring" />
+            <span className="ac-online" title="Online" />
+          </div>
+          <div className="ac-pname">{prefs.displayName || officer.name}</div>
+          <div className="ac-pid">{officer.id}</div>
+          <div className="ac-punit">{officer.unit}</div>
+          <div className="ac-role-badge">{officer.rank}</div>
+        </div>
+
+        {/* Role switch removed */}
+
+        <nav className="ac-snav" aria-label={kn ? "ಖಾತೆ ವಿಭಾಗಗಳು" : "Account sections"}>
+          {SECTIONS.map((s) => (
+            <button key={s.key} className={`ac-snav-item ${activeSection === s.key ? "on" : ""}`} onClick={() => {
+              if (s.key === "trace") {
+                router.push("/trace");
+                return;
+              }
+              if (s.key === "approvals") {
+                router.push("/approvals");
+                return;
+              }
+              setSection(s.key);
+            }} aria-current={activeSection === s.key}>
+              <Icon name={s.icon} />
+              <span>{kn ? s.kn : s.en}</span>
+              {s.badge > 0 && <span className="ac-snav-badge">{s.badge}</span>}
+            </button>
+          ))}
+        </nav>
+
+        <button className="ac-signout" onClick={() => { try { sessionStorage.removeItem("antar_session"); } catch {} router.push("/login"); }}>
+          <Icon name="shield" /> {kn ? "ಸೈನ್ ಔಟ್" : "Sign out"}
+        </button>
+      </aside>
+
+      {/* ── MAIN CONTENT ── */}
+      <div className="ac-main">
+        {/* SHIFT BRIEF (A4) */}
+        {activeSection === "briefing" && (
+          <div className="ac-block">
+            <div className="ac-block-hd">
+              <span className="ac-block-t"><Icon name="brief" /> {kn ? "ಶಿಫ್ಟ್ ಬ್ರೀಫ್" : "Shift Brief"}</span>
+              {brief && <span className="ac-brief-fresh">{kn ? "ರಚಿಸಲಾಗಿದೆ" : "compiled"} {(brief.generated_at || "").slice(11, 16) || "—"}</span>}
+            </div>
+            <div className="ac-brief-controls">
+              <select className="ac-select" value={briefZone} onChange={(e) => setBriefZone(e.target.value)} aria-label="Zone">
+                <option value="all">{kn ? "ಎಲ್ಲಾ ಜಿಲ್ಲೆಗಳು" : "All districts"}</option>
+                {["Bengaluru City", "Mysuru City", "Belagavi", "Hubballi", "Mangaluru", "Kalaburagi"].map((z) => <option key={z} value={z}>{z}</option>)}
+              </select>
+              <select className="ac-select" value={briefWindow} onChange={(e) => setBriefWindow(e.target.value)} aria-label="Window">
+                {["8h", "12h", "24h", "48h"].map((w) => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </div>
+            {briefErr && <div className="ac-err">{kn ? "ಬ್ರೀಫ್ ಲೋಡ್ ಆಗಲಿಲ್ಲ - ಬ್ಯಾಕೆಂಡ್ ಪರಿಶೀಲಿಸಿ." : `Could not load brief - check backend at ${API}.`}</div>}
+            {!brief && !briefErr && <div className="ac-loading"><div className="signal-pulse" style={{ width: 160 }} /></div>}
+            {brief && (
+              <>
+                <div className="ac-brief-summary">{brief.executive_summary}</div>
+                <div className="ac-brief-stats">
+                  <div className="ac-bstat"><span className="v">{brief.active_beacons ?? 0}</span><span className="k">{kn ? "ಸಕ್ರಿಯ ಹಾಟ್‌ಸ್ಪಾಟ್" : "active hotspots"}</span></div>
+                  <div className="ac-bstat"><span className="v">{brief.key_incidents?.length ?? 0}</span><span className="k">{kn ? "ಪ್ರಮುಖ ಘಟನೆ" : "key incidents"}</span></div>
+                  <div className="ac-bstat"><span className="v">{brief.window_hours}h</span><span className="k">{kn ? "ವಿಂಡೋ" : "window"}</span></div>
+                </div>
+                <div className="ac-shead">{kn ? "ಆದ್ಯತಾ ಕ್ರಮಗಳು" : "Priority actions"}</div>
+                {(brief.priority_actions || []).map((a) => (
+                  <div key={a.rank} className="ac-brief-action">
+                    <span className="rank">{a.rank}</span>
+                    <div><div className="act">{a.action}</div><div className="rat">{a.rationale}</div></div>
+                  </div>
+                ))}
+                {brief.key_incidents?.length > 0 && (
+                  <>
+                    <div className="ac-shead" style={{ marginTop: 14 }}>{kn ? "ಪ್ರಮುಖ ಘಟನೆಗಳು" : "Key incidents"}</div>
+                    <div className="ac-table-wrap">
+                      <table className="ac-table">
+                        <thead><tr><th>FIR</th><th>{kn ? "ಅಪರಾಧ" : "Crime"}</th><th>{kn ? "ಸಮಯ" : "Time"}</th><th>{kn ? "ಸ್ಥಳ" : "Location"}</th></tr></thead>
+                        <tbody>
+                          {brief.key_incidents.map((k, i) => (
+                            <tr key={i}><td className="ac-mono">{k.fir_no}</td><td>{String(k.crime_type || "").replace(/_/g, " ")}</td><td className="ac-mono">{k.time || "—"}</td><td>{k.location}</td></tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+                <div className="ac-brief-foot" style={{ color: "rgba(255,255,255,0.4)" }}>{kn ? "ವಲಯ:" : "Zone:"} {brief.zone}</div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ANTAR ALERTS */}
+        {activeSection === "alerts" && (
+          <div className="ac-block">
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="bell" /> {kn ? "Antar ಎಚ್ಚರಿಕೆಗಳು" : "Antar Alerts"}</span></div>
+            {alertsList.length === 0 ? (
+              <div className="ac-loading" style={{ color: "#94A3B8" }}>{kn ? "ಯಾವುದೇ ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳಿಲ್ಲ." : "No active watchdog alerts."}</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {alertsList.map((a, i) => (
+                  <div key={i} style={{
+                    background: "transparent",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "6px",
+                    padding: "12px",
+                    display: "flex", flexDirection: "column", gap: "8px"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "11px", color: "#FFFFFF", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{a.alert_type}</span>
+                      <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)" }}>{a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : "Just now"}</span>
+                    </div>
+                    <div style={{ fontSize: "12.5px", color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
+                      {a.message}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+                      <span style={{ fontSize: "11px", color: a.severity === "High" ? "#EF4444" : "rgba(255,255,255,0.5)" }}>
+                        {kn ? "ತೀವ್ರತೆ:" : "Severity:"} {a.severity}
+                      </span>
+                      <button 
+                        onClick={() => setAlertsList(alertsList.filter((_, idx) => idx !== i))} 
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "4px", fontSize: "10px", cursor: "pointer", transition: "background 0.2s" }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
+                      >
+                        {kn ? "ಸ್ವೀಕರಿಸಿ" : "Acknowledge"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PREFERENCES */}
+        {activeSection === "preferences" && (
+          <div className="ac-block">
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="gear" /> {kn ? "ಆದ್ಯತೆಗಳು" : "Preferences"}</span>
+              {saved && <span className="ac-saved"> {kn ? "ಉಳಿಸಲಾಗಿದೆ" : "Saved"}</span>}</div>
+            <div className="ac-pref-grid">
+              <div className="ac-field">
+                <label>{kn ? "ಇಂಟರ್‌ಫೇಸ್ ಭಾಷೆ" : "Interface Language"}</label>
+                <select className="ac-select" value={lang} onChange={(e) => { if (e.target.value !== lang) toggleLang(); }}>
+                  <option value="en">English</option>
+                  <option value="kn">ಕನ್ನಡ</option>
+                </select>
+              </div>
+
+              <div className="ac-field">
+                <label>{kn ? "ಡೀಫಾಲ್ಟ್ ಪರದೆ" : "Default landing screen"}</label>
+                <select className="ac-select" value={draftPrefs.landing} onChange={(e) => setDraftPrefs({ ...draftPrefs, landing: e.target.value })}>
+                  <option value="/ask">{kn ? "ಚಾಟ್" : "Chat"}</option>
+                  <option value="/brain">{kn ? "ಮೆದುಳು" : "Brain"}</option>
+                  <option value="/map">{kn ? "ನಕ್ಷೆ" : "Map"}</option>
+                  <option value="/predict">{kn ? "ಮುನ್ಸೂಚನೆ" : "Predict"}</option>
+                  <option value="/search">{kn ? "ಹುಡುಕಾಟ" : "Search"}</option>
+                </select>
+              </div>
+              <div className="ac-field">
+                <label>{kn ? "ಡೀಫಾಲ್ಟ್ ನಕ್ಷೆ ವೀಕ್ಷಣೆ" : "Default map view"}</label>
+                <select className="ac-select" value={draftPrefs.mapView} onChange={(e) => setDraftPrefs({ ...draftPrefs, mapView: e.target.value })}>
+                  <option>Bengaluru Urban</option><option>All Karnataka</option><option>My District</option>
+                </select>
+              </div>
+              <div className="ac-field">
+                <label>{kn ? "ದಿನಾಂಕ ಸ್ವರೂಪ" : "Date format"}</label>
+                <select className="ac-select" value={draftPrefs.dateFormat} onChange={(e) => setDraftPrefs({ ...draftPrefs, dateFormat: e.target.value })}>
+                  <option>YYYY-MM-DD</option><option>DD/MM/YYYY</option><option>DD MMM YYYY</option>
+                </select>
+              </div>
+              <div className="ac-field">
+                <label>{kn ? "ವರದಿ ಹೆಸರು" : "Display name (for reports)"}</label>
+                <input className="ac-input" value={draftPrefs.displayName} placeholder={officer.name}
+                       onChange={(e) => setDraftPrefs({ ...draftPrefs, displayName: e.target.value })} />
+              </div>
+            </div>
+            <div className="ac-save-bar">
+              <button className="ac-save-btn" onClick={savePrefs}>{kn ? "ಉಳಿಸಿ" : "Save preferences"}</button>
+              <button className="ac-cancel-btn" onClick={() => setDraftPrefs(prefs)}>{kn ? "ರದ್ದು" : "Reset"}</button>
+              <span className="ac-save-hint">{kn ? "ಭಾಷೆ ತಕ್ಷಣ ಅನ್ವಯಿಸುತ್ತದೆ" : "Language applies instantly"}</span>
+            </div>
+          </div>
+        )}
+
+        {/* COMPLIANCE SETTINGS */}
+        {activeSection === "vigil" && (
+          <div className="ac-block fade-rise">
+            <div className="ac-block-hd" style={{ marginBottom: "20px" }}>
+              <span className="ac-block-t"><Icon name="shield" /> {kn ? "ನಿಯಮಗಳು ಹಾಗೂ ಭದ್ರತೆ" : "Compliance & Guardrails"}</span>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <Toggle
+                on={vigil.section91Audit}
+                onChange={() => setVigil((v) => ({ ...v, section91Audit: !v.section91Audit }))}
+                label={kn ? "ಸೆಕ್ಷನ್ 91 ಸಾಕ್ಷ್ಯ ಆಡಿಟ್ ಹ್ಯಾಶಿಂಗ್" : "§ 91 Evidence Hashing"}
+                sub={kn ? "ರಫ್ತು ಮಾಡಿದ ಸಾಕ್ಷ್ಯಗಳಿಗೆ ಕ್ರಿಪ್ಟೋಗ್ರಾಫಿಕ್ ಸಮಗ್ರತೆಯನ್ನು ನಿರ್ವಹಿಸುತ್ತದೆ." : "Maintains cryptographic integrity for exported evidence."}
+              />
+              <Toggle
+                on={vigil.piiDemographicRedaction}
+                onChange={() => setVigil((v) => ({ ...v, piiDemographicRedaction: !v.piiDemographicRedaction }))}
+                label={kn ? "ಐಡೆಂಟಿಟಿ ಮರ್ಜ್ ನಿರ್ಬಂಧ" : "Prevent Auto-Identity Merge"}
+                sub={kn ? "ಎಫ್‌ಐಆರ್‌ಗಳ ನಡುವೆ ಗುರುತುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲು ಹಸ್ತಚಾಲಿತ ಅನುಮೋದನೆಯ ಅಗತ್ಯವಿದೆ." : "Requires manual approval before merging identities across FIRs."}
+              />
+              <Toggle
+                on={vigil.unsubGeometryOnly}
+                onChange={() => {}}
+                label={kn ? "UNSUB ಪ್ರೊಫೈಲಿಂಗ್ (ಲಾಕ್)" : "UNSUB Geometry Profiling (Locked)"}
+                sub={kn ? "ಪಕ್ಷಪಾತವನ್ನು ತಡೆಗಟ್ಟಲು ಕೇವಲ ಭೌಗೋಳಿಕ ಡೇಟಾವನ್ನು ಬಳಸುತ್ತದೆ." : "Restricts analysis to spatial data to prevent demographic bias."}
+              />
+              <Toggle
+                on={vigil.dwaniBilingualStream}
+                onChange={() => setVigil((v) => ({ ...v, dwaniBilingualStream: !v.dwaniBilingualStream }))}
+                label={kn ? "ಧ್ವನಿ ದ್ವಿಭಾಷಾ ಪೈಪ್‌ಲೈನ್" : "Dwani Bilingual Pipeline"}
+                sub={kn ? "ಇಂಗ್ಲಿಷ್ ಮತ್ತು ಕನ್ನಡ ಭಾಷೆಗಳಿಗೆ ಬೆಂಬಲ." : "Enables continuous bilingual support (EN/KN)."}
+              />
+            </div>
+
+            {/* Evidentiary Hash Ledger Card */}
+            <div style={{
+              marginTop: "32px",
+              padding: "16px",
+              borderRadius: "8px",
+              background: "rgba(34,230,240,0.05)",
+              border: "1px solid rgba(34,230,240,0.15)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "11px", color: "#22E6F0", fontFamily: "JetBrains Mono", fontWeight: 600 }}>
+                  {kn ? "ಪ್ರಸ್ತುತ ಸೆಶನ್ ಆಡಿಟ್ ಹ್ಯಾಶ್" : "ACTIVE SESSION HASH"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCertDownloaded(true);
+                    setTimeout(() => setCertDownloaded(false), 2500);
+                  }}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: "4px",
+                    background: "transparent",
+                    color: certDownloaded ? "#18D69A" : "#22E6F0",
+                    border: `1px solid ${certDownloaded ? "#18D69A" : "rgba(34,230,240,0.4)"}`,
+                    fontSize: "10px",
+                    cursor: "pointer"
+                  }}
+                >
+                  {certDownloaded ? (kn ? " ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ" : " Downloaded") : (kn ? "ಪ್ರಮಾಣಪತ್ರ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ" : "Download Certificate")}
+                </button>
+              </div>
+              <div style={{ fontSize: "11px", color: "#E2E8F0", fontFamily: "JetBrains Mono", wordBreak: "break-all" }}>
+                ef54f348e82dbbbd74352af0bdae3621a9512bb4e018d6c5a190813ed2689a0b
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* NOTIFICATIONS */}
+        {activeSection === "notifications" && (
+          <div className="ac-block">
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="bell" /> {kn ? "ಅಧಿಸೂಚನೆಗಳು" : "Notifications"}</span></div>
+            <Toggle on={notifs.brain} onChange={() => toggleNotif("brain")} label={kn ? "ಎರಡನೇ ಮೆದುಳು ಹೊಂದಾಣಿಕೆಗಳು" : "Second-Brain matches"} sub={kn ? "ನಿಮ್ಮ ಕೇಸ್‌ಗಳ ಮೇಲೆ ಹೊಸ ಗ್ರಾಫ್ ಲಿಂಕ್‌ಗಳು" : "New graph links on your cases"} />
+            <Toggle on={notifs.patrol} onChange={() => toggleNotif("patrol")} label={kn ? "ಗಸ್ತು ಸಲಹೆಗಳು" : "Patrol suggestions"} sub={kn ? "ಹೊಸ ಕಾರಿಡಾರ್ ರಚಿಸಿದಾಗ" : "When a new corridor is generated"} />
+            <Toggle on={notifs.risk} onChange={() => toggleNotif("risk")} label={kn ? "ಅಪಾಯ ಸ್ಕೋರ್ ನವೀಕರಣಗಳು" : "Risk score updates"} sub={kn ? "ನೀವು ವೀಕ್ಷಿಸಿದ ಪ್ರೊಫೈಲ್‌ಗಳು" : "Profiles you have viewed"} />
+            <Toggle on={notifs.system} onChange={() => toggleNotif("system")} label={kn ? "ಸಿಸ್ಟಮ್ ಪ್ರಕಟಣೆಗಳು" : "System announcements"} sub={kn ? "ನಿರ್ವಹಣೆ, ನವೀಕರಣಗಳು, ನೀತಿ" : "Maintenance, updates, policy"} />
+          </div>
+        )}
+
+        {/* SECURITY */}
+        {activeSection === "security" && (
+          <div className="ac-block">
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="shield" /> {kn ? "ಭದ್ರತೆ" : "Security"}</span></div>
+
+            <div className="ac-2fa-setup">
+              <div className="ac-2fa-ico"><Icon name="shield" /></div>
+              <div className="ac-2fa-body">
+                <b>{kn ? "ಎರಡು-ಅಂಶ ದೃಢೀಕರಣ" : "Two-factor authentication"}</b>
+                <span>{kn ? "ಇನ್ನೂ ಹೊಂದಿಸಲಾಗಿಲ್ಲ · ಹೆಚ್ಚುವರಿ ಭದ್ರತೆಗೆ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ" : "Not set up yet · recommended for extra security"}</span>
+              </div>
+              <span className="ac-2fa-status">{kn ? "ಆಫ್" : "OFF"}</span>
+            </div>
+            <div className="ac-sec-actions">
+              <button className="ac-btn-primary" onClick={() => alert(kn ? "2FA ಸೆಟಪ್ ಶೀಘ್ರದಲ್ಲೇ (Catalyst Auth)" : "2FA setup coming soon (Catalyst Auth)")}>{kn ? "2FA ಹೊಂದಿಸಿ" : "Set up 2FA"}</button>
+              <button className="ac-btn-ghost" onClick={() => setPwOpen((v) => !v)}>{kn ? "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಿ" : "Change password"}</button>
+            </div>
+            {pwOpen && (
+              <div className="ac-pwform">
+                <input className="ac-input" type="password" placeholder={kn ? "ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್" : "Current password"} />
+                <input className="ac-input" type="password" placeholder={kn ? "ಹೊಸ ಪಾಸ್‌ವರ್ಡ್" : "New password"} />
+                <button className="ac-btn-primary" onClick={() => { setPwOpen(false); }}>{kn ? "ನವೀಕರಿಸಿ" : "Update"}</button>
+              </div>
+            )}
+
+            <div className="ac-shead" style={{ marginTop: 20 }}>{kn ? `ಸಕ್ರಿಯ ಸೆಶನ್‌ಗಳು · ${sessions.length}` : `Active sessions · ${sessions.length}`}</div>
+            {sessions.map((s) => (
+              <div key={s.id} className={`ac-session ${s.this ? "this" : ""}`}>
+                <div className="ac-sdevice">
+                  {s.this && <span className="ac-sdot">●</span>}{s.device}
+                  {s.this && <span className="ac-sthis">{kn ? "ಈ ಸಾಧನ" : "This device"}</span>}
+                  {!s.this && <button className="ac-revoke" onClick={() => revokeSession(s.id)} disabled={revoking === s.id}>{revoking === s.id ? "…" : (kn ? "ರದ್ದು" : "Revoke")}</button>}
+                </div>
+                <div className="ac-ssub">{s.ip} · {s.last_seen}</div>
+              </div>
+            ))}
+            {sessions.filter((s) => !s.this).length > 0 && (
+              <button className="ac-btn-ghost" style={{ marginTop: 10 }} onClick={() => setSessions((prev) => prev.filter((s) => s.this))}>
+                {kn ? "ಎಲ್ಲಾ ಇತರ ಸೆಶನ್‌ಗಳನ್ನು ರದ್ದುಗೊಳಿಸಿ" : "Revoke all other sessions"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ACTIVITY LOG */}
+        {activeSection === "activity" && (
+          <div className="ac-block">
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="file" /> {kn ? "ಚಟುವಟಿಕೆ ಲಾಗ್" : "Activity Log"}</span></div>
+            {auditStatus === 403 && (
+              <div className="ac-403" role="status">{kn ? "ನಿರ್ವಾಹಕ ಪ್ರವೇಶದ ಅಗತ್ಯವಿದೆ. (Admin ಆಗಿ ಬದಲಿಸಿ)" : "Admin access required. Switch to Admin view."}</div>
+            )}
+            {auditStatus === 0 && <div className="ac-err">{kn ? "ಬ್ಯಾಕೆಂಡ್ ತಲುಪಲಾಗಲಿಲ್ಲ." : `Could not reach backend at ${API}.`}</div>}
+            {auditRows === null && auditStatus !== 403 && auditStatus !== 0 && <div className="ac-loading"><div className="signal-pulse" style={{ width: 160 }} /></div>}
+            {auditRows !== null && auditStatus === 200 && (
+              <div className="ac-table-wrap">
+                <table className="ac-table">
+                  <thead><tr>
+                    <th>{kn ? "ಸಮಯ" : "Time"}</th><th>{kn ? "ಅಧಿಕಾರಿ" : "Officer"}</th><th>{kn ? "ವಿಧಾನ" : "Method"}</th><th>{kn ? "ಮಾರ್ಗ" : "Path"}</th><th>{kn ? "ಸ್ಥಿತಿ" : "Status"}</th>
+                  </tr></thead>
+                  <tbody>
+                    {auditRows.slice(0, 60).map((r, i) => (
+                      <tr key={i}>
+                        <td className="ac-mono">{(r.ts || "").slice(0, 19).replace("T", " ")}</td>
+                        <td>{r.officer}</td>
+                        <td><span className={`ac-mbadge ${METHOD_CLS[r.method] || ""}`}>{r.method}</span></td>
+                        <td className="ac-mono ac-path">{r.path}</td>
+                        <td><span className={`ac-sbadge ${r.status >= 400 ? "err" : "ok"}`}>{r.status}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+
+        {activeSection === "export" && (
+          <div className="ac-block">
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="download" /> {kn ? "ರಫ್ತು ಕೇಂದ್ರ" : "Export Centre"}</span></div>
+            <div className="ac-export-grid">
+              {[
+                { t: kn ? "ಚಟುವಟಿಕೆ ವರದಿ" : "Activity Report", d: kn ? "ಕಳೆದ 30 ದಿನಗಳ ಎಲ್ಲಾ ಕ್ರಿಯೆಗಳು" : "All actions last 30 days, timestamped", tag: "PDF · CSV", color: "var(--cyan)" },
+                { t: kn ? "ಕೇಸ್ ಡೋಸಿಯರ್" : "Case Dossier", d: kn ? "ಪ್ರೊಫೈಲ್‌ಗಳು, ಮುನ್ಸೂಚನೆಗಳು, ಬ್ರೈನ್ ಲಿಂಕ್‌ಗಳು" : "Profiles, predictions, Brain links", tag: isAdmin ? "PDF" : (kn ? "Admin" : "Admin only"), color: "var(--green)", locked: !isAdmin },
+                { t: kn ? "ಕಚ್ಚಾ ಲೆಕ್ಕಪರಿಶೋಧನೆ" : "Raw Audit Log", d: kn ? "ಅನುಸರಣೆಗಾಗಿ ಯಂತ್ರ-ಓದಬಲ್ಲ ಲಾಗ್" : "Machine-readable log for compliance", tag: "JSON · CSV", color: "var(--amber)" },
+              ].map((c, i) => (
+                <div key={i} className={`ac-export-card ${c.locked ? "locked" : ""}`}>
+                  <div className="ac-ec-ico" style={{ color: c.color }}><Icon name="download" /></div>
+                  <div className="ac-ec-name">{c.t}</div>
+                  <div className="ac-ec-desc">{c.d}</div>
+                  <div className="ac-ec-tag" style={{ color: c.color }}>{c.tag}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN · DATA (admin only) */}
+        {activeSection === "admin" && isAdmin && (
+          <div className="ac-block">
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="db" /> {kn ? "ಡೇಟಾ ಇಂಜೆಸ್ಟ್ (ಪೂರ್ವವೀಕ್ಷಣೆ)" : "Data Ingest (Preview)"}</span></div>
+            <p className="ac-block-sub" style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "16px" }}>
+              {kn ? "ಹೊಸ FIR ಡೇಟಾವನ್ನು CSV/JSON ಆಗಿ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ." : "Upload new FIR data as CSV/JSON."}
+            </p>
+            <div className="ac-ingest">
+              <input type="file" accept=".csv,.json" onChange={(e) => setIngestFile(e.target.files?.[0] || null)} />
+              <button className="ac-btn-primary" onClick={handleIngest} disabled={!ingestFile || ingestStatus === "loading"}>
+                {ingestStatus === "loading" ? (kn ? "ಅಪ್‌ಲೋಡ್…" : "Uploading…") : (kn ? "ಅಪ್‌ಲೋಡ್" : "Upload")}
+              </button>
+              {ingestStatus === "ok" && <span style={{ color: "var(--green)" }}> {kn ? "ಯಶಸ್ವಿ" : "Success"}</span>}
+              {ingestStatus === "error" && <span style={{ color: "var(--red)" }}> {kn ? "ವಿಫಲ" : "Failed"}</span>}
+            </div>
+          </div>
+        )}
+      </div>
+
+
+    </div>
+  );
+}
+
+

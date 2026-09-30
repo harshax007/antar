@@ -1,0 +1,30 @@
+{
+  "defaults": {
+    "project": 1,
+    "env": 1
+  },
+  "actives": {
+    "project": 1,
+    "env": 1
+  },
+  "projects": [
+    {
+      "idx": 1,
+      "id": "47053000000046003",
+      "name": "Antar",
+      "domain": {
+        "id": "50043861474",
+        "name": "antar-60073925785.development"
+      },
+      "timezone": "Asia/Kolkata",
+      "env": [
+        {
+          "idx": 1,
+          "id": "60073925785",
+          "name": "Development",
+          "type": 3
+        }
+      ]
+    }
+  ]
+}

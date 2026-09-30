@@ -1,0 +1,74 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# ── Environment (NEVER commit) ────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Sentence Transformers cache (large) ───────────────────────────────────────
+# These get downloaded at runtime; don't commit the model weights
+.cache/
+models/
+
+# ── Second Brain snapshots (these go to Stratus, not git) ────────────────────
+*.npz
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Catalyst CLI ──────────────────────────────────────────────────────────────
+.catalyst/
+
+# -- Generated seed data (rebuild with: python -m app.seeds.load) --
+app/seeds/out/
+
+antar.db
+*.db
+*.db-wal
+*.db-shm
+*.bak*
+*.pre_inject
+*.rej_backup
+
+# Session encryption key (generated at runtime by app/api/session_api.py)
+.session_key
+
+# ── Frontend build + deps (D:\Project working copy) ───────────────────────────
+node_modules/
+.next/
+antar-frontend/out/
+*.tsbuildinfo
+.turbo/
+
+# ── Local session/runtime state ───────────────────────────────────────────────
+data_sessions/
+data/

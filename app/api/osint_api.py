@@ -1,0 +1,37 @@
+"""
+Antar — OSINT API (Phase 6)
+================================
+Endpoints for the Profiles side-by-side OSINT panel.
+"""
+
+from fastapi import APIRouter
+from app.services.osint import search_osint
+
+router = APIRouter()
+
+@router.get("/")
+async def get_osint(entity: str):
+    """
+    Returns unverified open-web claims and risk flags for the given entity.
+    """
+    result = await search_osint(entity)
+    return result
+
+
+@router.get("/recon")
+async def get_osint_recon(entity: str):
+    """
+    Layer 5 Multi-Module Reconnaissance Endpoint.
+    Returns:
+      • Maltego Linkage Graph (nodes & edges)
+      • PhoneInfoga Telecom Footprint Analysis
+      • Sherlock Quarantined Digital Handle Presence
+      • BBOT Event Scan Tree
+      • OSINT Corroboration Counter against internal K/D facts
+    """
+    from app.services.osint_recon import run_multi_module_recon
+    from app.services.zcql_local import _world
+    world = _world()
+    report = run_multi_module_recon(entity, world)
+    return report
+

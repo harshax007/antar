@@ -1,0 +1,4 @@
+{"case_id": "S01", "question": "Are there any patterns around S0001?", "lang": "en", "expect_template": "T4", "expect_entities": ["S0001"], "must_disclaim": false}
+{"case_id": "S02", "question": "What is the trend for cybercrime in Bengaluru?", "lang": "en", "expect_template": "T3", "expect_entities": ["cybercrime", "Bengaluru"], "must_disclaim": false}
+{"case_id": "HQ_COUNT_1", "question": "how many crimes in Mysuru?", "lang": "en", "expect_template": "T11", "expect_entities": ["Mysuru"], "must_disclaim": false}
+{"case_id": "MISSING_ENTITY_1", "question": "is S9999 linked to Rajajinagar theft?", "lang": "en", "expect_template": "T10", "expect_entities": ["S9999", "Rajajinagar"], "must_disclaim": true}

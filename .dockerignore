@@ -1,0 +1,83 @@
+# ── Antar backend .dockerignore ─────────────────────────────────────────────
+# Keep the Docker Hub image lean and safe. The image ships CODE + main.db.gz
+# (decompressed to /tmp on Catalyst cold start by app/core/db_path.py) +
+# intelligent.db ONLY. Everything below is excluded.
+
+# Python virtualenv & caches (huge; rebuilt by pip in the image)
+.venv/
+venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Tests & dev-only scripts (not needed at runtime)
+tests/
+temp_test/
+appsail_test/
+benchmark.py
+benchmark_report.json
+analyze_dbs.py
+dump_schema.py
+load_3000_firs.py
+add_advanced_intelligence.py
+
+# ── The frontend is a SEPARATE deployable ────────────────────────────────────
+# It goes to Catalyst client hosting as a static export; the backend image needs none
+# of it. `COPY . /app` was pulling the whole directory in — 1,007 MB, of which 606 MB is
+# node_modules and 373 MB is the .next build cache. That is more than the entire rest of
+# the image, and it is shipped on every single build.
+antar-frontend/
+**/node_modules/
+**/.next/
+
+# Databases: ship ONLY main.db.gz (46 MB) + intelligent.db.
+# Exclude the 276 MB raw main.db and every backup / source / fixture DB.
+main.db
+antar.db
+antar.db.bak
+crime_data.db
+crime_data.db.*
+*.db.bak
+*.db.pre_*
+*.db.damaged*
+*.damaged-bak
+# Rotated copy kept when main.db.gz is regenerated — 46 MB of nothing.
+*.gz.prev
+*.bak
+
+# Secrets & local env — set these as Catalyst env vars, never bake into a
+# (potentially public) Docker Hub image.
+.env
+.env.*
+!.env.example
+.session_key
+.catalystrc
+
+# Old Catalyst-CLI state / dev artifacts (not needed for a Docker image)
+.catalystignore
+.appignore
+.ignore
+check.py
+trust.html
+data_feedback.jsonl
+Optimization_Implmentatio.md
+
+# Exported ONNX models (356 MB locally). Dockerfile.onnx builds its own inside the
+# builder stage and copies them across, so a developer's local export must never be
+# pulled into the build context — and the current Dockerfile does not use them at all.
+models/onnx/
+
+# Runtime scratch & logs
+data_sessions/
+*.log
+catalyst-debug.log
+
+# VCS / editor / OS
+.git/
+.gitignore
+.DS_Store
+*.swp

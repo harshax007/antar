@@ -1,0 +1,108 @@
+# Antar — torch-free serving image (final_backend.md §4 step 6)
+#
+# STATUS: NOT YET BUILT. Docker Desktop was not running when this was written, so the
+# numbers below are measured from the local Python environment, not from a built image.
+# Build it and compare against the current Dockerfile before switching the deployment:
+#     docker build -f Dockerfile.onnx -t antar-api:onnx .
+#     docker build -f Dockerfile      -t antar-api:torch .
+#     docker images antar-api
+# The existing Dockerfile is untouched and remains the working deploy path.
+#
+# WHY
+# The deploy footprint is 755 MB over the 2 GB budget (docs/footprint/baseline.md) and
+# the torch stack is 681 MB of it: torch 499.5, transformers 106.3, sympy 72.1,
+# sentence-transformers 2.0, safetensors 0.9. The weights themselves are ~90 MB per
+# model — the framework is the cost. This image runs the SAME weights through
+# onnxruntime (44.3 MB), exported and verified at build time, and drops the framework.
+# It also stops baking the three Hugging Face model caches (~310 MB).
+#
+# Measured locally, ONNX vs torch at one thread (docs/footprint/onnx-backend.md):
+#     RSS 195 MB vs 513 MB · load 0.7 s vs 15.9 s · embed 7.5 ms vs 16.6 ms
+#     rerank of 20 passages 184 ms vs 188 ms · embeddings identical (cosine 1.0)
+#
+# SAFETY
+# Stage 1 runs scripts/export_onnx_models.py, which compares every export against the
+# torch model that produced it and exits non-zero if fp32 parity fails — so a bad export
+# fails the build instead of quietly degrading retrieval in production. The serving stage
+# has no torch to fall back on, which is exactly why that gate is part of the build.
+
+# ── Stage 1: export the Brain models to ONNX (needs torch; discarded afterwards) ──────
+FROM python:3.11-slim AS brain-export
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HF_HOME=/tmp/hf
+
+WORKDIR /build
+
+# CPU-only torch, for the same reason as the current Dockerfile: the PyPI build pulls
+# ~2.5 GB of CUDA libraries that an AppSail container can never use. Nothing from this
+# stage reaches the final image except the exported .onnx files.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.5.1
+RUN pip install --no-cache-dir \
+        sentence-transformers==3.0.1 \
+        onnx==1.23.0 \
+        onnxruntime==1.30.0 \
+        tokenizers==0.22.2
+
+# Only the three files the exporter needs, so a code change does not invalidate the
+# expensive layers above.
+COPY scripts/export_onnx_models.py /build/scripts/export_onnx_models.py
+COPY app/second_brain/onnx_backend.py /build/app/second_brain/onnx_backend.py
+RUN touch /build/app/__init__.py /build/app/second_brain/__init__.py
+
+# Explicit --model arguments keep this independent of app.core.settings (and therefore of
+# the full dependency set). These two are what the serving image loads: the embedder
+# pinned by app-config.json and the stage-2 reranker.
+RUN python scripts/export_onnx_models.py \
+        --model BAAI/bge-small-en-v1.5 \
+        --model cross-encoder/ms-marco-MiniLM-L-6-v2
+
+# int8 missed the parity gate (cosine 0.987 against torch), so the runtime ignores it —
+# see app/second_brain/onnx_backend.py. Drop the files rather than ship 32 MB per model
+# that nothing loads.
+RUN find /build/models/onnx -name "model_int8.onnx" -delete
+
+# ── Stage 2: the serving image — no torch, no transformers ───────────────────────────
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    TOKENIZERS_PARALLELISM=false \
+    OMP_NUM_THREADS=1 \
+    ANTAR_DB=main.db \
+    BRAIN_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5 \
+    ANTAR_ONNX_DIR=/app/models/onnx \
+    ANTAR_BRAIN_BACKEND=onnx
+
+WORKDIR /app
+
+# The torch-free dependency set. tests/test_requirements_sync.py keeps its pins identical
+# to requirements.txt for every shared package.
+COPY requirements-runtime.txt /app/requirements-runtime.txt
+RUN pip install --no-cache-dir -r requirements-runtime.txt
+
+# The verified artifacts, and nothing else, from the builder.
+COPY --from=brain-export /build/models/onnx /app/models/onnx
+
+COPY . /app
+
+# Fail early and loudly rather than degrade: a serving image whose Brain cannot load is
+# a deployment mistake, not a runtime condition to tolerate. There is no torch fallback
+# here by design.
+RUN python -c "\
+import os; os.environ['ANTAR_ONNX_DIR']='/app/models/onnx'; \
+from app.second_brain.onnx_backend import OnnxTextEncoder, OnnxCrossEncoder, artifacts_for; \
+e=artifacts_for('BAAI/bge-small-en-v1.5'); r=artifacts_for('cross-encoder/ms-marco-MiniLM-L-6-v2'); \
+assert e and r, 'ONNX artifacts missing from the image'; \
+v=OnnxTextEncoder(e).encode(['smoke test']); assert v.shape==(1,384), v.shape; \
+OnnxCrossEncoder(r).predict([('a','b')]); \
+print('brain ok:', v.shape)"
+
+EXPOSE 9000
+
+CMD ["python3", "run.py"]

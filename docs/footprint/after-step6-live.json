@@ -1,0 +1,406 @@
+{
+  "label": "after-step6-live",
+  "measured_at": "2026-09-23 05:50:00",
+  "host": "hx07-laptop",
+  "database": {
+    "path": "E:\\Datathon_2026\\Res\\main.db",
+    "file_mb": 1414.9,
+    "file_wal_mb": 0.0,
+    "file_shm_mb": 0.0,
+    "file_gz_mb": 83.5,
+    "fir_rows": 1000000,
+    "page_size": 4096,
+    "pages": 362215,
+    "freelist_mb": 0.4,
+    "tables_mb": 494.8,
+    "indexes_mb": 762.0,
+    "derived_tables_mb": 107.1,
+    "derived_indexes_mb": 50.6,
+    "other_mb": 0.0,
+    "must_ship_mb": 494.8,
+    "top_objects": [
+      {
+        "name": "FIRs",
+        "type": "table",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 486.4
+      },
+      {
+        "name": "idx_firs_outcomes",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 76.4
+      },
+      {
+        "name": "idx_firs_act_date",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 72.0
+      },
+      {
+        "name": "idx_firs_u_act_date",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 72.0
+      },
+      {
+        "name": "idx_firs_abs_cov",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 64.3
+      },
+      {
+        "name": "forecast_cube",
+        "type": "table",
+        "table": "forecast_cube",
+        "derived": true,
+        "mb": 58.9
+      },
+      {
+        "name": "idx_firs_u_zone_beat",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 54.5
+      },
+      {
+        "name": "ix_forecast_cube_unit",
+        "type": "index",
+        "table": "forecast_cube",
+        "derived": true,
+        "mb": 49.7
+      },
+      {
+        "name": "idx_firs_u_ct_zone",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 48.4
+      },
+      {
+        "name": "idx_firs_u_zone_ct",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 48.4
+      },
+      {
+        "name": "forecast_output",
+        "type": "table",
+        "table": "forecast_output",
+        "derived": true,
+        "mb": 45.6
+      },
+      {
+        "name": "idx_firs_u_zone_status",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 42.7
+      },
+      {
+        "name": "idx_firs_date_ct",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 36.5
+      },
+      {
+        "name": "idx_firs_group_date",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 36.5
+      },
+      {
+        "name": "idx_firs_u_crime_type",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 36.5
+      },
+      {
+        "name": "idx_firs_u_station",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 33.6
+      },
+      {
+        "name": "idx_firs_u_status",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 30.8
+      },
+      {
+        "name": "idx_firs_u_district_norm",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 30.0
+      },
+      {
+        "name": "idx_firs_u_zone",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 30.0
+      },
+      {
+        "name": "idx_firs_status",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 20.2
+      },
+      {
+        "name": "idx_firs_district",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 19.5
+      },
+      {
+        "name": "idx_firs_accused",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 9.2
+      },
+      {
+        "name": "ext_entity_keys",
+        "type": "table",
+        "table": "ext_entity_keys",
+        "derived": false,
+        "mb": 2.4
+      },
+      {
+        "name": "agent_reasoning_logs",
+        "type": "table",
+        "table": "agent_reasoning_logs",
+        "derived": false,
+        "mb": 2.2
+      },
+      {
+        "name": "geo_units",
+        "type": "table",
+        "table": "geo_units",
+        "derived": true,
+        "mb": 2.0
+      }
+    ],
+    "scan_seconds": 2.5
+  },
+  "packages": {
+    "python": "3.11.15",
+    "executable": "C:\\Users\\hx07-\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\python.exe",
+    "count": 72,
+    "total_mb": 1117.7,
+    "torch_stack_mb": 688.2,
+    "top": [
+      {
+        "name": "torch",
+        "version": "2.13.0",
+        "mb": 499.5,
+        "direct": false
+      },
+      {
+        "name": "scipy",
+        "version": "1.14.1",
+        "mb": 151.0,
+        "direct": true
+      },
+      {
+        "name": "transformers",
+        "version": "4.57.6",
+        "mb": 106.3,
+        "direct": false
+      },
+      {
+        "name": "sympy",
+        "version": "1.14.0",
+        "mb": 72.1,
+        "direct": false
+      },
+      {
+        "name": "numpy",
+        "version": "1.26.4",
+        "mb": 68.4,
+        "direct": true
+      },
+      {
+        "name": "pandas",
+        "version": "2.2.3",
+        "mb": 67.5,
+        "direct": true
+      },
+      {
+        "name": "scikit-learn",
+        "version": "1.9.0",
+        "mb": 42.0,
+        "direct": true
+      },
+      {
+        "name": "networkx",
+        "version": "3.6.1",
+        "mb": 15.8,
+        "direct": true
+      },
+      {
+        "name": "pillow",
+        "version": "12.2.0",
+        "mb": 14.0,
+        "direct": false
+      },
+      {
+        "name": "setuptools",
+        "version": "79.0.1",
+        "mb": 9.1,
+        "direct": false
+      },
+      {
+        "name": "cryptography",
+        "version": "46.0.7",
+        "mb": 9.1,
+        "direct": true
+      },
+      {
+        "name": "tokenizers",
+        "version": "0.22.2",
+        "mb": 7.4,
+        "direct": false
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.23.4",
+        "mb": 5.1,
+        "direct": false
+      },
+      {
+        "name": "huggingface-hub",
+        "version": "0.36.2",
+        "mb": 4.9,
+        "direct": false
+      },
+      {
+        "name": "narwhals",
+        "version": "2.24.0",
+        "mb": 4.6,
+        "direct": false
+      },
+      {
+        "name": "mpmath",
+        "version": "1.3.0",
+        "mb": 4.6,
+        "direct": false
+      },
+      {
+        "name": "langchain-core",
+        "version": "0.3.21",
+        "mb": 3.8,
+        "direct": true
+      },
+      {
+        "name": "pydantic",
+        "version": "2.9.2",
+        "mb": 3.5,
+        "direct": true
+      },
+      {
+        "name": "sentence-transformers",
+        "version": "3.3.1",
+        "mb": 2.0,
+        "direct": true
+      },
+      {
+        "name": "joblib",
+        "version": "1.5.3",
+        "mb": 2.0,
+        "direct": false
+      }
+    ],
+    "missing": []
+  },
+  "models": {
+    "hub_cache": "C:\\Users\\hx07-\\.cache\\huggingface\\hub",
+    "models": [
+      {
+        "role": "embedder",
+        "repo": "all-MiniLM-L6-v2",
+        "cached": true,
+        "dir": "models--sentence-transformers--all-MiniLM-L6-v2",
+        "snapshots": 1,
+        "mb": 87.3
+      },
+      {
+        "role": "reranker",
+        "repo": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        "cached": true,
+        "dir": "models--cross-encoder--ms-marco-MiniLM-L-6-v2",
+        "snapshots": 1,
+        "mb": 87.6
+      }
+    ],
+    "unused_cached": [
+      {
+        "dir": "models--BAAI--bge-small-en-v1.5",
+        "mb": 255.6
+      }
+    ],
+    "total_mb": 174.9
+  },
+  "code": {
+    "app_mb": 12.4,
+    "main_py_kb": 22.4
+  },
+  "ram": {
+    "mode": "running process 19224",
+    "processes": [
+      {
+        "pid": 19224,
+        "name": "python.exe",
+        "rss_mb": 5.6,
+        "private_mb": 0.9,
+        "peak_mb": 5.7,
+        "uptime_min": 12
+      },
+      {
+        "pid": 7864,
+        "name": "python.exe",
+        "rss_mb": 445.9,
+        "private_mb": 434.3,
+        "peak_mb": 445.9,
+        "uptime_min": 12
+      }
+    ],
+    "final": {
+      "rss_mb": 451.5,
+      "private_mb": 435.2,
+      "peak_mb": 445.9
+    }
+  },
+  "verdict": {
+    "disk": {
+      "db_on_disk_mb": 1414.9,
+      "db_gz_mb": 83.5,
+      "packages_mb": 1117.7,
+      "models_mb": 174.9,
+      "code_mb": 12.4,
+      "total_mb": 2803.4
+    },
+    "budget_2gb": {
+      "disk": "OVER by 755 MB",
+      "ram": "PASS"
+    },
+    "appsail_default": {
+      "disk": "OVER by 2547 MB",
+      "ram": "PASS"
+    }
+  }
+}

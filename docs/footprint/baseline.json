@@ -1,0 +1,1400 @@
+{
+  "label": "baseline",
+  "measured_at": "2026-09-22 08:07:46",
+  "host": "hx07-laptop",
+  "database": {
+    "path": "E:\\Antar_FinalBuild_Dev\\main.db",
+    "file_mb": 1415.0,
+    "file_wal_mb": null,
+    "file_shm_mb": null,
+    "file_gz_mb": 83.5,
+    "fir_rows": 1000000,
+    "page_size": 4096,
+    "pages": 362229,
+    "freelist_mb": 0.0,
+    "tables_mb": 495.3,
+    "indexes_mb": 762.0,
+    "derived_tables_mb": 107.1,
+    "derived_indexes_mb": 50.6,
+    "other_mb": 0.0,
+    "must_ship_mb": 495.3,
+    "top_objects": [
+      {
+        "name": "FIRs",
+        "type": "table",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 486.4
+      },
+      {
+        "name": "idx_firs_outcomes",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 76.4
+      },
+      {
+        "name": "idx_firs_act_date",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 72.0
+      },
+      {
+        "name": "idx_firs_u_act_date",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 72.0
+      },
+      {
+        "name": "idx_firs_abs_cov",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 64.3
+      },
+      {
+        "name": "forecast_cube",
+        "type": "table",
+        "table": "forecast_cube",
+        "derived": true,
+        "mb": 58.9
+      },
+      {
+        "name": "idx_firs_u_zone_beat",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 54.5
+      },
+      {
+        "name": "ix_forecast_cube_unit",
+        "type": "index",
+        "table": "forecast_cube",
+        "derived": true,
+        "mb": 49.7
+      },
+      {
+        "name": "idx_firs_u_ct_zone",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 48.4
+      },
+      {
+        "name": "idx_firs_u_zone_ct",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 48.4
+      },
+      {
+        "name": "forecast_output",
+        "type": "table",
+        "table": "forecast_output",
+        "derived": true,
+        "mb": 45.6
+      },
+      {
+        "name": "idx_firs_u_zone_status",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 42.7
+      },
+      {
+        "name": "idx_firs_date_ct",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 36.5
+      },
+      {
+        "name": "idx_firs_group_date",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 36.5
+      },
+      {
+        "name": "idx_firs_u_crime_type",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 36.5
+      },
+      {
+        "name": "idx_firs_u_station",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 33.6
+      },
+      {
+        "name": "idx_firs_u_status",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 30.8
+      },
+      {
+        "name": "idx_firs_u_district_norm",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 30.0
+      },
+      {
+        "name": "idx_firs_u_zone",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 30.0
+      },
+      {
+        "name": "idx_firs_status",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 20.2
+      },
+      {
+        "name": "idx_firs_district",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 19.5
+      },
+      {
+        "name": "idx_firs_accused",
+        "type": "index",
+        "table": "FIRs",
+        "derived": false,
+        "mb": 9.2
+      },
+      {
+        "name": "ext_entity_keys",
+        "type": "table",
+        "table": "ext_entity_keys",
+        "derived": false,
+        "mb": 2.4
+      },
+      {
+        "name": "agent_reasoning_logs",
+        "type": "table",
+        "table": "agent_reasoning_logs",
+        "derived": false,
+        "mb": 2.2
+      },
+      {
+        "name": "geo_units",
+        "type": "table",
+        "table": "geo_units",
+        "derived": true,
+        "mb": 2.0
+      }
+    ],
+    "scan_seconds": 2.9
+  },
+  "packages": {
+    "python": "3.11.15",
+    "executable": "C:\\Users\\hx07-\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\python.exe",
+    "count": 72,
+    "total_mb": 1117.7,
+    "torch_stack_mb": 688.2,
+    "top": [
+      {
+        "name": "torch",
+        "version": "2.13.0",
+        "mb": 499.5,
+        "direct": false
+      },
+      {
+        "name": "scipy",
+        "version": "1.14.1",
+        "mb": 151.0,
+        "direct": true
+      },
+      {
+        "name": "transformers",
+        "version": "4.57.6",
+        "mb": 106.3,
+        "direct": false
+      },
+      {
+        "name": "sympy",
+        "version": "1.14.0",
+        "mb": 72.1,
+        "direct": false
+      },
+      {
+        "name": "numpy",
+        "version": "1.26.4",
+        "mb": 68.4,
+        "direct": true
+      },
+      {
+        "name": "pandas",
+        "version": "2.2.3",
+        "mb": 67.5,
+        "direct": true
+      },
+      {
+        "name": "scikit-learn",
+        "version": "1.9.0",
+        "mb": 42.0,
+        "direct": true
+      },
+      {
+        "name": "networkx",
+        "version": "3.6.1",
+        "mb": 15.8,
+        "direct": true
+      },
+      {
+        "name": "pillow",
+        "version": "12.2.0",
+        "mb": 14.0,
+        "direct": false
+      },
+      {
+        "name": "setuptools",
+        "version": "79.0.1",
+        "mb": 9.1,
+        "direct": false
+      },
+      {
+        "name": "cryptography",
+        "version": "46.0.7",
+        "mb": 9.1,
+        "direct": true
+      },
+      {
+        "name": "tokenizers",
+        "version": "0.22.2",
+        "mb": 7.4,
+        "direct": false
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.23.4",
+        "mb": 5.1,
+        "direct": false
+      },
+      {
+        "name": "huggingface-hub",
+        "version": "0.36.2",
+        "mb": 4.9,
+        "direct": false
+      },
+      {
+        "name": "mpmath",
+        "version": "1.3.0",
+        "mb": 4.6,
+        "direct": false
+      },
+      {
+        "name": "narwhals",
+        "version": "2.24.0",
+        "mb": 4.6,
+        "direct": false
+      },
+      {
+        "name": "langchain-core",
+        "version": "0.3.21",
+        "mb": 3.8,
+        "direct": true
+      },
+      {
+        "name": "pydantic",
+        "version": "2.9.2",
+        "mb": 3.5,
+        "direct": true
+      },
+      {
+        "name": "joblib",
+        "version": "1.5.3",
+        "mb": 2.0,
+        "direct": false
+      },
+      {
+        "name": "sentence-transformers",
+        "version": "3.3.1",
+        "mb": 2.0,
+        "direct": true
+      }
+    ],
+    "missing": []
+  },
+  "models": {
+    "hub_cache": "C:\\Users\\hx07-\\.cache\\huggingface\\hub",
+    "models": [
+      {
+        "role": "embedder",
+        "repo": "all-MiniLM-L6-v2",
+        "cached": true,
+        "dir": "models--sentence-transformers--all-MiniLM-L6-v2",
+        "snapshots": 1,
+        "mb": 87.3
+      },
+      {
+        "role": "reranker",
+        "repo": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        "cached": true,
+        "dir": "models--cross-encoder--ms-marco-MiniLM-L-6-v2",
+        "snapshots": 1,
+        "mb": 87.6
+      }
+    ],
+    "unused_cached": [
+      {
+        "dir": "models--BAAI--bge-small-en-v1.5",
+        "mb": 255.6
+      }
+    ],
+    "total_mb": 174.9,
+    "cache_changed_during_run": false
+  },
+  "code": {
+    "app_mb": 12.3,
+    "main_py_kb": 20.9
+  },
+  "ram": {
+    "mode": "in-process warm-up",
+    "with_llm": false,
+    "seconds": 395.2,
+    "final": {
+      "rss_mb": 634.1,
+      "private_mb": 1583.6,
+      "peak_mb": 649.3,
+      "uss_mb": 473.9
+    },
+    "import_main_mb": 211.3,
+    "largest_stages": [
+      {
+        "label": "Loading model: all-MiniLM-L6-v2",
+        "delta_mb": 245.4,
+        "rss_mb": 457.4,
+        "t": 23.7
+      },
+      {
+        "label": "import main (app + all routers)",
+        "delta_mb": 159.5,
+        "rss_mb": 211.3,
+        "t": 7.4
+      },
+      {
+        "label": "[OK] Embedder loaded -- dim=384",
+        "delta_mb": 60.7,
+        "rss_mb": 518.1,
+        "t": 24.0
+      },
+      {
+        "label": "2026-09-22 08:10:28 [debug    ] product_stored                 key=warning_ledger:alert:AL-6f5bde6406 ttl=8640",
+        "delta_mb": 58.2,
+        "rss_mb": 641.7,
+        "t": 148.5
+      },
+      {
+        "label": "\ud83d\udcdd MO field index: 0 crime narrative(s) added to Brain",
+        "delta_mb": 20.0,
+        "rss_mb": 551.9,
+        "t": 44.5
+      },
+      {
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Chikkamagaluru:MOTOR V",
+        "delta_mb": 13.1,
+        "rss_mb": 576.2,
+        "t": 56.2
+      },
+      {
+        "label": "\ud83c\udf31 Seeded 3 planted brain summaries (local demo)",
+        "delta_mb": 7.9,
+        "rss_mb": 531.9,
+        "t": 44.3
+      },
+      {
+        "label": "\u26a0\ufe0f  brain store load timed out after 20s \u2014 booting with empty index",
+        "delta_mb": 5.9,
+        "rss_mb": 524.0,
+        "t": 44.2
+      },
+      {
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:all ttl=86400",
+        "delta_mb": 4.9,
+        "rss_mb": 556.8,
+        "t": 48.1
+      },
+      {
+        "label": "\ud83c\udfaf Brain reranker ready",
+        "delta_mb": 4.6,
+        "rss_mb": 580.8,
+        "t": 56.2
+      },
+      {
+        "label": "\u26a1 Query warm-up done in 5.8s",
+        "delta_mb": 2.2,
+        "rss_mb": 647.2,
+        "t": 188.7
+      },
+      {
+        "label": "2026-09-22 08:08:52 [debug    ] product_stored                 key=registry:habitual ttl=600",
+        "delta_mb": 2.1,
+        "rss_mb": 561.2,
+        "t": 52.2
+      }
+    ],
+    "timeline": [
+      {
+        "rss_mb": 51.8,
+        "private_mb": 390.8,
+        "peak_mb": 51.8,
+        "t": 0.0,
+        "label": "python started"
+      },
+      {
+        "rss_mb": 211.3,
+        "private_mb": 916.8,
+        "peak_mb": 211.3,
+        "t": 7.4,
+        "label": "import main (app + all routers)"
+      },
+      {
+        "rss_mb": 211.5,
+        "private_mb": 916.9,
+        "peak_mb": 211.5,
+        "t": 7.4,
+        "label": "\u23f3 Starting background warmup tasks..."
+      },
+      {
+        "rss_mb": 212.0,
+        "private_mb": 917.3,
+        "peak_mb": 212.0,
+        "t": 7.4,
+        "label": "\ud83e\udde0 Loading Second Brain embedder (all-MiniLM-L6-v2)..."
+      },
+      {
+        "rss_mb": 457.4,
+        "private_mb": 1158.0,
+        "peak_mb": 457.4,
+        "t": 23.7,
+        "label": "Loading model: all-MiniLM-L6-v2"
+      },
+      {
+        "rss_mb": 518.1,
+        "private_mb": 1322.1,
+        "peak_mb": 518.1,
+        "t": 24.0,
+        "label": "[OK] Embedder loaded -- dim=384"
+      },
+      {
+        "rss_mb": 518.1,
+        "private_mb": 1322.1,
+        "peak_mb": 518.1,
+        "t": 24.0,
+        "label": "\ud83d\udd04 Rebuilding Second Brain index from Data Store..."
+      },
+      {
+        "rss_mb": 524.0,
+        "private_mb": 1324.6,
+        "peak_mb": 524.0,
+        "t": 44.2,
+        "label": "\u26a0\ufe0f  brain store load timed out after 20s \u2014 booting with empty index"
+      },
+      {
+        "rss_mb": 524.0,
+        "private_mb": 1324.7,
+        "peak_mb": 524.0,
+        "t": 44.2,
+        "label": "\u26a0\ufe0f  Second Brain index empty \u2014 no rows in Data Store yet"
+      },
+      {
+        "rss_mb": 524.0,
+        "private_mb": 1324.7,
+        "peak_mb": 524.0,
+        "t": 44.2,
+        "label": "\u2705 Second Brain index ready \u2014 0 embeddings loaded"
+      },
+      {
+        "rss_mb": 531.9,
+        "private_mb": 1379.2,
+        "peak_mb": 531.9,
+        "t": 44.3,
+        "label": "\ud83c\udf31 Seeded 3 planted brain summaries (local demo)"
+      },
+      {
+        "rss_mb": 551.9,
+        "private_mb": 1399.0,
+        "peak_mb": 551.9,
+        "t": 44.5,
+        "label": "\ud83d\udcdd MO field index: 0 crime narrative(s) added to Brain"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:all ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-01 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-02 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-03 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-04 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-05 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-06 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-07 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-08 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-09 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-10 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-11 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-12 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-13 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-14 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.1,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=unsub:UNSUB-15 ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.2,
+        "label": "2026-09-22 08:08:48 [debug    ] product_stored                 key=predicted_edges:all ttl=86400"
+      },
+      {
+        "rss_mb": 556.8,
+        "private_mb": 1403.9,
+        "peak_mb": 556.9,
+        "t": 48.2,
+        "label": "\ud83d\udcca Graph cache ready \u2014 2365 nodes"
+      },
+      {
+        "rss_mb": 557.8,
+        "private_mb": 1405.1,
+        "peak_mb": 559.9,
+        "t": 52.2,
+        "label": "\ud83d\uddfa\ufe0f  District cache ready \u2014 56 zones"
+      },
+      {
+        "rss_mb": 559.1,
+        "private_mb": 1406.1,
+        "peak_mb": 559.9,
+        "t": 52.2,
+        "label": "\ud83e\uddfe Evidence ledger ready \u2014 2789 rows"
+      },
+      {
+        "rss_mb": 561.2,
+        "private_mb": 1408.2,
+        "peak_mb": 561.2,
+        "t": 52.2,
+        "label": "2026-09-22 08:08:52 [debug    ] product_stored                 key=registry:habitual ttl=600"
+      },
+      {
+        "rss_mb": 561.2,
+        "private_mb": 1408.2,
+        "peak_mb": 561.2,
+        "t": 52.2,
+        "label": "2026-09-22 08:08:52 [debug    ] product_stored                 key=evidence:stats ttl=3600"
+      },
+      {
+        "rss_mb": 561.2,
+        "private_mb": 1408.2,
+        "peak_mb": 561.2,
+        "t": 52.2,
+        "label": "2026-09-22 08:08:52 [debug    ] product_stored                 key=network:global_stats ttl=3600"
+      },
+      {
+        "rss_mb": 563.1,
+        "private_mb": 1410.7,
+        "peak_mb": 563.1,
+        "t": 53.1,
+        "label": "2026-09-22 08:08:53 [debug    ] product_stored                 key=concurrency:districts ttl=600"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Chikkamagaluru:MOTOR V"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Karnataka Railways:THE"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Dharwad:MOTOR VEHICLE "
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Bengaluru City:KARNATA"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Belagavi Dist:MOTOR VE"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Bengaluru Dist:MOTOR V"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Tumakuru:MOTOR VEHICLE"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Bagalkot:MOTOR VEHICLE"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Vijayapur:MOTOR VEHICL"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Belagavi City:MOTOR VE"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Udupi:MOTOR VEHICLE AC"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Davanagere:MOTOR VEHIC"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Shivamogga:MOTOR VEHIC"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Bidar:MOTOR VEHICLE AC"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Uttara Kannada:MOTOR V"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Mysuru City:MOTOR VEHI"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Hubballi Dharwad City:"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Ballari:KARNATAKA POLI"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Koppal:MOTOR VEHICLE A"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Kalaburagi City:MOTOR "
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Hassan:MOTOR VEHICLE A"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Mysuru Dist:MOTOR VEHI"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Chickballapura:MOTOR V"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Mangaluru City:MOTOR V"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Dakshina Kannada:MOTOR"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Chitradurga:MOTOR VEHI"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Kodagu:CASES OF HURT t"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Raichur:MOTOR VEHICLE "
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Haveri:MOTOR VEHICLE A"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Chamarajanagar:MISSING"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Gadag:MISSING PERSON t"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Mandya:MOTOR VEHICLE A"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Kalaburagi:RIOTS ttl=2"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Yadgir:MOTOR VEHICLE A"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Ramanagara:MOTOR VEHIC"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Kolar:MOTOR VEHICLE AC"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:K.G.F:MOTOR VEHICLE AC"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Vijayanagara:MOTOR VEH"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Rajajinagar:theft ttl="
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:CID:CYBER CRIME ttl=21"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Coastal Security Polic"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Jayanagar:assault ttl="
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Hebbal:theft ttl=21600"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:KR Puram:cheating_frau"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Malleshwaram:domestic_"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Banashankari:theft ttl"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Yeshwanthpur:vehicle_t"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Mysuru-Devaraja:vehicl"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Mysuru-Nazarbad:vehicl"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Mangaluru:theft ttl=21"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Gandhinagar:murder ttl"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Belagavi:cybercrime tt"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:ISD Bengaluru: CYBER C"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Whitefield:cybercrime "
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Indiranagar:vehicle_th"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:Hubballi:cybercrime tt"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:all ttl=21600"
+      },
+      {
+        "rss_mb": 576.2,
+        "private_mb": 1422.8,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "2026-09-22 08:08:56 [debug    ] product_stored                 key=warning_ledger:board:all ttl=21600"
+      },
+      {
+        "rss_mb": 580.8,
+        "private_mb": 1514.1,
+        "peak_mb": 585.4,
+        "t": 56.2,
+        "label": "\ud83c\udfaf Brain reranker ready"
+      },
+      {
+        "rss_mb": 581.3,
+        "private_mb": 1514.6,
+        "peak_mb": 585.4,
+        "t": 85.7,
+        "label": "2026-09-22 08:09:25 [debug    ] product_stored                 key=dataset:overview::: ttl=21600"
+      },
+      {
+        "rss_mb": 581.3,
+        "private_mb": 1514.6,
+        "peak_mb": 585.4,
+        "t": 85.7,
+        "label": "\ud83d\udcc7 Dataset overview cached \u2014 995,284 FIRs"
+      },
+      {
+        "rss_mb": 581.8,
+        "private_mb": 1515.1,
+        "peak_mb": 585.4,
+        "t": 91.3,
+        "label": "2026-09-22 08:09:31 [debug    ] product_stored                 key=dataset:summary::::::: ttl=21600"
+      },
+      {
+        "rss_mb": 581.8,
+        "private_mb": 1515.1,
+        "peak_mb": 585.4,
+        "t": 91.3,
+        "label": "\ud83d\udcc7 Dataset summary cached \u2014 1,000,000 FIRs"
+      },
+      {
+        "rss_mb": 581.8,
+        "private_mb": 1515.2,
+        "peak_mb": 585.4,
+        "t": 108.5,
+        "label": "2026-09-22 08:09:48 [debug    ] product_stored                 key=dataset:officer:v2::::: ttl=21600"
+      },
+      {
+        "rss_mb": 581.9,
+        "private_mb": 1515.1,
+        "peak_mb": 585.4,
+        "t": 108.5,
+        "label": "\ud83d\udcc7 Officer view cached \u2014 174,587 open investigations"
+      },
+      {
+        "rss_mb": 582.4,
+        "private_mb": 1515.6,
+        "peak_mb": 585.4,
+        "t": 115.8,
+        "label": "2026-09-22 08:09:56 [debug    ] product_stored                 key=dataset:cycles:v2:all ttl=21600"
+      },
+      {
+        "rss_mb": 582.4,
+        "private_mb": 1515.6,
+        "peak_mb": 585.4,
+        "t": 115.8,
+        "label": "\ud83d\udcca Dataset cycles cached \u2014 912,155 FIRs, 113 groups"
+      },
+      {
+        "rss_mb": 582.4,
+        "private_mb": 1515.6,
+        "peak_mb": 585.4,
+        "t": 117.0,
+        "label": "2026-09-22 08:09:57 [debug    ] product_stored                 key=dataset:cycles:v2:2016 ttl=21600"
+      },
+      {
+        "rss_mb": 582.6,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 118.2,
+        "label": "2026-09-22 08:09:58 [debug    ] product_stored                 key=dataset:cycles:v2:2017 ttl=21600"
+      },
+      {
+        "rss_mb": 582.6,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 119.4,
+        "label": "2026-09-22 08:09:59 [debug    ] product_stored                 key=dataset:cycles:v2:2018 ttl=21600"
+      },
+      {
+        "rss_mb": 582.6,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 120.4,
+        "label": "2026-09-22 08:10:00 [debug    ] product_stored                 key=dataset:cycles:v2:2019 ttl=21600"
+      },
+      {
+        "rss_mb": 582.7,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 121.4,
+        "label": "2026-09-22 08:10:01 [debug    ] product_stored                 key=dataset:cycles:v2:2020 ttl=21600"
+      },
+      {
+        "rss_mb": 582.7,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 122.5,
+        "label": "2026-09-22 08:10:02 [debug    ] product_stored                 key=dataset:cycles:v2:2021 ttl=21600"
+      },
+      {
+        "rss_mb": 582.7,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 123.5,
+        "label": "2026-09-22 08:10:03 [debug    ] product_stored                 key=dataset:cycles:v2:2022 ttl=21600"
+      },
+      {
+        "rss_mb": 582.7,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 124.9,
+        "label": "2026-09-22 08:10:05 [debug    ] product_stored                 key=dataset:cycles:v2:2023 ttl=21600"
+      },
+      {
+        "rss_mb": 582.7,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 125.7,
+        "label": "2026-09-22 08:10:05 [debug    ] product_stored                 key=dataset:cycles:v2:2024 ttl=21600"
+      },
+      {
+        "rss_mb": 582.7,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 126.4,
+        "label": "2026-09-22 08:10:06 [debug    ] product_stored                 key=dataset:cycles:v2:2025 ttl=21600"
+      },
+      {
+        "rss_mb": 582.6,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 127.2,
+        "label": "2026-09-22 08:10:07 [debug    ] product_stored                 key=dataset:cycles:v2:2026 ttl=21600"
+      },
+      {
+        "rss_mb": 582.6,
+        "private_mb": 1516.1,
+        "peak_mb": 585.4,
+        "t": 127.2,
+        "label": "\ud83d\udcca Crime-graph years cached \u2014 11 chips"
+      },
+      {
+        "rss_mb": 583.5,
+        "private_mb": 1517.1,
+        "peak_mb": 585.5,
+        "t": 128.6,
+        "label": "\ud83d\udd34 Gi* surface ready \u2014 56 zones"
+      },
+      {
+        "rss_mb": 583.5,
+        "private_mb": 1517.1,
+        "peak_mb": 585.5,
+        "t": 128.7,
+        "label": "\ud83d\uddfa\ufe0f  Forecast cube current"
+      },
+      {
+        "rss_mb": 583.5,
+        "private_mb": 1517.1,
+        "peak_mb": 585.5,
+        "t": 128.7,
+        "label": "\ud83d\udd2e Forecasts as of 2026-09-21 (72 models, 0% real history)"
+      },
+      {
+        "rss_mb": 583.5,
+        "private_mb": 1517.1,
+        "peak_mb": 585.5,
+        "t": 128.8,
+        "label": "\ud83d\udd2e Forecasts as of 2024-03-10 (72 models, 100% real history)"
+      },
+      {
+        "rss_mb": 641.7,
+        "private_mb": 1578.6,
+        "peak_mb": 641.7,
+        "t": 148.5,
+        "label": "2026-09-22 08:10:28 [debug    ] product_stored                 key=warning_ledger:alert:AL-6f5bde6406 ttl=8640"
+      },
+      {
+        "rss_mb": 643.1,
+        "private_mb": 1579.5,
+        "peak_mb": 643.1,
+        "t": 167.7,
+        "label": "2026-09-22 08:10:47 [debug    ] product_stored                 key=warning_ledger:alert:AL-477418d770 ttl=8640"
+      },
+      {
+        "rss_mb": 645.0,
+        "private_mb": 1594.8,
+        "peak_mb": 645.0,
+        "t": 182.9,
+        "label": "2026-09-22 08:11:03 [debug    ] product_stored                 key=warning_ledger:alert:AL-6e7eae736f ttl=8640"
+      },
+      {
+        "rss_mb": 645.0,
+        "private_mb": 1594.8,
+        "peak_mb": 645.0,
+        "t": 182.9,
+        "label": "2026-09-22 08:11:03 [debug    ] product_stored                 key=warning_ledger:alerts:latest ttl=86400"
+      },
+      {
+        "rss_mb": 645.0,
+        "private_mb": 1594.8,
+        "peak_mb": 645.0,
+        "t": 182.9,
+        "label": "2026-09-22 08:11:03 [info     ] agent_step                     agent=forecast input_digest=MAD-z multi-signal "
+      },
+      {
+        "rss_mb": 645.0,
+        "private_mb": 1594.8,
+        "peak_mb": 645.0,
+        "t": 182.9,
+        "label": "\ud83d\udea8 Forecast scan: 3 active alert(s)"
+      },
+      {
+        "rss_mb": 647.2,
+        "private_mb": 1597.2,
+        "peak_mb": 649.3,
+        "t": 188.7,
+        "label": "\u26a1 Query warm-up done in 5.8s"
+      },
+      {
+        "rss_mb": 647.2,
+        "private_mb": 1597.2,
+        "peak_mb": 649.3,
+        "t": 188.7,
+        "label": "\ud83e\udded Chat mode: Catalyst LLM (live)"
+      },
+      {
+        "rss_mb": 647.2,
+        "private_mb": 1597.2,
+        "peak_mb": 649.3,
+        "t": 196.8,
+        "label": "\ud83d\udd25 LLM warm-up OK (chat model) \u2014 8.2s"
+      },
+      {
+        "rss_mb": 647.2,
+        "private_mb": 1597.2,
+        "peak_mb": 649.3,
+        "t": 196.8,
+        "label": "2026-09-22 08:11:17 [info     ] fleet_registered_from_manifest agents=20"
+      },
+      {
+        "rss_mb": 647.2,
+        "private_mb": 1597.2,
+        "peak_mb": 649.3,
+        "t": 196.8,
+        "label": "\ud83c\udf9b\ufe0f  Orchestrator online"
+      },
+      {
+        "rss_mb": 647.3,
+        "private_mb": 1597.2,
+        "peak_mb": 649.3,
+        "t": 196.8,
+        "label": "\ud83d\udc41\ufe0f  Observability DB ready"
+      },
+      {
+        "rss_mb": 647.3,
+        "private_mb": 1597.2,
+        "peak_mb": 649.3,
+        "t": 196.8,
+        "label": "\ud83c\udf89 Background warmup completed successfully!"
+      },
+      {
+        "rss_mb": 634.1,
+        "private_mb": 1583.6,
+        "peak_mb": 649.3,
+        "t": 393.1,
+        "label": "warm-up returned"
+      }
+    ]
+  },
+  "verdict": {
+    "disk": {
+      "db_on_disk_mb": 1415.0,
+      "db_gz_mb": 83.5,
+      "packages_mb": 1117.7,
+      "models_mb": 174.9,
+      "code_mb": 12.3,
+      "total_mb": 2803.4
+    },
+    "budget_2gb": {
+      "disk": "OVER by 755 MB",
+      "ram": "PASS"
+    },
+    "appsail_default": {
+      "disk": "OVER by 2547 MB",
+      "ram": "OVER by 1072 MB"
+    }
+  }
+}

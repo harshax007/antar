@@ -1,0 +1,33 @@
+{
+  "name": "antar-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.11.1",
+    "3d-force-graph": "^1.80.0",
+    "animate.css": "^4.1.1",
+    "force-graph": "^1.51.4",
+    "framer-motion": "^12.42.2",
+    "globe.gl": "^2.46.1",
+    "hls.js": "^1.6.16",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.23.0",
+    "maplibre-gl": "^6.11.2",
+    "next": "^14.2.35",
+    "postcss": "^8.5.23",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-is": "^19.2.7",
+    "react-leaflet": "^4.2.1",
+    "recharts": "^3.9.1",
+    "topojson-client": "^3.1.0",
+    "vis-data": "^8.0.4",
+    "vis-network": "^10.1.0"
+  }
+}

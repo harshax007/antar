@@ -1,0 +1,9 @@
+{
+  "appsail": [
+    {
+      "name": "antar-api",
+      "source": ".",
+      "buildPath": "."
+    }
+  ]
+}

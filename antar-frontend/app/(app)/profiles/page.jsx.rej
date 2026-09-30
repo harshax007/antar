@@ -1,0 +1,51 @@
+diff a/antar-frontend/app/profiles/page.jsx b/antar-frontend/app/profiles/page.jsx	(rejected hunks)
+@@ -10,16 +10,23 @@ function riskColor(r) {
+   return r >= 60 ? "var(--alert)" : r >= 35 ? "var(--accent-brain)" : "var(--text-primary)";
+ }
+ 
+-function RiskBars({ factors }) {
++function RiskBars({ factors, attributions }) {
+   return (
+     <div className="bars">
+-      {FACTORS.map((k) => (
+-        <div className="bar-row" key={k}>
+-          <span className="cap">{k}</span>
+-          <span className="track"><span className="fill" style={{ width: `${(factors[k] || 0) * 100}%` }} /></span>
+-          <span className="n">{(factors[k] || 0).toFixed(2)}</span>
+-        </div>
+-      ))}
++      {FACTORS.map((k) => {
++        const val = factors[k] || 0;
++        const attrib = attributions?.[k] || 0;
++        return (
++          <div className="bar-row" key={k} style={{ gridTemplateColumns: "100px 1fr 40px 65px" }}>
++            <span className="cap">{k}</span>
++            <span className="track"><span className="fill" style={{ width: `${val * 100}%` }} /></span>
++            <span className="n">{val.toFixed(2)}</span>
++            <span className="contrib" style={{ color: "var(--primary)", fontSize: "11px", textAlign: "right" }}>
++              +{attrib.toFixed(1)} pts
++            </span>
++          </div>
++        );
++      })}
+     </div>
+   );
+ }
+@@ -90,7 +97,7 @@ export default function Profiles() {
+             <>
+               <h3>{prof.full_name}{prof.alias ? ` ΓÇö alias ${prof.alias}` : ""}</h3>
+               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+-                <Link href={`/network?suspect_id=${sel?.id}`} className="cite"
++                <Link href={`/network?suspect_id=${sel}`} className="cite"
+                       style={{ textDecoration: "none", cursor: "pointer", display: "inline-block" }}>
+                   Γ¢ô View in Network explorer
+                 </Link>
+@@ -123,7 +130,7 @@ export default function Profiles() {
+               </div>
+ 
+               <h3>Risk factors</h3>
+-              <RiskBars factors={prof.factors || {}} />
++              <RiskBars factors={prof.factors || {}} attributions={prof.risk_attributions || {}} />
+ 
+               <h3 style={{ marginTop: 18 }}>Modus operandi</h3>
+               <div style={{ fontSize: 13.5 }}>{prof.mo_summary}</div>

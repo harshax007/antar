@@ -1,0 +1,441 @@
+"use client";
+
+// Map forecast - "where is crime most likely next week, how sure are we, and why?"
+// (docs/MAP_FORECASTING_PLAN.md, Phase 5). Everything shown is read from /api/forecast/*;
+// every forecast number is Inferred (I), carries a range, and states its as-of date.
+//
+//   useForecast()   state + fetching, shared by the three pieces below
+//   ForecastLayer   markers inside the Leaflet map (stations statewide, beats in a district)
+//   ForecastPanel   right-rail panel: as-of chip, layers, controls, "where next", accuracy
+//   ForecastCard    one station or beat: range, reasons, 26 weeks, record, Propose patrol
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { CircleMarker, Tooltip } from "react-leaflet";
+import L from "leaflet";
+import { ShieldCheck, X, Info } from "lucide-react";
+import ProposeAction from "@/components/ProposeAction";
+import {
+  PILL_TO_CATEGORY, FORECAST_RAMP, forecastColor, markerRadius, policeDistrictsFor,
+  getForecast, unitShortName, prettyIso, rangeText,
+} from "@/lib/forecast";
+
+const T = {
+  title: ["Forecast", "ಮುನ್ಸೂಚನೆ"],
+  next7: ["next 7 days", "ಮುಂದಿನ 7 ದಿನ"],
+  next28: ["next 28 days", "ಮುಂದಿನ 28 ದಿನ"],
+  asOf: ["as of", "ದಿನಾಂಕದಂತೆ"],
+  inferred: ["Inferred", "ಅನುಮಾನಿತ"],
+  where: ["Where next", "ಮುಂದೆ ಎಲ್ಲಿ"],
+  stations: ["stations", "ಠಾಣೆಗಳು"],
+  beats: ["beats", "ಬೀಟ್‌ಗಳು"],
+  layers: ["Layers", "ಪದರಗಳು"],
+  lForecast: ["Forecast", "ಮುನ್ಸೂಚನೆ"],
+  lClusters: ["Gi* clusters", "Gi* ಗುಚ್ಛಗಳು"],
+  lFirs: ["Recent FIRs", "ಇತ್ತೀಚಿನ FIR"],
+  preparing: ["Forecast being prepared…", "ಮುನ್ಸೂಚನೆ ಸಿದ್ಧವಾಗುತ್ತಿದೆ…"],
+  thin: ["thin history", "ಕಡಿಮೆ ಇತಿಹಾಸ"],
+  propose: ["Propose patrol", "ಗಸ್ತು ಪ್ರಸ್ತಾಪಿಸಿ"],
+  why: ["Why", "ಏಕೆ"],
+  record: ["Track record", "ಹಿಂದಿನ ಸಾಧನೆ"],
+  heads: ["What gets reported here", "ಇಲ್ಲಿ ದಾಖಲಾಗುವ ಅಪರಾಧಗಳು"],
+  weeks26: ["Last 26 weeks · the week ahead", "ಕಳೆದ 26 ವಾರ · ಮುಂದಿನ ವಾರ"],
+  limits: ["Limits", "ಮಿತಿಗಳು"],
+  card: ["Model card", "ಮಾದರಿ ಕಾರ್ಡ್"],
+  noReasons: ["Close to its usual level - no reason moves it by 10% or more.",
+              "ಸಾಮಾನ್ಯ ಮಟ್ಟದ ಹತ್ತಿರ - ಯಾವ ಕಾರಣವೂ 10% ಕ್ಕಿಂತ ಹೆಚ್ಚು ಬದಲಿಸುವುದಿಲ್ಲ."],
+};
+const t = (k, kn) => T[k][kn ? 1 : 0];
+
+// ── state ────────────────────────────────────────────────────────────────────
+
+export function useForecast({ crimeType, gadmDistrict, initial = {} }) {
+  const [on, setOn] = useState(true);
+  const [clustersOn, setClustersOn] = useState(true);
+  const [firsOn, setFirsOn] = useState(false);
+  const [horizon, setHorizon] = useState(initial.horizon === 28 ? 28 : 7);
+  const [category, setCategory] = useState(initial.category || PILL_TO_CATEGORY[crimeType] || "ALL");
+  const [status, setStatus] = useState(null);
+  const [layer, setLayer] = useState(null);
+  const [hot, setHot] = useState(null);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(initial.unit || null);     // unit name
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [firPoints, setFirPoints] = useState([]);
+  const [tick, setTick] = useState(0);                // retry while the backend prepares
+
+  // the map's crime pill drives the forecast category (the panel says when it widens);
+  // a deep link from chat (?fc=) wins on first render
+  const firstPill = useRef(true);
+  useEffect(() => {
+    if (firstPill.current && initial.category) { firstPill.current = false; return; }
+    firstPill.current = false;
+    setCategory(PILL_TO_CATEGORY[crimeType] || "ALL");
+  }, [crimeType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    getForecast("/status").then(setStatus).catch(() => setStatus(null));
+  }, [tick]);
+
+  const districts = useMemo(
+    () => policeDistrictsFor(gadmDistrict, status?.districts), [gadmDistrict, status]);
+  const unitType = gadmDistrict && districts ? "beat" : "station";
+
+  useEffect(() => {
+    if (!on) return;
+    const ctrl = new AbortController();
+    const params = { horizon, category, unit: unitType, district: districts || undefined };
+    setError(null);
+    Promise.all([
+      getForecast("/layer", params, ctrl.signal),
+      getForecast("/hotspots", { ...params, limit: 10 }, ctrl.signal),
+    ]).then(([lay, hs]) => { setLayer(lay); setHot(hs); })
+      .catch((e) => {
+        if (e.name === "AbortError") return;
+        setError(e);
+        if (e.status === 503) setTimeout(() => setTick((n) => n + 1), 8000);
+      });
+    return () => ctrl.abort();
+  }, [on, horizon, category, unitType, districts, tick]);
+
+  // Recent FIRs: the 3 months up to the shared as-of date, clean coordinates only
+  useEffect(() => {
+    if (!firsOn || firPoints.length) return;
+    const API = process.env.NEXT_PUBLIC_API_URL || "";
+    fetch(`${API}/api/map/heat?period=last_3_months`).then((r) => r.json())
+      .then((d) => setFirPoints(d.points || [])).catch(() => {});
+  }, [firsOn, firPoints.length]);
+
+  const openUnit = useCallback((unit) => { setSelected(unit); }, []);
+  useEffect(() => {
+    if (!selected) { setDetail(null); return; }
+    const ctrl = new AbortController();
+    setDetailLoading(true);
+    getForecast(`/unit/${encodeURIComponent(selected)}`, { category }, ctrl.signal)
+      .then(setDetail).catch((e) => { if (e.name !== "AbortError") setDetail({ error: e.message }); })
+      .finally(() => setDetailLoading(false));
+    return () => ctrl.abort();
+  }, [selected, category]);
+
+  return {
+    on, setOn, clustersOn, setClustersOn, firsOn, setFirsOn, horizon, setHorizon,
+    category, setCategory, status, layer, hot, error, unitType, districts,
+    selected, openUnit, close: () => setSelected(null), detail, detailLoading, firPoints,
+  };
+}
+
+// ── map layer ────────────────────────────────────────────────────────────────
+
+// One canvas renderer for every forecast marker: ~1,100 stations (or a district's beats)
+// as SVG nodes would make panning sluggish. It must be a creation option - react-leaflet
+// applies pathOptions later through setStyle, where a renderer is ignored.
+const canvas = typeof window !== "undefined" ? L.canvas({ padding: 0.4 }) : undefined;
+
+// Visual weight by quantile class: the quiet 40% recede to small faint dots so the
+// busiest units stand out; only the top two classes get an outline.
+const CLASS_OPACITY = [0.14, 0.22, 0.42, 0.62, 0.82];
+
+export function ForecastLayer({ fc, kn, contains }) {
+  const lay = fc.layer;
+  const f = useMemo(() => {
+    const idx = Object.fromEntries((lay?.fields || []).map((k, i) => [k, i]));
+    return (lay?.units || []).map((u) => ({
+      unit: u[idx.unit], lat: u[idx.lat], lon: u[idx.lon], expected: u[idx.expected],
+      lo: u[idx.lo90], hi: u[idx.hi90], cls: u[idx.class], thin: u[idx.thin],
+    }))
+      .filter((u) => !contains || contains(u.lat, u.lon))
+      .sort((a, b) => a.expected - b.expected);        // big ones drawn last, on top
+  }, [lay, contains]);
+  return (
+    <>
+      {fc.firsOn && fc.firPoints.map((p, i) => (
+        <CircleMarker key={"fp" + i} center={[p.lat, p.lon]} radius={1.4} interactive={false}
+          renderer={canvas} pathOptions={{ stroke: false, fillColor: "#9FB3C8", fillOpacity: 0.35 }} />
+      ))}
+      {fc.on && f.map((u) => (
+        <CircleMarker key={u.unit} center={[u.lat, u.lon]}
+          radius={u.cls <= 1 && fc.selected !== u.unit ? 2.4 : markerRadius(u.expected, lay.unit_type)}
+          eventHandlers={{ click: () => fc.openUnit(u.unit) }}
+          renderer={canvas}
+          pathOptions={{
+            color: fc.selected === u.unit ? "#FFE55C" : forecastColor(u.cls),
+            stroke: fc.selected === u.unit || u.cls >= 3 || u.thin,
+            weight: fc.selected === u.unit ? 2.5 : 1,
+            opacity: u.thin ? 0.5 : 0.9,
+            dashArray: u.thin ? "2 3" : undefined,
+            fillColor: forecastColor(u.cls),
+            fillOpacity: u.thin ? 0.06 : CLASS_OPACITY[u.cls] ?? 0.4,
+          }}>
+          <Tooltip className="mx-hs fx-tip" sticky>
+            <b>{unitShortName(u.unit)}</b>
+            {lay.unit_type === "beat" && <span> · {u.unit.split(" | ")[0]}</span>}
+            <br />
+            {u.thin ? t("thin", kn) : <>{u.expected.toFixed(1)} {kn ? "ನಿರೀಕ್ಷಿತ" : "expected"} · 90%: {rangeText(u.lo, u.hi)}</>}
+            <span className="fx-i">I</span>
+          </Tooltip>
+        </CircleMarker>
+      ))}
+    </>
+  );
+}
+
+// ── panel ────────────────────────────────────────────────────────────────────
+
+export function AsOfChip({ fc, kn }) {
+  const a = fc.hot?.as_of || fc.layer?.as_of;
+  if (!a) return null;
+  const real = a.real_share;
+  return (
+    <div className="fx-chip" title={a.basis}>
+      <span className="fx-i">I</span>
+      <span>{t("title", kn)} {t("asOf", kn)} <b>{prettyIso(a.as_of)}</b> · {fc.horizon === 7 ? t("next7", kn) : t("next28", kn)}</span>
+      {real != null && real < 0.99 && (
+        <span className="fx-basis">{Math.round(real * 100)}% {kn ? "ನೈಜ ಇತಿಹಾಸ" : "real history"}</span>
+      )}
+    </div>
+  );
+}
+
+export function ForecastPanel({ fc, kn, crimeLabel, onModelCard }) {
+  const cats = fc.status?.categories || [];
+  const hs = fc.hot;
+  const widened = hs && crimeLabel && fc.category !== "ALL"
+    && !String(hs.category_label).toLowerCase().includes(String(crimeLabel).toLowerCase());
+  const acc = hs?.accuracy;
+  const refusal = fc.error?.status === 422 ? fc.error.detail : null;
+  return (
+    <section className="fx-panel mx-panel" aria-label={kn ? "ಮುನ್ಸೂಚನೆ" : "Forecast"}>
+      <header>
+        <b>{t("where", kn)}</b>
+        <span className="fx-sub">{hs ? `${hs.scope} · ${fc.unitType === "beat" ? t("beats", kn) : t("stations", kn)}` : ""}</span>
+      </header>
+      <AsOfChip fc={fc} kn={kn} />
+
+      <div className="fx-controls">
+        <div className="fx-seg" role="radiogroup" aria-label={kn ? "ಅವಧಿ" : "Horizon"}>
+          {[7, 28].map((h) => (
+            <button key={h} role="radio" aria-checked={fc.horizon === h} className={fc.horizon === h ? "on" : ""}
+                    onClick={() => fc.setHorizon(h)}>{h} {kn ? "ದಿನ" : "days"}</button>
+          ))}
+        </div>
+        <select value={fc.category} onChange={(e) => fc.setCategory(e.target.value)} aria-label={kn ? "ವರ್ಗ" : "Category"}>
+          {cats.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+        </select>
+      </div>
+      {widened && (
+        <p className="fx-note">{kn
+          ? `ಮುನ್ಸೂಚನೆ ವರ್ಗಗಳ ಮಟ್ಟದಲ್ಲಿ: "${crimeLabel}" → ${hs.category_label}.`
+          : <>The forecast works on categories: “{crimeLabel}” is shown as <b>{hs.category_label}</b>, which includes it.</>}</p>
+      )}
+
+      <div className="fx-layers" role="group" aria-label={t("layers", kn)}>
+        {[["on", "setOn", "lForecast"], ["clustersOn", "setClustersOn", "lClusters"], ["firsOn", "setFirsOn", "lFirs"]].map(([k, set, label]) => (
+          <label key={k}><input type="checkbox" checked={fc[k]} onChange={(e) => fc[set](e.target.checked)} /> {t(label, kn)}</label>
+        ))}
+      </div>
+
+      {fc.error?.status === 503 && <p className="fx-muted">{t("preparing", kn)}</p>}
+      {refusal && (
+        <p className="fx-note">{refusal.message}{refusal.options?.length ? ` ${kn ? "ಆಯ್ಕೆಗಳು" : "Try"}: ${refusal.options.join(", ")}` : ""}</p>
+      )}
+
+      {fc.on && hs && (
+        <>
+          <ol className="fx-list">
+            {hs.items.map((it) => (
+              <li key={it.unit}>
+                <button className={fc.selected === it.unit ? "on" : ""} onClick={() => fc.openUnit(it.unit)}>
+                  <span className="r">{it.rank}</span>
+                  <span className="n">
+                    <b>{it.name}</b>
+                    <em>{it.unit_type === "beat" ? it.station : it.district}</em>
+                  </span>
+                  <span className="v">
+                    {it.history === "thin" ? <em>{t("thin", kn)}</em>
+                      : <>{rangeText(it.band80.lo, it.band80.hi)}<em>{kn ? "ಸಂಭವನೀಯ" : "likely"}</em></>}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className="fx-legend" aria-hidden="true">
+            <span>{kn ? "ಕಡಿಮೆ" : "fewer"}</span>
+            {FORECAST_RAMP.map((c) => <i key={c} style={{ background: c }} />)}
+            <span>{kn ? "ಹೆಚ್ಚು ನಿರೀಕ್ಷಿತ FIR" : "more expected FIRs"}</span>
+          </div>
+        </>
+      )}
+
+      {acc && (
+        <button className="fx-acc" onClick={onModelCard} title={t("card", kn)}>
+          <Info size={12} aria-hidden="true" />
+          <span>{kn
+            ? `ಹಿಂದಿನ ಪರೀಕ್ಷೆ (${acc.window}, ನೈಜ ದಾಖಲೆ): ಮೇಲಿನ 5% ${fc.unitType === "beat" ? "ಬೀಟ್‌ಗಳು" : "ಠಾಣೆಗಳು"} ಮುಂದಿನ ${fc.horizon} ದಿನಗಳ ${Math.round(acc.top5_share_caught * 100)}% FIR ಹಿಡಿದವು.`
+            : <>Back-tested on {acc.window} (real record): the top 5% of {fc.unitType}s caught <b>{Math.round(acc.top5_share_caught * 100)}%</b> of the next {fc.horizon} days’ FIRs (last-4-weeks hotspots: {Math.round(acc.top5_share_caught_last4 * 100)}%){acc.pai5 ? <> · PAI {acc.pai5.toFixed(1)}</> : null}.</>}
+          </span>
+          <u>{t("card", kn)} ↗</u>
+        </button>
+      )}
+    </section>
+  );
+}
+
+// ── one unit ─────────────────────────────────────────────────────────────────
+
+function Weeks({ history, ahead }) {
+  const W = 262, H = 64, pad = 4;
+  const all = [...history.map((h) => h.firs), ...(ahead || []).map((a) => a.hi90)];
+  const max = Math.max(1, ...all);
+  const n = history.length + (ahead?.length || 0);
+  const bw = (W - pad * 2) / n;
+  const y = (v) => H - pad - (v / max) * (H - pad * 2);
+  return (
+    <svg className="fx-weeks" viewBox={`0 0 ${W} ${H}`} role="img"
+         aria-label={`Weekly FIRs over ${history.length} weeks, then the forecast week`}>
+      {history.map((h, i) => (
+        <rect key={h.week_start} x={pad + i * bw + 0.5} y={y(h.firs)} width={Math.max(bw - 1, 1)}
+              height={H - pad - y(h.firs)} className="bar"><title>{h.week_start}: {h.firs}</title></rect>
+      ))}
+      {(ahead || []).map((a, j) => {
+        const x = pad + (history.length + j) * bw + bw / 2;
+        return (
+          <g key={a.week_start} className="ahead">
+            <line x1={x} x2={x} y1={y(a.hi90)} y2={y(a.lo90)} className="b90" />
+            <line x1={x} x2={x} y1={y(a.hi80)} y2={y(a.lo80)} className="b80" />
+            <circle cx={x} cy={y(a.expected)} r="2.6" />
+            <title>Week of {a.week_start}: expected {a.expected}, 80% {a.lo80}–{a.hi80}, 90% {a.lo90}–{a.hi90}</title>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+export function ForecastCard({ fc, kn, sessionRole }) {
+  const [propose, setPropose] = useState(false);
+  const d = fc.detail;
+  const panelRef = useRef(null);
+  useEffect(() => { if (d && !d.error) panelRef.current?.focus(); }, [d]);
+  if (!fc.selected) return null;
+  const f = d?.forecast?.[String(fc.horizon)] || d?.forecast?.["7"];
+  const canPropose = sessionRole && sessionRole !== "Approver";
+
+  const evidence = f ? [
+    { label: kn ? "ಮುನ್ಸೂಚನೆ (I)" : "Forecast (Inferred)", value: f.summary },
+    { label: kn ? "ದಿನಾಂಕದಂತೆ" : "As of", value: `${d.as_of.as_of} · ${d.as_of.basis}` },
+    ...f.drivers.slice(0, 3).map((r) => ({ label: `${kn ? "ಕಾರಣ" : "Reason"} ${r.effect}`, value: r.text })),
+    d.track_record && { label: t("record", kn), value: d.track_record.text },
+    d.accuracy && { label: kn ? "ನಿಖರತೆ" : "Accuracy", value: d.accuracy.text },
+  ].filter(Boolean) : [];
+
+  return (
+    <section ref={panelRef} tabIndex={-1} className="fx-card mx-panel" aria-label={d?.name || fc.selected}
+             aria-busy={fc.detailLoading}>
+      <header>
+        <div>
+          <b>{d?.name || unitShortName(fc.selected)}</b>
+          <em>{d ? [d.unit_type === "beat" ? d.station : null, d.district].filter(Boolean).join(" · ") : "…"}</em>
+        </div>
+        <button className="fx-back" onClick={fc.close} aria-label={kn ? "ಪಟ್ಟಿಗೆ ಹಿಂದಿರುಗಿ" : "Back to Where next"}>
+          ‹ {kn ? "ಪಟ್ಟಿ" : "Where next"}
+        </button>
+      </header>
+
+      {d?.error && <p className="fx-note">{d.error}</p>}
+      {!d && <p className="fx-muted">…</p>}
+
+      {f && (
+        <>
+          <div className="fx-range">
+            <span className="fx-i">I</span>
+            {f.history === "thin" ? <p>{f.summary}</p> : (
+              <>
+                <div className="big">{rangeText(f.band80.lo, f.band80.hi)}<small> {d.category === "ALL" ? "FIRs" : d.category_label}</small></div>
+                <p>{kn ? "ಸಂಭವನೀಯ" : "likely"} · {kn ? "ಬಹಳ ಸಂಭವನೀಯ" : "very likely"} {rangeText(f.band90.lo, f.band90.hi)} · {fc.horizon === 7 ? t("next7", kn) : t("next28", kn)}
+                  {f.usual > 0 && <> · {kn ? "ಸಾಮಾನ್ಯವಾಗಿ" : "usually"} {f.usual.toFixed(1)}</>}</p>
+              </>
+            )}
+          </div>
+
+          <h6>{t("why", kn)}</h6>
+          {f.drivers.length ? (
+            <ul className="fx-why">
+              {f.drivers.slice(0, 4).map((r) => (
+                <li key={r.key} className={r.factor > 1 ? "up" : "down"}><b>{r.effect}</b><span>{r.text}</span></li>
+              ))}
+            </ul>
+          ) : <p className="fx-muted">{t("noReasons", kn)}</p>}
+
+          <h6>{t("weeks26", kn)}</h6>
+          <Weeks history={d.history} ahead={d.ahead} />
+
+          {d.top_crime_heads?.length > 0 && (
+            <>
+              <h6>{t("heads", kn)}</h6>
+              <ul className="fx-heads">
+                {d.top_crime_heads.map((h) => <li key={h.crime_head}><span>{h.crime_head}</span><b>{h.firs}</b></li>)}
+              </ul>
+            </>
+          )}
+
+          {d.track_record && (<><h6>{t("record", kn)}</h6><p className="fx-small">{d.track_record.text}</p></>)}
+
+          <p className="fx-small fx-basis-line">{d.as_of.basis} {d.limits?.[0]}</p>
+
+          {canPropose && (
+            <button className="mx-hitl-btn fx-propose" onClick={() => setPropose(true)}
+                    title={kn ? "ಮೇಲ್ವಿಚಾರಕರ ಅನುಮೋದನೆ ಅಗತ್ಯ" : "Requires supervising officer approval"}>
+              <ShieldCheck size={13} aria-hidden="true" /> {t("propose", kn)}
+            </button>
+          )}
+          <ProposeAction open={propose} onClose={() => setPropose(false)} type="patrol_redeployment" kn={kn}
+            defaults={{
+              zone: d.unit, crime_focus: String(d.category_label).toLowerCase(),
+              justification: `Forecast (Inferred), ${d.as_of.as_of}: ${f.summary}${f.drivers[0] ? ` ${f.drivers[0].text}.` : ""}`,
+            }}
+            evidence={evidence} />
+        </>
+      )}
+    </section>
+  );
+}
+
+// ── model card ───────────────────────────────────────────────────────────────
+
+export function ModelCardModal({ open, onClose, kn }) {
+  const [card, setCard] = useState(null);
+  useEffect(() => {
+    if (!open || card) return;
+    const API = process.env.NEXT_PUBLIC_API_URL || "";
+    fetch(`${API}/api/predict/model-card`).then((r) => r.json()).then(setCard).catch(() => setCard({ error: true }));
+  }, [open, card]);
+  useEffect(() => {
+    if (!open) return;
+    const k = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [open, onClose]);
+  if (!open || typeof document === "undefined") return null;
+  return createPortal(
+    <div className="pa-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="fx-modelcard mx-panel" role="dialog" aria-modal="true" aria-label={t("card", kn)}>
+        <button className="x" onClick={onClose} aria-label="Close"><X size={16} /></button>
+        {!card ? <p className="fx-muted">…</p> : card.error ? <p className="fx-note">Model card unavailable.</p> : (
+          <>
+            <b>{card.model_name}</b>
+            <span className="ty">{card.type}</span>
+            <h6>{kn ? "ಮೌಲ್ಯಮಾಪನ" : "How well it works"}</h6>
+            <ul>{card.evaluation.map((e, i) => <li key={i}>{e}</li>)}</ul>
+            <h6>{kn ? "ವಿನ್ಯಾಸ" : "How it works"}</h6>
+            <p>{card.architecture}</p>
+            <h6>{kn ? "ಉದ್ದೇಶಿತ ಬಳಕೆ" : "Intended use"}</h6>
+            <p>{card.intended_use}</p>
+            <h6>{kn ? "ಮಿತಿಗಳು ಮತ್ತು ಪಕ್ಷಪಾತ" : "Limits and bias"}</h6>
+            <ul>{card.bias_disclosure.map((b, i) => <li key={i}>{b}</li>)}</ul>
+            <p className="prov">{card.data_provenance}</p>
+          </>
+        )}
+      </div>
+    </div>, document.body);
+}

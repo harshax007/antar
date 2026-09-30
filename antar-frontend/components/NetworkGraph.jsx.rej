@@ -1,0 +1,44 @@
+diff a/antar-frontend/components/NetworkGraph.jsx b/antar-frontend/components/NetworkGraph.jsx	(rejected hunks)
+@@ -21,7 +21,7 @@ export default function NetworkGraph({ data }) {
+         id: n.id,
+         label: n.label + (n.alias ? `\n┬½${n.alias}┬╗` : ""),
+         shape: n.type === "seed" ? "star" : "dot",
+-        size: n.type === "seed" ? 28 : 13 + (n.risk || 0) / 12,
++        size: n.type === "seed" ? 30 : 12 + (n.centrality || 0.0) * 160,
+         borderWidth: n.cross_case ? 3 : 1,
+         color:
+           n.type === "seed"
+@@ -30,7 +30,7 @@ export default function NetworkGraph({ data }) {
+             ? { background: "#3a2a08", border: AMBER }
+             : { background: "#16233f", border: "#33456e" },
+         font: { color: "#F2F5FA", size: 13, multi: true },
+-        title: `${n.label}${n.zone ? " ┬╖ " + n.zone : ""} ┬╖ risk ${n.risk}`,
++        title: `${n.label}${n.zone ? " ┬╖ " + n.zone : ""} ┬╖ PageRank ${n.centrality || 0.0} ┬╖ risk ${n.risk}`,
+       }));
+ 
+       const edges = data.edges.map((e) => ({
+@@ -44,9 +44,23 @@ export default function NetworkGraph({ data }) {
+         smooth: { type: "continuous" },
+       }));
+ 
++      // Add Jaccard predicted link edges dynamically as dashed cyan lines
++      const predictedEdges = (data.predicted_links || []).map((p) => ({
++        from: p.a,
++        to: p.b,
++        label: `predicted (${Math.round(p.probability * 100)}%)`,
++        dashes: [4, 4],
++        width: 1.5,
++        color: { color: "rgba(0, 240, 255, 0.4)" }, // Cyan primary tint
++        font: { color: "rgba(0, 240, 255, 0.7)", size: 9, strokeWidth: 0 },
++        smooth: { type: "continuous" },
++      }));
++
++      const allEdges = [...edges, ...predictedEdges];
++
+       network = new vis.Network(
+         ref.current,
+-        { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) },
++        { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(allEdges) },
+         {
+           physics: { stabilization: true, barnesHut: { springLength: 130, gravitationalConstant: -6000 } },
+           interaction: { hover: true, tooltipDelay: 120 },

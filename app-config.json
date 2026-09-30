@@ -1,0 +1,15 @@
+{
+  "app_name": "antar-api",
+  "platform": "python311",
+  "command": "python3 -m uvicorn main:app --host 0.0.0.0 --port $X_ZOHO_CATALYST_LISTEN_PORT",
+  "buildPath": "./",
+  "stack": "python311",
+  "memory": 2048,
+  "env_variables": {
+    "ANTAR_DB": "main.db",
+    "HF_HOME": "/app/.hf",
+    "TOKENIZERS_PARALLELISM": "false",
+    "OMP_NUM_THREADS": "1",
+    "BRAIN_EMBEDDING_MODEL": "BAAI/bge-small-en-v1.5"
+  }
+}

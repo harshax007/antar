@@ -1,0 +1,61 @@
+diff a/antar-frontend/components/MapView.jsx b/antar-frontend/components/MapView.jsx	(rejected hunks)
+@@ -1,7 +1,7 @@
+ "use client";
+ 
+ import { useEffect, useState } from "react";
+-import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup } from "react-leaflet";
++import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, GeoJSON } from "react-leaflet";
+ import "leaflet/dist/leaflet.css";
+ 
+ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+@@ -9,6 +9,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+ export default function MapView({ crimeType = "" }) {
+   const [clusters, setClusters] = useState([]);
+   const [note, setNote] = useState("");
++  const [contours, setContours] = useState(null);
+ 
+   useEffect(() => {
+     const q = crimeType ? `?crime_type=${crimeType}` : "";
+@@ -16,6 +17,11 @@ export default function MapView({ crimeType = "" }) {
+       .then((r) => r.json())
+       .then((d) => { setClusters(d.clusters || []); setNote(d.seasonal_note || ""); })
+       .catch(() => {});
++      
++    fetch(`${API}/api/map/predicted${q}`)
++      .then((r) => r.json())
++      .then((d) => { setContours(d.contours || null); })
++      .catch(() => {});
+   }, [crimeType]);
+ 
+   const geo = clusters.filter((c) => c.lat != null && c.lon != null);
+@@ -30,6 +36,30 @@ export default function MapView({ crimeType = "" }) {
+             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+             attribution='&copy; OpenStreetMap &copy; CARTO'
+           />
++          {contours && (
++            <GeoJSON
++              data={contours}
++              style={(feature) => ({
++                color: feature.properties?.color || "#F97316",
++                weight: 1.5,
++                fillColor: feature.properties?.color || "#F97316",
++                fillOpacity: feature.properties?.fillOpacity || 0.2
++              })}
++              onEachFeature={(feature, layer) => {
++                const props = feature.properties || {};
++                layer.bindPopup(
++                  `<div style="color: #1e293b; font-family: sans-serif; font-size: 12px; line-height: 1.4;">` +
++                  `<strong style="font-size: 13px; color: ${props.color || '#ef4444'};">` +
++                  `≡ƒöÑ Spatiotemporal Hotspot Area (${props.risk} Risk)</strong><br/>` +
++                  `<hr style="margin: 6px 0; border: none; border-top: 1px solid #e2e8f0;" />` +
++                  `ΓÇó Peak Hours: <b>${props.peak_time_of_day}</b><br/>` +
++                  `ΓÇó Peak Days: <b>${props.peak_day_of_week}</b><br/>` +
++                  `ΓÇó Incident Count: <b>${props.incident_count}</b>` +
++                  `</div>`
++                );
++              }}
++            />
++          )}
+           {geo.map((c, i) => {
+             const t = c.weight / max;
+             return (
