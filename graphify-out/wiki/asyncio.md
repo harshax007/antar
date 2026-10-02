@@ -40,7 +40,7 @@
 - [semantic_recall](semantic_recall.md) (2 shared connections)
 - [_answer_confidence](_answer_confidence.md) (2 shared connections)
 - [zcql_local.py](zcql_local.py.md) (1 shared connections)
-- [devils_advocate_api.py](devils_advocate_api.py.md) (1 shared connections)
+- [advocate_agent_api.py](advocate_agent_api.py.md) (1 shared connections)
 - [hitl_api.py](hitl_api.py.md) (1 shared connections)
 
 ## Source Files

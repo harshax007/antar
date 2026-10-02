@@ -106,7 +106,7 @@ def _answer_html(text: str) -> str:
 
     Every other part of Antar fights to keep that label attached to its claim — synthesis
     tags each line with it, the API carries it, the Brain tags corpus hits `D`, and
-    `devils_advocate` gates the Inferred -> Known transition. The printable report is the
+    `advocate_agent` gates the Inferred -> Known transition. The printable report is the
     one artefact an officer signs and hands to a court, which makes it the place the class
     matters MOST, and it was the one place the class was thrown away: a reader of the old
     PDF could not tell a row-level fact from a scored guess.

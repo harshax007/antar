@@ -386,12 +386,12 @@ def _synthesize(base: str, results: dict, claims: list[dict], lang: str = "en") 
         for d_item in res_dossier.get("derived_facts", [])[:3]:
             parts.append(f"[COMPUTED] {d_item['claim']}")
 
-        # An [INFERRED] line is a scored guess. Where the Devil's Advocate has priced its
+        # An [INFERRED] line is a scored guess. Where the Advocate Agent has priced its
         # signals against their base rates, the verdict rides WITH the claim — printing
         # the guess here and the rebuttal further down would let the officer read one and
         # skip the other, which is the exact failure the adversarial layer exists to stop.
         verdicts = {c.get("hypothesis_id"): c
-                    for c in (results.get("devils_advocate") or {}).get("challenges", [])}
+                    for c in (results.get("advocate_agent") or {}).get("challenges", [])}
         for i_item in res_dossier.get("inferred_hypotheses", [])[:3]:
             line = f"[INFERRED] Inferred: {i_item['claim']}"
             ch = verdicts.get(i_item.get("id"))
@@ -408,7 +408,7 @@ def _synthesize(base: str, results: dict, claims: list[dict], lang: str = "en") 
         for u_item in res_dossier.get("unknown_gaps", [])[:3]:
             parts.append(f"[GAP] To collect: {u_item['what_is_missing']} Action: {u_item['collect_action']}")
 
-        for defect in (results.get("devils_advocate") or {}).get("systemic_defects", [])[:2]:
+        for defect in (results.get("advocate_agent") or {}).get("systemic_defects", [])[:2]:
             parts.append(f"[DATA DEFECT] {defect}")
     # (A trailing "Data-Verified against official FIR registry records." line used to be
     # appended here. Provenance is shown by the chain-of-custody strip under every answer;

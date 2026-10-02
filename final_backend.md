@@ -45,7 +45,7 @@ code — the roadmap in §6 is about what each still lacks.
 | | Promise | What exists today | The honest gap |
 |---|---|---|---|
 | **Think** | Ask in English or Kannada, get an answer that is *from the record* or an explicit refusal | T1–T23 deterministic templates, registry-derived vocabulary, resolve-or-refuse, constitution enforced in code (`app/core/antar_identity.py`), **golden suite 35/35** | ~~No durable case file~~ — **closed 2026-09-25** (P1-3): `SqliteSaver`, thread survives a real process exit |
-| **Connect** | Link cases, suspects, MOs, money and places, and say *why* they are linked | Hybrid BM25 + dense retrieval fused by **RRF** (`hybrid_index.py`), cross-encoder rerank, MMR, Adamic-Adar link prediction, evidence ledger, devil's-advocate base-rate audit | ~~the Brain holds 3 rows locally~~ (P1-2: **100,000 FIRs, ~110 ms**); ~~`brain` and `osint` have no graph node~~ (**closed 2026-09-25**, P1-4). Remaining: entity resolution is still a **heuristic** (Jaro-Winkler + Soundex, hard 0.82 cut-off) with no calibrated probability — that is P2-2 |
+| **Connect** | Link cases, suspects, MOs, money and places, and say *why* they are linked | Hybrid BM25 + dense retrieval fused by **RRF** (`hybrid_index.py`), cross-encoder rerank, MMR, Adamic-Adar link prediction, evidence ledger, advocate-agent base-rate audit | ~~the Brain holds 3 rows locally~~ (P1-2: **100,000 FIRs, ~110 ms**); ~~`brain` and `osint` have no graph node~~ (**closed 2026-09-25**, P1-4). Remaining: entity resolution is still a **heuristic** (Jaro-Winkler + Soundex, hard 0.82 cut-off) with no calibrated probability — that is P2-2 |
 | **Anticipate** | Where is crime most likely next week, how sure are we, and why | Poisson GLM + split-conformal bands + Gi\*, rolling back-test, **PAI 14.2, top-5% of beats catch 40.4%**, model card generated from code | Near-repeat was the best-evidenced candidate (§5.2). **Measured and rejected** 2026-09-23: 0 of 60 metrics moved, because weekly counts over beats cannot express a day-and-metre kernel. A real triggering term needs event-level times — a data question before a model one |
 
 "Industry ready" for an Indian police deployment means four things beyond features, and
@@ -341,7 +341,7 @@ and behaviour intact.
 | Vigil, Hypothesis | `/api/vigil`, `/api` | Unaffected |
 | Orchestrator Ops | `/api/orchestrator` | Unaffected |
 | Encrypted Sessions, Feedback, Translate, Jobs | `/api/session`, `/api/feedback`, `/api/translate`, `/api/jobs` | Unaffected |
-| Forensic, HITL, Devil's Advocate, Workspace | — | Unaffected. HITL stays out of the MCP surface (P2-3) |
+| Forensic, HITL, Advocate Agent, Workspace | — | Unaffected. HITL stays out of the MCP surface (P2-3) |
 | Observability, SDAR | `/api/obs` | Additive — store relocated, directory now created on connect |
 
 **0 routers removed · 0 features removed.**

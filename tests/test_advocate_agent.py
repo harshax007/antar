@@ -1,5 +1,5 @@
 """
-Antar — Devil's Advocate tests
+Antar — Advocate Agent tests
 ==============================
 The point of this agent is to be RIGHT about weak evidence, so the tests are built
 around hand-checkable arithmetic rather than snapshots. Every expected number here can
@@ -15,7 +15,7 @@ import math
 
 import pytest
 
-from app.agents import devils_advocate as da
+from app.agents import advocate_agent as da
 
 
 # ── synthetic world: exact counts, so every LR is checkable by hand ───────────
@@ -291,7 +291,7 @@ def test_manifest_declares_this_agent():
     """AGENTS.md is executable — a new agent that skips it is a build failure."""
     from app.agents import manifest
 
-    a = manifest.reload().agents.get("devils_advocate")
-    assert a, "devils_advocate is not declared in AGENTS.md"
-    assert a.module.startswith("app/agents/devils_advocate.py")
+    a = manifest.reload().agents.get("advocate_agent")
+    assert a, "advocate_agent is not declared in AGENTS.md"
+    assert a.module.startswith("app/agents/advocate_agent.py")
     assert "no_llm" in a.guardrails

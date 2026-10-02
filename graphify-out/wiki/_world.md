@@ -34,7 +34,7 @@
 
 ### imports
 - product_store.py `EXTRACTED`
-- [devils_advocate.py](devils_advocate.py.md) `EXTRACTED`
+- [advocate_agent.py](advocate_agent.py.md) `EXTRACTED`
 - test_hypothesis_gate.py `EXTRACTED`
 - [profile_agent.py](profile_agent.py.md) `EXTRACTED`
 - [pattern_predict.py](pattern_predict.py.md) `EXTRACTED`

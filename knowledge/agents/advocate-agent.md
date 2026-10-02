@@ -1,6 +1,6 @@
 ---
 type: Agent
-title: devils_advocate — Adversary - hypothesis falsification and base-rate audit
+title: advocate_agent — Adversary - hypothesis falsification and base-rate audit
 description: Adversary - hypothesis falsification and base-rate audit
 tags:
   - agent
@@ -16,11 +16,11 @@ sources:
 status: stable
 ---
 
-# devils_advocate — Adversary - hypothesis falsification and base-rate audit
+# advocate_agent — Adversary - hypothesis falsification and base-rate audit
 
 Runs as graph node `research`. Hosted inside `research`'s node.
 
-* **Module**: `app/agents/devils_advocate.py::challenge`
+* **Module**: `app/agents/advocate_agent.py::challenge`
 * **Guardrails**: deterministic_only, no_llm
 * **Human approval required**: no
 

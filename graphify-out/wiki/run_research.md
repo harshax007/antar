@@ -16,7 +16,7 @@
 ## Relationships
 
 - [typing](typing.md) (9 shared connections)
-- [devils_advocate.py](devils_advocate.py.md) (2 shared connections)
+- [advocate_agent.py](advocate_agent.py.md) (2 shared connections)
 - [fuzzy_match_suspects](fuzzy_match_suspects.md) (2 shared connections)
 - [test_research_dossier_fields.py](test_research_dossier_fields.py.md) (2 shared connections)
 - [jobs.py](jobs.py.md) (2 shared connections)
@@ -26,7 +26,7 @@
 - [corridor_agent.py](corridor_agent.py.md) (1 shared connections)
 - [challenge_dossier](challenge_dossier.md) (1 shared connections)
 - [chat_stream.py](chat_stream.py.md) (1 shared connections)
-- [test_devils_advocate.py](test_devils_advocate.py.md) (1 shared connections)
+- [test_advocate_agent.py](test_advocate_agent.py.md) (1 shared connections)
 
 ## Source Files
 

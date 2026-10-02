@@ -367,7 +367,7 @@ C.push(table(["Agent", "Role", "Agent", "Role"], [
   ["**Lens** (geo)", "Geospatial intelligence", "**Core** (forecast / predict)", "Risk forecasting"],
   ["**Beacon** (alert_suggest)", "Patrol advice from alerts", "**Scout** (OSINT)", "Open-web scan"],
   ["**Trace** (research)", "K/D/I/U dossier on a case or subject", "**Vault** (brain)", "Semantic recall over the Second Brain"],
-  ["**Adversary** (devil's advocate)", "Tries to falsify a hypothesis; base-rate audit", "**A5 Vigil**", "Bias and compliance screening"],
+  ["**Adversary** (advocate agent)", "Tries to falsify a hypothesis; base-rate audit", "**A5 Vigil**", "Bias and compliance screening"],
   ["**Corridor**", "Cross-district corridor intelligence", "**Linkage**", "MO-based case matching"],
   ["**Breach** (sentinel)", "Watchlist tripwires (service)", "**Products**", "Background product compiler (service)"],
   ["**Supervisor**", "Intent classification and routing", "**Synthesize**", "Answer composition, claim verification"],
@@ -377,7 +377,7 @@ C.push(B("**Second Brain retrieval:** BGE-small embeddings (384-d) for meaning, 
 C.push(B("**Network analysis:** NetworkX over suspects, relationships and shared identifiers (vehicle, UPI ID, IP, accused ID) to surface brokers and organised groups."));
 C.push(B("**Anomaly & hotspot engine:** robust MAD z-scores, seasonal residuals, a Bayesian reporting-silence check (possible under-reporting), Getis-Ord Gi* spatial significance, split-conformal ranges and space-time clustering."));
 C.push(B("**Dwani:** the Kannada language agent — transcription (Bhashini) in, Kannada answers out, with every number counted from the evidence ledger."));
-C.push(B("**Devil's advocate:** challenges a working hypothesis and asks what evidence would disprove it — built-in protection against confirmation bias."));
+C.push(B("**Advocate agent:** challenges a working hypothesis and asks what evidence would disprove it — built-in protection against confirmation bias."));
 C.push(BR());
 
 // ── PAGE 12 · GOVERNANCE ────────────────────────────────────────────────────
@@ -411,7 +411,7 @@ C.push(table(["Framework requirement", "Status", "How Antar meets it"], [
   ["3 Pattern & trend analytics", OK, "Trends, rankings, beat hotspots, crime-cycle seasonality, Gi* clusters"],
   ["4 Sociological insights", PART, "Age / gender demographics (T7); socio-economic indicators are not in the FIR data"],
   ["5 Criminological profiling & risk", PART, "Repeat offenders, accused history, profiles; modus-operandi text is sparse in the data"],
-  ["6 Investigator decision support", OK, "Case lists, K/D/I/U dossiers, similar-case linkage, devil's-advocate leads"],
+  ["6 Investigator decision support", OK, "Case lists, K/D/I/U dossiers, similar-case linkage, advocate-agent leads"],
   ["7 Financial crime & money trails", PART, "UPI ID / IP / vehicle links across districts; transaction data is limited"],
   ["8 Forecasting & early warning", PLAN, "Anomaly scan, Gi*, conformal ranges live; beat-level forecast with measured accuracy being finalised"],
   ["9 Explainable & transparent AI", OK, "Citations, evidence classes, reasoning trail, custody strip, model and agent traces"],

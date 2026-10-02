@@ -40,7 +40,7 @@
 - research_agent.py `EXTRACTED`
 - api/audit.py `EXTRACTED`
 - [workspace.py](workspace.py.md) `EXTRACTED`
-- [devils_advocate_api.py](devils_advocate_api.py.md) `EXTRACTED`
+- [advocate_agent_api.py](advocate_agent_api.py.md) `EXTRACTED`
 - test_layer3_predictive_warnings.py `EXTRACTED`
 
 ### rationale_for

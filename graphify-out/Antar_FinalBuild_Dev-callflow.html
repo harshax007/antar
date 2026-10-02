@@ -744,7 +744,7 @@ flowchart LR
   <td>18</td>
   <td><code>_world()</code><br><small style="color:var(--muted)">app/services/zcql_local.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>_gen_registry_habitual()</code><br><small style="color:var(--muted)">app/services/product_store.py</small><br><code>_get_seed()</code><br><small style="color:var(--muted)">tests/test_materialization.py</small><br><code>_index_cached()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br>+44 more</td>
+  <td><code>_gen_registry_habitual()</code><br><small style="color:var(--muted)">app/services/product_store.py</small><br><code>_get_seed()</code><br><small style="color:var(--muted)">tests/test_materialization.py</small><br><code>_index_cached()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br>+44 more</td>
   <td><code>_dict_factory()</code><br><small style="color:var(--muted)">app/services/zcql_local.py</small><br><code>ensure_indexes()</code><br><small style="color:var(--muted)">app/services/zcql_local.py</small></td>
   <td>_world() node in app/services/zcql_local.py.</td>
 </tr>
@@ -2919,7 +2919,7 @@ flowchart LR
       <tr><td><code>tests/test_brain_scale.py</code></td><td>75 nodes</td></tr>
 <tr><td><code>tests/test_fuzzy_entity_resolver.py</code></td><td>74 nodes</td></tr>
 <tr><td><code>tests/test_anomaly_v2.py</code></td><td>54 nodes</td></tr>
-<tr><td><code>tests/test_devils_advocate.py</code></td><td>46 nodes</td></tr>
+<tr><td><code>tests/test_advocate_agent.py</code></td><td>46 nodes</td></tr>
 <tr><td><code>tests/test_hitl.py</code></td><td>37 nodes</td></tr>
 <tr><td><code>tests/test_materialization.py</code></td><td>37 nodes</td></tr>
 <tr><td><code>tests/test_agents_manifest.py</code></td><td>36 nodes</td></tr>
@@ -4970,7 +4970,7 @@ flowchart LR
 
 <!-- ====== 16. Other ====== -->
 <h2 id="other">16. Other</h2>
-<p>Other groups implementation around app, agents, answer, writerpy, mostly in app/agents/answer_writer.py, app/agents/devils_advocate.py, app/second_brain/store.py. This section covers 212 nodes and 362 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Other groups implementation around app, agents, answer, writerpy, mostly in app/agents/answer_writer.py, app/agents/advocate_agent.py, app/second_brain/store.py. This section covers 212 nodes and 362 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
@@ -5057,155 +5057,155 @@ flowchart LR
 </tr>
 <tr>
   <td>1</td>
-  <td><code>_alternatives()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_alternatives()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>challenge()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_alternatives() node in app/agents/devils_advocate.py.</td>
+  <td><code>challenge()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_alternatives() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>2</td>
-  <td><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-async">Async</span></td>
-  <td><code>devils_advocate.py</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_assess_co_accusal() node in app/agents/devils_advocate.py.</td>
+  <td><code>advocate_agent.py</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_assess_co_accusal() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>3</td>
-  <td><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-async">Async</span></td>
-  <td><code>devils_advocate.py</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_norm()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_assess_hard_key() node in app/agents/devils_advocate.py.</td>
+  <td><code>advocate_agent.py</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_norm()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_assess_hard_key() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>4</td>
-  <td><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-async">Async</span></td>
-  <td><code>devils_advocate.py</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_mo_field()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_mo_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br>+1 more</td>
-  <td>_assess_mo() node in app/agents/devils_advocate.py.</td>
+  <td><code>advocate_agent.py</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_mo_field()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_mo_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br>+1 more</td>
+  <td>_assess_mo() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>5</td>
-  <td><code>_assess_phonetic()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assess_phonetic()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-async">Async</span></td>
-  <td><code>devils_advocate.py</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>soundex()</code><br><small style="color:var(--muted)">app/services/entity_resolver.py</small></td>
-  <td>_assess_phonetic() node in app/agents/devils_advocate.py.</td>
+  <td><code>advocate_agent.py</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>soundex()</code><br><small style="color:var(--muted)">app/services/entity_resolver.py</small></td>
+  <td>_assess_phonetic() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>6</td>
-  <td><code>_assess_zone()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assess_zone()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-async">Async</span></td>
-  <td><code>devils_advocate.py</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_zone_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_assess_zone() node in app/agents/devils_advocate.py.</td>
+  <td><code>advocate_agent.py</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_zone_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_assess_zone() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>7</td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-async">Async</span></td>
-  <td><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br>+2 more</td>
-  <td><code>_band()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_lr_from_count()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_assessment() node in app/agents/devils_advocate.py.</td>
+  <td><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br>+2 more</td>
+  <td><code>_band()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_lr_from_count()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_assessment() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>8</td>
-  <td><code>_band()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_band()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>challenge()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>challenge()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td>No direct outbound edge</td>
-  <td>_band() node in app/agents/devils_advocate.py.</td>
+  <td>_band() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>9</td>
-  <td><code>_collision_p()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_collision_p()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td>No direct outbound edge</td>
-  <td>_collision_p() node in app/agents/devils_advocate.py.</td>
+  <td>_collision_p() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>10</td>
-  <td><code>_falsification_for()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_falsification_for()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>challenge()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_falsification_for() node in app/agents/devils_advocate.py.</td>
+  <td><code>challenge()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_falsification_for() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>11</td>
-  <td><code>.__init__()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>_Index</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_collision_p()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_mo_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br>+3 more</td>
-  <td>.__init__() node in app/agents/devils_advocate.py.</td>
+  <td><code>_Index</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_collision_p()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_mo_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br>+3 more</td>
+  <td>.__init__() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>12</td>
-  <td><code>_lr_from_count()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_lr_from_count()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_assessment()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td>No direct outbound edge</td>
-  <td>_lr_from_count() node in app/agents/devils_advocate.py.</td>
+  <td>_lr_from_count() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>13</td>
-  <td><code>_mo_field()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_mo_field()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_mo_field() node in app/agents/devils_advocate.py.</td>
+  <td><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_mo_field() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>14</td>
-  <td><code>_mo_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_mo_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_mo_of() node in app/agents/devils_advocate.py.</td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_mo_of() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>15</td>
-  <td><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_name_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_alternatives()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br>+3 more</td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_alternatives()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br>+3 more</td>
   <td>No direct outbound edge</td>
-  <td>_name_of() node in app/agents/devils_advocate.py.</td>
+  <td>_name_of() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>16</td>
-  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_mo_field()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br>+2 more</td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_mo_field()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br>+2 more</td>
   <td>No direct outbound edge</td>
-  <td>_norm() node in app/agents/devils_advocate.py.</td>
+  <td>_norm() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>17</td>
-  <td><code>run()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>run()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>challenge_dossier()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>put_product()</code><br><small style="color:var(--muted)">app/services/product_store.py</small><br><code>run_research()</code><br><small style="color:var(--muted)">app/agents/research_agent.py</small></td>
-  <td>run() node in app/agents/devils_advocate.py.</td>
+  <td><code>challenge_dossier()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>put_product()</code><br><small style="color:var(--muted)">app/services/product_store.py</small><br><code>run_research()</code><br><small style="color:var(--muted)">app/agents/research_agent.py</small></td>
+  <td>run() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>18</td>
-  <td><code>_zone_of()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>_zone_of()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_zone()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
-  <td>_zone_of() node in app/agents/devils_advocate.py.</td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_zone()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td><code>_norm()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
+  <td>_zone_of() node in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>19</td>
-  <td><code>devils_advocate.py</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>advocate_agent.py</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-class">Module</span></td>
-  <td><code>devils_advocate_api.py</code><br><small style="color:var(--muted)">app/api/devils_advocate_api.py</small><br><code>graph.py</code><br><small style="color:var(--muted)">app/agents/graph.py</small><br><code>hypothesis.py</code><br><small style="color:var(--muted)">app/api/hypothesis.py</small><br>+2 more</td>
-  <td><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small><br>+11 more</td>
-  <td>Module file in app/agents/devils_advocate.py.</td>
+  <td><code>advocate_agent_api.py</code><br><small style="color:var(--muted)">app/api/advocate_agent_api.py</small><br><code>graph.py</code><br><small style="color:var(--muted)">app/agents/graph.py</small><br><code>hypothesis.py</code><br><small style="color:var(--muted)">app/api/hypothesis.py</small><br>+2 more</td>
+  <td><code>_assess_co_accusal()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_hard_key()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br><code>_assess_mo()</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small><br>+11 more</td>
+  <td>Module file in app/agents/advocate_agent.py.</td>
 </tr>
 <tr>
   <td>20</td>
@@ -5217,7 +5217,7 @@ flowchart LR
 </tr>
 <tr>
   <td>21</td>
-  <td><code>Antar — Devil&#x27;s Advocate (adversarial hypothesis auditor)…</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>Antar — Devil&#x27;s Advocate (adversarial hypothesis auditor)…</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Concept</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
@@ -5225,7 +5225,7 @@ flowchart LR
 </tr>
 <tr>
   <td>22</td>
-  <td><code>The value research_agent actually compares for its &#x27;MO similarity&#x27; signal.…</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>The value research_agent actually compares for its &#x27;MO similarity&#x27; signal.…</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Concept</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
@@ -5233,7 +5233,7 @@ flowchart LR
 </tr>
 <tr>
   <td>23</td>
-  <td><code>P(a RANDOM pair shares this attribute at all) = sum(n_v choose 2) / (N choose…</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>P(a RANDOM pair shares this attribute at all) = sum(n_v choose 2) / (N choose…</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Concept</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
@@ -5241,7 +5241,7 @@ flowchart LR
 </tr>
 <tr>
   <td>24</td>
-  <td><code>(p_coincidence, likelihood_ratio, bits) for an attribute held by n of N.…</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>(p_coincidence, likelihood_ratio, bits) for an attribute held by n of N.…</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Concept</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
@@ -5249,7 +5249,7 @@ flowchart LR
 </tr>
 <tr>
   <td>25</td>
-  <td><code>Convenience: build the dossier for `anchor`, then argue against it.</code><br><small style="color:var(--muted)">app/agents/devils_advocate.py</small></td>
+  <td><code>Convenience: build the dossier for `anchor`, then argue against it.</code><br><small style="color:var(--muted)">app/agents/advocate_agent.py</small></td>
   <td><span class="tag tag-func">Concept</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
@@ -5303,7 +5303,7 @@ flowchart LR
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
       <tr><td><code>app/agents/answer_writer.py</code></td><td>81 nodes</td></tr>
-<tr><td><code>app/agents/devils_advocate.py</code></td><td>24 nodes</td></tr>
+<tr><td><code>app/agents/advocate_agent.py</code></td><td>24 nodes</td></tr>
 <tr><td><code>app/core/auth_middleware.py</code></td><td>11 nodes</td></tr>
 <tr><td><code>app/second_brain/store.py</code></td><td>11 nodes</td></tr>
 <tr><td><code>app/agents/display_names.py</code></td><td>10 nodes</td></tr>

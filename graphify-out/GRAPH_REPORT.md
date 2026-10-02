@@ -30,7 +30,7 @@
 - test_self_heal.py
 - test_answer_guardrails.py
 - fuzzy_match_suspects
-- test_devils_advocate.py
+- test_advocate_agent.py
 - query_agent.py
 - second_brain/ingestion.py
 - sessions.py
@@ -78,7 +78,7 @@
 - intent_flow.py
 - map_and_ingest_csv
 - package.json
-- devils_advocate.py
+- advocate_agent.py
 - audit_store.py
 - index.py
 - answer_writer.py
@@ -122,7 +122,7 @@
 - build_world
 - _run_pipeline
 - vigil.py
-- devils_advocate_api.py
+- advocate_agent_api.py
 - load.py
 - _collect
 - _crime_word
@@ -278,9 +278,9 @@ Nodes (25): _allowed_numbers(), walk(), apply_guardrails(), cap_length(), check_
 Cohesion: 0.07
 Nodes (16): fuzzy_match_suspects(), jaro(), jaro_winkler(), Search suspects by name / alias / father_name using three signals in priority…, Jaro similarity in [0.0, 1.0]., Jaro-Winkler similarity — adds a prefix bonus (up to 4 matching leading chars).…, Exact substring 'Yellappa' matches both alias=Yellappa and full_name=Yellappa M., WOW-2: one-p typo 'Yellapa' must find the Yellappa suspects via Jaro-Winkler. (+8 more)
 
-### Community 16 - "test_devils_advocate.py"
+### Community 16 - "test_advocate_agent.py"
 Cohesion: 0.12
-Nodes (44): challenge(), Audit one hypothesis. Never raises; returns an 'unassessable' record instead., _hyp(), Antar — Devil's Advocate tests ============================== The point of this…, SURVIVES has to be reachable, and this is what it takes: corroboration from a…, The two probabilities are different quantities; conflating them was the bug.…, research_agent reads primary_crime then falls back to occupation. When it falls…, When primary_crime IS populated, the signal is a genuine MO comparison. (+36 more)
+Nodes (44): challenge(), Audit one hypothesis. Never raises; returns an 'unassessable' record instead., _hyp(), Antar — Advocate Agent tests ============================== The point of this…, SURVIVES has to be reachable, and this is what it takes: corroboration from a…, The two probabilities are different quantities; conflating them was the bug.…, research_agent reads primary_crime then falls back to occupation. When it falls…, When primary_crime IS populated, the signal is a genuine MO comparison. (+36 more)
 
 ### Community 17 - "query_agent.py"
 Cohesion: 0.07
@@ -470,7 +470,7 @@ Nodes (20): post, UploadFile, Antar — Upload API (Phase 8) ===================
 Cohesion: 0.08
 Nodes (20): GlobeMap(), KARNATAKA_POV, name, private, scripts, build, dev, lint (+12 more)
 
-### Community 64 - "devils_advocate.py"
+### Community 64 - "advocate_agent.py"
 Cohesion: 0.20
 Nodes (23): _alternatives(), _assess_co_accusal(), _assess_hard_key(), _assess_mo(), _assess_phonetic(), _assess_zone(), _assessment(), _band() (+15 more)
 
@@ -646,7 +646,7 @@ Nodes (14): is_explain_request(), True if the user is asking us to justify the p
 Cohesion: 0.15
 Nodes (14): audit_request(), get_receipt(), Any, Retrieve a compiled compliance receipt by request ID., Audit a query or prompt for bias, prohibited targeting, and BNSS compliance., get_vigil_receipt(), BaseModel, get (+6 more)
 
-### Community 108 - "devils_advocate_api.py"
+### Community 108 - "advocate_agent_api.py"
 Cohesion: 0.16
 Nodes (13): base_rates(), challenge_anchor(), challenge_one(), challenge_stored(), HypothesisPayload, BaseModel, get, post (+5 more)
 
@@ -858,7 +858,7 @@ Nodes (3): parse_cellebrite_json(), Antar — Offline Forensics Parser =========
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `_world()` connect `typing` to `devils_advocate.py`, `pattern_predict.py`, `build_network`, `challenge_dossier`, `anomaly.py`, `profile.py`, `get_product`, `_get`, `profile_agent.py`, `fuzzy_match_suspects`, `run_research`, `zcql_local.py`, `second_brain/ingestion.py`, `retrieval.py`, `second_brain/store.py`, `chat_stream.py`, `run_multi_module_recon`?**
+- **Why does `_world()` connect `typing` to `advocate_agent.py`, `pattern_predict.py`, `build_network`, `challenge_dossier`, `anomaly.py`, `profile.py`, `get_product`, `_get`, `profile_agent.py`, `fuzzy_match_suspects`, `run_research`, `zcql_local.py`, `second_brain/ingestion.py`, `retrieval.py`, `second_brain/store.py`, `chat_stream.py`, `run_multi_module_recon`?**
   _High betweenness centrality (0.031) - this node is a cross-community bridge._
 - **Why does `TestForecastEndpoint` connect `anyio` to `anomaly.py`?**
   _High betweenness centrality (0.029) - this node is a cross-community bridge._

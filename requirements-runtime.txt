@@ -1,0 +1,55 @@
+# Antar — RUNTIME dependencies for the torch-free deploy image (final_backend.md §4 step 6)
+#
+# requirements.txt stays the development and build spec: it keeps sentence-transformers
+# (and therefore torch), which scripts/export_onnx_models.py needs to produce the ONNX
+# artifacts and to verify them against the torch output.
+#
+# This file is what the SERVING container installs. It drops the torch stack — measured
+# 681 MB of the 1,118 MB package closure (torch 499.5, transformers 106.3, sympy 72.1,
+# sentence-transformers 2.0, safetensors 0.9) — and adds onnxruntime (44.3 MB). The Brain
+# runs the same weights through app/second_brain/onnx_backend.py, verified identical by
+# tests/test_brain_onnx_parity.py (cosine 1.0 against torch).
+#
+# Pins MUST match requirements.txt for every shared package; tests/test_requirements_sync.py
+# fails the build if they drift.
+
+# ── Core API ──────────────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn==0.32.1
+python-multipart==0.0.17
+httpx==0.27.2
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# ── Agent Orchestration ───────────────────────────────────────────────────────
+# See requirements.txt for why the 0.6.x line is pinned (zcatalyst-sdk typing-extensions).
+langgraph==0.6.11
+langchain-core==0.3.86
+langgraph-checkpoint==3.0.1
+langgraph-prebuilt==0.6.5
+typing-extensions==4.10.0
+
+# ── Catalyst Platform SDK ─────────────────────────────────────────────────────
+zcatalyst-sdk==1.0.1
+
+# ── Second Brain: ONNX runtime instead of torch ───────────────────────────────
+# onnxruntime executes the exported graphs; tokenizers reads tokenizer.json directly
+# (it is a standalone Rust library — transformers is NOT required for it).
+onnxruntime==1.30.0
+tokenizers==0.22.2
+
+# ── Data analysis (forecast) ─────────────────────────────────────────────────
+scikit-learn==1.4.1.post1
+pandas==2.2.1
+scipy==1.12.0
+numpy==1.26.4
+
+# ── Graph analytics ───────────────────────────────────────────────────────────
+networkx==3.6.1
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
+structlog==24.4.0
+beautifulsoup4==4.15.0
+cryptography==42.0.5
+gTTS==2.5.1

@@ -10,14 +10,14 @@ Enforces:
   3. Second Brain institutional memory integration (learning from confirmed/disproven hypotheses)
   4. ADVERSARIAL REVIEW — see below
 
-Adversarial gate (devils_advocate)
+Adversarial gate (advocate_agent)
 ----------------------------------
 Confirming transitions a hypothesis from Inferred to Known. That is the single most
 consequential state change in the system: after it, downstream agents treat the claim as
 fact and the Second Brain ingests it as institutional memory. A bad promotion does not
 just produce a wrong answer, it teaches the system to keep being wrong.
 
-So every confirm runs the hypothesis past `devils_advocate` first. If the adversarial
+So every confirm runs the hypothesis past `advocate_agent` first. If the adversarial
 review finds the evidence collapses under its own base rates, the confirm is REFUSED with
 409 and the full rebuttal in the response — until the officer resubmits with
 `acknowledge_challenge=true` AND a written reason.
@@ -124,7 +124,7 @@ async def _review(hypothesis: dict) -> dict:
     officer, but it must also never be mistaken for a clean bill of health, so a failure
     surfaces as UNASSESSABLE (which is not a gated verdict and not an endorsement)."""
     try:
-        from app.agents import devils_advocate as da
+        from app.agents import advocate_agent as da
         return await asyncio.to_thread(da.challenge, hypothesis)
     except Exception as exc:                      # noqa: BLE001 — review is advisory
         return {

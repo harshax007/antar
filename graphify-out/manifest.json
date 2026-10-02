@@ -593,7 +593,7 @@
     "ast_hash": "622e221ef4c1577d86703dff43396b21",
     "semantic_hash": "622e221ef4c1577d86703dff43396b21"
   },
-  "app/agents/devils_advocate.py": {
+  "app/agents/advocate_agent.py": {
     "mtime": 1789519957.6175175,
     "seen": 1789688346.093233,
     "ast_hash": "7873acf389c57864e5c87d59d55f73a2",
@@ -833,7 +833,7 @@
     "ast_hash": "ab810bda99d609857b939d1b954ecefb",
     "semantic_hash": "ab810bda99d609857b939d1b954ecefb"
   },
-  "app/api/devils_advocate_api.py": {
+  "app/api/advocate_agent_api.py": {
     "mtime": 1789519831.5370882,
     "seen": 1789688346.093233,
     "ast_hash": "55156ed06e4fec117200e9dff65241ee",
@@ -1775,7 +1775,7 @@
     "ast_hash": "957d2d52a4c8061110418debeebf7d97",
     "semantic_hash": "957d2d52a4c8061110418debeebf7d97"
   },
-  "tests/test_devils_advocate.py": {
+  "tests/test_advocate_agent.py": {
     "mtime": 1789519970.8622262,
     "seen": 1789688346.093233,
     "ast_hash": "65c1638c0dcd071f57276528a2532a89",

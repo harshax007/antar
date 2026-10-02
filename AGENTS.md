@@ -338,13 +338,13 @@ timeout_s: 12.0
 retries: 1
 surfaces: [graph, chat_stream, api]
 reads: [crimes, suspects, evidence_ledger, second_brain]
-emits: [results.research, results.devils_advocate, visuals.research]
-hosts: [devils_advocate]
+emits: [results.research, results.advocate_agent, visuals.research]
+hosts: [advocate_agent]
 guardrails: [verify_claims, vigil, kdiu_tagging, adversarial_review]
 hitl: false
 degraded: "no-op when no researchable subject is named; never researches an empty anchor"
 notes: >
-  Runs devils_advocate over its own inferred hypotheses INSIDE the node. A dossier's
+  Runs advocate_agent over its own inferred hypotheses INSIDE the node. A dossier's
   [INFERRED] claims are scored guesses; shipping them into a chat answer without the
   base-rate check is how an officer gets anchored on a pair whose only connection is a
   shared district. The rebuttal is therefore not optional for a caller to skip.
@@ -387,7 +387,7 @@ notes: >
 
 ## Adversarial layer
 
-### devils_advocate
+### advocate_agent
 
 The only agent that argues *against* another agent's output. `research_agent` scores
 hypotheses by summing signal weights; a weight sum says nothing about how many other people
@@ -396,10 +396,10 @@ base rate, applies the multiple-comparisons correction for the size of the scan 
 surfaced it, and states what evidence would falsify it.
 
 ```yaml
-agent: devils_advocate
+agent: advocate_agent
 kind: worker
 role: Adversary - hypothesis falsification and base-rate audit
-module: app/agents/devils_advocate.py::challenge
+module: app/agents/advocate_agent.py::challenge
 graph_node: research
 hosted_by: research
 routes: []
@@ -407,7 +407,7 @@ timeout_s: 12.0
 retries: 1
 surfaces: [graph, api, hypothesis_lifecycle]
 reads: [suspects, crime_suspects, research_dossier]
-emits: [devils_advocate_product, hypothesis.adversarial_review]
+emits: [advocate_agent_product, hypothesis.adversarial_review]
 guardrails: [deterministic_only, no_llm]
 gates: [hypothesis_confirm]
 hitl: false
@@ -423,7 +423,7 @@ notes: >
   Confirm button; its `would_gate_confirm` is asserted to match the gate's real behaviour.
   Deliberately LLM-FREE. An adversarial check that can hallucinate is worse than no check
   at all, and every likelihood ratio it reports must be reproducible by hand from the row
-  counts it cites - GET /api/devils-advocate/base-rates exposes those counts.
+  counts it cites - GET /api/advocate-agent/base-rates exposes those counts.
   Two distinct probabilities are computed and must not be conflated: the per-signal
   likelihood ratio (conditional on the observed value, drives the Bayes update) and the
   unconditional pair-collision rate (drives the selection-effect arithmetic). Using the

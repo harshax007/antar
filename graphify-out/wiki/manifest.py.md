@@ -16,7 +16,7 @@
 - **_tuple()** (3 connections) — `app/agents/manifest.py`
 - **unresolved_routes()** (3 connections) — `app/agents/manifest.py`
 - **man()** (3 connections) — `tests/test_agents_manifest.py`
-- **test_manifest_declares_this_agent()** (3 connections) — `tests/test_devils_advocate.py`
+- **test_manifest_declares_this_agent()** (3 connections) — `tests/test_advocate_agent.py`
 - **note_unresolved_route()** (2 connections) — `app/agents/manifest.py`
 - **reset_unresolved()** (2 connections) — `app/agents/manifest.py`
 - **Any** (1 connections)
@@ -26,7 +26,7 @@
 - **Manifest health for /api/orchestrator/status.** (1 connections) — `app/agents/manifest.py`
 - **fixture** (1 connections)
 - **The failure mode this whole manifest exists to prevent: silence.** (1 connections) — `tests/test_agents_manifest.py`
-- **AGENTS.md is executable — a new agent that skips it is a build failure.** (1 connections) — `tests/test_devils_advocate.py`
+- **AGENTS.md is executable — a new agent that skips it is a build failure.** (1 connections) — `tests/test_advocate_agent.py`
 - **AGENTS.md must no longer describe this agent as a GAP.** (1 connections) — `tests/test_research_node.py`
 
 ## Relationships
@@ -35,7 +35,7 @@
 - [test_research_node.py](test_research_node.py.md) (5 shared connections)
 - [orchestrator.py](orchestrator.py.md) (3 shared connections)
 - [test_agents_manifest.py](test_agents_manifest.py.md) (3 shared connections)
-- [test_devils_advocate.py](test_devils_advocate.py.md) (2 shared connections)
+- [test_advocate_agent.py](test_advocate_agent.py.md) (2 shared connections)
 - [re](re.md) (1 shared connections)
 - [trace.py](trace.py.md) (1 shared connections)
 - [SSEQueue](SSEQueue.md) (1 shared connections)
@@ -48,7 +48,7 @@
 
 - `app/agents/manifest.py`
 - `tests/test_agents_manifest.py`
-- `tests/test_devils_advocate.py`
+- `tests/test_advocate_agent.py`
 - `tests/test_research_node.py`
 
 ## Audit Trail

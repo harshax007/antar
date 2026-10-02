@@ -21,7 +21,7 @@
 ## Relationships
 
 - [profile.py](profile.py.md) (4 shared connections)
-- [devils_advocate.py](devils_advocate.py.md) (3 shared connections)
+- [advocate_agent.py](advocate_agent.py.md) (3 shared connections)
 - [run_research](run_research.md) (1 shared connections)
 - [fuzzy_match_suspects](fuzzy_match_suspects.md) (1 shared connections)
 - [typing](typing.md) (1 shared connections)

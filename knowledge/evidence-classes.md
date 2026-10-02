@@ -25,7 +25,7 @@ the printable export.
 |---|---|---|
 | Known | `[VERIFIED]` | Read directly from FIR rows; the row ids are cited. |
 | Derived | `[COMPUTED]` | Calculated from rows by a deterministic transform - a count, a rate, a conformal band, a similarity. Reproducible by hand from the cited rows. |
-| Inferred | `[INFERRED]` | A scored hypothesis. Never presented without the base-rate audit from [devils_advocate](/agents/devils-advocate.md). |
+| Inferred | `[INFERRED]` | A scored hypothesis. Never presented without the base-rate audit from [advocate_agent](/agents/advocate-agent.md). |
 | Unknown | `[GAP]` | Named as missing, with the collection action that would close it. |
 
 The distinction that matters operationally: a **Derived** claim is as good as its inputs

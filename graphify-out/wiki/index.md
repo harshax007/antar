@@ -25,7 +25,7 @@
 - [test_self_heal.py](test_self_heal.py.md) — 47 nodes
 - [test_answer_guardrails.py](test_answer_guardrails.py.md) — 46 nodes
 - [fuzzy_match_suspects](fuzzy_match_suspects.md) — 46 nodes
-- [test_devils_advocate.py](test_devils_advocate.py.md) — 45 nodes
+- [test_advocate_agent.py](test_advocate_agent.py.md) — 45 nodes
 - [query_agent.py](query_agent.py.md) — 45 nodes
 - [second_brain/ingestion.py](second_brain-ingestion.py.md) — 45 nodes
 - [sessions.py](sessions.py.md) — 45 nodes
@@ -73,7 +73,7 @@
 - [intent_flow.py](intent_flow.py.md) — 26 nodes
 - [map_and_ingest_csv](map_and_ingest_csv.md) — 26 nodes
 - [package.json](package.json.md) — 25 nodes
-- [devils_advocate.py](devils_advocate.py.md) — 25 nodes
+- [advocate_agent.py](advocate_agent.py.md) — 25 nodes
 - [audit_store.py](audit_store.py.md) — 25 nodes
 - [index.py](index.py.md) — 25 nodes
 - [answer_writer.py](answer_writer.py.md) — 24 nodes
@@ -117,7 +117,7 @@
 - [build_world](build_world.md) — 16 nodes
 - [_run_pipeline](_run_pipeline.md) — 15 nodes
 - [vigil.py](vigil.py.md) — 15 nodes
-- [devils_advocate_api.py](devils_advocate_api.py.md) — 15 nodes
+- [advocate_agent_api.py](advocate_agent_api.py.md) — 15 nodes
 - [load.py](load.py.md) — 15 nodes
 - [_collect](_collect.md) — 15 nodes
 - [_crime_word](_crime_word.md) — 14 nodes

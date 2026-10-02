@@ -1,13 +1,13 @@
 """
-Antar — Devil's Advocate API (/api/devils-advocate)
+Antar — Advocate Agent API (/api/advocate-agent)
 ===================================================
 Adversarial review of inferred hypotheses. Read-only: it changes no case state and
 promotes nothing — it only argues against what another agent proposed.
 
-  GET  /api/devils-advocate/anchor/{anchor}      challenge a whole research dossier
-  POST /api/devils-advocate/hypothesis           challenge one hypothesis object
-  GET  /api/devils-advocate/hypothesis/{hyp_id}  challenge a stored hypothesis
-  GET  /api/devils-advocate/base-rates           population base rates (the raw evidence)
+  GET  /api/advocate-agent/anchor/{anchor}      challenge a whole research dossier
+  POST /api/advocate-agent/hypothesis           challenge one hypothesis object
+  GET  /api/advocate-agent/hypothesis/{hyp_id}  challenge a stored hypothesis
+  GET  /api/advocate-agent/base-rates           population base rates (the raw evidence)
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.agents import devils_advocate as da
+from app.agents import advocate_agent as da
 
 router = APIRouter()
 

@@ -23,7 +23,7 @@ claim that cannot be allowed to stay unmeasured.
 Calibration needs labels, and the obvious source — the LLM judge in `app/obs/judge.py` —
 is the wrong one here. A model scoring another model's answers is not reproducible, costs
 network, and would put an LLM inside the very measurement that is supposed to make the
-system trustworthy. `devils_advocate` is deliberately LLM-free for exactly this reason.
+system trustworthy. `advocate_agent` is deliberately LLM-free for exactly this reason.
 
 So the labels come from SQL. Each question is GENERATED from the registry together with
 its true answer:
@@ -369,7 +369,7 @@ used for it was **"calibrated"**. Calibration is a testable claim: *of the answe
 Ground truth here is **SQL, not a model**. Each question is generated from the registry
 together with its true count, the system answers through its real offline path, and the
 label is whether the stated number equals the number SQL computed. No LLM judge sits
-anywhere in this measurement — the same rule `devils_advocate` follows, for the same
+anywhere in this measurement — the same rule `advocate_agent` follows, for the same
 reason: a check that can hallucinate is not a check.
 
 Overall accuracy on this set: **{acc:.1%}** ({sum(1 for s in samples if s['correct'])} of

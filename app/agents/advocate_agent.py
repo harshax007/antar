@@ -1,5 +1,5 @@
 """
-Antar — Devil's Advocate (adversarial hypothesis auditor)
+Antar — Advocate Agent (adversarial hypothesis auditor)
 =========================================================
 Every other agent in Antar pushes TOWARD an answer. This one pushes back.
 
@@ -46,7 +46,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from app.services.zcql_local import _world
 
-AGENT_NAME = "devils_advocate"
+AGENT_NAME = "advocate_agent"
 
 # Evidence strength bands, in bits (log2 of the likelihood ratio).
 # Calibrated to the Jeffreys/Kass-Raftery scale for Bayes factors, which is the
@@ -723,7 +723,7 @@ def run(anchor: str, *, world: Optional[Dict[str, Any]] = None,
     dossier = run_research(anchor, world=world)
     rebuttal = challenge_dossier(dossier, world=world, limit=limit)
     try:
-        put_product(f"devils_advocate:{(anchor or '').strip().lower()}", rebuttal, ttl=3600)
+        put_product(f"advocate_agent:{(anchor or '').strip().lower()}", rebuttal, ttl=3600)
     except Exception:                                  # noqa: BLE001 — cache is best-effort
         pass
     return rebuttal

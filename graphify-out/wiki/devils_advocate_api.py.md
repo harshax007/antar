@@ -1,24 +1,24 @@
-# devils_advocate_api.py
+# advocate_agent_api.py
 
 > 15 nodes · cohesion 0.16
 
 ## Key Concepts
 
-- **devils_advocate_api.py** (14 connections) — `app/api/devils_advocate_api.py`
-- **base_rates()** (4 connections) — `app/api/devils_advocate_api.py`
-- **challenge_one()** (4 connections) — `app/api/devils_advocate_api.py`
-- **challenge_stored()** (4 connections) — `app/api/devils_advocate_api.py`
-- **challenge_anchor()** (3 connections) — `app/api/devils_advocate_api.py`
-- **HypothesisPayload** (3 connections) — `app/api/devils_advocate_api.py`
+- **advocate_agent_api.py** (14 connections) — `app/api/advocate_agent_api.py`
+- **base_rates()** (4 connections) — `app/api/advocate_agent_api.py`
+- **challenge_one()** (4 connections) — `app/api/advocate_agent_api.py`
+- **challenge_stored()** (4 connections) — `app/api/advocate_agent_api.py`
+- **challenge_anchor()** (3 connections) — `app/api/advocate_agent_api.py`
+- **HypothesisPayload** (3 connections) — `app/api/advocate_agent_api.py`
 - **get** (3 connections)
-- **_collect()** (1 connections) — `app/api/devils_advocate_api.py`
+- **_collect()** (1 connections) — `app/api/advocate_agent_api.py`
 - **BaseModel** (1 connections)
 - **post** (1 connections)
-- **Antar — Devil's Advocate API (/api/devils-advocate)…** (1 connections) — `app/api/devils_advocate_api.py`
-- **Build the research dossier for `anchor`, then argue against every hypothesis in…** (1 connections) — `app/api/devils_advocate_api.py`
-- **Challenge a hypothesis supplied by the caller (the Brain screen posts one here).** (1 connections) — `app/api/devils_advocate_api.py`
-- **Challenge a hypothesis already held in the product store.** (1 connections) — `app/api/devils_advocate_api.py`
-- **The population statistics every verdict is derived from. Exposed deliberately:…** (1 connections) — `app/api/devils_advocate_api.py`
+- **Antar — Advocate Agent API (/api/advocate-agent)…** (1 connections) — `app/api/advocate_agent_api.py`
+- **Build the research dossier for `anchor`, then argue against every hypothesis in…** (1 connections) — `app/api/advocate_agent_api.py`
+- **Challenge a hypothesis supplied by the caller (the Brain screen posts one here).** (1 connections) — `app/api/advocate_agent_api.py`
+- **Challenge a hypothesis already held in the product store.** (1 connections) — `app/api/advocate_agent_api.py`
+- **The population statistics every verdict is derived from. Exposed deliberately:…** (1 connections) — `app/api/advocate_agent_api.py`
 
 ## Relationships
 
@@ -28,12 +28,12 @@
 - [FastAPI](FastAPI.md) (1 shared connections)
 - [pydantic](pydantic.md) (1 shared connections)
 - [app_services](app_services.md) (1 shared connections)
-- [devils_advocate.py](devils_advocate.py.md) (1 shared connections)
+- [advocate_agent.py](advocate_agent.py.md) (1 shared connections)
 - [main.py](main.py.md) (1 shared connections)
 
 ## Source Files
 
-- `app/api/devils_advocate_api.py`
+- `app/api/advocate_agent_api.py`
 
 ## Audit Trail
 

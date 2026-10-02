@@ -37,7 +37,7 @@
 - [_run_pipeline](_run_pipeline.md) (1 shared connections)
 - [intent_parser.py](intent_parser.py.md) (1 shared connections)
 - [admin_data.py](admin_data.py.md) (1 shared connections)
-- [devils_advocate_api.py](devils_advocate_api.py.md) (1 shared connections)
+- [advocate_agent_api.py](advocate_agent_api.py.md) (1 shared connections)
 - [feedback.py](feedback.py.md) (1 shared connections)
 - [parse_json_response](parse_json_response.md) (1 shared connections)
 - [hitl_api.py](hitl_api.py.md) (1 shared connections)
