@@ -13,7 +13,7 @@ used for it was **"calibrated"**. Calibration is a testable claim: *of the answe
 Ground truth here is **SQL, not a model**. Each question is generated from the registry
 together with its true count, the system answers through its real offline path, and the
 label is whether the stated number equals the number SQL computed. No LLM judge sits
-anywhere in this measurement — the same rule `adversarial_audit` follows, for the same
+anywhere in this measurement — the same rule `devils_advocate` follows, for the same
 reason: a check that can hallucinate is not a check.
 
 Overall accuracy on this set: **92.2%** (94 of

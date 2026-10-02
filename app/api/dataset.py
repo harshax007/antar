@@ -49,22 +49,6 @@ _ACC_RE = re.compile(r"^\s*acc(-[a-z]{0,2}(-\d*)?)?\s*$", re.I)
 # The seed data carries the same label in several shapes (" CYBER CRIME" / "Cyber Crime",
 # "Under Investigation" / "under_investigation"). Normalise before grouping so the UI
 # never shows the same thing twice as separate rows.
-# Which months each year actually holds. This describes the DATASET, not the request:
-# it is measured unfiltered and cannot change between calls, yet it was recomputed on
-# every /summary - a full grouped scan of a million rows, ~0.9s, for an answer that is
-# identical every time. Computed once per process instead.
-_MONTHS_PRESENT: dict[str, int] | None = None
-
-
-def _months_present(con) -> dict[str, int]:
-    global _MONTHS_PRESENT
-    if _MONTHS_PRESENT is None:
-        _MONTHS_PRESENT = {str(r[0]): r[1] for r in con.execute(
-            "SELECT FIR_YEAR, COUNT(DISTINCT FIR_MONTH) FROM FIRs"
-            " WHERE FIR_MONTH IS NOT NULL GROUP BY FIR_YEAR").fetchall()}
-    return _MONTHS_PRESENT
-
-
 _NORM_GROUP = "TRIM(UPPER(CrimeGroup_Name))"
 _NORM_STAGE = "TRIM(UPPER(REPLACE(FIR_Stage,'_',' ')))"
 
@@ -315,7 +299,9 @@ async def dataset_summary(year: int | None = None, district: str | None = None,
         # the filter's — a quiet district must not flag a complete year as partial — so it
         # is measured unfiltered. One grouped pass instead of a query per year: that was
         # eleven extra full scans for an eleven-year registry.
-        months_present = _months_present(con)
+        months_present = {str(r[0]): r[1] for r in con.execute(
+            "SELECT FIR_YEAR, COUNT(DISTINCT FIR_MONTH) FROM FIRs"
+            " WHERE FIR_MONTH IS NOT NULL GROUP BY FIR_YEAR").fetchall()}
         years = []
         for r in con.execute(
                 "SELECT FIR_YEAR, COUNT(*) AS n FROM FIRs"

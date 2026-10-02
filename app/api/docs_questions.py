@@ -11,8 +11,7 @@ from app.services.zcql_local import DB_PATH
 
 router = APIRouter()
 
-_BACKEND_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-INTEL_DB = os.path.join(_BACKEND_ROOT, "intelligent.db")
+INTEL_DB = os.path.join(os.path.dirname(DB_PATH), "intelligent.db")
 
 
 def _intel_conn() -> sqlite3.Connection:

@@ -399,7 +399,7 @@ function frInline(t) {
 function FormattedResponse({ text }) {
   if (!text) return null;
   let cleaned = text;
-  for (const marker of ["[VERIFIED] Multi-Agent Synthesis", "— Reasoning trail —"]) {
+  for (const marker of ["[VERIFIED] Multi-Agent Synthesis", "— Reasoning trail —", "- Reasoning trail -", "Reasoning trail"]) {
     const i = cleaned.indexOf(marker);
     if (i !== -1) { cleaned = cleaned.substring(0, i).trim(); break; }
   }
@@ -418,10 +418,11 @@ function FormattedResponse({ text }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
       {/* headline */}
       <div style={{
-        color: "#FFFFFF", fontSize: "14.5px", fontWeight: 500, lineHeight: 1.6,
-        borderLeft: "3px solid #22E6F0", paddingLeft: "14px", paddingTop: "8px", paddingBottom: "8px",
-        background: "linear-gradient(90deg, rgba(34,230,240,0.12) 0%, transparent 100%)",
+        color: "#FFFFFF", fontSize: "14px", fontWeight: 500, lineHeight: 1.6,
+        borderLeft: "3px solid #22E6F0", padding: "12px 16px",
+        background: "linear-gradient(90deg, rgba(34,230,240,0.12) 0%, rgba(34,230,240,0.01) 100%)",
         borderRadius: "0 8px 8px 0",
+        boxShadow: "inset 1px 0 0 rgba(255,255,255,0.05)"
       }}>
         {verified && (
           <span style={{
@@ -434,31 +435,58 @@ function FormattedResponse({ text }) {
       </div>
 
       {/* labeled sections + bullets */}
-      {rest.map((seg, i) => {
-        const m = seg.match(/^([A-Za-z][A-Za-z\- ]+?):\s*([\s\S]*)$/);
-        const isLabel = m && FR_LABELS.includes(m[1].trim());
-        if (isLabel) {
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+        {rest.map((seg, i) => {
+          const m = seg.match(/^([A-Za-z][A-Za-z\- ]+?):\s*([\s\S]*)$/);
+          const isLabel = m && FR_LABELS.includes(m[1].trim());
+          if (isLabel) {
+            return (
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "8px" }}>
+                <span style={{
+                  fontSize: "10px", fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase",
+                  color: "#22E6F0", fontFamily: "'Chakra Petch', sans-serif",
+                }}>{m[1].trim()}</span>
+                <span style={{ color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, paddingLeft: "2px" }}>
+                  {frInline(m[2])}
+                </span>
+              </div>
+            );
+          }
+
+          const numMatch = seg.match(/^(\d+\.)\s*(.*)$/);
+          if (numMatch) {
+            return (
+              <div key={i} style={{
+                color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, display: "flex", gap: "10px", paddingLeft: "16px",
+              }}>
+                <span style={{ color: "#22E6F0", flexShrink: 0, fontWeight: 600, width: "18px", textAlign: "right" }}>{numMatch[1]}</span>
+                <span style={{ flex: 1 }}>{frInline(numMatch[2])}</span>
+              </div>
+            );
+          }
+
+          const isSubhead = seg.endsWith(":");
+          if (isSubhead) {
+            return (
+              <div key={i} style={{
+                color: "#F8FAFC", fontSize: "13px", lineHeight: 1.6, display: "flex", marginTop: "6px", fontWeight: 500
+              }}>
+                <span>{frInline(seg)}</span>
+              </div>
+            );
+          }
+
+          let cleanSeg = seg.replace(/^[-*•]\s*/, "");
           return (
-            <div key={i} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-              <span style={{
-                fontSize: "10px", fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase",
-                color: "#22E6F0", fontFamily: "'Chakra Petch', sans-serif",
-              }}>{m[1].trim()}</span>
-              <span style={{ color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, paddingLeft: "2px" }}>
-                {frInline(m[2])}
-              </span>
+            <div key={i} style={{
+              color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, display: "flex", gap: "10px", paddingLeft: "4px"
+            }}>
+              <span style={{ color: "#22E6F0", flexShrink: 0, fontSize: "14px", lineHeight: "1.4" }}>•</span>
+              <span style={{ flex: 1 }}>{frInline(cleanSeg)}</span>
             </div>
           );
-        }
-        return (
-          <div key={i} style={{
-            color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, display: "flex", gap: "8px",
-          }}>
-            <span style={{ color: "#22E6F0", flexShrink: 0 }}>•</span>
-            <span>{frInline(seg)}</span>
-          </div>
-        );
-      })}
+        })}
+      </div>
     </div>
   );
 }
@@ -677,43 +705,60 @@ export default function DocsPage() {
 
         {/* 1. Brand */}
         <section style={{ marginBottom: "54px" }}>
-          {/* Logo sits above; the wordmark is then the sentence's first word, so the copy
-              runs on from it and wraps to full width underneath, as one block. */}
-          <div className="hero-row" style={{ marginBottom: "32px", maxWidth: "820px", textWrap: "pretty" }}>
-            <motion.img
-              src={asset("/brand/antar_final_logo.png")}
-              alt="ANTAR Logo"
-              style={{ width: "90px", height: "90px", objectFit: "contain", filter: "drop-shadow(0 0 16px rgba(34,230,240,0.3))", display: "block", marginBottom: "12px" }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              onAnimationComplete={() => setAsciiDone(true)}
-            />
-            {asciiDone && (
-              <>
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5 }}
-                  onAnimationComplete={() => setTimeout(() => setTagDone(true), 200)}
-                  style={{ fontFamily: lang === "kn" ? "'Anek Kannada', sans-serif" : "'Jersey 10', sans-serif", fontWeight: 600, fontSize: "42px", letterSpacing: lang === "kn" ? "0" : "0.06em", color: "#FFFFFF", textTransform: "uppercase", textShadow: "0.4px 0 0 currentColor", lineHeight: 1, display: "inline-block", verticalAlign: "baseline", marginRight: "12px" }}
-                >
-                  {lang === "kn" ? "ಅಂತರ" : "Antar"}
-                </motion.span>
-                <motion.span
-                  className="hero-lead"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.18, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", lineHeight: 1.8, color: "rgba(255,255,255,0.75)" }}
-                >
-                  {lang === "kn"
-                    ? "ಎನ್ನುವುದು ಎಫ್‌ಐಆರ್ ಮತ್ತು ಪೊಲೀಸ್ ದಾಖಲೆಗಳ ಬೃಹತ್ ಸಂಗ್ರಹದ ಮೇಲೆ ನಿರ್ಮಿಸಿದ ಬುದ್ಧಿವಂತ ಪದರ. ಪ್ರತ್ಯೇಕವಾಗಿ ಉಳಿದಿದ್ದ ಪ್ರಕರಣಗಳ ನಡುವಿನ ಕೊಂಡಿಗಳನ್ನು ತಕ್ಷಣ ಬೆಸೆದು, ಗುಪ್ತ ಅಪರಾಧ ಜಾಲಗಳನ್ನು ಬಯಲಿಗೆ ತಂದು, ಪರಿಶೀಲಿಸಿದ ಮಾಹಿತಿಯನ್ನು ನೀಡುತ್ತದೆ. ಇದು ಕೇವಲ ಹುಡುಕಾಟದ ಸಾಧನವಲ್ಲ. ಬೆದರಿಕೆಗಳನ್ನು ಮುಂಚಿತವಾಗಿ ಗ್ರಹಿಸಲು ಮತ್ತು ಪ್ರಕರಣಗಳನ್ನು ಅಭೂತಪೂರ್ವ ವೇಗದಲ್ಲಿ ಭೇದಿಸಲು ಅಧಿಕಾರಿಗಳ ಜೊತೆ ನಿಲ್ಲುವ ಪೂರ್ವಭಾವಿ ಪಾಲುದಾರ."
-                    : "is an intelligent layer built over vast archives of FIRs and police records. It brings dormant data to life by instantly connecting the dots between isolated cases, uncovering hidden crime networks, and delivering verified intelligence. More than a search engine, it is a proactive partner that helps officers anticipate threats and solve cases with unprecedented speed."}
-                </motion.span>
-              </>
-            )}
-          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", paddingTop: "8px" }}>
+              <motion.img 
+                src={asset("/brand/antar_final_logo.png")} 
+                alt="ANTAR Logo" 
+                style={{ width: "90px", height: "90px", objectFit: "contain", filter: "drop-shadow(0 0 16px rgba(34,230,240,0.3))" }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                onAnimationComplete={() => setAsciiDone(true)}
+              />
+              {asciiDone && (
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <motion.span 
+                    initial={{ opacity: 0, x: -10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    transition={{ duration: 0.5 }}
+                    style={{ fontFamily: lang === "kn" ? "'Anek Kannada', sans-serif" : "'Jersey 10', sans-serif", fontWeight: 600, fontSize: "42px", letterSpacing: lang === "kn" ? "0" : "0.06em", color: "#FFFFFF", textTransform: "uppercase", textShadow: "0.4px 0 0 currentColor", lineHeight: 1 }}
+                  >
+                    {lang === "kn" ? "ಅಂತರ" : "Antar"}
+                  </motion.span>
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.85 }} 
+                    animate={{ opacity: 1, scale: 1 }} 
+                    transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                    onAnimationComplete={() => setTimeout(() => setTagDone(true), 200)}
+                    style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", fontWeight: 400, color: "rgba(255,255,255,0.5)", letterSpacing: "0.02em", marginTop: "4px" }}
+                  >
+                    Think. Connect. Anticipate.
+                  </motion.div>
+
+                  <motion.div 
+                    initial={{ opacity: 0, y: 12 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ maxWidth: "760px", fontFamily: "'Inter', sans-serif" }}
+                  >
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ fontSize: "14.5px", lineHeight: 1.65, color: "rgba(255,255,255,0.75)", marginTop: "16px", paddingLeft: "16px", borderLeft: "2px solid rgba(34,230,240,0.4)" }}
+                    >
+                      {lang === "kn" 
+                        ? "ಅಂತರ ಎಂಬುದು ಬೃಹತ್ ಎಫ್‌ಐಆರ್‌ಗಳು ಮತ್ತು ಪೊಲೀಸ್ ದಾಖಲೆಗಳ ಮೇಲೆ ನಿರ್ಮಿಸಲಾದ ಬುದ್ಧಿವಂತ ಲೇಯರ್ ಆಗಿದೆ. ಇದು ಪ್ರತ್ಯೇಕವಾದ ಪ್ರಕರಣಗಳ ನಡುವಿನ ಚುಕ್ಕೆಗಳನ್ನು ತಕ್ಷಣವೇ ಸಂಪರ್ಕಿಸುವ ಮೂಲಕ, ಗುಪ್ತ ಅಪರಾಧ ಜಾಲಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವ ಮೂಲಕ ಮತ್ತು ಪರಿಶೀಲಿಸಿದ ಗುಪ್ತಚರವನ್ನು ತಲುಪಿಸುವ ಮೂಲಕ ಸುಪ್ತ ಡೇಟಾವನ್ನು ಜೀವಂತಗೊಳಿಸುತ್ತದೆ. ಕೇವಲ ಸರ್ಚ್ ಇಂಜಿನ್‌ಗಿಂತ ಹೆಚ್ಚಾಗಿ, ಇದು ಪೂರ್ವಭಾವಿ ಪಾಲುದಾರನಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ—ಅಭೂತಪೂರ್ವ ವೇಗದೊಂದಿಗೆ ಬೆದರಿಕೆಗಳನ್ನು ನಿರೀಕ್ಷಿಸಲು ಮತ್ತು ಪ್ರಕರಣಗಳನ್ನು ಪರಿಹರಿಸಲು ಅಧಿಕಾರಿಗಳಿಗೆ ಅಧಿಕಾರ ನೀಡುತ್ತದೆ."
+                        : "Antar is an intelligent layer built over vast archives of FIRs and police records. It brings dormant data to life by instantly connecting the dots between isolated cases, uncovering hidden crime networks, and delivering verified intelligence. More than just a search engine, it acts as a proactive partner—empowering officers to anticipate threats and solve cases with unprecedented speed."}
+                    </motion.div>
+                  </motion.div>
+
+
+                </div>
+              )}
+            </div>
 
             {/* Language Toggle & Explore Button */}
             <div style={{ display: "flex", gap: "24px", alignItems: "center", position: "fixed", top: "16px", right: "24px", zIndex: 10000 }}>
@@ -765,42 +810,18 @@ export default function DocsPage() {
                 </button>
               </div>
             </div>
+          </div>
           {asciiDone && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
               {tagDone && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }}>
-                  <motion.div 
-                    initial={{ opacity: 0, y: 12 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#FFFFFF", letterSpacing: "0.1em", marginTop: "16px", marginBottom: "8px", opacity: 0.85 }}
-                  >
-                    // {lang === "kn" ? "ಅಪರಾಧ ಗುಪ್ತಚರ ವೇದಿಕೆ · ವಿಮರಕ್ಷಾ ತಂಡದಿಂದ ಅಭಿವೃದ್ಧಿಪಡಿಸಲಾಗಿದೆ" : "CRIME INTELLIGENCE PLATFORM · DEVELOPED BY"} 
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: "#22E6F0", textDecoration: "none", marginLeft: "6px", position: "relative", zIndex: 10 }}>
-                      TEAM VIMARAKSHA
-                    </motion.span>
-                  </motion.div>
-                  <motion.div 
-                    initial={{ opacity: 0, y: 12 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ maxWidth: "760px", fontFamily: "'Inter', sans-serif" }}
-                  >
-                    <div style={{ fontSize: "15px", lineHeight: 1.5, color: "rgba(255,255,255,0.88)", fontWeight: 500, marginBottom: "14px" }}>
-                      {lang === "kn"
-                        ? "ನಿಮ್ಮ ಅಪರಾಧ ದತ್ತಾಂಶವನ್ನು ಏನು ಬೇಕಾದರೂ ಕೇಳಿ. ಪರಿಶೀಲಿತ ಉತ್ತರಗಳನ್ನು ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಪಡೆಯಿರಿ."
-                        : "Ask your crime data anything. Get verified answers in seconds."}
-                    </div>
-                  </motion.div>
-
-                  {/* Project Details Inline Row */}
+                                    {/* Project Details Inline Row */}
                   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} style={{ marginTop: "20px" }}>
                       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
                         {[
                           { id: 'features', label: lang === "kn" ? 'ಪ್ರಮುಖ ಲಕ್ಷಣಗಳು' : 'Key Features & Functionalities' },
                           { id: 'impact', label: lang === "kn" ? 'ಪರಿಣಾಮ ಮತ್ತು ಬಳಕೆ' : 'Impact & Use Cases' },
-                          { id: 'innovation', label: lang === "kn" ? 'ನಾವೀನ್ಯತೆ' : 'Innovation' },
-                          { id: 'future', label: lang === "kn" ? 'ಮುಂದಿನ ಹಂತಗಳು' : 'Future Development' }
+                          { id: 'innovation', label: lang === "kn" ? 'ನಾವೀನ್ಯತೆ ಮತ್ತು ಭವಿಷ್ಯ' : 'Innovation & Future Development' }
                         ].map((btn, i) => (
                           <motion.div
                             key={btn.id}
@@ -846,8 +867,8 @@ export default function DocsPage() {
                                   <li style={{ marginBottom: "6px" }}>
                                     <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
                                     {lang === "kn" 
-                                      ? "ಜಾಲ ವಿಶ್ಲೇಷಣೆಯಿಂದ OSINT ಮತ್ತು ಮುನ್ಸೂಚನೆಯವರೆಗೆ, 16 ವಿಶೇಷ ಏಜೆಂಟ್‌ಗಳು ಒಂದೇ ಪ್ರಶ್ನೆಯ ಮೇಲೆ ಏಕಕಾಲದಲ್ಲಿ ಕೆಲಸ ಮಾಡುತ್ತವೆ."
-                                      : "16 specialist agents work the same question at once, from network analysis and risk scoring to OSINT and forecasting."}
+                                      ? "ಸಂಪೂರ್ಣ 360-ಡಿಗ್ರಿ ಗುಪ್ತಚರ ಮಾಹಿತಿಯನ್ನು ನಿಮಗೆ ಒದಗಿಸಲು 15 ವಿಶೇಷ AI ಏಜೆಂಟ್‌ಗಳ ಸಹಯೋಗದ ತಂಡ, ನೆಟ್‌ವರ್ಕ್ ಮ್ಯಾಪಿಂಗ್ ಮತ್ತು ಮನೋವೈಜ್ಞಾನಿಕ ವಿಶ್ಲೇಷಣೆಯಿಂದ OSINT ಮತ್ತು ಮುನ್ಸೂಚಕ ಫೋರೆನ್ಸಿಕ್ಸ್‌ವರೆಗೆ, ಒಟ್ಟಾಗಿ ಕೆಲಸ ಮಾಡುತ್ತದೆ."
+                                      : "A collaborative team of 15 specialized AI agents working together, from network mapping and psychological analysis to OSINT and predictive forensics, to provide you with complete 360-degree intelligence."}
                                   </li>
                                   <li style={{ marginBottom: "6px" }}>
                                     <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
@@ -934,74 +955,31 @@ export default function DocsPage() {
                                 </div>
                               )}
                               {expandedDetail === 'innovation' && (
-                                <div>
-                                  {/* USPs sit in their own box, set apart from the rest */}
-                                  <div style={{ background: "linear-gradient(180deg, rgba(34,230,240,0.07), rgba(34,230,240,0.015))", border: "1px solid rgba(34,230,240,0.32)", borderRadius: "8px", padding: "11px 13px", marginBottom: "14px" }}>
-                                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#22E6F0", marginBottom: "9px" }}>
-                                      {lang === "kn" ? "ಅಂತರವನ್ನು ಬೇರೆಯಾಗಿಸುವುದು" : "What sets Antar apart"}
-                                    </div>
-                                    <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "grid", gap: "6px", fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                                      {(lang === "kn" ? [
-                                        ["ಪ್ರತಿ ಪ್ರಶ್ನೆಗೂ ಉತ್ತರ", "ಸ್ವಯಂ-ಸರಿಪಡಿಸುವ ಹುಡುಕಾಟ, ಮತ್ತು ಕಟ್ಟಿದ ಉತ್ತರದ ಬದಲು ಪ್ರಾಮಾಣಿಕ ಮುಕ್ತಾಯ. ಗೋಲ್ಡನ್ ಪರೀಕ್ಷೆಯಲ್ಲಿ 35ಕ್ಕೆ 35."],
-                                        ["ಪರಿಶೀಲಿಸಬಹುದಾದ ಮುನ್ಸೂಚನೆ", "23 ವಾರದ ಬ್ಯಾಕ್-ಟೆಸ್ಟ್: ಅಗ್ರ 5% ಬೀಟ್‌ಗಳಲ್ಲಿ ಒಟ್ಟು ಅಪರಾಧದ 40.4% ಸಿಕ್ಕಿತು."],
-                                        ["ಎರಡನೆಯ ಅಧಿಕಾರಿಯ ಒಪ್ಪಿಗೆ", "ಗಸ್ತು ಮತ್ತು ವಾಚ್‌ಲಿಸ್ಟ್ ಬದಲಾವಣೆಗೆ ಹೇಗ್ಜೆಯ ಸರಪಳಿಯ ಮೇಲೆ ನಿಂತ ಎರಡನೆಯ ಸಹಿ."],
-                                      ] : [
-                                        ["An answer to every question", "Self-healing retrieval, and an honest dead end instead of a made-up one. 35 of 35 on the golden suite."],
-                                        ["Forecasting you can check", "A 23-week back-test: the top 5% of beats carried 40.4% of all crime."],
-                                        ["Nothing reaches the street unreviewed", "A second officer signs every patrol or watchlist change, on a tamper-evident chain."],
-                                      ]).map(([t, d]) => (
-                                        <li key={t} style={{ display: "flex", gap: "8px" }}>
-                                          <span style={{ color: "#22E6F0", flexShrink: 0 }}>•</span>
-                                          <span><span style={{ color: "#FFFFFF", fontWeight: 600 }}>{t}.</span> {d}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-
-                                  <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                                    {(lang === "kn" ? [
-                                      ["ವಿರೋಧಾತ್ಮಕ ಪರಿಶೀಲನೆ", "ಎದುರಾಡುವ ಏಜೆಂಟ್. ಮೂಲ ಪ್ರಮಾಣದ ವಿರುದ್ಧ ಪರಿಶೀಲಿಸುತ್ತದೆ, LLM ರಹಿತ."],
-                                      ["CPU ಮಾತ್ರ", "ONNX int8 ಹುಡುಕಾಟ 1,00,000 ಎಫ್‌ಐಆರ್‌ಗಳಲ್ಲಿ ~110 ಮಿ.ಸೆ. GPU ಇಲ್ಲ."],
-                                      ["ಉಳಿಯುವ ಪ್ರಕರಣ ಕಡತ", "ಸಂಭಾಷಣೆಗಳು SQLite ನಲ್ಲಿ ದಾಖಲಾಗಿ ಪುನರಾರಂಭದ ನಂತರವೂ ಉಳಿಯುತ್ತವೆ."],
-                                      ["SDAR ಚಕ್ರ", "ಪ್ರತಿ ತಿರುವನ್ನೂ ಅಳೆದು ಶುದ್ಧ ತರಬೇತಿ ದತ್ತಾಂಶವಾಗಿ ಮರಳಿಸಲಾಗುತ್ತದೆ."],
-                                      ["ಪ್ರತ್ಯೇಕವಾದ ಸ್ಕೌಟ್", "ಮುಕ್ತ ಅಂತರ್ಜಾಲದ ಸುದ್ದಿ ಪ್ರತ್ಯೇಕವಾಗಿಯೇ ಉಳಿಯುತ್ತದೆ, ಅಪರಿಶೀಲಿತ ಎಂದೇ ಗುರುತು."],
-                                      ["ದಾಖಲೆಯಿಂದಲೇ ಏಜೆಂಟ್", "ದಾಖಲೆಯಲ್ಲಿದ್ದು ನಿಜವಾಗಿ ಇಲ್ಲದ ಏಜೆಂಟ್ ಬಿಲ್ಡ್ ಅನ್ನೇ ವಿಫಲಗೊಳಿಸುತ್ತದೆ."],
-                                    ] : [
-                                      ["Adversarial Audit", "An agent that argues back, base-rate checked and deliberately LLM-free."],
-                                      ["CPU only", "ONNX int8 search across 100,000 FIRs in about 110 ms. No GPU."],
-                                      ["Durable case file", "Threads are checkpointed to SQLite and survive a restart."],
-                                      ["SDAR loop", "Every turn is scored and recycled into clean training data."],
-                                      ["Sandboxed Scout", "Open-web leads stay isolated and labelled unverified."],
-                                      ["Manifest-driven agents", "A documented agent that does not exist fails the build."],
-                                    ]).map(([t, d], i, arr) => (
-                                      <li key={t} style={{ marginBottom: i === arr.length - 1 ? "0px" : "6px" }}>
-                                        <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>{t}:</span>
-                                        {d}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {expandedDetail === 'future' && (
                                 <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                                  {(lang === "kn" ? [
-                                    ["ನೇರ ದತ್ತಾಂಶ ಸೇರ್ಪಡೆ", "ಸ್ನ್ಯಾಪ್‌ಶಾಟ್ ಬದಲು ಕೆಎಸ್‌ಪಿ ದಾಖಲಾತಿಯಿಂದ ನೇರ ಸಂಪರ್ಕ."],
-                                    ["ನಿಜವಾದ ಬೀಟ್ ಗಡಿಗಳು", "ಇಂದು ವೊರೊನಾಯ್ ಅಂದಾಜು; ನಿಜ ಗಡಿಗಳು ನಿಖರತೆ ಸೂಚ್ಯಂಕವನ್ನು ನಿಖರಗೆಳಿಸುತ್ತವೆ."],
-                                    ["ಗ್ರಾಫ್ ಅಟೆನ್ಷನ್ ನೆಟ್‌ವರ್ಕ್", "ಹಂಚಿಕೆಯ ಸಾಕ್ಷ್ಯದಿಂದ ಮಾತ್ರ ಕಾಣದ ಸಂಘಟಿತ ಗುಂಪುಗಳನ್ನು ಗುರುತಿಸುವುದು."],
-                                    ["ಸಿಸಿಟಿವಿ ಮತ್ತು ಡ್ರೋನ್", "ವಿಷನ್ ಮಾದರಿಗಳು, ಅದೇ K/D/I/U ಸಾಕ್ಷ್ಯ ವರ್ಗಗಳೊಂದಿಗೆ."],
-                                    ["ಅಗತ್ಯ ಬಿದ್ದಾಗ GPU", "ಇಂದು CPU ಆಧಾರಿತ, ಆದ್ದರಿಂದ ಟಾಣೆ ತನ್ನ ಯಂತ್ರದಲ್ಲೇ ನಡೆಸಬಹುದು."],
-                                  ] : [
-                                    ["Live ingestion", "A direct KSP registry feed in place of the snapshot."],
-                                    ["Real beat boundaries", "Voronoi estimates today; true polygons make the accuracy index exact."],
-                                    ["Graph Attention Networks", "Surface organised groups that shared-evidence linkage misses."],
-                                    ["CCTV and drone footage", "Vision models, tagged with the same K/D/I/U evidence classes."],
-                                    ["GPU when volume asks for it", "CPU-native today, so a station runs it on the hardware it owns."],
-                                  ]).map(([t, d], i, arr) => (
-                                    <li key={t} style={{ marginBottom: i === arr.length - 1 ? "0px" : "6px" }}>
-                                      <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>{t}:</span>
-                                      {d}
-                                    </li>
-                                  ))}
+                                  <li style={{ marginBottom: "8px" }}>
+                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>SDAR Data Flywheel:</span>
+                                    {lang === "kn"
+                                      ? "ಅದು ವಿಶ್ಲೇಷಿಸುವ ಪ್ರತಿಯೊಂದು ಪ್ರಕರಣದೊಂದಿಗೆ ಚುರುಕಾಗುವ ಸ್ವಾಯತ್ತ ಸ್ವಯಂ-ಸುಧಾರಣಾ ಡೇಟಾ ಲೂಪ್. ಇದು ಏಜೆಂಟ್‌ನ ಯಶಸ್ಸು ಮತ್ತು ತಪ್ಪುಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಲಾಗ್ ಮಾಡುತ್ತದೆ, ದುಬಾರಿ ಹಾರ್ಡ್‌ವೇರ್ ಅಗತ್ಯವಿಲ್ಲದೆ ತೆರೆಮರೆಯಲ್ಲಿ ಸಿಸ್ಟಮ್‌ನ ನಿಖರತೆ ಮತ್ತು ವೇಗವನ್ನು ನಿರಂತರವಾಗಿ ಹೆಚ್ಚಿಸಲು ಒಳನೋಟಗಳನ್ನು ಕ್ಲೀನ್ ತರಬೇತಿ ಡೇಟಾವಾಗಿ ಪ್ಯಾಕೇಜ್ ಮಾಡುತ್ತದೆ."
+                                      : "An autonomous self-improving data loop that gets smarter with every case it analyzes. It automatically logs agent successes and mistakes, packaging the insights into clean training data to continuously fine-tune the system's accuracy and speed behind the scenes, all without needing expensive hardware."}
+                                  </li>
+                                  <li style={{ marginBottom: "8px" }}>
+                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>Isolated OSINT Agent (Scout):</span>
+                                    {lang === "kn"
+                                      ? "ಅಧಿಕೃತ ಪೊಲೀಸ್ FIR ದಾಖಲೆಗಳನ್ನು ಕಲುಷಿತಗೊಳಿಸದೆ ಮುಕ್ತ/ಡಾರ್ಕ್ ವೆಬ್ ಶಂಕಿತ ಮಾಹಿತಿಗಾಗಿ ಪ್ರತ್ಯೇಕಿಸಿದ ಜೀರೋ-ಟ್ರಸ್ಟ್ ಸ್ಯಾಂಡ್‌ಬಾಕ್ಸ್."
+                                      : "Completely sandboxed OSINT layer (Scout) crawling open/dark web intelligence in isolation to protect official FIR data integrity."}
+                                  </li>
+                                  <li style={{ marginBottom: "8px" }}>
+                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>Custom Tool Ecosystem:</span>
+                                    {lang === "kn"
+                                      ? "Known/Unknown Layered (KUL) ಡಾಸಿಯರ್‌ಗಳು, ಜಿಯೋ-ಸ್ಪೇಷಿಯಲ್ ಕ್ಲಸ್ಟರಿಂಗ್ ಮತ್ತು SHA-256 ಸಾಕ್ಷ್ಯ ಲಾಗ್‌ಗಳೊಂದಿಗೆ ಕಸ್ಟಮ್ ಉಪಕರಣಗಳ ರಚನೆ."
+                                      : "Custom tools built around Known/Unknown Layered (KUL) dossiers, dynamic ZCQL AST parsing, Gi* spatial density clustering, and SHA-256 cryptographic logging."}
+                                  </li>
+                                  <li style={{ marginBottom: "0px" }}>
+                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>Future Scaling Roadmap:</span>
+                                    {lang === "kn"
+                                      ? "vLLM/TRL ಜೊತೆಗೆ GPU ಕ್ಲಸ್ಟರ್‌ಗಳಿಗೆ ವಿಸ್ತರಿಸುವುದು, Graph Attention Networks (GAT), ಮತ್ತು CCTV/ಡ್ರೋನ್ ದೃಶ್ಯಗಳಿಗಾಗಿ ಮಲ್ಟಿಮೊಡಲ್ AI ಮಾದರಿಗಳ ಸೇರ್ಪಡೆ."
+                                      : "Scaling from CPU-native AppSail to GPU-accelerated clusters (vLLM/TRL), Graph Attention Networks (GAT) for syndicate discovery, and Multimodal Vision models for CCTV/drone feeds."}
+                                  </li>
                                 </ul>
                               )}
 
@@ -1023,7 +1001,7 @@ export default function DocsPage() {
               <div style={{ background: "rgba(3,6,14,0.96)", border: "1px solid rgba(34,230,240,0.2)", borderRadius: "12px", padding: "22px 24px", boxShadow: "0 0 26px rgba(34,230,240,0.05)" }}>
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "9px", color: "#22E6F0", letterSpacing: "0.13em", marginBottom: "7px" }}>{lang === "kn" ? "[ ಡೆಮೊ ಪ್ರಾರಂಭಿಸಿ ]" : "[ START THE DEMO ]"}</div>
                 <h2 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: "18px", color: "#F8FAFC", marginBottom: "5px" }}>{lang === "kn" ? "ಒಂದು ತನಿಖಾ ಪ್ರಶ್ನೆಯನ್ನು ಕೇಳಿ" : "Ask one investigation question"}</h2>
-                <p style={{ fontSize: "11.5px", color: "#475569", marginBottom: "14px", lineHeight: 1.5 }}>{lang === "kn" ? "ಅಂತರವು ಒಂದೇ ಪ್ರಶ್ನೆಯನ್ನು ಮೂರು ರೀತಿಯಲ್ಲಿ ಏಕಕಾಲಕ್ಕೆ ನಡೆಸುತ್ತದೆ: ಯೋಚಿಸಿ, ಸಂಪರ್ಕಿಸಿ, ನಿರೀಕ್ಷಿಸಿ. ನೈಜ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳ ಮೇಲೆ ಲೈವ್." : "Antar runs it three ways at once, Think, Connect and Anticipate, live on real FIR records."}</p>
+                <p style={{ fontSize: "11.5px", color: "#475569", marginBottom: "14px", lineHeight: 1.5 }}>{lang === "kn" ? "ಅಂತರವು ಏಕಕಾಲದಲ್ಲಿ ಮೂರು ರೀತಿಯಲ್ಲಿ ಚಲಿಸುತ್ತದೆ - ಯೋಚಿಸಿ, ಸಂಪರ್ಕಿಸಿ, ನಿರೀಕ್ಷಿಸಿ - ನೈಜ FIR ದಾಖಲೆಗಳಲ್ಲಿ ಲೈವ್." : "Antar will run it three ways simultaneously - Think, Connect, Anticipate - live on real FIR records."}</p>
                 <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
                   <input value={customQ} onChange={(e) => setCustomQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") startWithQuestion(customQ); }}
                     placeholder={lang === "kn" ? "ಉದಾ. ರಾಜಾಜಿನಗರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧಿಗಳು ಯಾರು?" : "e.g. Who are the repeat offenders in Rajajinagar?"}
@@ -1123,19 +1101,19 @@ export default function DocsPage() {
               style={{ background: "rgba(3,6,15,0.8)", border: "1px solid rgba(34,230,240,0.15)", borderRadius: "12px", padding: "20px 24px", display: "flex", gap: "16px", flexWrap: "nowrap", justifyContent: "space-between", marginBottom: "42px", textAlign: "center", boxShadow: "0 0 30px rgba(34,230,240,0.03)", backdropFilter: "blur(12px)" }}
             >
               {(lang === "kn" ? [
-                { val: "16", label: "ಸ್ವಾಯತ್ತ ಏಜೆಂಟ್‌ಗಳು" },
+                { val: "15", label: "ಸ್ವಾಯತ್ತ ಏಜೆಂಟ್‌ಗಳು" },
                 { val: "10L+", label: "ಅಧಿಕೃತ ಕೆಎಸ್‌ಪಿ ಎಫ್‌ಐಆರ್ ಸ್ಕೀಮಾ ಮೂಲಕ ನೈಜ ಡೇಟಾ" },
                 { val: "< 1.8s", label: "ಸಿಪಿಯು ಲೇಟೆನ್ಸಿ (0 GPU)" },
                 { val: "0%", label: "ಹಾಲುಸಿನೇಷನ್ ಪ್ರಮಾಣ" },
-                { val: "40.4%", label: "ಅಗ್ರ 5% ಬೀಟ್‌ಗಳಲ್ಲಿ ಸಿಕ್ಕ ಅಪರಾಧ" },
+                { val: "448", label: "ಪ್ರೂಫ್ ಕ್ಲಸ್ಟರ್‌ಗಳು" },
                 { val: "100%", label: "ಟ್ರೇಸ್ ಆಡಿಟೆಬಿಲಿಟಿ" },
                 { val: "0", label: "ಬಾಹ್ಯ ಅವಲಂಬನೆಗಳು" },
               ] : [
-                { val: "16", label: "AUTONOMOUS AGENTS" },
+                { val: "15", label: "AUTONOMOUS AGENTS" },
                 { val: "10L+", label: "FIR's FOLLOWING THE OFFICIAL KSP DB SCHEMA" },
                 { val: "< 1.8s", label: "CPU LATENCY (0 GPU)" },
                 { val: "0%", label: "HALLUCINATION RATE" },
-                { val: "40.4%", label: "CRIME IN THE TOP 5% OF BEATS" },
+                { val: "448", label: "PROOF CLUSTERS LINKED" },
                 { val: "100%", label: "TRACE AUDITABILITY" },
                 { val: "0", label: "EXTERNAL DEPENDENCIES" },
               ]).map((s, i) => (
@@ -1173,9 +1151,9 @@ export default function DocsPage() {
               </motion.h2>
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
                 style={{ fontSize: "14px", color: "#94A3B8", maxWidth: "600px", margin: "0 auto", lineHeight: 1.6 }}>
-                {lang === "kn"
-                  ? "ಆರು ಪರಿಕರಗಳು, ಒಂದೇ ದಾಖಲೆ. ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಶಂಕಿತನನ್ನು ಜಾಡು ಹಿಡಿಯಿರಿ, ಹಾಟ್‌ಸ್ಪಾಟ್ ಉತ್ತುಂಗಕ್ಕೆ ಏರುವ ಮೊದಲೇ ಅದು ರೂಪುಗೊಳ್ಳುವುದನ್ನು ನೋಡಿ, ಅಥವಾ ಸ್ಕ್ಯಾನ್ ಮಾಡಿದ ಎಫ್‌ಐಆರ್‌ನಿಂದ ಪಠ್ಯವನ್ನು ಹೊರತೆಗೆಯಿರಿ. ಪ್ರತಿ ಉತ್ತರವೂ ತನ್ನ ಸಾಕ್ಷ್ಯದ ಜಾಡನ್ನು ಜೊತೆಗೇ ಹೊತ್ತು ಬರುತ್ತದೆ."
-                  : "Six tools, one record. Trace a suspect across districts, watch a hotspot form a week before it peaks, or pull the text out of a scanned FIR. Every answer arrives with its evidence trail still attached."}
+                {lang === "kn" 
+                  ? "ಅಡಗಿರುವ ಸಿಂಡಿಕೇಟ್‌ಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವುದರಿಂದ ಮತ್ತು ಅಪರಾಧ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳನ್ನು ಊಹಿಸುವುದರಿಂದ ಹಿಡಿದು ಆಳವಾದ ಫೋರೆನ್ಸಿಕ್ ವಿಶ್ಲೇಷಣೆಯವರೆಗೆ, ನಮ್ಮ ಆರು ವಿಶೇಷ ಪರಿಕರಗಳ ಸೂಟ್ ಕಚ್ಚಾ ಡೇಟಾವನ್ನು ಕಾರ್ಯಸಾಧ್ಯವಾದ, ಕಾರ್ಯತಂತ್ರದ ಮುನ್ನೋಟವಾಗಿ ಪರಿವರ್ತಿಸುತ್ತದೆ." 
+                  : "From uncovering hidden syndicates and forecasting crime hotspots to deep forensic document analysis, our suite of six specialized tools transforms raw data into actionable, strategic foresight."}
               </motion.p>
             </div>
 
@@ -1244,7 +1222,7 @@ export default function DocsPage() {
                   <span className="scan"></span>
                   <span className="mag"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3" strokeLinecap="round"/></svg></span>
                 </div>
-                <p className="tools-tdesc">Find anyone, fast. Fuzzy and phonetic matching across name, alias, phone and plate, returning verified records with optional OSINT leads.</p>
+                <p className="tools-tdesc">Find anyone, fast. Fuzzy and phonetic matching across name, alias, phone and plate - with verified records and optional OSINT leads.</p>
               </div>
 
               {/* 6 alerts */}
@@ -1268,6 +1246,17 @@ export default function DocsPage() {
             </motion.div>
           </motion.section>
         )}
+              <motion.div 
+                    initial={{ opacity: 0, y: 12 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 2.5, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ textAlign: "center", width: "100%", justifyContent: "center", display: "flex",  fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#FFFFFF", letterSpacing: "0.1em", marginTop: "80px", marginBottom: "8px", opacity: 0.85 }}
+                  >
+                    // {lang === "kn" ? "ಅಪರಾಧ ಗುಪ್ತಚರ ವೇದಿಕೆ · ವಿಮರಕ್ಷಾ ತಂಡದಿಂದ ಅಭಿವೃದ್ಧಿಪಡಿಸಲಾಗಿದೆ" : "Crime Intelligence Platform · Developed by"} 
+                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.7, duration: 1.2 }} style={{ color: "#22E6F0", textDecoration: "none", marginLeft: "6px", position: "relative", zIndex: 10 }}>
+                      Team Vimaraksha
+                    </motion.span>
+                  </motion.div>
       </main>
 
       {/* Floating ▲ / ▼ Navigation Control (Right Middle) */}
@@ -1345,13 +1334,6 @@ export default function DocsPage() {
         ::-webkit-scrollbar-thumb{background:rgba(34,230,240,0.13);border-radius:2px}
         @media(max-width:820px){
           .antar-expanded-grid { grid-template-columns:1fr !important; }
-        }
-        /* The hero is one block: the logo stacks above, then the wordmark opens the
-           sentence and the copy wraps full width beneath it. Narrow screens shrink the mark. */
-        @media(max-width:560px){
-          .hero-row img { width: 62px !important; height: 62px !important; margin-bottom: 6px !important; }
-          .hero-row span { font-size: 34px !important; }
-          .hero-row .hero-lead { font-size: 12.5px !important; }
         }
       
         /* Tools Grid CSS from Mockup */

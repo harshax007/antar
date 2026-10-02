@@ -1815,14 +1815,6 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .bsx-read .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; }
 .bsx-read .dot.big { width: 10px; height: 10px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
 .bsx-read .ln { flex: none; width: 12px; height: 2px; border-radius: 2px; background: rgba(34,230,240,.6); }
-/* An agent is a ringed marker in the scene, so the key shows a ring, not a dot. */
-.bsx-read .ring { flex: none; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid currentColor; background: transparent; }
-/* A cluster of specks, for the "each blob is a group" row. */
-.bsx-read .grp { flex: none; width: 12px; height: 11px; border-radius: 50%;
-  background: radial-gradient(circle at 30% 35%, rgba(34,230,240,.85) 1.2px, transparent 1.6px),
-              radial-gradient(circle at 68% 40%, rgba(34,230,240,.6) 1.1px, transparent 1.5px),
-              radial-gradient(circle at 45% 72%, rgba(34,230,240,.7) 1.1px, transparent 1.5px);
-  border: 1px solid rgba(34,230,240,.22); }
 
 /* Screen title - brain identity, top centre */
 .bsx-title { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6; pointer-events: none; text-align: center; font-family: 'Chakra Petch'; font-size: 13px; letter-spacing: .34em; color: rgba(232,238,247,.8); text-shadow: 0 0 18px rgba(34,230,240,.35); }
@@ -2091,27 +2083,10 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .bsx-cal svg rect { transition: stroke .1s; }
 .bsx-cal svg rect:hover { stroke: rgba(255,255,255,.75); stroke-width: 1; }
 
-/* ── Brain · Run Antar ────────────────────────────────────────────────────── */
-/* One accent in this product, and it is cyan. The pill used to be lavender and the
-   progress dock violet, which read as a third system on a screen that already has
-   severity colours doing real work. */
-.bsx-pill.think { opacity: 1; color: #B6C6D8; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.06); }
-.bsx-pill.think:hover { background: rgba(34,230,240,.07); border-color: rgba(34,230,240,.55); color: #fff; }
-.bsx-pill.think svg { transition: transform .5s cubic-bezier(.16,1,.3,1); }
-.bsx-pill.think:hover svg { transform: rotate(180deg); }
-/* Running: a light travels the border. No colour change, no flashing - the motion
-   alone says it is working, and it stops the moment it lands. */
-.bsx-pill.think.busy { color: var(--cyan); border-color: rgba(34,230,240,.35); position: relative; overflow: hidden; }
-.bsx-pill.think.busy::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(34,230,240,.16), transparent);
-  transform: translateX(-100%); animation: bsxSweep 1.5s linear infinite; }
-@keyframes bsxSweep { to { transform: translateX(100%); } }
-.bsx-pill.think.busy svg { animation: bsxSpin 2.6s linear infinite; }
-@keyframes bsxSpin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  .bsx-pill.think.busy::after, .bsx-pill.think.busy svg { animation: none; }
-  .bsx-pill.think svg, .bsx-pill.think:hover svg { transition: none; transform: none; }
-}
+/* ── Brain · Think ────────────────────────────────────────────────────────── */
+/* Purple: the colour of the agents it sends flying. It sat at 70% opacity, easy to miss. */
+.bsx-pill.think { opacity: 1; color: #DDD6FE; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.05); }
+.bsx-pill.think:hover { background: rgba(255,255,255,0.05); border-color: rgba(167,139,250,.75); color: #fff; }
 .bsx-pill.think-res { position: absolute; top: 16px; right: 404px; z-index: 7; opacity: 1;
   color: var(--cyan); border-color: rgba(34,230,240,.4); }
 
@@ -2120,8 +2095,8 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
   border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 14px 11px;
   box-shadow: 0 12px 40px rgba(0,0,0,.45), 0 0 26px rgba(255,255,255,0.05); animation: fadeRise .25s ease both; }
 .bsx-thinkdock .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.bsx-thinkdock .ttl { display: flex; align-items: center; gap: 8px; font-family: 'Chakra Petch'; font-size: 12.5px; font-weight: 600; color: #DCE6F2; }
-.bsx-thinkdock .ttl i { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 9px rgba(34,230,240,.7); animation: stepPulse 1.4s ease-in-out infinite; }
+.bsx-thinkdock .ttl { display: flex; align-items: center; gap: 8px; font-family: 'Chakra Petch'; font-size: 12.5px; font-weight: 600; color: #E9D5FF; }
+.bsx-thinkdock .ttl i { width: 8px; height: 8px; border-radius: 50%; background: #A78BFA; box-shadow: 0 0 10px #A78BFA; animation: stepPulse 1s ease-in-out infinite; }
 .bsx-thinkdock .ct { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .bsx-thinkdock .bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.08); margin: 9px 0 8px; overflow: hidden; }
 .bsx-thinkdock .bar b { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #475569, #22E6F0); transition: width .3s ease; }
@@ -2133,10 +2108,7 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 @keyframes bsxTmIn { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
 .bsx-tm-overlay { position: fixed; inset: 0; z-index: 400; display: flex; justify-content: center; align-items: flex-start;
   padding: 84px 24px 24px; background: rgba(3,6,12,.66); backdrop-filter: blur(6px); animation: bsxFade .18s ease both; }
-/* Tightened from 1120px. At that width the findings sat two-up in a mostly empty
-   sheet and the reader crossed the screen to follow one column; 880 puts the rail,
-   the takeaway and the cards in one readable measure. */
-.bsx-tm { width: min(880px, 100%); max-height: min(86vh, 100%); display: flex; flex-direction: column; overflow: hidden;
+.bsx-tm { width: min(1120px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden;
   background: #0A111D; color: var(--text); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
   box-shadow: 0 30px 80px rgba(0,0,0,.6); animation: bsxTmIn .28s cubic-bezier(.16,1,.3,1) both; }
 
@@ -2169,7 +2141,7 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .bsx-tm-tally .l i { background: #22E6F0; }
 .bsx-tm-tally .tot { margin-left: auto; color: var(--text); }
 
-.bsx-tm-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 172px minmax(0, 1fr);
+.bsx-tm-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 230px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr); margin-top: 16px; border-top: 1px solid var(--glass-border); }
 .bsx-tm-rail { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
   padding: 14px 12px; border-right: 1px solid var(--glass-border); }
@@ -2187,39 +2159,19 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .bsx-tm-agent { scroll-margin-top: 12px; }
 .bsx-tm-agent h3 { font-family: 'Chakra Petch'; font-size: 15px; font-weight: 700; color: var(--text); margin: 0; }
 .bsx-tm-agent .how { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 3px 0 10px; }
-.bsx-tm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(288px, 1fr)); gap: 9px; }
+.bsx-tm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
 /* Think findings: one accent, not three.
    Every card used to carry a coloured left rail AND a filled severity badge, so ten
    findings produced ten competing red/amber/cyan blocks and nothing looked more important
    than anything else — which is the opposite of what a severity scale is for. Now the card
    is neutral, severity is a single small dot, and CYAN is reserved for the one thing an
    officer needs to find: the finding's own title. */
-/* ── Finding card ───────────────────────────────────────────────────────────
-   Severity was carried by a 7px dot alone, so a page of findings read as one
-   flat list and the high-severity ones had to be hunted for. The dot stays, and
-   a spine down the left edge carries the same colour - scannable at a glance
-   without tinting the whole card, which would turn a lead into an alarm. */
-.bsx-tm-card { position: relative; background: rgba(255,255,255,.022);
-  border: 1px solid var(--glass-border); border-radius: 9px; padding: 11px 13px 11px 15px;
-  animation: fadeRise .26s ease both; overflow: hidden;
-  transition: border-color .18s ease, background .18s ease, transform .18s ease; }
-.bsx-tm-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px;
-  background: #3F5162; }
-.bsx-tm-card.sev-high::before { background: #FF5A5A; }
-.bsx-tm-card.sev-med::before { background: #FFB020; }
-.bsx-tm-card:hover { background: rgba(255,255,255,.045); border-color: rgba(34,230,240,.28); transform: translateY(-1px); }
+.bsx-tm-card { background: rgba(255,255,255,.022); border: 1px solid var(--glass-border);
+  border-radius: 9px; padding: 11px 13px; animation: fadeRise .26s ease both; }
 .bsx-tm-card .hd { display: flex; align-items: baseline; gap: 7px; }
 .bsx-tm-card .hd b { font-family: 'Chakra Petch'; font-size: 13.5px; font-weight: 600; line-height: 1.3; color: var(--cyan); }
 .bsx-tm-card p { font-size: 12.5px; line-height: 1.55; color: #B8C4D4; margin: 5px 0 0; }
-/* The provenance line is the point of the card, so give it a shape rather than
-   letting it trail off as grey text. */
-.bsx-tm-card .src { display: inline-block; font-family: 'JetBrains Mono'; font-size: 9.5px;
-  color: #8CA0B8; margin-top: 9px; padding: 2px 7px; border-radius: 4px;
-  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); }
-@media (prefers-reduced-motion: reduce) {
-  .bsx-tm-card { animation: none; transition: none; }
-  .bsx-tm-card:hover { transform: none; }
-}
+.bsx-tm-card .src { font-family: 'JetBrains Mono'; font-size: 10px; color: #5C6A7C; margin-top: 7px; }
 /* The dot is the whole severity signal: colour where it means something, nowhere else. */
 .bsx-sev { flex: none; width: 7px; height: 7px; border-radius: 50%; align-self: center; }
 .bsx-sev.sev-high { background: #FF5A5A; box-shadow: 0 0 0 3px rgba(255,90,90,.14); }
@@ -2359,52 +2311,6 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .ov-table .mono { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--muted); }
 .ov-table .crime { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ov-table .stage { font-size: 11px; color: var(--muted); }
-
-/* ── FIR records: seven rows on screen, the rest on scroll ──────────────────
-   The table used to render all 50 rows of a page, so it ran past the fold and
-   pushed everything under it off screen. Seven is what fits without scrolling
-   the page itself; the header stays put so the columns are still readable. */
-/* Rows were 88px because every cell wrapped to three lines in a narrow column, so a
-   "seven rows" cap showed three. One line per cell, clipped with an ellipsis, makes the
-   row height a known quantity - which is the only way a row count can mean anything. */
-.ov-table tbody td { height: 34px; padding: 6px 14px; line-height: 1.4;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
-.ov-tablescroll { max-height: calc(7 * 34px + 52px); overflow-y: auto; overscroll-behavior: contain; }
-.ov-tablescroll::-webkit-scrollbar { width: 6px; }
-.ov-tablescroll::-webkit-scrollbar-thumb { background: rgba(34,230,240,.22); border-radius: 3px; }
-.ov-tablescroll::-webkit-scrollbar-track { background: transparent; }
-.ov-table thead th { position: sticky; top: 0; z-index: 2; background: #0a101c; }
-/* A glow you can sit in front of: edge light on the row, not a lit-up cell. */
-.ov-table tbody tr { transition: background .18s ease, box-shadow .18s ease; }
-.ov-table tbody tr:hover td { background: rgba(34,230,240,.055); }
-.ov-table tbody tr:hover td:first-child { box-shadow: inset 2px 0 0 rgba(34,230,240,.55); }
-
-/* ── A filtered re-fetch is in flight ───────────────────────────────────────
-   The first query for a given year range costs ~5s over a million rows. Until
-   it lands the tiles still hold the PREVIOUS filter's numbers, so say so
-   rather than letting a stale total pass for the answer. */
-.ov-kpi.is-stale { opacity: .42; filter: saturate(.5); transition: opacity .2s ease; }
-.ov-rf-busy { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700;
-  letter-spacing: .04em; color: #22E6F0; font-family: 'Chakra Petch', sans-serif;
-  background: rgba(34,230,240,.08); border: 1px solid rgba(34,230,240,.28);
-  border-radius: 6px; padding: 3px 9px; }
-.ov-rf-busy i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid rgba(34,230,240,.3);
-  border-top-color: #22E6F0; animation: ovSpin .7s linear infinite; }
-@keyframes ovSpin { to { transform: rotate(360deg); } }
-
-/* ── Collapsible officer panels ─────────────────────────────────────────────
-   Both are dense and neither is the first thing looked at, so they open on
-   click. The header is a real button, so it works from the keyboard too. */
-.ov-fold { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0;
-  background: transparent; border: 0; cursor: pointer; text-align: left;
-  padding: 2px 0; color: inherit; font: inherit; }
-.ov-fold:hover { color: #22E6F0; }
-.ov-fold:focus-visible { outline: 1px solid rgba(34,230,240,.6); outline-offset: 3px; border-radius: 4px; }
-.ov-fold-chev { margin-left: auto; width: 7px; height: 7px; flex: none;
-  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
-  transform: rotate(45deg); opacity: .55; transition: transform .22s ease, opacity .22s ease; }
-.ov-fold:hover .ov-fold-chev { opacity: 1; }
-.ov-fold.open .ov-fold-chev { transform: rotate(-135deg); }
 .ov-catdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 0; }
 .ov-none { text-align: center; color: var(--muted); padding: 26px 0 !important; }
 @media (max-width: 1200px) { .ov-charts { grid-template-columns: 1fr; } }
@@ -3843,38 +3749,7 @@ html[data-chatnav="1"] .xw { top: 60px !important; height: calc(100vh - 60px) !i
 @media (prefers-reduced-motion: reduce) { .ov-skelpanel { animation: none; } }
 
 /* ── Brain: View summary, crime selector, static legend note ───────────────── */
-/* ── View summary ───────────────────────────────────────────────────────────
-   Two forms of the same panel. In the Data Overview it stays a disclosure, opened
-   by click. In the brain it is a standing description of what is on screen: no
-   chevron, no click, grey at rest and full contrast under the pointer. */
-.bsx-summary { margin-top: 12px; border-top: 1px solid var(--glass-border); padding-top: 10px;
-  opacity: .40; transition: opacity .22s ease; }
-.bsx-summary:hover, .bsx-summary:focus-within, .bsx-summary.open { opacity: 1; }
-
-/* Sits under the pill row (Run Antar / Results live at top:16) and to the left of
-   Layers & Filters, so the three never overlap. */
-.bsx-vsum { position: absolute; top: 60px; right: 268px; z-index: 6; width: 258px; }
-.bsx-summary.always { margin: 0; border-top: 0; padding: 13px 15px;
-  background: rgba(10,16,28,.55); backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,.06); border-radius: 13px;
-  color: #6B7A8F; opacity: 1; transition: color .22s ease, border-color .22s ease, background .22s ease; }
-.bsx-summary.always:hover { color: #C8D4E4; border-color: rgba(255,255,255,.12); background: rgba(10,16,28,.72); }
-.bsx-summary.always .bsx-summary-h.as-title { font-family: 'Chakra Petch'; font-size: 11px;
-  letter-spacing: .6px; text-transform: uppercase; color: inherit; opacity: .8;
-  margin-bottom: 9px; display: block; }
-.bsx-summary.always .bsx-summary-b { margin-top: 0; max-height: 56vh; }
-/* Inherit the grey, so one hover lifts the whole block instead of the body staying lit. */
-.bsx-summary.always .bsx-summary-b p,
-.bsx-summary.always .bsx-sumrow .k,
-.bsx-summary.always .bsx-sumrow .v { color: inherit; transition: color .22s ease; }
-.bsx-summary.always .bsx-summary-b p { color: inherit; }
-.bsx-summary.always .bsx-summary-k { color: inherit; opacity: .6; }
-.bsx-focus .bsx-summary.always { background: transparent; border: 0; padding: 0; }
-
-@media (max-width: 1320px) { .bsx-vsum { display: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .bsx-summary, .bsx-summary.always { transition: none; }
-}
+.bsx-summary { margin-top: 12px; border-top: 1px solid var(--glass-border); padding-top: 10px; }
 .bsx-focus .bsx-summary { margin-top: 26px; border-top: 0; padding-top: 0; }
 .bsx-summary-h { width: 100%; display: flex; justify-content: space-between; align-items: center; background: transparent; border: 0; padding: 0;
   font-family: 'Chakra Petch'; font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); cursor: pointer; }

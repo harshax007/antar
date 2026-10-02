@@ -56,61 +56,6 @@ function nodeTooltip(n) {
     </div>`;
 }
 
-// ── Agent avatar ────────────────────────────────────────────────────────────
-// An agent is not a record, so it must not look like one. The FIRs are spheres; the
-// agent is a lit core inside a single thin ring - two meshes, nothing spinning fast,
-// nothing competing with the data. The ring turns once every ~17 seconds and the core
-// breathes, which is enough to say "this is live" without pulling the eye off the ball.
-//
-// Geometry and materials are built once and shared; the avatar for a given node is
-// cached and reused, because nodeThreeObject re-runs on EVERY accessor change and
-// rebuilding meshes there is what makes the scene flicker.
-let AGENT_PARTS = null;
-const AGENT_AVATARS = new Map();
-
-function agentParts(THREE) {
-  if (!AGENT_PARTS) {
-    AGENT_PARTS = {
-      ring: new THREE.TorusGeometry(9, 0.18, 6, 72),
-      core: new THREE.SphereGeometry(2.4, 16, 16),
-      ringMat: new THREE.MeshBasicMaterial({ color: 0x22e6f0, transparent: true, opacity: 0.55 }),
-      coreMat: new THREE.MeshBasicMaterial({ color: 0x9ffff4, transparent: true, opacity: 0.95 }),
-    };
-  }
-  return AGENT_PARTS;
-}
-
-function makeAgentAvatar(THREE, key, text, sub) {
-  const hit = AGENT_AVATARS.get(key);
-  if (hit) return hit;
-  const P = agentParts(THREE);
-  const g = new THREE.Group();
-  const core = new THREE.Mesh(P.core, P.coreMat);
-  const ring = new THREE.Mesh(P.ring, P.ringMat);
-  ring.rotation.x = Math.PI / 2.8;
-
-  // Rides the renderer's own loop, so it costs no extra rAF and stops with the object.
-  // Time-based, so the speed does not change with the frame rate.
-  ring.onBeforeRender = () => {
-    const t = performance.now() * 0.00037;
-    ring.rotation.z = t;
-  };
-  core.onBeforeRender = () => {
-    const s = 1 + Math.sin(performance.now() * 0.0016) * 0.10;
-    core.scale.setScalar(s);
-  };
-
-  g.add(ring); g.add(core);
-  if (text) {
-    const lbl = makeLabelSprite(THREE, text, sub, "#7FE9F0");
-    lbl.position.set(0, 14, 0);
-    g.add(lbl);
-  }
-  if (AGENT_AVATARS.size > 24) AGENT_AVATARS.clear();
-  AGENT_AVATARS.set(key, g);
-  return g;
-}
-
 // Floating text label as a camera-facing sprite (three CanvasTexture).
 //
 // 3d-force-graph re-runs nodeThreeObject for every node whenever ANY node accessor
@@ -142,8 +87,7 @@ function makeLabelSprite(THREE, text, sub, color) {
     ctx.shadowColor = "rgba(0,0,0,0.95)";
     ctx.shadowBlur = 6 * dpr;
     ctx.font = `600 ${fs}px Inter, sans-serif`;
-    // Just under the bloom threshold on purpose: a label is there to be read, not to glow.
-    ctx.fillStyle = color || "#DCE6F2";
+    ctx.fillStyle = color || "#FFFFFF";
     ctx.fillText(text, w / 2, sub ? pad + fs / 2 : h / 2);
     if (sub) {
       ctx.font = `${subFs}px 'JetBrains Mono', monospace`;
@@ -181,9 +125,7 @@ const ballRadius = (n) => Math.max(200, Math.sqrt(n) * 5.6);   // 3.4k FIRs → 
 // out, evidence-linked FIRs are small, and isolated FIRs are specks.
 const NODE_REL_SIZE = 2.4;
 function sizeFor(n) {
-  // The hub itself is drawn by makeAgentMarker, so the generated sphere is only a
-  // small anchor for the hit test rather than a competing white ball.
-  if (n.kind === "agent") return n.role === "agent" ? 1.6 : 1.2;
+  if (n.kind === "agent") return n.role === "agent" ? 16 : 1.2;
   if (n.kind === "unsub") return 8;
   if (n.role === "top") return 60;      // most connected in view
   if (n.role === "hub") return 30;      // key accused
@@ -308,11 +250,6 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
   const dataRef = useRef(null);
   const flightRef = useRef(null);
   const lastGroupRef = useRef(null);   // grouping the camera was last framed for
-  // The arrival owns the camera until it lands. Without this a data rebuild arriving
-  // mid-flight (predicted edges come back from the backend a beat after load) starts a
-  // second cameraPosition tween over the first, and the two fight frame by frame - which
-  // is the flicker, and why the approach never finished.
-  const introDoneRef = useRef(false);
   const labelSetRef = useRef(null);    // hub ids allowed a floating name (see nodeThreeObject)
   const legendFocusRef = useRef(legendFocus);
 
@@ -398,27 +335,9 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
   }
 
   function focusComponent(n) {
-    if (!fgRef.current || !dataRef.current) return;
-    const members = n.comm ? dataRef.current.nodes.filter((m) => m.comm === n.comm) : [n];
-    applyFocus(members, n, null);
-  }
-
-  // Pull every FIR of one crime type into focus. Same machinery as a group focus - the
-  // only difference is how the member set is chosen - so the panel, the dimming and the
-  // camera all behave identically whether you clicked a node or picked a crime type.
-  function focusCategory(cat, label) {
-    if (!fgRef.current || !dataRef.current) return 0;
-    const members = dataRef.current.nodes.filter((m) => m.kind !== "agent" && m.cat === cat);
-    if (!members.length) return 0;
-    applyFocus(members, {
-      id: `cat:${cat}`, cat, crimeHead: label || CATEGORIES[cat]?.label || cat,
-    }, { kind: "cat", cat, label: label || CATEGORIES[cat]?.label || cat });
-    return members.length;
-  }
-
-  function applyFocus(members, n, meta) {
     const fg = fgRef.current;
-    if (!fg || !dataRef.current || !members.length) return;
+    if (!fg || !dataRef.current) return;
+    const members = n.comm ? dataRef.current.nodes.filter((m) => m.comm === n.comm) : [n];
     focusRef.current = new Set(members.map((m) => m.id));
 
     const whys = [], seen = new Set();
@@ -444,29 +363,10 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     const rows = [...members].sort((a, b) => (b.deg || 0) - (a.deg || 0)).slice(0, 4)
       .map((m) => ({ crime: m.crimeHead || m.crimeGroup, zone: m.zone, year: m.year }));
 
-    // Top stations and the stage mix are what an officer asks next about a whole crime
-    // type; they are cheap to count here and meaningless for a two-node group, so they
-    // only ride along on a category focus.
-    let extra = null;
-    if (meta?.kind === "cat") {
-      const byZone = new Map(), byYear = new Map();
-      members.forEach((m) => {
-        if (m.zone) byZone.set(m.zone, (byZone.get(m.zone) || 0) + 1);
-        if (m.year) byYear.set(String(m.year), (byYear.get(String(m.year)) || 0) + 1);
-      });
-      extra = {
-        zones: [...byZone.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, n2]) => ({ name, n: n2 })),
-        byYear: [...byYear.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([y, n2]) => ({ y, n: n2 })),
-        linked: members.filter((m) => m.comm).length,
-        named: new Set(members.map((m) => m.accused).filter(Boolean)).size,
-      };
-    }
-
     onFocus?.({
       node: n,
-      meta: meta || null,
       whys: whys.slice(0, 4),
-      comp: { size: members.length, cats, people, rows, districts: [...districts], years: yMin <= yMax ? [yMin, yMax] : null, extra },
+      comp: { size: members.length, cats, people, rows, districts: [...districts], years: yMin <= yMax ? [yMin, yMax] : null },
     });
 
     // Camera fly to the group centroid (3D)
@@ -590,11 +490,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       };
       pickLabels(dataRef.current.nodes);
 
-      // Antialiasing is what separates a 3,000-speck scatter from a crawling set of
-      // stair-stepped dots, and it costs little at this node count. The pixel ratio is
-      // capped at 2: past that a 4K/retina panel renders four times the pixels for a
-      // difference nobody can see, and that alone turned the rotation choppy.
-      const fg = ForceGraph3D({ rendererConfig: { antialias: true, powerPreference: "high-performance" } })(containerRef.current)
+      const fg = ForceGraph3D()(containerRef.current)
         .width(containerRef.current.offsetWidth)
         .height(containerRef.current.offsetHeight)
         .backgroundColor("rgba(0,0,0,0)")
@@ -629,9 +525,6 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
             text = n.label || ""; sub = n.sub || "";
             color = n.role === "top" ? "#34EEB6" : "#FFFFFF";
           }
-          if (n.kind === "agent" && n.role === "agent") {
-            return makeAgentAvatar(THREE, `${n.id}|${text}`, text, sub);
-          }
           if (!text) return null;
           const sprite = makeLabelSprite(THREE, text, sub, color);
           // Clear the node's own drawn radius, not a guessed constant: 3d-force-graph draws
@@ -659,11 +552,6 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         // needs far fewer ticks than the 60 it had.
         .warmupTicks(30)
         .cooldownTime(COOLDOWN_MS);
-
-      try {
-        const r = fg.renderer?.();
-        if (r?.setPixelRatio) r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      } catch {}   // a renderer that will not hand itself over is not worth failing over
 
       fg.d3Force("charge").strength(-45);
       const linkForce = fg.d3Force("link");
@@ -741,18 +629,14 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       // above the equator, so the ball reads as a sphere during the approach rather than a
       // flat disc that grows. The fade runs shorter than the flight, so the brain is fully
       // visible while it is still moving — the motion is the arrival, not a reveal.
-      // Ported from the reference build, which starts at z=3500 and creeps to 750. That
-      // deep start is what makes the arrival read as approaching something large; from
-      // 2.6x it just grew. Its 9s duration is too long to sit through before the officer
-      // can work, so the distance is kept and the time is not.
       fg.cameraPosition(
         reduce ? { x: 0, y: 0, z: fitZ }
-               : { x: 0, y: fitZ * 0.55, z: fitZ * 3.2 },
+               : { x: 0, y: fitZ * 0.42, z: fitZ * 2.6 },
         { x: 0, y: 0, z: 0 }, 0);
       const canvasEl = containerRef.current;
       if (canvasEl && !reduce) {
         canvasEl.style.opacity = "0";
-        canvasEl.style.transition = "opacity 900ms cubic-bezier(.22,.61,.36,1)";
+        canvasEl.style.transition = "opacity 520ms cubic-bezier(.22,.61,.36,1)";
         requestAnimationFrame(() => { canvasEl.style.opacity = "1"; });
       }
 
@@ -764,15 +648,11 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       // only once it has landed.
       // 1700ms reads as deliberate rather than slow, and the library eases the tween, so
       // the last third of the approach naturally settles instead of stopping dead.
-      // 2600ms over 3.2x the fit distance: the eased tail of the tween lands as a settle
-      // rather than a stop, which is the part of the reference flight worth keeping.
-      const FLY_MS = 2600;
-      introDoneRef.current = false;
+      const FLY_MS = 1700;
       if (!reduce) {
         setTimeout(() => fg.cameraPosition({ x: 0, y: 0, z: fitZ }, { x: 0, y: 0, z: 0 },
                                            FLY_MS), 80);
       }
-      setTimeout(() => { introDoneRef.current = true; }, reduce ? 0 : 80 + FLY_MS);
       setTimeout(() => {
         if (fg.controls) {
           const controls = fg.controls();
@@ -799,11 +679,9 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
             const el = containerRef.current;
             const bloom = new UnrealBloomPass(
               new THREE.Vector2(el?.offsetWidth || 1280, el?.offsetHeight || 720),
-              0.55,   // strength - haloes the hubs without smearing into the labels
-              0.80,   // radius
-              0.86,   // threshold: node cores and tethers only. At 0.62 the near-white
-                      // label sprites tripped it too, so every name wore a halo and the
-                      // text stopped being readable - the emphasis belongs to the nodes.
+              0.72,   // strength - enough to halo the hubs, not enough to wash out labels
+              0.85,   // radius
+              0.62,   // threshold: only the bright nodes and tethers qualify
             );
             fg.postProcessingComposer().addPass(bloom);
           })
@@ -842,7 +720,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     // so that still refits - quickly.
     const groupChanged = lastGroupRef.current !== groupByRef.current;
     lastGroupRef.current = groupByRef.current;
-    if (groupChanged && introDoneRef.current) {
+    if (groupChanged) {
       const firCount = dataRef.current.nodes.filter((m) => m.kind !== "agent").length;
       fg.cameraPosition({ x: 0, y: 0, z: fitDistance(ballRadius(firCount || 1) * AGENT_SHELL) },
                         { x: 0, y: 0, z: 0 }, 900);
@@ -854,7 +732,6 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     if (!controlRef) return;
     controlRef.current = {
       clear: clearFocus,
-      focusCategory,
       refit: () => fgRef.current?.zoomToFit(700, 90),
       think: flyAgents,
       spin: spinToFilter,

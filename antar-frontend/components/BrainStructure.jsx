@@ -569,27 +569,21 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     return () => clearTimeout(id);
   }, [filterNote]);
 
-  // The key has to match what is actually drawn. It claimed the agents were purple
-  // (#8B5CF6) when they render cyan, and said nothing about what the blobs mean - so it
-  // described a picture the officer was not looking at. Rows now follow the live view:
-  // Evidence mode groups by shared keys, Crime-type mode groups by category.
-  const READ_ROWS = (kn ? [
+  const READ_ROWS = kn ? [
     ["big", "#E8A33D", "ಕಿತ್ತಳೆ = ಪ್ರಮುಖ ಆರೋಪಿ", "hub"],
     ["dot", "#18D69A", "ಹಸಿರು = ಅತಿ ಹೆಚ್ಚು ಸಂಪರ್ಕ", "top"],
-    ["ring", "#00F5D4", "ವಲಯಾಕಾರ ಗುರುತು = Antar ಏಜೆಂಟ್", "agent"],
+    ["big", "#8B5CF6", "ನೇರಳೆ = Antar ಏಜೆಂಟ್", "agent"],
     ["dot", "#2BB3A3", "ಟೀಲ್ = ಸಂಪರ್ಕಿತ FIR", "comm"],
     ["ln", "", "ಗೆರೆ = ಹಂಚಿದ ಸಾಕ್ಷ್ಯ", "line"],
     ["dot", "#566072", "ಬೂದು = ಒಂಟಿ FIR", "dust"],
   ] : [
-    ["big", "#E8A33D", "Key accused - most links in view", "hub"],
-    ["dot", "#18D69A", "Most connected node here", "top"],
-    ["ring", "#00F5D4", "Antar agent - the ringed markers", "agent"],
-    ["dot", "#2BB3A3", "FIR sharing evidence with another", "comm"],
-    ["ln", "", "A line is one shared key", "line"],
-    ["dot", "#566072", "Isolated FIR - nothing shared", "dust"],
-  ]).concat(groupBy === "evidence"
-    ? [["grp", "", kn ? "ಕ್ಲಸ್ಟರ್ = ಹಂಚಿದ ಸಾಕ್ಷ್ಯದ ಗುಂಪು" : "Each clump = FIRs sharing a key", "grp"]]
-    : [["grp", "", kn ? "ಬ್ಲಾಬ್ = ಒಂದು ಅಪರಾಧ ಪ್ರಕಾರ" : "Each blob = one crime type", "grp"]]);
+    ["big", "#E8A33D", "Key accused", "hub"],
+    ["dot", "#18D69A", "Most connected here", "top"],
+    ["big", "#8B5CF6", "Antar agent", "agent"],
+    ["dot", "#2BB3A3", "Linked FIR", "comm"],
+    ["ln", "", "Shared evidence", "line"],
+    ["dot", "#566072", "Isolated FIR", "dust"],
+  ];
 
   const focusName = focus ? (focus.node.accused ? aliasFor(focus.node.accused) : focus.node.zone || focus.node.crimeHead) : "";
 
@@ -679,18 +673,12 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                     onChange={(e) => {
                       const cat = e.target.value;
                       setActive(cat ? new Set([cat]) : null);
+                      controlRef.current?.clear?.();
+                      // Turn the brain and name what changed. Re-colouring the ball in
+                      // silence reads as a glitch — the officer cannot tell the filter
+                      // applied. The spin is the acknowledgement; the chip is the answer.
+                      controlRef.current?.spin?.();
                       const c = graph?.categories?.find((x) => x.cat === cat);
-                      if (cat) {
-                        // Picking a crime type now pulls that whole type into focus,
-                        // rather than only recolouring the ball: the camera flies to the
-                        // cluster and the panel reports on the type as a whole.
-                        controlRef.current?.focusCategory?.(cat, c?.label || cat);
-                      } else {
-                        controlRef.current?.clear?.();
-                        // Turn the brain and name what changed. Re-colouring in silence
-                        // reads as a glitch - the officer cannot tell the filter applied.
-                        controlRef.current?.spin?.();
-                      }
                       setFilterNote(cat
                         ? { label: c?.label || cat, n: c?.count || 0 }
                         : { label: kn ? "ಎಲ್ಲಾ ಅಪರಾಧಗಳು" : "All crimes",
@@ -704,29 +692,24 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
             </select>
           </label>
         )}
-        {view === "net" && (
+        {view === "net" && !focus && (
           <button className="bsx-readbtn" aria-expanded={readOpen} onClick={() => setReadOpen(!readOpen)}>
             {kn ? "ಹೇಗೆ ಓದುವುದು" : "How to read it"} {readOpen ? "▴" : "▾"}
           </button>
         )}
-        {view === "net" && readOpen && (
+        {view === "net" && !focus && readOpen && (
           <div className="bsx-read">
             {/* A plain key: what each mark means. It used to be clickable (highlight on
                 click), which made a legend behave like a filter and dimmed the brain
                 unexpectedly - the filters live in Layers & Filters. */}
             {READ_ROWS.map(([kind, color, text], i) => (
               <div key={i} className="r">
-                {kind === "ln" ? <i className="ln" />
-                  : kind === "ring" ? <i className="ring" style={{ borderColor: color }} />
-                  : kind === "grp" ? <i className="grp" />
-                  : <i className={`dot ${kind === "big" ? "big" : ""}`} style={{ background: color }} />}
+                {kind === "ln" ? <i className="ln" /> : <i className={`dot ${kind === "big" ? "big" : ""}`} style={{ background: color }} />}
                 {text}
               </div>
             ))}
             <div className="r note">
-              {focus
-                ? (kn ? "ಖಾಲಿ ಜಾಗ ಕ್ಲಿಕ್ = ಫೋಕಸ್ ಮುಚ್ಚಿ" : "Click empty space to leave focus")
-                : (kn ? "ಯಾವುದೇ ನೋಡ್ ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click any node to open its group")}
+              {kn ? "ಯಾವುದೇ ನೋಡ್ ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click any node to open its group"}
             </div>
           </div>
         )}
@@ -808,27 +791,16 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* View Summary stands on its own. Nested under Layers & Filters it read as a
-          filter control and disappeared whenever that panel was collapsed - it is a
-          description of what is on screen, so it belongs beside the brain, not inside
-          the controls. */}
-      {view === "net" && !focus && (
-        <aside className="bsx-vsum">
           <BrainViewSummary graph={graph} stats={graph?.stats} focus={null} active={active} kinds={kinds}
-                            groupBy={groupBy} scope={scopeLabel()} district={null} dim3d={dim3d} kn={kn} always />
-        </aside>
+                            groupBy={groupBy} scope={scopeLabel()} district={null} dim3d={dim3d} kn={kn} />
+        </div>
       )}
 
       {view === "net" && (
         <button className={`bsx-pill think ${think?.phase === "run" ? "busy" : ""}`} onClick={runThink}
                 aria-busy={think?.phase === "run"}>
-          {/* The same mark the agents wear in the scene: a core inside a ring. A lightbulb
-              said "idea"; this says "the agents". */}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><ellipse cx="12" cy="12" rx="9.5" ry="4.4" /><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" /></svg>
-          {think?.phase === "run" ? (kn ? "ಚಾಲನೆಯಲ್ಲಿದೆ…" : "Running…") : (kn ? "ಅಂತರ ಚಲಾಯಿಸಿ" : "Run Antar")}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4-2.5 5.4-.9 1-1.5 1.8-1.5 3.1V19h-6v-1.5c0-1.3-.6-2.1-1.5-3.1C6.2 13 5 11.4 5 9a7 7 0 0 1 7-7z" /><path d="M9 22h6" strokeLinecap="round" /></svg>
+          {think?.phase === "run" ? (kn ? "ಆಲೋಚಿಸುತ್ತಿದೆ…" : "Thinking…") : (kn ? "ಆಲೋಚಿಸು" : "Think")}
         </button>
       )}
       {/* Closed the results? They stay one click away until the next run. */}
@@ -860,7 +832,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                    onClick={(e) => e.stopPropagation()}>
             <header className="bsx-tm-head">
               <div>
-                <span className="eyebrow">{kn ? "ಅಂತರ ವಿಶ್ಲೇಷಣೆ" : "Antar Analysis"}</span>
+                <span className="eyebrow">{kn ? "ಆಲೋಚನೆ · ಏಜೆಂಟ್ ವಿಶ್ಲೇಷಣೆ" : "Think · agent analysis"}</span>
                 <h2 id="bsx-tm-title">{kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಏಜೆಂಟ್‌ಗಳು ಕಂಡುಕೊಂಡದ್ದು" : "What the agents found in this view"}</h2>
                 <p className="meta">
                   {think.n.toLocaleString()} FIRs · {think.scope} · {AGENTS.length} {kn ? "ಏಜೆಂಟ್‌ಗಳು" : "agents"}
@@ -954,7 +926,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           animation: "fadeRise .28s cubic-bezier(0.16,1,0.3,1)"
         }}>
           {/* labelled exit - a bare  read as decoration, so users refreshed to escape focus */}
-          <button onClick={() => { controlRef.current?.clear(); setActive(null); setFilterNote(null); }} style={{
+          <button onClick={() => controlRef.current?.clear()} style={{
             position: "absolute", top: "13px", right: "13px",
             background: "rgba(34,230,240,.08)", border: "1px solid rgba(34,230,240,.35)",
             color: "#22E6F0", cursor: "pointer", fontSize: "10.5px", fontWeight: 700,
@@ -963,13 +935,11 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
           {/* The focused group in sentences - who is connected, how, and where. */}
           <BrainViewSummary graph={graph} stats={graph?.stats} focus={focus} active={active} kinds={kinds}
-                            groupBy={groupBy} scope={scopeLabel()} district={null} dim3d={dim3d} kn={kn} always />
+                            groupBy={groupBy} scope={scopeLabel()} district={null} dim3d={dim3d} kn={kn} />
           
           <div>
             <div style={{ fontSize: "10px", fontWeight: 600, color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "4px" }}>
-              {focus.meta?.kind === "cat"
-                ? (kn ? "ಫೋಕಸ್ · ಅಪರಾಧ ಪ್ರಕಾರ" : "Focus · crime type")
-                : (kn ? "ಫೋಕಸ್ · ಸಂಪರ್ಕಿತ ಗುಂಪು" : "Focus · linked group")}
+              {kn ? "ಫೋಕಸ್ · ಸಂಪರ್ಕಿತ ಗುಂಪು" : "Focus · linked group"}
             </div>
             <div style={{ fontSize: "16px", fontWeight: 700, color: "#FFFFFF", marginBottom: "4px", fontFamily: "'Chakra Petch', sans-serif" }}>
               {focusName}
@@ -1000,65 +970,6 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
               ))}
             </div>
           </div>
-
-          {focus.comp.extra && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <div style={{ flex: 1, background: "rgba(34,230,240,0.06)", border: "1px solid rgba(34,230,240,0.18)", borderRadius: "8px", padding: "8px 10px" }}>
-                  <b style={{ display: "block", fontSize: "15px", fontFamily: "'Chakra Petch', sans-serif", color: "#22E6F0" }}>
-                    {Math.round((100 * focus.comp.extra.linked) / Math.max(1, focus.comp.size))}%
-                  </b>
-                  <span style={{ fontSize: "10px", color: "#94A3B8" }}>
-                    {kn ? "ಸಾಕ್ಷ್ಯದಿಂದ ಜೋಡಿದವು" : "share evidence with another FIR"}
-                  </span>
-                </div>
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", padding: "8px 10px" }}>
-                  <b style={{ display: "block", fontSize: "15px", fontFamily: "'Chakra Petch', sans-serif", color: "#F8FAFC" }}>
-                    {focus.comp.extra.named.toLocaleString()}
-                  </b>
-                  <span style={{ fontSize: "10px", color: "#94A3B8" }}>
-                    {kn ? "ನಾಮನಿದೇಶಿತ ಆರೋಪಿಗಳು" : "named accused"}
-                  </span>
-                </div>
-              </div>
-
-              {focus.comp.extra.zones.length > 0 && (
-                <div>
-                  <div style={{ fontSize: "10px", fontWeight: 600, color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "6px" }}>
-                    {kn ? "ಎಲ್ಲಿ ಹೆಚ್ಚು" : "Where it concentrates"}
-                  </div>
-                  {focus.comp.extra.zones.map((z) => (
-                    <div key={z.name} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "11px", color: "#E2E8F0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.name}</span>
-                      <div style={{ width: "58px", height: "4px", background: "rgba(255,255,255,0.07)", borderRadius: "2px", overflow: "hidden", flexShrink: 0 }}>
-                        <i style={{ display: "block", height: "100%", width: `${(100 * z.n) / focus.comp.extra.zones[0].n}%`, background: "#22E6F0" }} />
-                      </div>
-                      <b style={{ fontSize: "10.5px", fontFamily: "'JetBrains Mono', monospace", color: "#94A3B8", minWidth: "26px", textAlign: "right" }}>{z.n}</b>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {focus.comp.extra.byYear.length > 1 && (
-                <div>
-                  <div style={{ fontSize: "10px", fontWeight: 600, color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "6px" }}>
-                    {kn ? "ವರ್ಷದ ಮೂಲಕ" : "By year, in this view"}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "38px" }}>
-                    {focus.comp.extra.byYear.map((b) => {
-                      const mx = Math.max(...focus.comp.extra.byYear.map((x) => x.n));
-                      return (
-                        <div key={b.y} title={`${b.y}: ${b.n}`} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
-                          <i style={{ width: "100%", height: `${Math.max(2, (30 * b.n) / mx)}px`, background: "rgba(34,230,240,0.55)", borderRadius: "2px 2px 0 0" }} />
-                          <span style={{ fontSize: "8px", color: "#64748B", fontFamily: "'JetBrains Mono', monospace" }}>{String(b.y).slice(2)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {focus.comp.people?.length > 0 && (
             <div>

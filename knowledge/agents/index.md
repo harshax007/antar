@@ -3,7 +3,7 @@
 * [alert_suggest](./alert-suggest.md) - Beacon - patrol advisor
 * [brain](./brain.md) - Vault - semantic recall
 * [corridor](./corridor.md) - Corridor intelligence compiler
-* [adversarial_audit](./adversarial-audit.md) - Adversary - hypothesis falsification and base-rate audit
+* [devils_advocate](./devils-advocate.md) - Adversary - hypothesis falsification and base-rate audit
 * [forecast](./forecast.md) - Core - risk forecaster (composite node)
 * [geo](./geo.md) - Lens - geo intelligence
 * [linkage](./linkage.md) - MO case-matcher

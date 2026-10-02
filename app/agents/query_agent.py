@@ -422,7 +422,7 @@ FORMAT DETAIL — the officer is scanning, not reading.
   Always expand them to their full professional terminology (e.g., "Vehicle Theft", "Motor Vehicle", "Chain Snatching").
 
   RULE 8 - HIGHLIGHTING & DATES.
-  - For English responses ('en'), strictly use Markdown bolding (**text**) for key entities: Suspect Names, Crime Types, Specific Zones, and Numeric Figures. Do NOT bold in Kannada ('kn').
+  - For English responses ('en'), strictly use Markdown bolding (**text**) VERY SPARINGLY (max 2-3 highlights per response). Only highlight the most critical insights (e.g., a key number like **35** or a specific zone like **Banashankari**). Do NOT highlight every date or FIR number. Do NOT bold in Kannada ('kn').
   - Use unambiguous, human-readable dates in prose (e.g., "July 20, 2026") but use ISO formatting (YYYY-MM-DD) inside markdown tables.
   - If a crucial piece of information is missing from the data, explicitly prefix the warning with "Note: " to trigger the UI disclaimer.
 

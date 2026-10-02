@@ -19,7 +19,7 @@
 | ✅ | how many open cases by status | en | T8 | T8 | 17 |
 | ✅ | recent crimes in Whitefield | en | T12 | T12 | 10 |
 | ✅ | where should I increase patrols this weekend | en | CLARIFY | CLARIFY | 0 |
-| ✅ | vehicle theft this month where | en | T11 | T11 | 10 |
+| ✅ | vehicle theft this month where | en | T11 | T11 | 5 |
 | ✅ | ರಾಜಾಜಿನಗರದಲ್ಲಿ ಸರಗಳ್ಳತನ ಪ್ರಕರಣಗಳು | kn | T1 | T1 | 10 |
 | ✅ | ದರೋಡೆ ಪ್ರವೃತ್ತಿ ತೋರಿಸಿ | kn | T3 | T3 | 6 |
 | ✅ | ಅಪರಾಧ ಹಾಟ್‌ಸ್ಪಾಟ್ ಎಲ್ಲಿ | kn | CLARIFY | CLARIFY | 0 |

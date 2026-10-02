@@ -46,10 +46,6 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
   const [officer, setOfficer] = useState(null);   // /api/dataset/officer_view
   const isFull = source === "full";
   // Full-dataset range filters (year span + FIR id window) - server-side.
-  // A filtered re-fetch is in flight. The numbers on screen belong to the PREVIOUS
-  // filter until it lands, and the first query for a given range costs ~5s on 1M rows,
-  // so without this the stale totals read as "the range filter does nothing".
-  const [busy, setBusy] = useState(false);
   const [yFrom, setYFrom] = useState("");
   const [yTo, setYTo] = useState("");
   const [idFrom, setIdFrom] = useState("");
@@ -88,21 +84,14 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
   useEffect(() => { setPage(0); }, [yFrom, yTo, idFrom, idTo]);
 
   // Full-dataset aggregates (re-fetched when the shared filters change)
-  // Debounced: picking a year range means two dropdowns, and firing a five-second
-  // aggregate on the first one only to abandon it on the second wasted the query and
-  // doubled the wait. 350ms is below the gap between two deliberate clicks.
   useEffect(() => {
     if (!isFull) return;
     let alive = true;
-    setBusy(true);
-    const t = setTimeout(() => {
-      fetch(`${API}/api/dataset/summary${filterQS ? `?${filterQS}` : ""}`)
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
-        .then((d) => { if (alive) { setFull(d); setFullErr(false); } })
-        .catch(() => { if (alive) setFullErr(true); })
-        .finally(() => { if (alive) setBusy(false); });
-    }, 350);
-    return () => { alive = false; clearTimeout(t); };
+    fetch(`${API}/api/dataset/summary${filterQS ? `?${filterQS}` : ""}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => { if (alive) { setFull(d); setFullErr(false); } })
+      .catch(() => { if (alive) setFullErr(true); });
+    return () => { alive = false; };
   }, [isFull, filterQS]);
 
   // What an officer acts on: the chargesheet-deadline clock, outcome rates and the
@@ -111,13 +100,11 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
     if (!isFull) return;
     let alive = true;
     setOfficer(null);
-    const t = setTimeout(() => {
-      fetch(`${API}/api/dataset/officer_view${filterQS ? `?${filterQS}` : ""}`)
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
-        .then((d) => { if (alive) setOfficer(d); })
-        .catch(() => { if (alive) setOfficer({ error: true }); });
-    }, 350);
-    return () => { alive = false; clearTimeout(t); };
+    fetch(`${API}/api/dataset/officer_view${filterQS ? `?${filterQS}` : ""}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => { if (alive) setOfficer(d); })
+      .catch(() => { if (alive) setOfficer({ error: true }); });
+    return () => { alive = false; };
   }, [isFull, filterQS]);
 
   // Full-dataset table rows (server-side paging + search, debounced)
@@ -216,9 +203,6 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
   // every tile read "0 FIRs total · 0% arrest rate" - indistinguishable from an empty
   // database. Loading renders as a placeholder instead; a real zero stays a zero.
   const loadingFull = isFull && !full && !fullErr;
-  // Numbers already on screen that a newer query has not replaced yet. Dimmed rather
-  // than blanked: the old figure is still true of the old filter, just not of this one.
-  const stale = isFull && busy && !loadingFull;
 
   const kpis = [
     { v: nf(view.total), l: isFull ? (kn ? "ಒಟ್ಟು FIR" : "FIRs total") : (kn ? "FIR ಗಳು" : "FIRs in view"), accent: true },
@@ -366,12 +350,6 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
               <input type="number" min={1} value={idTo} onChange={(e) => setIdTo(e.target.value)} placeholder={kn ? "ವರೆಗೆ" : "to"} aria-label="FIR id to"
                      style={{ width: "84px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px 8px", color: "#F8FAFC", fontSize: "11px" }} />
 
-              {stale && (
-                <span className="ov-rf-busy" role="status">
-                  <i /> {kn ? "ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ" : "Updating"}
-                </span>
-              )}
-
               {(yFrom || yTo || idFrom || idTo) && (
                 <button onClick={() => { setYFrom(""); setYTo(""); setIdFrom(""); setIdTo(""); }}
                         style={{ background: "rgba(34,230,240,0.1)", border: "1px solid rgba(34,230,240,0.3)", color: "#22E6F0", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}>
@@ -397,7 +375,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
 
       <div className="ov-kpis">
         {kpis.map((k, i) => (
-          <div key={i} className={`ov-kpi${loadingFull ? " is-loading" : ""}${stale ? " is-stale" : ""}`} aria-busy={loadingFull || stale}>
+          <div key={i} className={`ov-kpi${loadingFull ? " is-loading" : ""}`} aria-busy={loadingFull}>
             {loadingFull
               ? <b className="ov-skel" aria-label={kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ" : "loading"}>&nbsp;</b>
               : <b className={k.accent ? "on" : ""}>{k.v}</b>}
@@ -531,7 +509,6 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
             <button disabled={page >= pages - 1} onClick={() => setPage(page + 1)} aria-label="Next page">›</button>
           </div>
         </div>
-        <div className="ov-tablescroll">
         <table className="ov-table">
           <thead>
             <tr>
@@ -559,7 +536,6 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
             {pageRows.length === 0 && <tr><td colSpan={8} className="ov-none">{kn ? "ಹೊಂದಾಣಿಕೆಯ ದಾಖಲೆಗಳಿಲ್ಲ" : "No records match this view."}</td></tr>}
           </tbody>
         </table>
-        </div>
       </div>
 
       {/* Clicked FIR → small detail card. Only fields the record actually carries. */}
@@ -576,11 +552,6 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
 // The outcome figures are rates of FIRs, not a funnel: a chargesheet can be filed against
 // an accused who was never arrested, so the second can be larger than the first.
 function OfficerPanels({ o, kn }) {
-  // Both panels are dense and neither is the first thing an officer looks at, so they
-  // stay shut until asked for. Header is a real button: keyboard and screen readers get
-  // the same affordance as the mouse.
-  const [clockOpen, setClockOpen] = useState(false);
-  const [outOpen, setOutOpen] = useState(false);
   if (!o) {
     return (
       <div className="ov-officer">
@@ -601,13 +572,10 @@ function OfficerPanels({ o, kn }) {
   return (
     <div className="ov-officer">
       <div className="ov-panel ov-clock">
-        <button type="button" className={`ov-ptitle ov-fold${clockOpen ? " open" : ""}`}
-                aria-expanded={clockOpen} onClick={() => setClockOpen((v) => !v)}>
+        <div className="ov-ptitle" style={{cursor: "pointer"}}>
           {kn ? "ದೋಷಾರೋಪ ಗಡುವು" : "Chargesheet deadline"}
           <span>{kn ? "ತನಿಖೆಯಲ್ಲಿರುವ ಪ್ರಕರಣಗಳು · BNSS §187(3)" : "open investigations · BNSS s.187(3)"}</span>
-          <i className="ov-fold-chev" aria-hidden="true" />
-        </button>
-        {clockOpen && (<>
+         </div>
           <div className="ov-clock-head">
           <div>
             <b className="ov-clock-big">{nf(d.over_90)}</b>
@@ -648,17 +616,13 @@ function OfficerPanels({ o, kn }) {
             ? `ನೋಂದಣಿ ದಿನಾಂಕದಿಂದ ಲೆಕ್ಕ. ಅತಿ ಹಳೆಯ ತೆರೆದ ತನಿಖೆ ${nf(d.oldest_days)} ದಿನ${years ? ` (~${years} ವರ್ಷ)` : ""}. ಇಂದಿನ ನಂತರದ ದಿನಾಂಕದ FIR ಗಳನ್ನು ಬಿಡಲಾಗಿದೆ. ಕಸ್ಟಡಿ ಮತ್ತು ಅಪರಾಧದ ತೀವ್ರತೆ FIR ನಲ್ಲಿ ದಾಖಲಾಗಿಲ್ಲ, ಆದ್ದರಿಂದ ಎರಡೂ ಮಿತಿಗಳನ್ನು ತೋರಿಸಲಾಗಿದೆ.`
             : `Aged from registration date. Oldest open investigation: ${nf(d.oldest_days)} days${years ? ` (~${years} yr)` : ""}. FIRs dated after today are left out (an age cannot be negative), so this can be lower than the stage count above. Custody and offence gravity are not recorded per FIR, so both limits are shown.`}
         </div>
-        </>)}
       </div>
 
       <div className="ov-panel ov-outcomes">
-        <button type="button" className={`ov-ptitle ov-fold${outOpen ? " open" : ""}`}
-                aria-expanded={outOpen} onClick={() => setOutOpen((v) => !v)}>
+        <div className="ov-ptitle">
           {kn ? "ಪ್ರಕರಣ ಫಲಿತಾಂಶ" : "Case outcomes"}
           <span>{kn ? `ಪ್ರತಿ 100 FIR ಗೆ · ${nf(out.firs)} FIR` : `per 100 FIRs · ${nf(out.firs)} FIRs`}</span>
-          <i className="ov-fold-chev" aria-hidden="true" />
-        </button>
-        {outOpen && (<>
+        </div>
         {[
           ["arrest", kn ? "ಕನಿಷ್ಠ ಒಬ್ಬ ಬಂಧನ" : "saw at least one arrest"],
           ["chargesheet", kn ? "ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಕೆ" : "reached a chargesheet"],
@@ -680,7 +644,6 @@ function OfficerPanels({ o, kn }) {
             ? "ಇವು ಸ್ವತಂತ್ರ ದರಗಳು, ಹಂತ ಹಂತದ ಕೊಳವೆ ಅಲ್ಲ: ಬಂಧಿಸದ (ತಲೆಮರೆಸಿಕೊಂಡ) ಆರೋಪಿಯ ವಿರುದ್ಧವೂ ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಸಬಹುದು."
             : "Independent rates, not a funnel: a chargesheet can be filed against an accused who was never arrested (absconding)."}
         </div>
-        </>)}
       </div>
     </div>
   );

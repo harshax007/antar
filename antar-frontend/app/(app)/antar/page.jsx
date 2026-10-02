@@ -138,7 +138,8 @@ const ANS_LABEL = /^(Profile|Network|Geo-Intel|Patterns|Prediction|OSINT Flags|O
 // "2026-07-20" / "2026-BLR-P2-2780" match as one token instead of being shredded into
 // separate highlighted digits. Single digits are deliberately not highlighted (noise).
 let GLOBAL_HL_COUNT = 0;
-const HILITE_RE = /(\bFIR[-\s]?\d[\w-]*|\b\d{4}-\d{2}-\d{2}\b|\b\d{4}-[A-Z]{3}-[\w-]+\b|\b(?:BNS|BNSS|IPC)\s?\d[\w()]*|\b[A-Z]{1,3}-\d{2}-[A-Z]{1,2}-\d{2,4}\b|\bS\d{3,}\b|\bACC-\w+\b|\b\d{1,3}(?:,\d{3})+\b|\b\d+(?:\.\d+)?%|\b\d{2,}\b)/g;
+const HILITE_RE = /(?<![-\w])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?%|\d{2,})(?![-\w])/g;
+
 function Highlighted({ text }) {
   const parts = String(text || "").split(HILITE_RE);
   return parts.map((p, i) => {
@@ -151,7 +152,7 @@ function Highlighted({ text }) {
       }
       return <b key={i} className="cx-hl">{p}</b>;
     }
-    return p;
+    return <span key={i}>{p}</span>;
   });
 }
 
@@ -264,7 +265,8 @@ function MdInline({ text }) {
   const parts = String(text ?? "").split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   return parts.map((p, i) => {
     const b = p.match(/^\*\*([^*]+)\*\*$/);
-    if (b) return <b key={i} className="cx-strong">{b[1]}</b>;
+    // Use cx-hl instead of cx-strong so markdown bold becomes cyan highlight!
+    if (b) return <b key={i} className="cx-hl">{b[1]}</b>;
     const c = p.match(/^`([^`]+)`$/);
     if (c) return <code key={i} className="cx-code">{c[1]}</code>;
     // Drop leftover unpaired markdown emphasis tokens that would otherwise render literally.
@@ -931,9 +933,28 @@ function TemplateAnswer({ m, kn, send, router }) {
         ? <div className="ax-t-evidence"><AnswerBody text={ev.join("\n")} streaming={false} /></div>
         : (
           <div className="ax-t-evidence">
-            {shown.map((e, j) => (
-              <div key={j} className={/:\s*$/.test(e) ? "ax-t-sub" : "ax-t-row"}><MdInline text={e} /></div>
-            ))}
+            {shown.map((e, j) => {
+              const isSub = /:\s*$/.test(e);
+              const numMatch = e.match(/^(\d+\.)\s*(.*)$/);
+              if (numMatch) {
+                return (
+                  <div key={j} className="ax-t-row" style={{ display: "flex", gap: "10px", paddingLeft: "4px" }}>
+                    <span style={{ color: "var(--cyan)", fontWeight: 600, minWidth: "20px", textAlign: "right", flexShrink: 0, fontFamily: "'Chakra Petch', sans-serif" }}>{numMatch[1]}</span>
+                    <span style={{ flex: 1 }}><MdInline text={numMatch[2]} /></span>
+                  </div>
+                );
+              }
+              const bulletMatch = e.match(/^[•\-*]\s+(.*)$/);
+              if (bulletMatch) {
+                return (
+                  <div key={j} className="ax-t-row" style={{ display: "flex", gap: "10px", paddingLeft: "4px" }}>
+                    <span style={{ color: "var(--cyan)", flexShrink: 0, fontSize: "14px", lineHeight: "1.4" }}>•</span>
+                    <span style={{ flex: 1 }}><MdInline text={bulletMatch[1]} /></span>
+                  </div>
+                );
+              }
+              return <div key={j} className={isSub ? "ax-t-sub" : "ax-t-row"}><MdInline text={e} /></div>;
+            })}
           </div>
         ))}
       {!isTable && ev.length > 10 && !all && (
@@ -2362,9 +2383,9 @@ export default function ChatPage() {
                 fontFamily: kn ? "'Noto Sans Kannada', sans-serif" : "'Inter', sans-serif"
               }}>
                 {kn ? (
-                  <>16 ವಿಶೇಷ ಏಜೆಂಟ್‌ಗಳು, ಪೂರ್ಣ ಟೆಲಿಮೆಟ್ರಿ ವೀಕ್ಷಣೆ ಮತ್ತು ಸ್ವಯಂ-ನಿವಾರಿತ ಬಲವರ್ಧನೆ ಕಲಿಕೆಯೊಂದಿಗೆ 10,00,000+ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳ ನೈಜ-ಸಮಯದ ವಿಶ್ಲೇಷಣೆ.</>
+                  <>15 AI ಏಜೆಂಟ್‌ಗಳು, ಪೂರ್ಣ ಟೆಲಿಮೆಟ್ರಿ ವೀಕ್ಷಣೆ ಮತ್ತು ಸ್ವಯಂ-ನಿವಾರಿತ ಬಲವರ್ಧನೆ ಕಲಿಕೆಯೊಂದಿಗೆ 10,00,000+ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳ ನೈಜ-ಸಮಯದ ವಿಶ್ಲೇಷಣೆ.</>
                 ) : (
-                  <>16 specialist agents with full telemetry and self-distilled reinforcement learning, working over 10,00,000+ FIR records in real time.</>
+                  <>15 AI agents with full telemetry & self-distilled Reinforcement Learning analyzing 10,00,000+ FIR records in real time.</>
                 )}
               </p>
             </motion.div>

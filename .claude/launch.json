@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "antar-backend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "python -m uvicorn main:app --host 127.0.0.1 --port 8000"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "antar-frontend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd /d D:\\Project\\antar-frontend && set NEXT_PUBLIC_API_URL=http://127.0.0.1:8000&& npm run dev"
+      ],
+      "port": 3000
+    }
+  ]
+}

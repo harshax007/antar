@@ -77,7 +77,7 @@ curl -s http://127.0.0.1:8000/api/health
    8 cases against a baseline median of 2, MAD-z **4.05**, with its conformal band and the
    Gi\* hotspot check. Third in the list behind two real KSP anomalies, which is the right
    place for it to be.
-5. **The adversary** — confirm an inferred hypothesis and let `adversarial_audit` return
+5. **The adversary** — confirm an inferred hypothesis and let `devils_advocate` return
    **409** with the base-rate rebuttal. A system that argues with itself is the memorable
    moment.
 6. **The export** — print `/report/{session_id}`: K/D/I/U badges, citations, per-turn
@@ -417,7 +417,7 @@ right* — and nothing had ever tested it. `scripts/calibrate_confidence.py` now
 Labels come from **SQL, not a model**. Each question is generated from the registry
 together with its true count; the system answers through its real offline path; the label
 is whether the stated number equals the number SQL computed. No LLM sits anywhere in the
-measurement — the same rule `adversarial_audit` follows, for the same reason.
+measurement — the same rule `devils_advocate` follows, for the same reason.
 
 Building it corrected my own error first. The initial ground truth scored the system at
 25%, because it counted the raw table while Antar correctly **hides future-dated rows**
@@ -589,7 +589,7 @@ text = re.sub(r"^\[(COMPUTED|VERIFIED|INFERRED)\]\s*", "", text, flags=re.M)
 ```
 
 Every other part of Antar fights to keep that label attached to its claim. Synthesis tags
-each line with it. The Brain tags corpus hits `D`. `adversarial_audit` gates the
+each line with it. The Brain tags corpus hits `D`. `devils_advocate` gates the
 Inferred → Known transition and returns 409 until an officer overrides in writing. And the
 printable report — the one artefact that leaves the system as a document, that an officer
 signs and hands to someone who will never see Antar — **threw the class away**. A reader of

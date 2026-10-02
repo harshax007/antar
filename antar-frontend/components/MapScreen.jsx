@@ -1227,8 +1227,8 @@ export default function MapScreen() {
                     <em>{kn ? "ಮುನ್ನೋಟ" : "Outlook"}</em>
                     <span>
                       {kn
-                        ? <>ಮುಂದಿನ {viewInsight.outlook.horizon} ದಿನ: <b>{viewInsight.outlook.name}</b> ({viewInsight.outlook.where}), ಸಂಭವನೀಯ {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIR.</>
-                        : <>Next {viewInsight.outlook.horizon} days: highest forecast at <b>{viewInsight.outlook.name}</b> ({viewInsight.outlook.where}), likely {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIRs.</>}
+                        ? <>ಮುಂದಿನ {viewInsight.outlook.horizon} ದಿನ: <b>{viewInsight.outlook.name}</b> ({viewInsight.outlook.where}) - ಸಂಭವನೀಯ {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIR.</>
+                        : <>Next {viewInsight.outlook.horizon} days: highest forecast at <b>{viewInsight.outlook.name}</b> ({viewInsight.outlook.where}) - likely {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIRs.</>}
                       <span className="fx-i" title={kn ? "ಅನುಮಾನಿತ" : "Inferred - a forecast, with its range"}>I</span>
                     </span>
                   </li>

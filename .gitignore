@@ -62,13 +62,6 @@ antar.db
 # Session encryption key (generated at runtime by app/api/session_api.py)
 .session_key
 
-# ── Frontend build + deps (D:\Project working copy) ───────────────────────────
-node_modules/
-.next/
-antar-frontend/out/
-*.tsbuildinfo
-.turbo/
-
-# ── Local session/runtime state ───────────────────────────────────────────────
+*.gz
 data_sessions/
-data/
+app/seeds/data/

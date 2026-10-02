@@ -44,34 +44,12 @@ function Line({ line }) {
 }
 
 
-// `always` turns the panel from a disclosure into a description: no button, no chevron,
-// always on screen. It reads grey at rest and comes up to full contrast on hover, so it
-// is available without ever being in the way. The Data Overview keeps the click-to-open
-// form, where the page is a document and a permanently open block would crowd it.
-export function SummaryToggle({ lines, kn, footer, className = "", title, always = false }) {
+export function SummaryToggle({ lines, kn, footer, className = "" }) {
   const [open, setOpen] = useState(false);
-  if (always) {
-    return (
-      <div className={`bsx-summary always ${className}`}>
-        <div className="bsx-summary-h as-title">
-          {title || (kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View Summary")}
-        </div>
-        <div className="bsx-summary-b" role="region" aria-live="polite">
-          {!lines?.length
-            ? <p>{kn ? "ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Still loading…"}</p>
-            : lines.map((ln, i) => <Line key={i} line={ln} />)}
-          <div className="bsx-summary-k">{footer || (kn ? "ತೆರೆಯ ಮೇಲಿನ ದಾಖಲೆಗಳಿಂದ" : "computed from the records on screen")}</div>
-        </div>
-      </div>
-    );
-  }
   return (
-    // Recedes to a hint until pointed at or opened, so it stops competing with the brain
-    // for attention while staying exactly where the officer last saw it. Hover, keyboard
-    // focus and the open state all bring it back to full strength.
     <div className={`bsx-summary ${open ? "open" : ""} ${className}`}>
       <button className="bsx-summary-h" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {title || (kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary")}
+        {kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"}
         <span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
@@ -86,35 +64,12 @@ export function SummaryToggle({ lines, kn, footer, className = "", title, always
   );
 }
 
-export default function BrainViewSummary({ graph, stats, focus, active, kinds, groupBy, scope, district, dim3d, kn, always = false }) {
+export default function BrainViewSummary({ graph, stats, focus, active, kinds, groupBy, scope, district, dim3d, kn }) {
   const [open, setOpen] = useState(false);
-
-  // What this panel is a summary OF. Each view answers a different question, so the
-  // heading and the opening line name that question rather than repeating "View summary"
-  // over four different pictures.
-  const title = kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View Summary";
 
   const lines = useMemo(() => {
     if (!graph) return [];
     const out = [];
-    // Lead with what is on screen and why it is arranged that way. Without it the panel
-    // opened straight into numbers, and the officer had to infer which view produced them.
-    const showing = focus?.meta?.kind === "cat"
-      ? (kn
-          ? `ಈ ವೀಕ್ಷಣೆಯ ${focus.comp?.size || 0} ${focus.meta.label} FIR ಗಳು ಮಾತ್ರ.`
-          : `Every ${focus.meta.label} FIR in this view - ${focus.comp?.size || 0} of them - pulled out of the ball together.`)
-      : focus
-        ? (kn
-            ? "ಒಂದೇ ಸಾಕ್ಷ್ಯದಿಂದ ಜೋಡಿದ ಒಂದು ಗುಂಪು."
-            : "One group of FIRs that are tied together by shared evidence.")
-        : groupBy === "evidence"
-          ? (kn
-              ? "ಹಂಚಿದ ಸಾಕ್ಷ್ಯದ ಮೂಲಕ ಜೋಡಣೆ: ಒಂದೇ ಆರೋಪಿ, ವಾಹನ, UPI ಅಥವಾ IP."
-              : "Grouped by what the records share - the same accused, vehicle, UPI id or IP. Clusters here are cases that may belong together.")
-          : (kn
-              ? "ಅಪರಾಧ ಪ್ರಕಾರದ ಮೂಲಕ ಜೋಡಣೆ; ಪ್ರತಿ ಬ್ಲಾಬ್ ಒಂದು ಪ್ರಕಾರ."
-              : "Grouped by crime type - each blob is one category, sized by how many FIRs it holds.");
-    out.push(showing);
     const firs = (graph.nodes || []).filter((n) => n.kind === "fir");
     const linked = firs.filter((n) => n.linked).length;
     const isolated = firs.length - linked;
@@ -213,6 +168,6 @@ export default function BrainViewSummary({ graph, stats, focus, active, kinds, g
     return out;
   }, [graph, stats, focus, active, kinds, groupBy, scope, district, dim3d, kn]);
 
-  return <SummaryToggle lines={lines} kn={kn} title={title} always={always}
+  return <SummaryToggle lines={lines} kn={kn}
                         footer={kn ? "K · ತೆರೆಯ ಮೇಲಿನ ದಾಖಲೆಗಳಿಂದ" : "K · computed from the records on screen"} />;
 }

@@ -240,7 +240,7 @@ async def research_node(state: AgentState) -> dict:
     The dossier and its rebuttal are produced together on purpose. Every inferred
     hypothesis research_agent emits is a scored guess, and showing those in a chat answer
     without the base-rate check is how an officer ends up anchored on a pair of suspects
-    whose only connection is that they live in the same district. `adversarial_audit` is
+    whose only connection is that they live in the same district. `devils_advocate` is
     therefore part of this node, not an optional follow-up the caller might skip.
     """
     anchor = _research_anchor(state)
@@ -263,20 +263,20 @@ async def research_node(state: AgentState) -> dict:
 
     if dossier.get("inferred_hypotheses"):
         try:
-            from app.agents import adversarial_audit as da
+            from app.agents import devils_advocate as da
             challenge = _to_native(
                 await asyncio.to_thread(da.challenge_dossier, dossier, limit=5))
-            results["adversarial_audit"] = challenge
+            results["devils_advocate"] = challenge
             t = challenge.get("tally", {})
             reasoning.append({
-                "agent": "adversarial_audit", "step": "challenge",
+                "agent": "devils_advocate", "step": "challenge",
                 "detail": (f"Challenged {len(challenge.get('challenges', []))} hypothesis(es): "
                            f"{t.get('COLLAPSES', 0)} collapse, {t.get('WEAKENED', 0)} weakened, "
                            f"{t.get('SURVIVES', 0)} survive."),
             })
         except Exception as exc:            # noqa: BLE001 — a dossier without its rebuttal
             # is still useful, but the trail must say the check did not run.
-            reasoning.append({"agent": "adversarial_audit", "step": "challenge",
+            reasoning.append({"agent": "devils_advocate", "step": "challenge",
                               "detail": _public_message(exc, "review")})
 
     return {
