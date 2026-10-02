@@ -473,7 +473,7 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     # repeat offenders
     if any(w in low for w in ["repeat offender", "habitual", "repeat criminal",
                               "ಪುನರಾವರ್ತಿತ", "ಪದೇಪದೇ", "ಅಭ್ಯಾಸ ಅಪರಾಧಿ"]):
-        return choice("T5", {"min_priors": 5, "limit": limit_val})
+        return choice("T5", {"min_priors": 5, "limit": limit_val, "zones": zones})
     # demographics
     # "age" as a whole word — as a substring it fired on "percentage", "average", "damage".
     _age = bool(re.search(r"\bages?\b", low))

@@ -876,6 +876,7 @@ def _t4(p: ZoneFilter) -> QuerySpec:
 class RepeatOffenders(BaseModel):
     min_priors: int = 5
     limit: int = 20
+    zones: StrList = Field(default_factory=list)
 
     @field_validator("min_priors")
     @classmethod
@@ -884,10 +885,13 @@ class RepeatOffenders(BaseModel):
 
 
 def _t5(p: RepeatOffenders) -> QuerySpec:
+    filters = [Filter("prior_count", ">=", p.min_priors)]
+    if p.zones:
+        filters.append(Filter("address_zone", "in", p.zones))
     return QuerySpec(
         table="suspects",
         select=["suspect_id", "full_name", "alias", "prior_count", "address_zone"],
-        filters=[Filter("prior_count", ">=", p.min_priors)],
+        filters=filters,
         order_by=("prior_count", "desc"), limit=p.limit,
     )
 

@@ -251,7 +251,7 @@ export function buildCrimeGraph(records, { sampleUnlinkedPerCat = 8, maxNodes = 
 // How far out Antar's agents park, as a multiple of the brain's own radius. Shared with
 // Constellation3D so the 2D and 3D views cannot drift apart. Just above 1 - the agents
 // belong to the brain and should read as orbiting it, not as four specks in deep space.
-export const AGENT_SHELL = 1.16;
+export const AGENT_SHELL = 1.03;
 
 export const LINK_COLORS ={ member: "rgba(120,140,170,0.14)", repeat: "#FFB020", ring: "#FF8C42", cyber: "#22E6F0", inferred: "#C084FC", unsub: "#A855F7" };
 
@@ -532,7 +532,7 @@ export function buildConstellation(graph, { groupBy = "evidence", pack = false }
     const ang = (i / AGENT_DEFS.length) * 2 * Math.PI + 0.8;
     nodes.push({
       id: `agent:${a.id}`, kind: "agent", role: "agent", agent: a.id, label: a.label, sub: "",
-      cat: null, vsize: 8, ring: shellR, deg: 0, comm: null,
+      cat: null, vsize: 2.5, ring: shellR, deg: 0, comm: null,
       x: Math.cos(ang) * shellR, y: Math.sin(ang) * shellR,
     });
     for (let s = 0; s < 6; s++) {
@@ -540,7 +540,7 @@ export function buildConstellation(graph, { groupBy = "evidence", pack = false }
       const sr = shellR + 18 + (s % 3) * 11;
       nodes.push({
         id: `agent:${a.id}:s${s}`, kind: "agent", role: "agentsat", agent: a.id, label: "", sub: "",
-        cat: null, vsize: 1.7, ring: sr, deg: 0, comm: null,
+        cat: null, vsize: 1.0, ring: sr, deg: 0, comm: null,
         x: Math.cos(sa) * sr, y: Math.sin(sa) * sr,
       });
       links.push({ source: `agent:${a.id}`, target: `agent:${a.id}:s${s}`, kind: "agent" });

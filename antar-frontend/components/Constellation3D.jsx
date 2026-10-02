@@ -390,7 +390,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     // either clipped or a speck.
     const firs = (dataRef.current?.nodes || []).filter((m) => m.kind !== "agent").length;
     fgRef.current?.cameraPosition(
-      { x: 0, y: 0, z: fitDistance(ballRadius(firs || 1) * AGENT_SHELL) }, { x: 0, y: 0, z: 0 }, 900);
+      { x: 0, y: 0, z: Math.min(fitDistance(ballRadius(firs || 1) * AGENT_SHELL), groupByRef.current === 'type' ? 640 : 850) }, { x: 0, y: 0, z: 0 }, 900);
   }
 
   // Think-flight: each agent hub dives through the data and back out, its satellites
@@ -547,10 +547,10 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
           focusComponent(n);
         })
         .onBackgroundClick(() => { if (focusRef.current) clearFocus(); })
-        // Nodes arrive pre-positioned on their targets (buildConstellation sets x/y), so
-        // the synchronous warm-up - which blocks the main thread before first paint —
-        // needs far fewer ticks than the 60 it had.
-        .warmupTicks(30)
+        // 250 warmup ticks forces the physics simulation to reach full equilibrium 
+        // synchronously BEFORE the first frame is painted. This ensures the brain is a perfectly
+        // solid, static monolith during the cinematic zoom-in, preventing any visible 'bouncing'.
+        .warmupTicks(250)
         .cooldownTime(COOLDOWN_MS);
 
       fg.d3Force("charge").strength(-45);
@@ -631,12 +631,13 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       // visible while it is still moving — the motion is the arrival, not a reveal.
       fg.cameraPosition(
         reduce ? { x: 0, y: 0, z: fitZ }
-               : { x: 0, y: fitZ * 0.42, z: fitZ * 2.6 },
+               : { x: 0, y: 0, z: 3500 },
         { x: 0, y: 0, z: 0 }, 0);
       const canvasEl = containerRef.current;
       if (canvasEl && !reduce) {
         canvasEl.style.opacity = "0";
-        canvasEl.style.transition = "opacity 520ms cubic-bezier(.22,.61,.36,1)";
+        // A slightly longer fade-in pairs nicely with the longer zoom
+        canvasEl.style.transition = "opacity 1200ms cubic-bezier(.22,.61,.36,1)";
         requestAnimationFrame(() => { canvasEl.style.opacity = "1"; });
       }
 
@@ -646,21 +647,23 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       // controls the tween is driving, so the two fought each other every frame and the
       // approach visibly juddered. Now the flight happens alone, and the rotation starts
       // only once it has landed.
-      // 1700ms reads as deliberate rather than slow, and the library eases the tween, so
-      // the last third of the approach naturally settles instead of stopping dead.
-      const FLY_MS = 1700;
+      // 3800ms gives a moderately fast, cinematic approach.
+      const FLY_MS = 3800;
       if (!reduce) {
-        setTimeout(() => fg.cameraPosition({ x: 0, y: 0, z: fitZ }, { x: 0, y: 0, z: 0 },
-                                           FLY_MS), 80);
+        // Tighter framing as requested by user (closer than 750/980 legacy limits)
+        const legacyZ = groupByRef.current === "type" ? 640 : 850;
+        const targetZ = Math.min(fitZ, legacyZ);
+        setTimeout(() => fg.cameraPosition({ x: 0, y: 0, z: targetZ }, { x: 0, y: 0, z: 0 },
+                                           FLY_MS), 100);
       }
+      
+      // Turn on background autoRotate only after the tween lands to prevent stuttering.
       setTimeout(() => {
         if (fg.controls) {
           const controls = fg.controls();
           controls.autoRotate = true;
           controls.autoRotateSpeed = 0.35;
-          // Damping is what turns a drag into a glide instead of a snap. It has to be
-          // enabled on the controls themselves, and it only takes effect if something
-          // calls controls.update() each frame - 3d-force-graph's render loop does.
+          // Damping is what turns a drag into a glide instead of a snap.
           controls.enableDamping = true;
           controls.dampingFactor = 0.12;
         }
@@ -722,7 +725,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     lastGroupRef.current = groupByRef.current;
     if (groupChanged) {
       const firCount = dataRef.current.nodes.filter((m) => m.kind !== "agent").length;
-      fg.cameraPosition({ x: 0, y: 0, z: fitDistance(ballRadius(firCount || 1) * AGENT_SHELL) },
+      fg.cameraPosition({ x: 0, y: 0, z: Math.min(fitDistance(ballRadius(firCount || 1) * AGENT_SHELL), groupByRef.current === 'type' ? 640 : 850) },
                         { x: 0, y: 0, z: 0 }, 900);
     }
   }, [constel]); // eslint-disable-line
