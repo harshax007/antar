@@ -147,7 +147,7 @@ function FitToKarnataka({ geo, selectedDistrict }) {
     fitted.current = true;
     requestAnimationFrame(() => {
       map.invalidateSize();
-      map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [12, 12] });
+      map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0] });
     });
   }, [geo, map]);
   useEffect(() => {
@@ -217,10 +217,16 @@ export default function MapScreen() {
     // deep link from a chat forecast answer: /map?unit=…&h=28&fc=PROPERTY
     initial: { unit: sp?.get("unit") || null, horizon: Number(sp?.get("h")) || 7, category: sp?.get("fc") || null },
   });
-  const [modelCardOpen, setModelCardOpen] = useState(false);
+    const [modelCardOpen, setModelCardOpen] = useState(false);
+  const [rightTab, setRightTab] = useState(null);
+  const [llmSummary, setLlmSummary] = useState(null);
+  const [llmLoading, setLlmLoading] = useState(false);
+
+
+  useEffect(() => { if (fc.selected) setRightTab("where"); }, [fc.selected]);
   // Right column: View summary by default; Where next opens on click, or by itself when a
   // station or beat is picked on the map (its card shows there).
-  const [rightTab, setRightTab] = useState("summary");
+  
   // Escape closes the dossier detail first, then the dossier (it had only its ).
   useEffect(() => {
     if (!showDossier && !selectedDetail) return;
@@ -231,7 +237,7 @@ export default function MapScreen() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [showDossier, selectedDetail]);
-  useEffect(() => { if (fc.selected) setRightTab("where"); }, [fc.selected]);
+  
   const handleViewDetail = (type, data) => {
     setSelectedDetail({ type, data });
   };
@@ -303,25 +309,40 @@ export default function MapScreen() {
   // Clicking through dates quickly used to let a slow, older response land last and
   // overwrite the newer one. Each change now aborts the previous request. The window
   // before the selected one is fetched alongside it so the report can show the change.
-  const [giLoading, setGiLoading] = useState(true);
+    const [giLoading, setGiLoading] = useState(true);
   const [giPrevTotal, setGiPrevTotal] = useState(null);
+  const [giMonthlyTotal, setGiMonthlyTotal] = useState(null);
+
   useEffect(() => {
     const ctrl = new AbortController();
-    const q = new URLSearchParams();
-    if (crimeType) q.set("crime_type", crimeType);
-    q.set("end_date", endDate);
-    const qPrev = new URLSearchParams(q);
-    qPrev.set("end_date", shiftIso(endDate, -30));
+    
+    // Q for 1-day (daily)
+    const qDaily = new URLSearchParams();
+    if (crimeType) qDaily.set("crime_type", crimeType);
+    qDaily.set("days", "1");
+    qDaily.set("end_date", endDate);
+    
+    const qDailyPrev = new URLSearchParams(qDaily);
+    qDailyPrev.set("end_date", shiftIso(endDate, -1));
+
+    // Q for 30-day (monthly)
+    const qMonthly = new URLSearchParams();
+    if (crimeType) qMonthly.set("crime_type", crimeType);
+    qMonthly.set("days", "30");
+    qMonthly.set("end_date", endDate);
+
     setGiLoading(true);
     Promise.all([
-      fetch(`${API}/api/map/gi_star?${q}`, { signal: ctrl.signal }).then((r) => r.json()),
-      fetch(`${API}/api/map/gi_star?${qPrev}`, { signal: ctrl.signal }).then((r) => r.json()).catch(() => null),
+      fetch(`${API}/api/map/gi_star?${qDaily}`, { signal: ctrl.signal }).then(r => r.json()),
+      fetch(`${API}/api/map/gi_star?${qDailyPrev}`, { signal: ctrl.signal }).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/map/gi_star?${qMonthly}`, { signal: ctrl.signal }).then(r => r.json()).catch(() => null)
     ])
-      .then(([cur, prev]) => {
-        setGiStar(cur || { zones: [] });
-        setGiPrevTotal(prev?.zones ? prev.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
+      .then(([curDaily, prevDaily, curMonthly]) => {
+        setGiStar(curDaily || { zones: [] });
+        setGiPrevTotal(prevDaily?.zones ? prevDaily.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
+        setGiMonthlyTotal(curMonthly?.zones ? curMonthly.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
       })
-      .catch((err) => { if (err?.name !== "AbortError") { setGiStar({ zones: [] }); setGiPrevTotal(null); } })
+      .catch((err) => { if (err?.name !== "AbortError") { setGiStar({ zones: [] }); setGiPrevTotal(null); setGiMonthlyTotal(null); } })
       .finally(() => { if (!ctrl.signal.aborted) setGiLoading(false); });
     return () => ctrl.abort();
   }, [crimeType, endDate]);
@@ -467,19 +488,42 @@ export default function MapScreen() {
     };
   }, [giStar, deltaPct, busiestZones, totalObserved, patrolZones, topAlert, fc.on, fc.hot, fc.horizon]);
 
+  useEffect(() => {
+    if (rightTab !== "summary" || !viewInsight || giLoading) return;
+    const ctrl = new AbortController();
+    setLlmLoading(true);
+    fetch(`${API}/api/map/view_summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        crime_type: crimeType,
+        district: selectedDistrict,
+        date: endDate,
+        stats: {
+          trend: viewInsight.trend,
+          concentration: viewInsight.concentration,
+          lead: viewInsight.lead,
+          second: viewInsight.second,
+          hotBand: viewInsight.hotBand,
+          hotFirst: viewInsight.hotFirst,
+          level: viewInsight.level
+        }
+      }),
+      signal: ctrl.signal
+    })
+    .then(r => r.json())
+    .then(d => setLlmSummary(d.summary))
+    .catch(() => {})
+    .finally(() => { if (!ctrl.signal.aborted) setLlmLoading(false); });
+    return () => ctrl.abort();
+  }, [rightTab, viewInsight, giLoading, crimeType, selectedDistrict, endDate]);
+
   const [patrolRequest, setPatrolRequest] = useState(false);   // HITL: request a deployment
   const [sessionRole, setSessionRole] = useState(null);
   useEffect(() => { setSessionRole(readSession()?.role || null); }, []);
-  const [summaryOpen, setSummaryOpen] = useState(true);
-  useEffect(() => {
-    try { if (localStorage.getItem("antar_map_summary") === "0") setSummaryOpen(false); } catch {}
-  }, []);
-  function toggleSummary() {
-    setSummaryOpen((v) => {
-      try { localStorage.setItem("antar_map_summary", v ? "0" : "1"); } catch {}
-      return !v;
-    });
-  }
+    
+  
+  
 
   // Crime-flow corridors from the FIR dataset: same accused in ≥2 districts.
   // Respects the year and the crime filter; rendered only when toggled on.
@@ -816,7 +860,7 @@ export default function MapScreen() {
           </div>
         , document.body)}
 
-          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%" }}><MapContainer center={[15.0, 76.0]} zoom={7} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
+          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%" }}><MapContainer center={[15.317, 75.713]} zoom={7} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
             <TileLayer 
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" 
               attribution="&copy; Esri" 
@@ -1067,21 +1111,38 @@ export default function MapScreen() {
         <div className="t">{kn ? "ಕರ್ನಾಟಕ ಅಪರಾಧ ವರದಿ" : "Karnataka Crime Report"}<span className="open">{kn ? "ತೆರೆಯಿರಿ ↗" : "open ↗"}</span></div>
         {/* keyed on the selection so the block re-animates on every date / crime change */}
         <div key={`${endDate}|${crimeType}`} className="mx-swap">
-          <div className="big">{shownTotal.toLocaleString("en-IN")} <small>{kn ? "ಪ್ರಕರಣಗಳು" : "incidents"}</small></div>
-          <div className="mx-stat-sub">
-            {giStar.window_days || 30}{kn ? " ದಿನಗಳು" : " days"} {kn ? "ವರೆಗೆ" : "to"} {prettyDate(endDate, kn)}
-            {deltaPct !== null && !giLoading && (
-              <span className={`mx-delta ${deltaPct > 0 ? "up" : deltaPct < 0 ? "down" : ""}`}
-                    title={kn ? "ಹಿಂದಿನ 30 ದಿನಗಳಿಗೆ ಹೋಲಿಸಿದರೆ" : `vs previous 30 days (${giPrevTotal?.toLocaleString("en-IN")})`}>
-                {deltaPct > 0 ? `▲ ${deltaPct}%` : deltaPct < 0 ? `▼ ${Math.abs(deltaPct)}%` : (kn ? "≈ ಸಮಾನ" : "≈ same")}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+              <div className="big" style={{ margin: 0, lineHeight: 1 }}>{shownTotal.toLocaleString("en-IN")}</div>
+              <div style={{ fontSize: '11px', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{kn ? "ದೈನಂದಿನ ಪ್ರಕರಣಗಳು" : "Daily Incidents"}</div>
+            </div>
+            
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>{prettyDate(endDate, kn)}</span>
+              {deltaPct !== null && !giLoading && (
+                <span className={`mx-delta ${deltaPct > 0 ? "up" : deltaPct < 0 ? "down" : ""}`} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
+                  {deltaPct > 0 ? `▲ ${Math.abs(deltaPct).toFixed(0)}%` : deltaPct < 0 ? `▼ ${Math.abs(deltaPct).toFixed(0)}%` : "—"}
+                </span>
+              )}
+            </div>
+            
+            {giMonthlyTotal !== null && !giLoading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'rgba(6,11,20,0.4)', border: '1px solid var(--glass-border)', borderRadius: '6px', marginBottom: '14px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--muted)', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>30D</span>
+                <span style={{ fontSize: '13px', color: '#fff' }}>{giMonthlyTotal.toLocaleString("en-IN")} <span style={{ color: 'var(--muted)', fontSize: '11px', marginLeft: '4px' }}>TOTAL</span></span>
+              </div>
+            )}
+            
+            {leadZone && (
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', paddingLeft: '10px', borderLeft: `2px solid ${leadZone.is_hotspot ? 'var(--red)' : 'var(--cyan)'}` }}>
+                <div style={{ marginBottom: '4px' }}>
+                  <span style={{ color: '#fff', fontWeight: 600 }}>{leadZone.zone}</span> 
+                  {leadZone.is_hotspot && <span style={{ color: 'var(--red)', marginLeft: '8px', fontSize: '9px', border: '1px solid rgba(248,113,113,0.3)', padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.05em' }}>HOTSPOT</span>}
+                </div>
+                <div style={{ color: 'var(--muted)' }}>{leadZone.observed} cases <span style={{ margin: '0 4px' }}>•</span> z={leadZone.gi_stat.toFixed(2)}</div>
+              </div>
             )}
           </div>
-          {leadZone && (
-            <div className="l"><span>{leadZone.zone}</span> <b>z={leadZone.gi_stat.toFixed(2)}</b> · {leadZone.observed} {kn ? "ಪ್ರಕರಣಗಳು" : "incidents"}{leadZone.is_hotspot ? (kn ? " · ಹಾಟ್‌ಸ್ಪಾಟ್" : " · hotspot") : ""}</div>
-          )}
-        </div>
-        {coords && <div className="coords">{coords.lat.toFixed(4)}&deg;N {coords.lng.toFixed(4)}&deg;E · <span className="live">LIVE</span></div>}
+          {coords && <div className="coords">{coords.lat.toFixed(4)}&deg;N {coords.lng.toFixed(4)}&deg;E · <span className="live">LIVE</span></div>}
       </button>
       </div>
 
@@ -1149,210 +1210,91 @@ export default function MapScreen() {
       {/* Right column: View summary (default) and Where next as tabs. Where next opens
           on click - or by itself when a station or beat is clicked on the map. */}
       <div className="mx-rightrail fx-rail">
-        <div className="mx-rtabs" role="tablist" aria-label={kn ? "ಬಲ ಫಲಕ" : "Right panel"}>
-          <button role="tab" aria-selected={rightTab === "summary"} className={rightTab === "summary" ? "on" : ""}
-                  onClick={() => setRightTab("summary")}>{kn ? "ನೋಟದ ಸಾರಾಂಶ" : "View summary"}</button>
-          <button role="tab" aria-selected={rightTab === "where"} className={rightTab === "where" ? "on" : ""}
-                  onClick={() => setRightTab("where")}>
-            {kn ? "ಮುಂದೆ ಎಲ್ಲಿ" : "Where next"}
-            {fc.hot?.items?.length ? <span className="mx-rtab-n">{fc.hot.items.length}</span> : null}
-          </button>
-        </div>
-        {rightTab === "where" ? (
-          fc.selected
-            ? <ForecastCard fc={fc} kn={kn} sessionRole={sessionRole} />
-            : <ForecastPanel fc={fc} kn={kn} crimeLabel={crimeType ? crimeLabel : null}
-                             onModelCard={() => setModelCardOpen(true)} />
-        ) : (
-          <div className="mx-rpane" role="tabpanel">
-      {/* View Summary - a short, number-free briefing of what the current view shows.
-          Every statement is derived from the live Gi* data (see viewInsight). */}
-      {summaryOpen ? (
-        <aside inert={reportOpen || showDossier ? "" : undefined}
-               className={`mx-vs mx-panel lvl-${viewInsight?.level || "normal"} ${giLoading ? "is-loading" : ""}`}
-               aria-label={kn ? "ನೋಟದ ಸಾರಾಂಶ" : "View summary"} aria-busy={giLoading}>
-          <span className="mx-sweep" aria-hidden="true" />
-          <header>
-            <span className="mx-vs-pulse" aria-hidden="true" />
-            <div className="ttl">
-              <b>{kn ? "ನೋಟದ ಸಾರಾಂಶ" : "VIEW SUMMARY"}</b>
-              <span>{crimeLabel} · {selectedDistrict || (kn ? "ಕರ್ನಾಟಕ" : "Karnataka")}</span>
-            </div>
-            <button type="button" onClick={toggleSummary} aria-label={kn ? "ಸಾರಾಂಶ ಮರೆಮಾಡಿ" : "Hide summary"}>›</button>
-          </header>
+          <div className="mx-rtabs" role="tablist" aria-label={kn ? "ಬಲ ಫಲಕ" : "Right panel"}>
+            <button role="tab" aria-selected={rightTab === "summary"} className={rightTab === "summary" ? "on" : ""}
+                    onClick={() => setRightTab(rightTab === "summary" ? null : "summary")}>{kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"}</button>
+            <button role="tab" aria-selected={rightTab === "where"} className={rightTab === "where" ? "on" : ""}
+                    onClick={() => setRightTab(rightTab === "where" ? null : "where")}>
+              {kn ? "ಮುಂದೆ ಎಲ್ಲಿ" : "Where next"}
+              {fc.hot?.items?.length ? <span className="mx-rtab-n">{fc.hot.items.length}</span> : null}
+            </button>
+          </div>
 
-          {!viewInsight ? (
-            <p className="mx-vs-empty">{giLoading ? (kn ? "ನೋಟ ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ…" : "Reading the current view…") : (kn ? "ಈ ನೋಟಕ್ಕೆ ಚಟುವಟಿಕೆ ಇಲ್ಲ." : "No recorded activity in this view.")}</p>
-          ) : (
-            <div key={`${endDate}|${crimeType}|${selectedDistrict || ""}`} className="mx-swap">
-              <div className={`mx-vs-status lvl-${viewInsight.level}`}>
-                <i aria-hidden="true" />
-                {kn
-                  ? { normal: "ಸಾಮಾನ್ಯ ಸ್ಥಿತಿ", elevated: "ಹೆಚ್ಚಿದ ಎಚ್ಚರಿಕೆ", high: "ಉನ್ನತ ಎಚ್ಚರಿಕೆ" }[viewInsight.level]
-                  : { normal: "POSTURE · NORMAL", elevated: "POSTURE · ELEVATED", high: "POSTURE · HIGH ALERT" }[viewInsight.level]}
-              </div>
-
-              <ul className="mx-vs-list">
-                {viewInsight.trend.key !== "unknown" && (
-                  <li className={`t-${viewInsight.trend.tone}`}>
-                    <em>{kn ? "ಪ್ರವೃತ್ತಿ" : "Trend"}</em>
-                    <span>{kn
-                      ? { steady: "ಹಿಂದಿನ ತಿಂಗಳಂತೆ ಸ್ಥಿರ.", rising: "ಹಿಂದಿನ ತಿಂಗಳಿಗಿಂತ ಸ್ವಲ್ಪ ಏರಿಕೆ.", "rising-sharp": "ಹಿಂದಿನ ತಿಂಗಳಿಗಿಂತ ತೀವ್ರ ಏರಿಕೆ.", easing: "ಹಿಂದಿನ ತಿಂಗಳಿಗಿಂತ ಸ್ವಲ್ಪ ಇಳಿಕೆ.", "easing-sharp": "ಹಿಂದಿನ ತಿಂಗಳಿಗಿಂತ ಗಮನಾರ್ಹ ಇಳಿಕೆ." }[viewInsight.trend.key]
-                      : { steady: "Holding steady against the previous month.", rising: "Edging up compared with the previous month.", "rising-sharp": "Rising sharply compared with the previous month.", easing: "Easing slightly compared with the previous month.", "easing-sharp": "Clearly lower than the previous month." }[viewInsight.trend.key]}</span>
-                  </li>
-                )}
-
-                {viewInsight.lead && (
-                  <li>
-                    <em>{kn ? "ಕೇಂದ್ರ" : "Focus"}</em>
-                    <span>{kn
-                      ? (viewInsight.concentration === "spread" && viewInsight.second
-                          ? `ಹಲವು ವಲಯಗಳಲ್ಲಿ ಹರಡಿದೆ - ${viewInsight.lead} ಮತ್ತು ${viewInsight.second} ಮುಂದಿವೆ.`
-                          : `${viewInsight.lead} ನಲ್ಲಿ ${viewInsight.concentration === "heavy" ? "ಹೆಚ್ಚು " : ""}ಕೇಂದ್ರೀಕೃತ.`)
-                      : (viewInsight.concentration === "spread" && viewInsight.second
-                          ? <>Spread across zones, led by <b>{viewInsight.lead}</b> and <b>{viewInsight.second}</b>.</>
-                          : <>{viewInsight.concentration === "heavy" ? "Heavily concentrated" : "Concentrated"} in <b>{viewInsight.lead}</b>.</>)}</span>
-                  </li>
-                )}
-
-                <li className={viewInsight.hotBand === "none" ? "t-calm" : viewInsight.hotBand === "many" ? "t-high" : "t-warn"}>
-                  <em>{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್" : "Hotspots"}</em>
-                  <span>{kn
-                    ? { none: "ದೃಢೀಕೃತ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳಿಲ್ಲ.", one: `ಒಂದು ದೃಢೀಕೃತ ಹಾಟ್‌ಸ್ಪಾಟ್ - ${viewInsight.hotFirst}.`, few: "ಕೆಲವು ದೃಢೀಕೃತ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು.", many: "ಹಲವು ವಲಯಗಳಲ್ಲಿ ದೃಢೀಕೃತ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು." }[viewInsight.hotBand]
-                    : { none: "No statistically confirmed hotspots.", one: <>One confirmed hotspot in <b>{viewInsight.hotFirst}</b>.</>, few: "A few confirmed hotspots are active.", many: "Confirmed hotspots across multiple zones." }[viewInsight.hotBand]}</span>
-                </li>
-
-                {viewInsight.outlook && (
-                  <li className="t-warn mx-vs-outlook">
-                    <em>{kn ? "ಮುನ್ನೋಟ" : "Outlook"}</em>
-                    <span>
-                      {kn
-                        ? <>ಮುಂದಿನ {viewInsight.outlook.horizon} ದಿನ: <b>{viewInsight.outlook.name}</b> ({viewInsight.outlook.where}) - ಸಂಭವನೀಯ {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIR.</>
-                        : <>Next {viewInsight.outlook.horizon} days: highest forecast at <b>{viewInsight.outlook.name}</b> ({viewInsight.outlook.where}) - likely {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIRs.</>}
-                      <span className="fx-i" title={kn ? "ಅನುಮಾನಿತ" : "Inferred - a forecast, with its range"}>I</span>
-                    </span>
-                  </li>
-                )}
-
-                {viewInsight.patrol.length > 0 && viewInsight.patrolFromForecast && (
-                  <li>
-                    <em>{kn ? "ಗಸ್ತು" : "Patrol"}</em>
-                    <span>{kn
-                      ? `ಮುನ್ಸೂಚನೆ ${viewInsight.patrol.join(" ಮತ್ತು ")} ಕಡೆ ಸೂಚಿಸುತ್ತದೆ - "ಮುಂದೆ ಎಲ್ಲಿ" ಯಲ್ಲಿ ತೆರೆದು ಗಸ್ತು ಪ್ರಸ್ತಾಪಿಸಿ; ನಿರ್ಧಾರ ಅಧಿಕಾರಿಯದು.`
-                      : <>The forecast points to {viewInsight.patrol.map((z, i) => <span key={z}>{i > 0 && " and "}<b>{z}</b></span>)} - open one in Where next to propose a patrol. The officer decides.</>}</span>
-                  </li>
-                )}
-
-                {viewInsight.patrol.length > 0 && !viewInsight.patrolFromForecast && (
-                  <li>
-                    <em>{kn ? "ಗಸ್ತು" : "Patrol"}</em>
-                    {/* With no confirmed hotspot the patrol list is only the busiest zones, so it
-                        is phrased as routine attention rather than a priority directive. */}
-                    <span>{kn
-                      ? (viewInsight.hotBand === "none"
-                          ? `ನಿಯಮಿತ ಗಸ್ತು; ${viewInsight.patrol.join(" ಮತ್ತು ")} ಮೇಲೆ ಗಮನ.`
-                          : `${viewInsight.patrol.join(" ಮತ್ತು ")} ಗೆ ಆದ್ಯತೆ ನೀಡಿ.`)
-                      : viewInsight.hotBand === "none"
-                        ? <>Routine patrols, with attention on {viewInsight.patrol.map((z, i) => <span key={z}>{i > 0 && " and "}<b>{z}</b></span>)}.</>
-                        : <>Prioritise {viewInsight.patrol.map((z, i) => <span key={z}>{i > 0 && " and "}<b>{z}</b></span>)}.</>}</span>
-                  </li>
-                )}
-
-                {viewInsight.watch && (
-                  <li className="t-warn">
-                    <em>{kn ? "ಗಮನ" : "Watch"}</em>
-                    <span>{kn
-                      ? `${viewInsight.watch.zone}: ${viewInsight.watch.what} ಅಸಾಮಾನ್ಯ ಏರಿಕೆ.`
-                      : <><b>{viewInsight.watch.zone}</b> - unusual rise in {viewInsight.watch.what}.</>}</span>
-                  </li>
-                )}
-              </ul>
-            </div>
+          {rightTab === "where" && (
+            fc.selected
+              ? <ForecastCard fc={fc} kn={kn} sessionRole={sessionRole} />
+              : <ForecastPanel fc={fc} kn={kn} crimeLabel={crimeType ? crimeLabel : null} onModelCard={() => setModelCardOpen(true)} />
           )}
-        </aside>
-      ) : (
-        <button type="button" className="mx-summary-tab mx-panel" onClick={toggleSummary} aria-label={kn ? "ಸಾರಾಂಶ ತೋರಿಸಿ" : "Show view summary"}>
-          ‹ {kn ? "ಸಾರಾಂಶ" : "VIEW SUMMARY"}
-        </button>
-      )}
-      {districtDetail && (
-          <div inert={reportOpen || showDossier ? "" : undefined} className="mx-dcard mx-panel mx-dcard-enhanced">
-            <div className="mx-dcard-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{districtDetail.zone}</span>
-              <button
-                onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(34, 230, 240, 0.8)',
-                  cursor: 'pointer',
-                  fontSize: '20px',
-                  padding: '0 4px',
-                  lineHeight: 1
-                }}
-                title="Close"
-              >&times;</button>
-            </div>
-            <div className="mx-dcard-body">
-              <div className="mx-dcard-row"><span className="k">{kn ? "FIR (30ದಿನ)" : "FIRs (30d)"}</span><span className="v" style={{ color: "var(--cyan)" }}>{districtDetail.fir_count}</span></div>
-              <div className="mx-dcard-bar"><div className="fill" style={{ width: `${Math.min(100, (districtDetail.fir_count / maxFir) * 100)}%` }} /></div>
-              
-              <div className="mx-dcard-row">
-                <span className="k">{kn ? "ಈ ತಿಂಗಳು / ಹಿಂದಿನ" : "This Month / Prior"}</span>
-                <span className="v">{districtDetail.this_month} / {districtDetail.prior_month}</span>
-              </div>
-              <div className="mx-dcard-row">
-                <span className="k">{kn ? "ಮುನ್ಸೂಚನೆ (ಮುಂದಿನ 7ದಿನ)" : "Predicted (Next 7d)"}</span>
-                <span className="v warning">{districtDetail.predicted || "--"}</span>
-              </div>
-              <div className="mx-dcard-row">
-                <span className="k">{kn ? "ಬಗೆಹರಿಯದ ಪ್ರಕರಣಗಳು" : "Unsolved / Open"}</span>
-                <span className="v critical">{districtDetail.open_unsubs_count?.toLocaleString() || "--"}</span>
-              </div>
-              
-              <div className="mx-dcard-row mt-2"><span className="k">{kn ? "ಅಪಾಯದ ಸೂಚ್ಯಂಕ" : "Risk index"}</span><span className={`mx-dcard-badge ${riskClass(districtDetail.risk_level)}`}>{districtDetail.risk_level}</span></div>
-              <div className="mx-dcard-row"><span className="k">{kn ? "ಡಾರ್ಕ್ ವೆಬ್ ಸೂಚ್ಯಂಕ" : "Dark Web index"}</span><span className={`mx-dcard-badge mx-risk-h`}>{districtDetail.dark_level || "Critical"}</span></div>
-              <div className="mx-dcard-row"><span className="k">{kn ? "ಪ್ರವೃತ್ತಿ" : "Trend"}</span><span className="v">{districtDetail.trend}</span></div>
-              
-              {districtDetail.top_crimes?.length > 0 && (
-                <div className="mx-dcard-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 3, marginTop: 8 }}>
-                  <span className="k">{kn ? "ಹೆಚ್ಚಿನ ಅಪರಾಧಗಳು" : "Top crimes"}</span>
-                  <span className="v" style={{ color: "var(--text)", whiteSpace: "normal", lineHeight: 1.3 }}>{districtDetail.top_crimes.slice(0, 3).join(", ")}</span>
+
+          {rightTab === "summary" && (
+            <aside inert={reportOpen || showDossier ? "" : undefined}
+                   className={`mx-vs mx-panel lvl-${viewInsight?.level || "normal"} ${giLoading ? "is-loading" : ""}`}
+                   aria-label={kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"} aria-busy={giLoading}>
+              <span className="mx-sweep" aria-hidden="true" />
+              <header>
+                <span className="mx-vs-pulse" aria-hidden="true" />
+                <div className="ttl">
+                  <b>{kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "VIEW SUMMARY"}</b>
+                  <span>{crimeLabel} • {selectedDistrict || (kn ? "ಕರ್ನಾಟಕ" : "Karnataka")}</span>
+                </div>
+                <button type="button" onClick={() => setRightTab(null)} style={{ background: "transparent", border: "none", color: "var(--muted)", cursor: "pointer", padding: "4px" }}><X size={16} /></button>
+              </header>
+
+              {!viewInsight ? (
+                <p className="mx-vs-empty">{giLoading ? (kn ? "ವೀಕ್ಷಣೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ..." : "Reading the current view...") : (kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಯಾವುದೇ ಚಟುವಟಿಕೆ ದಾಖಲಾಗಿಲ್ಲ." : "No recorded activity in this view.")}</p>
+              ) : (
+                <div key={`${endDate}|${crimeType}|${selectedDistrict || ""}`} className="mx-swap">
+                  <div className={`mx-vs-status lvl-${viewInsight.level}`}>
+                    <i aria-hidden="true" />
+                    {kn
+                      ? { normal: "ಸ್ಥಿತಿ • ಸಾಮಾನ್ಯ", elevated: "ಸ್ಥಿತಿ • ಎತ್ತರಿಸಿದ", high: "ಸ್ಥಿತಿ • ಹೈ ಅಲರ್ಟ್" }[viewInsight.level]
+                      : { normal: "POSTURE • NORMAL", elevated: "POSTURE • ELEVATED", high: "POSTURE • HIGH ALERT" }[viewInsight.level]}
+                  </div>
+
+                  <div className="mx-vs-llm" style={{ fontSize: '13px', lineHeight: '1.6', color: 'rgba(226,232,240,0.88)', marginTop: '12px' }}>
+                    {llmLoading ? (
+                      <div style={{ opacity: 0.5, fontStyle: 'italic' }}>{kn ? "ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : "Synthesizing intelligence..."}</div>
+                    ) : (
+                      <p style={{ margin: 0 }}>{llmSummary || (kn ? "ಲಭ್ಯವಿಲ್ಲ." : "Summary unavailable.")}</p>
+                    )}
+                  </div>
                 </div>
               )}
+            </aside>
+          )}
 
-              {/* Sending patrols is a real-world effect: this files a request that a supervising
-                  officer must approve before any order is issued (app/core/hitl.py). */}
-              {sessionRole && sessionRole !== "Approver" && (
-                <button type="button" className="mx-hitl-btn" onClick={() => setPatrolRequest(true)}
-                        title={kn ? "ಮೇಲ್ವಿಚಾರಕರ ಅನುಮೋದನೆ ಅಗತ್ಯ" : "Requires supervising officer approval"}>
-                  <ShieldCheck size={13} aria-hidden="true" /> {kn ? "ಗಸ್ತು ನಿಯೋಜನೆ ವಿನಂತಿ" : "Request patrol deployment"}
-                </button>
-              )}
+          {districtDetail && (
+            <div inert={reportOpen || showDossier ? "" : undefined} className="mx-dcard mx-panel mx-dcard-enhanced">
+              <div className="mx-dcard-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{districtDetail.zone}</span>
+                <button onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }} style={{ background: 'none', border: 'none', color: 'rgba(34, 230, 240, 0.8)', cursor: 'pointer', fontSize: '20px', padding: '0 4px', lineHeight: 1 }} title="Close">&times;</button>
+              </div>
+              <div className="mx-dcard-body">
+                <div className="mx-dcard-row"><span className="k">{kn ? "FIR (30ದಿನ)" : "FIRs (30d)"}</span><span className="v" style={{ color: "var(--cyan)" }}>{districtDetail.fir_count}</span></div>
+                <div className="mx-dcard-bar"><div className="fill" style={{ width: `${Math.min(100, (districtDetail.fir_count / maxFir) * 100)}%` }} /></div>
+                <div className="mx-dcard-row"><span className="k">{kn ? "ಈ ತಿಂಗಳು / ಹಿಂದಿನ" : "This Month / Prior"}</span><span className="v">{districtDetail.this_month} / {districtDetail.prior_month}</span></div>
+                <div className="mx-dcard-row"><span className="k">{kn ? "ಊಹಿಸಲಾಗಿದೆ (ಮುಂದಿನ 7ದಿನ)" : "Predicted (Next 7d)"}</span><span className="v warning">{districtDetail.predicted || "--"}</span></div>
+                <div className="mx-dcard-row"><span className="k">{kn ? "ಪರಿಹರಿಸಲಾಗದ / ತೆರೆದ" : "Unsolved / Open"}</span><span className="v critical">{districtDetail.open_unsubs_count?.toLocaleString() || "--"}</span></div>
+                <div className="mx-dcard-row mt-2"><span className="k">{kn ? "ಅಪಾಯದ ಸೂಚ್ಯಂಕ" : "Risk index"}</span><span className={`mx-dcard-badge ${riskClass(districtDetail.risk_level)}`}>{districtDetail.risk_level}</span></div>
+                <div className="mx-dcard-row"><span className="k">{kn ? "ಡಾರ್ಕ್ ವೆಬ್ ಸೂಚ್ಯಂಕ" : "Dark Web index"}</span><span className={`mx-dcard-badge mx-risk-h`}>{districtDetail.dark_level || "Critical"}</span></div>
+                <div className="mx-dcard-row"><span className="k">{kn ? "ಪ್ರವೃತ್ತಿ" : "Trend"}</span><span className="v">{districtDetail.trend}</span></div>
+                {districtDetail.top_crimes?.length > 0 && (
+                  <div className="mx-dcard-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 3, marginTop: 8 }}>
+                    <span className="k">{kn ? "ಟಾಪ್ ಅಪರಾಧಗಳು" : "Top crimes"}</span>
+                    <span className="v" style={{ color: "var(--text)", whiteSpace: "normal", lineHeight: 1.3 }}>{districtDetail.top_crimes.slice(0, 3).join(", ")}</span>
+                  </div>
+                )}
+                {sessionRole && sessionRole !== "Approver" && (
+                  <button type="button" className="mx-hitl-btn" onClick={() => setPatrolRequest(true)} title={kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಅಗತ್ಯವಿದೆ" : "Requires supervising officer approval"}>
+                    <ShieldCheck size={14} className="fx-i" /> {kn ? "ಗಸ್ತು ನಿಯೋಜನೆಯನ್ನು ಪ್ರಸ್ತಾಪಿಸಿ" : "Propose patrol deployment"}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {districtDetail && (
-          <ProposeAction open={patrolRequest} onClose={() => setPatrolRequest(false)} type="patrol_redeployment" kn={kn}
-            defaults={{ zone: districtDetail.zone, crime_focus: crimeType ? String(crimeLabel).toLowerCase() : "all crimes" }}
-            evidence={(() => {
-              const z = (giStar.zones || []).find((g) => String(g.zone).toLowerCase() === String(districtDetail.zone).toLowerCase());
-              return [
-                { label: kn ? "FIR (30 ದಿನ)" : "FIRs (30 days)", value: String(districtDetail.fir_count) },
-                { label: kn ? "ಅಪಾಯ ಮಟ್ಟ" : "Risk level", value: String(districtDetail.risk_level) },
-                { label: kn ? "ಪ್ರವೃತ್ತಿ" : "Trend", value: String(districtDetail.trend) },
-                z && { label: "Gi* z-score", value: `${Number(z.gi_stat).toFixed(2)}${z.is_hotspot ? " · confirmed hotspot" : ""}` },
-                { label: kn ? "ನಕ್ಷೆ ನೋಟ" : "Map view", value: `${crimeLabel} · 30 days to ${endDate}` },
-              ].filter(Boolean);
-            })()} />
-        )}
-          </div>
-        )}
-        <ModelCardModal open={modelCardOpen} onClose={() => setModelCardOpen(false)} kn={kn} />
-      </div>
-
-      {/* Keyboard-reachable district list - fallback for non-pointer users */}
+        {/* Keyboard-reachable district list - fallback for non-pointer users */}
       <div className="mx-district-list">
         <ul aria-label={kn ? "ಜಿಲ್ಲೆಗಳ ಪಟ್ಟಿ" : "District list"}>
           {districtsRich.map((d) => (

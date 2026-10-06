@@ -95,7 +95,7 @@ function toRfEdges(raw) {
 }
 
 const RISK_BADGE = { HIGH: "px-risk-h", MEDIUM: "px-risk-m", LOW: "px-risk-l" };
-const cap = (s) => (s || "").replace(/_/g, " ");
+const cap = (s) => (s || "").replace(/_/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 const pct = (c) => Math.round((c || 0) * 100);
 const keyOf = (it) => (it ? `${it.zone}|${it.crime_type}` : "");
 
@@ -481,10 +481,12 @@ function PredictScreen() {
       {/* Header */}
       <div className="px-head">
         <div className="px-head-l">
-          <h1 className="px-title">{kn ? "ಅಂತರ ಮುನ್ಸೂಚನೆ" : "Antar Forecast Engine"}</h1>
-          <div className="px-sub">
-            {kn ? "ಮುಂಬರುವ 7-ದಿನಗಳ ವಿಶ್ಲೇಷಣೆ · ಡೇಟಾ-ಆಧಾರಿತ ಒಳನೋಟ" : "upcoming 7-day predictive analysis · intelligence-driven foresight"}
-          </div>
+          <h1 className="px-title" style={{ background: "linear-gradient(to right, #22d3ee, #d8b4fe)", WebkitBackgroundClip: "text", color: "transparent" }}>
+              {kn ? "ಅಂತರ್ ಮುನ್ಸೂಚನೆ ಎಂಜಿನ್" : "Antar Forecast Engine"}
+            </h1>
+            <div className="px-sub" style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
+              {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ವಿಶ್ಲೇಷಣೆ • ಇಂಟೆಲಿಜೆನ್ಸ್ ಆಧಾರಿತ ಮುನ್ಸೂಚನೆ" : "7-Day Predictive Analysis • Intelligence-Driven Foresight and Risk Assessment"}
+            </div>
         </div>
         <div className="px-head-r">
           {boardMeta && <span className="px-chip">{kn ? "ಮೌಲ್ಯಮಾಪನ" : "assessed"} <b>{boardMeta.as_of}</b></span>}
@@ -506,7 +508,7 @@ function PredictScreen() {
         {/* 1 · Predict · Next 7 Days (scrollable) */}
         <div className="pxd-card">
           <div className="pxd-hd">
-            <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "forecast · upcoming 7 days"}</span>
+            <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast • Upcoming 7 Days"}</span>
             <span className="pxd-sub">{predictions?.length ?? 0} {kn ? "ವಲಯ" : "zones"}</span>
           </div>
           <div className="pxd-scroll" role="group" aria-label={kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್ ಪ್ರಾಧಾನ್ಯ" : "Hotspot rankings"}>
@@ -534,11 +536,11 @@ function PredictScreen() {
                   <span className="px-crime">{cap(p.crime_type)}</span>
                   <button
                     type="button"
-                    className="px-know"
+                    className="px-know" style={{ textTransform: "none", letterSpacing: "normal", fontWeight: 500 }}
                     onClick={(e) => { e.stopPropagation(); setFocusKind("prediction"); setSelected(i); setShowReasoning(true); }}
                     aria-label={`${kn ? "ತರ್ಕದಲ್ಲಿ ಇನ್ನಷ್ಟು ತಿಳಿಯಿರಿ" : "Know more in reasoning"} - ${p.zone}`}
                   >
-                    {kn ? "ಮುನ್ಸೂಚನೆ ಸಂದರ್ಭವನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಿ" : "understand forecast context"}
+                    {kn ? "ಸಂದರ್ಭವನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಿ" : "Understand Context"}
                   </button>
                 </div>
                 <div className="px-confbar">
@@ -559,10 +561,15 @@ function PredictScreen() {
 
         {/* 2 · Prediction Volume Trend */}
         <div className="pxd-card">
-          <div className="pxd-hd">
-            <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ ಪ್ರಮಾಣ ಪ್ರವೃತ್ತಿ" : "Prediction Volume Trend"}</span>
-            <span className="pxd-sub">{dash && dash !== "offline" ? (kn ? "ನೈಜ ಡೇಟಾ" : "live") : "—"}</span>
-          </div>
+          <div className="pxd-hd" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ ಪರಿಮಾಣದ ಪ್ರವೃತ್ತಿ" : "Prediction Volume Trend"}</span>
+                <span className="pxd-sub" style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{dash && dash !== "offline" ? (kn ? "ಲೈವ್" : "live") : "—"}</span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>
+                {kn ? "ಐತಿಹಾಸಿಕ ಡೇಟಾದ ವಿರುದ್ಧ ಊಹಿಸಲಾದ ಸಂಪುಟಗಳು" : "Predicted incident volumes charted against historical baselines"}
+              </span>
+            </div>
           {dash && dash !== "offline"
             ? <VolumeTrend volume={dash.volume} kn={kn} />
             : <div className="pxd-empty">{kn ? "ಬ್ಯಾಕೆಂಡ್ ಆಫ್‌ಲೈನ್" : "Backend offline - start the Antar API."}</div>}
@@ -570,10 +577,15 @@ function PredictScreen() {
 
         {/* 3 · Antar Alert (all, scrollable, clickable) */}
         <div className="pxd-card">
-          <div className="pxd-hd">
-            <span className="pxd-ttl">{kn ? "ಅಂತರ ಎಚ್ಚರಿಕೆ" : "Antar Alert"}</span>
-            <span className="pxd-sub">{alertList.length} {kn ? "ಸಕ್ರಿಯ" : "active"}</span>
-          </div>
+          <div className="pxd-hd" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <span className="pxd-ttl">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active Alerts"}</span>
+                <span className="pxd-sub" style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{alertList.length} {kn ? "ಸಕ್ರಿಯ" : "active"}</span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>
+                {kn ? "ರಿಯಲ್-ಟೈಮ್ ಅಸಂಗತತೆಗಳು ಮತ್ತು ಪತ್ತೆಯಾದ ಅಪಾಯದ ಏರಿಕೆಗಳು" : "Real-time anomalies and localized risk spikes"}
+              </span>
+            </div>
           <div className="pxd-scroll pxd-alerts">
             {alertList.length === 0 && <div className="pxd-empty">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆ ಇಲ್ಲ" : "No active alerts"}</div>}
             {alertList.map((a, i) => {

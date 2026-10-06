@@ -18,32 +18,14 @@ export const CATEGORIES = {
   CORRUPTION:{ label: "Corruption / Public Servants", color: "#D4AF37" },
   FOREIGN:   { label: "Crimes vs/by Foreigners",  color: "#0A84FF" },
   ENVIRON:   { label: "Environment Offences",     color: "#A4DE02" },
-  ROAD:      { label: "Road Accidents",           color: "#E5E5EA" },
-  LOCAL:     { label: "Police & Local Acts",      color: "#C7A27C" },
   OTHER:     { label: "Other",                    color: "#98989D" },
 };
 
-// Road accidents and police/local-act offences had no category, so ~40% of all FIRs —
-// 191k accident FIRs, 58k Police Act, 48k Local Act, 38k CrPC, 27k Public Safety - fell
-// into "Other", which became the largest trace on every chart: the biggest line meant
-// nothing. These two buckets carry them; "Other" is now genuinely the remainder.
-const ROAD_KEYS = ["MOTOR VEHICLE ACCIDENT", "NEGLIGENT ACT", "RASHNESS", "NEGLIGENCE"];
-const LOCAL_KEYS = ["KARNATAKA POLICE ACT", "KARNATAKA STATE LOCAL ACT", "CRPC", "PUBLIC SAFETY",
-                    "COTPA", "TOBACCO", "ELECTION", "CONSUMER"];
-
 export function categorize(group) {
-  // underscores as spaces: seeded groups are spelled "CHAIN_SNATCHING"
-  const g = (group || "").toUpperCase().replace(/_/g, " ");
+  const g = (group || "").toUpperCase();
   if (g.includes("CYBER")) return "CYBER";
   if (g.includes("POCSO") || g.includes("CHILDREN")) return "CHILDREN";
-  if (g.includes("IMMORAL TRAFFIC")) return "WOMEN";
   if (g.includes("CRUELTY BY HUSBAND") || g.includes("WOMEN") || g.includes("MOLEST") || g.includes("DOWRY") || g.includes("RAPE")) return "WOMEN";
-  // A public servant as the VICTIM (assault, obstruction) is violence against an officer,
-  // not corruption - 5.3k FIRs were filed under "Corruption" by the rule further down.
-  if (g.includes("PUBLIC SERVANT IS A VICTIM")) return "VIOLENT";
-  if (g.includes("SNATCH")) return "PROPERTY";
-  if (ROAD_KEYS.some((k) => g.includes(k))) return "ROAD";
-  if (LOCAL_KEYS.some((k) => g.includes(k))) return "LOCAL";
   if (g === "MURDER" || g.includes("DOWRY DEATH") || g.includes("CULPABLE HOMICIDE")) return "MURDER";
   if (g.includes("KIDNAP") || g.includes("ABDUCT")) return "KIDNAP";
   if (g.includes("SCHEDULED CASTE") || g.includes("SC/ST")) return "SCST";
@@ -116,7 +98,7 @@ export function buildCrimeGraph(records, { sampleUnlinkedPerCat = 8, maxNodes = 
 
   let nRepeat = 0, nRing = 0, nCyber = 0;
   // a genuine ring is small; a shared value spanning many rows is usually a generic
-  // place-name coincidence, not intelligence - cap group size to keep the web meaningful.
+  // place-name coincidence, not intelligence — cap group size to keep the web meaningful.
   const RING_MAX = 14;
   byAccused.forEach((arr, key) => { if (arr.length >= 2 && arr.length <= 14) { star(arr, "repeat", key); nRepeat++; } });
   byPlace.forEach((arr, key) => { if (arr.length >= 2 && arr.length <= RING_MAX && (distinct(arr, "CrimeHead_Name") >= 2 || arr.length >= 3)) { star(arr, "ring", key); nRing++; } });
@@ -248,12 +230,7 @@ export function buildCrimeGraph(records, { sampleUnlinkedPerCat = 8, maxNodes = 
   };
 }
 
-// How far out Antar's agents park, as a multiple of the brain's own radius. Shared with
-// Constellation3D so the 2D and 3D views cannot drift apart. Just above 1 - the agents
-// belong to the brain and should read as orbiting it, not as four specks in deep space.
-export const AGENT_SHELL = 1.03;
-
-export const LINK_COLORS ={ member: "rgba(120,140,170,0.14)", repeat: "#FFB020", ring: "#FF8C42", cyber: "#22E6F0", inferred: "#C084FC", unsub: "#A855F7" };
+export const LINK_COLORS = { member: "rgba(120,140,170,0.14)", repeat: "#FFB020", ring: "#FF8C42", cyber: "#22E6F0", inferred: "#C084FC", unsub: "#A855F7" };
 
 // ── deterministic display alias for a synthetic Accused_ID ──────────────────
 // The dataset has no name column; a stable ID→name mapping makes hubs readable.
@@ -272,7 +249,7 @@ export function aliasFor(id) {
 
 // ── Phase 2: shared selection + overview aggregations ────────────────────────
 
-/** Parse once, categorize once - every consumer (globe, timeline, overview) shares this shape. */
+/** Parse once, categorize once — every consumer (globe, timeline, overview) shares this shape. */
 export function prepare(records) {
   return records.map((r, i) => ({
     ...r, _i: i,
@@ -337,33 +314,11 @@ export function filterRecords(recs, sel = {}) {
 /** 2D constellation view: FIR nodes + intelligence edges only, grouped by
  *  connected component (each shared-accused/vehicle/UPI star = one colored
  *  community), gray dust for unlinked FIRs, red enlarged nodes for brokers
- *  (high-degree hubs). Deterministic - no stochastic community detection. */
+ *  (high-degree hubs). Deterministic — no stochastic community detection. */
 const COMM_PALETTE = ["#FFD24A", "#5B8CFF", "#18D69A", "#FF5DA2", "#B026FF", "#FF8C42",
                       "#7CF0CB", "#9D6BFF", "#E1B12C", "#6BA3FF", "#4CAF50", "#FF9BD2"];
 
-// Greedy circle packing for the crime-type bubbles: largest first, each walks out along an
-// Archimedean spiral until it clears every bubble already placed. The golden-angle ring
-// used by default puts all 15 bubbles at radius ~250-400 while the largest is ~135 across,
-// so in 2D they overlapped into one undifferentiated disk and "group by crime type" showed
-// no groups at all.
-function packCircles(radii, gap = 26) {
-  const placed = [];
-  radii.forEach((r, i) => {
-    if (i === 0) { placed.push({ x: 0, y: 0, r }); return; }
-    for (let t = 0; t < 4000; t++) {
-      const a = t * 0.35, d = 6 * t;
-      const x = Math.cos(a) * d * 0.25, y = Math.sin(a) * d * 0.25;
-      if (placed.every((p) => Math.hypot(p.x - x, p.y - y) >= p.r + r + gap)) {
-        placed.push({ x, y, r });
-        return;
-      }
-    }
-    placed.push({ x: 0, y: 0, r });   // unreachable in practice; never drop a category
-  });
-  return placed;
-}
-
-export function buildConstellation(graph, { groupBy = "evidence", pack = false } = {}) {
+export function buildConstellation(graph, { groupBy = "evidence" } = {}) {
   const nodes = graph.nodes.filter((n) => n.kind === "fir").map((n) => ({ ...n }));
   const links = graph.links.filter((l) => l.kind !== "member").map((l) => ({ ...l }));
 
@@ -463,22 +418,18 @@ export function buildConstellation(graph, { groupBy = "evidence", pack = false }
   });
 
   // groupBy "type": reorganize the brain into crime-category bubbles (ref-2
-  // poster look) - each category gets a phyllotaxis blob at a golden-angle
+  // poster look) — each category gets a phyllotaxis blob at a golden-angle
   // position, nodes take the category color, callouts name the category.
   // Evidence links stay on: lines crossing between bubbles = cross-type rings.
   if (groupBy === "type") {
     const byCat = new Map();
     nodes.forEach((n) => { (byCat.get(n.cat) || byCat.set(n.cat, []).get(n.cat)).push(n); });
     const catsSorted = [...byCat.entries()].sort((a, b) => b[1].length - a[1].length);
-    const blobRs = catsSorted.map(([, arr]) => 10 + Math.sqrt(arr.length) * 4.5);
-    // pack=true (the 2D view): non-overlapping bubbles. 3D keeps its golden-angle shell.
-    const packed = pack ? packCircles(blobRs) : null;
     compsMeta = catsSorted.map(([cat, arr], i) => {
-      const blobR = blobRs[i];
+      const blobR = 10 + Math.sqrt(arr.length) * 4.5;
       const ang = i * Math.PI * (3 - Math.sqrt(5));
       const R = 240 + blobR;
-      const cx = packed ? packed[i].x : Math.cos(ang) * R;
-      const cy = packed ? packed[i].y : Math.sin(ang) * R;
+      const cx = Math.cos(ang) * R, cy = Math.sin(ang) * R;
       arr.forEach((n, j) => {
         const rr = blobR * Math.sqrt((j + 1) / arr.length);
         const th = j * 2.39996;
@@ -506,7 +457,7 @@ export function buildConstellation(graph, { groupBy = "evidence", pack = false }
   };
 
   // Antar's learning/prediction agents ride inside the brain as their own
-  // purple satellite clusters (ref: "My agent") - one hub + trailing dots
+  // purple satellite clusters (ref: "My agent") — one hub + trailing dots
   // each, parked on a shell outside the dust ring. Think sends them flying
   // through the data.
   const AGENT_DEFS = [
@@ -515,32 +466,20 @@ export function buildConstellation(graph, { groupBy = "evidence", pack = false }
     { id: "geo", label: "Geo Agent" },
     { id: "forecast", label: "Forecast Agent" },
   ];
-  // The shell radius is DERIVED from how much brain there is, not hardcoded.
-  //
-  // It used to be a flat `R = 565` while the ball itself is sized by node count - about
-  // 331 for a 3,500-FIR view. The agents therefore sat 1.7x the brain's own radius away,
-  // as four lonely specks near the edges of the screen with a lot of black between them
-  // and the thing they are supposed to be reasoning over. They read as decoration.
-  //
-  // Tied to the same count the ball is (see `ballRadius` in Constellation3D - kept in
-  // step by AGENT_SHELL), they now hug the surface: close enough to belong to the brain,
-  // far enough out to stay legible against it. The 3D view refines this further in
-  // `layoutBall`, which knows the exact radius; this keeps the 2D view honest too.
-  const firCount = nodes.length || 1;
-  const shellR = Math.max(200, Math.sqrt(firCount) * 5.6) * AGENT_SHELL;
   AGENT_DEFS.forEach((a, i) => {
     const ang = (i / AGENT_DEFS.length) * 2 * Math.PI + 0.8;
+    const R = 565;
     nodes.push({
       id: `agent:${a.id}`, kind: "agent", role: "agent", agent: a.id, label: a.label, sub: "",
-      cat: null, vsize: 2.5, ring: shellR, deg: 0, comm: null,
-      x: Math.cos(ang) * shellR, y: Math.sin(ang) * shellR,
+      cat: null, vsize: 8, ring: R, deg: 0, comm: null,
+      x: Math.cos(ang) * R, y: Math.sin(ang) * R,
     });
     for (let s = 0; s < 6; s++) {
       const sa = ang + (s - 2.5) * 0.05;
-      const sr = shellR + 18 + (s % 3) * 11;
+      const sr = R + 24 + (s % 3) * 15;
       nodes.push({
         id: `agent:${a.id}:s${s}`, kind: "agent", role: "agentsat", agent: a.id, label: "", sub: "",
-        cat: null, vsize: 1.0, ring: sr, deg: 0, comm: null,
+        cat: null, vsize: 1.7, ring: sr, deg: 0, comm: null,
         x: Math.cos(sa) * sr, y: Math.sin(sa) * sr,
       });
       links.push({ source: `agent:${a.id}`, target: `agent:${a.id}:s${s}`, kind: "agent" });
@@ -614,10 +553,7 @@ export function overviewStats(recs) {
   };
 }
 
-// ── Softer brain palette ────────────────────────────────────────────────────
-// Same hue per crime type (so every legend still matches), ~30% less saturation and a
-// touch darker. The full-strength palette read as neon glare across 3,000+ nodes on a
-// large screen; this keeps crime types distinguishable while being easy on the eyes.
+// Added back soften to fix compatibility with Constellation.jsx
 const _soft = new Map();
 export function soften(hex, sat = 0.7, light = 0.92) {
   if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return hex;

@@ -276,3 +276,36 @@ async def anchor_areas(unsub_id: Optional[str] = None) -> dict:
         "anchor_areas": areas,
         "total": len(areas),
     }
+
+
+from pydantic import BaseModel
+class SummaryRequest(BaseModel):
+    crime_type: str | None = None
+    district: str | None = None
+    date: str
+    stats: dict
+
+@router.post("/view_summary")
+async def view_summary(req: SummaryRequest):
+    from app.services.quickml import quickml_generate
+    prompt = f"""
+    You are an intelligence analyst. Summarize the following map view data.
+    Provide a minimal, highly insightful 2-3 sentence paragraph that reads easily.
+    Avoid overly colorful or dramatic language. Stick to crisp intelligence. Focus on actionable insights or notable patterns.
+    
+    Context:
+    Crime Type: {req.crime_type or 'All Crimes'}
+    Location: {req.district or 'Karnataka State'}
+    Date: {req.date}
+    
+    Data Stats:
+    {req.stats}
+    """
+    
+    system = "You are a senior intelligence analyst. Provide brief, data-driven, actionable insights in plain text without markdown or bullet points. Output exactly 1 paragraph."
+    
+    try:
+        summary = await quickml_generate(system=system, user=prompt, temperature=0.3)
+        return {"summary": summary.strip()}
+    except Exception as e:
+        return {"summary": "Unable to generate summary at this time. Please check the data manually."}
