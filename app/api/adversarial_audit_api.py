@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.agents import adversarial_audit as da
+from app.agents import advocate_agent as da
 
 router = APIRouter()
 

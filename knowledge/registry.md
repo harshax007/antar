@@ -9,7 +9,7 @@ tags:
   - ksp
 generated:
   by: process:antar-okf-export
-  at: "2026-09-24T22:09:47Z"
+  at: "2026-10-07T00:58:48Z"
 sources:
   - id: ksp-fir-registry
     resource: urn:antar:registry:firs

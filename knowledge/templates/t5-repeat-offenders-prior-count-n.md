@@ -10,6 +10,9 @@ parameters:
   - name: limit
     type: int
     required: false
+  - name: zones
+    type: list of str
+    required: false
 executor:
   resource: /app/services/zcql_repo.py
   receipt:
@@ -25,7 +28,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-09-24T22:09:48Z"
+  at: "2026-10-07T00:58:49Z"
 status: stable
 ---
 

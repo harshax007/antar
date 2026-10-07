@@ -183,18 +183,7 @@ export function ForecastLayer({ fc, kn, contains }) {
 // ── panel ────────────────────────────────────────────────────────────────────
 
 export function AsOfChip({ fc, kn }) {
-  const a = fc.hot?.as_of || fc.layer?.as_of;
-  if (!a) return null;
-  const real = a.real_share;
-  return (
-    <div className="fx-chip" title={a.basis}>
-      <span className="fx-i">I</span>
-      <span>{t("title", kn)} {t("asOf", kn)} <b>{prettyIso(a.as_of)}</b> · {fc.horizon === 7 ? t("next7", kn) : t("next28", kn)}</span>
-      {real != null && real < 0.99 && (
-        <span className="fx-basis">{Math.round(real * 100)}% {kn ? "ನೈಜ ಇತಿಹಾಸ" : "real history"}</span>
-      )}
-    </div>
-  );
+  return null;
 }
 
 export function ForecastPanel({ fc, kn, crimeLabel, onModelCard }) {

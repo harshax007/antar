@@ -740,18 +740,45 @@ export default function DocsPage() {
                     initial={{ opacity: 0, y: 12 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ maxWidth: "760px", fontFamily: "'Inter', sans-serif" }}
+                    style={{ maxWidth: "780px", fontFamily: "'Inter', sans-serif" }}
                   >
                     
                     <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.25, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ fontSize: "14.5px", lineHeight: 1.65, color: "rgba(255,255,255,0.75)", marginTop: "16px", paddingLeft: "16px", borderLeft: "2px solid rgba(34,230,240,0.4)" }}
+                      initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                      transition={{ delay: 0.35, duration: 0.8, ease: "easeOut" }}
+                      whileHover={{ textShadow: "0 0 12px rgba(255,255,255,0.6)" }}
+                      style={{
+                        marginTop: "18px",
+                        color: "#E2E8F0", // gray-white
+                        transition: "text-shadow 0.3s ease",
+                      }}
                     >
-                      {lang === "kn" 
-                        ? "ಅಂತರ ಎಂಬುದು ಬೃಹತ್ ಎಫ್‌ಐಆರ್‌ಗಳು ಮತ್ತು ಪೊಲೀಸ್ ದಾಖಲೆಗಳ ಮೇಲೆ ನಿರ್ಮಿಸಲಾದ ಬುದ್ಧಿವಂತ ಲೇಯರ್ ಆಗಿದೆ. ಇದು ಪ್ರತ್ಯೇಕವಾದ ಪ್ರಕರಣಗಳ ನಡುವಿನ ಚುಕ್ಕೆಗಳನ್ನು ತಕ್ಷಣವೇ ಸಂಪರ್ಕಿಸುವ ಮೂಲಕ, ಗುಪ್ತ ಅಪರಾಧ ಜಾಲಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವ ಮೂಲಕ ಮತ್ತು ಪರಿಶೀಲಿಸಿದ ಗುಪ್ತಚರವನ್ನು ತಲುಪಿಸುವ ಮೂಲಕ ಸುಪ್ತ ಡೇಟಾವನ್ನು ಜೀವಂತಗೊಳಿಸುತ್ತದೆ. ಕೇವಲ ಸರ್ಚ್ ಇಂಜಿನ್‌ಗಿಂತ ಹೆಚ್ಚಾಗಿ, ಇದು ಪೂರ್ವಭಾವಿ ಪಾಲುದಾರನಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ—ಅಭೂತಪೂರ್ವ ವೇಗದೊಂದಿಗೆ ಬೆದರಿಕೆಗಳನ್ನು ನಿರೀಕ್ಷಿಸಲು ಮತ್ತು ಪ್ರಕರಣಗಳನ್ನು ಪರಿಹರಿಸಲು ಅಧಿಕಾರಿಗಳಿಗೆ ಅಧಿಕಾರ ನೀಡುತ್ತದೆ."
-                        : "Antar is an intelligent layer built over vast archives of FIRs and police records. It brings dormant data to life by instantly connecting the dots between isolated cases, uncovering hidden crime networks, and delivering verified intelligence. More than just a search engine, it acts as a proactive partner—empowering officers to anticipate threats and solve cases with unprecedented speed."}
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5, duration: 0.8 }}
+                        style={{
+                          marginBottom: "8px",
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          letterSpacing: "0.05em",
+                          color: "#94A3B8",
+                        }}
+                      >
+                        {lang === "kn" ? "ಡೆವಲಪರ್ ಟಿಪ್ಪಣಿ" : "Developer Note"}
+                      </motion.div>
+                      <p style={{
+                        fontSize: "14.5px",
+                        lineHeight: 1.7,
+                        margin: 0,
+                        letterSpacing: "0.01em",
+                      }}>
+                        {lang === "kn" 
+                          ? "ಅಂತರ ಎಂಬುದು ಬೃಹತ್ ಎಫ್‌ಐಆರ್‌ಗಳು ಮತ್ತು ಪೊಲೀಸ್ ದಾಖಲೆಗಳ ಮೇಲೆ ನಿರ್ಮಿಸಲಾದ ಬುದ್ಧಿವಂತ ಲೇಯರ್ ಆಗಿದೆ. ಇದು ಪ್ರತ್ಯೇಕವಾದ ಪ್ರಕರಣಗಳ ನಡುವಿನ ಚುಕ್ಕೆಗಳನ್ನು ತಕ್ಷಣವೇ ಸಂಪರ್ಕಿಸುವ ಮೂಲಕ, ಗುಪ್ತ ಅಪರಾಧ ಜಾಲಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವ ಮೂಲಕ ಮತ್ತು ಪರಿಶೀಲಿಸಿದ ಗುಪ್ತಚರವನ್ನು ತಲುಪಿಸುವ ಮೂಲಕ ಸುಪ್ತ ಡೇಟಾವನ್ನು ಜೀವಂತಗೊಳಿಸುತ್ತದೆ. ಕೇವಲ ಸರ್ಚ್ ಇಂಜಿನ್‌ಗಿಂತ ಹೆಚ್ಚಾಗಿ, ಇದು ಪೂರ್ವಭಾವಿ ಪಾಲುದಾರನಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ, ಅಭೂತಪೂರ್ವ ವೇಗದೊಂದಿಗೆ ಬೆದರಿಕೆಗಳನ್ನು ನಿರೀಕ್ಷಿಸಲು ಮತ್ತು ಪ್ರಕರಣಗಳನ್ನು ಪರಿಹರಿಸಲು ಅಧಿಕಾರಿಗಳಿಗೆ ಅಧಿಕಾರ ನೀಡುತ್ತದೆ."
+                          : "Antar is an intelligent layer built over vast archives of FIRs and police records. It brings dormant data to life by instantly connecting the dots between isolated cases, uncovering hidden crime networks, and delivering verified intelligence. More than just a search engine, it acts as a proactive partner, empowering officers to anticipate threats and solve cases with unprecedented speed."}
+                      </p>
                     </motion.div>
                   </motion.div>
 
@@ -816,7 +843,7 @@ export default function DocsPage() {
               {tagDone && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }}>
                                     {/* Project Details Inline Row */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} style={{ marginTop: "20px" }}>
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} style={{ marginTop: "20px", marginLeft: "114px" }}>
                       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
                         {[
                           { id: 'features', label: lang === "kn" ? 'ಪ್ರಮುಖ ಲಕ್ಷಣಗಳು' : 'Key Features & Functionalities' },
@@ -1252,7 +1279,7 @@ export default function DocsPage() {
                     transition={{ delay: 2.5, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                     style={{ textAlign: "center", width: "100%", justifyContent: "center", display: "flex",  fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#FFFFFF", letterSpacing: "0.1em", marginTop: "80px", marginBottom: "8px", opacity: 0.85 }}
                   >
-                    // {lang === "kn" ? "ಅಪರಾಧ ಗುಪ್ತಚರ ವೇದಿಕೆ · ವಿಮರಕ್ಷಾ ತಂಡದಿಂದ ಅಭಿವೃದ್ಧಿಪಡಿಸಲಾಗಿದೆ" : "Crime Intelligence Platform · Developed by"} 
+                    {lang === "kn" ? "ಅಭಿವೃದ್ಧಿಪಡಿಸಿದವರು" : "Developed by"} 
                     <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.7, duration: 1.2 }} style={{ color: "#22E6F0", textDecoration: "none", marginLeft: "6px", position: "relative", zIndex: 10 }}>
                       Team Vimaraksha
                     </motion.span>

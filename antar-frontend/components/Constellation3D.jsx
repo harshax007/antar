@@ -59,34 +59,49 @@ function nodeTooltip(n) {
 // Floating text label as a camera-facing sprite (three CanvasTexture).
 function makeLabelSprite(THREE, text, sub, color) {
   const dpr = 2;
-  const pad = 8 * dpr;
-  const fs = 26 * dpr, subFs = 18 * dpr;
+  const padX = 16 * dpr;
+  const padY = 8 * dpr;
+  const fs = 22 * dpr, subFs = 16 * dpr;
   const cvs = document.createElement("canvas");
   const ctx = cvs.getContext("2d");
+  
   ctx.font = `600 ${fs}px Inter, sans-serif`;
   const w1 = ctx.measureText(text).width;
   ctx.font = `${subFs}px 'JetBrains Mono', monospace`;
   const w2 = sub ? ctx.measureText(`[${sub}]`).width : 0;
-  const w = Math.max(w1, w2) + pad * 2;
-  const h = (sub ? fs + subFs + 8 * dpr : fs) + pad * 2;
+  
+  const w = Math.max(w1, w2) + padX * 2;
+  const h = (sub ? fs + subFs + 8 * dpr : fs) + padY * 2;
   cvs.width = w; cvs.height = h;
+  
+  ctx.fillStyle = "rgba(4, 7, 14, 0.85)";
+  ctx.beginPath();
+  ctx.roundRect(0, 0, w, h, 12 * dpr);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(34, 230, 240, 0.3)";
+  ctx.lineWidth = 1 * dpr;
+  ctx.stroke();
+
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.shadowColor = "rgba(0,0,0,0.95)";
-  ctx.shadowBlur = 6 * dpr;
+  ctx.shadowColor = "rgba(0,0,0,0.8)";
+  ctx.shadowBlur = 4 * dpr;
+  
   ctx.font = `600 ${fs}px Inter, sans-serif`;
   ctx.fillStyle = color || "#FFFFFF";
-  ctx.fillText(text, w / 2, sub ? pad + fs / 2 : h / 2);
+  ctx.fillText(text, w / 2, sub ? padY + fs / 2 : h / 2);
+  
   if (sub) {
     ctx.font = `${subFs}px 'JetBrains Mono', monospace`;
-    ctx.fillStyle = "#CBD5E1";
-    ctx.fillText(`[${sub}]`, w / 2, pad + fs + 4 * dpr + subFs / 2);
+    ctx.fillStyle = "#94A3B8";
+    ctx.fillText(`[${sub}]`, w / 2, padY + fs + 4 * dpr + subFs / 2);
   }
+  
   const tex = new THREE.CanvasTexture(cvs);
   tex.minFilter = THREE.LinearFilter;
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
   const sprite = new THREE.Sprite(mat);
-  const scale = 0.35;
+  const scale = 0.55; 
   sprite.scale.set((w / dpr) * scale, (h / dpr) * scale, 1);
   return sprite;
 }

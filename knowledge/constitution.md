@@ -8,10 +8,10 @@ tags:
   - governance
 generated:
   by: process:antar-okf-export
-  at: "2026-09-24T22:09:47Z"
+  at: "2026-10-07T00:58:48Z"
 verified:
   - by: human:antar-team
-    at: "2026-09-24T22:09:47Z"
+    at: "2026-10-07T00:58:48Z"
 sources:
   - id: antar-constitution
     resource: /docs/ANTAR_CONSTITUTION.md

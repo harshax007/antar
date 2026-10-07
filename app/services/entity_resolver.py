@@ -317,11 +317,131 @@ def bipartite_linkage_score(
     return combined, reasons, meta
 
 
+# ── Fellegi-Sunter Probabilistic Record Linkage (P2-2) ────────────────────────
+class FellegiSunterLinker:
+    """
+    Probabilistic record linkage using the Fellegi-Sunter model.
+    Match weights are EM-estimated from the registry (simulated here for deployment).
+    """
+    def __init__(self):
+        # m: P(agree | match), u: P(agree | non-match)
+        self.params = {
+            "name":         {"m": 0.88, "u": 0.005},
+            "alias":        {"m": 0.60, "u": 0.001},
+            "father_name":  {"m": 0.80, "u": 0.008},
+            "address_zone": {"m": 0.70, "u": 0.050},
+            "phone_hash":   {"m": 0.95, "u": 0.0001},
+            "crime_type":   {"m": 0.75, "u": 0.100},
+        }
+        self.prior = 0.00001  # Base rate of two random records matching
+
+    def score(self, a: dict, b: dict) -> tuple[float, list[str], dict]:
+        log_odds = math.log2(self.prior / (1.0 - self.prior))
+        reasons = []
+        shared_keys = []
+
+        def _get(r, keys):
+            for k in keys:
+                if r.get(k): return str(r[k]).strip().upper()
+            return ""
+
+        # 1. Name match (Jaro-Winkler)
+        na = _get(a, ["suspect_name", "full_name"])
+        nb = _get(b, ["suspect_name", "full_name"])
+        if na and nb:
+            jw = jaro_winkler(na, nb)
+            p = self.params["name"]
+            if jw > 0.85:
+                w = math.log2(p["m"] / p["u"])
+                log_odds += w
+                reasons.append(f"Name match (jw={jw:.2f}, w={w:.1f})")
+                shared_keys.append("name")
+            else:
+                log_odds += math.log2((1 - p["m"]) / (1 - p["u"]))
+
+        # 2. Alias
+        aa = _get(a, ["alias"])
+        ab = _get(b, ["alias"])
+        if aa and ab:
+            jw = jaro_winkler(aa, ab)
+            p = self.params["alias"]
+            if jw > 0.85:
+                w = math.log2(p["m"] / p["u"])
+                log_odds += w
+                reasons.append(f"Alias match (w={w:.1f})")
+                shared_keys.append("alias")
+            else:
+                log_odds += math.log2((1 - p["m"]) / (1 - p["u"]))
+
+        # 3. Father name
+        fa = _get(a, ["father_name"])
+        fb = _get(b, ["father_name"])
+        if fa and fb:
+            jw = jaro_winkler(fa, fb)
+            p = self.params["father_name"]
+            if jw > 0.85:
+                w = math.log2(p["m"] / p["u"])
+                log_odds += w
+                reasons.append(f"Father name match (w={w:.1f})")
+                shared_keys.append("father_name")
+            else:
+                log_odds += math.log2((1 - p["m"]) / (1 - p["u"]))
+
+        # 4. Zone
+        za = _get(a, ["address_zone", "zone"])
+        zb = _get(b, ["address_zone", "zone"])
+        if za and zb:
+            p = self.params["address_zone"]
+            if za == zb:
+                w = math.log2(p["m"] / p["u"])
+                log_odds += w
+                reasons.append(f"Same zone (w={w:.1f})")
+                shared_keys.append("address_zone")
+            else:
+                log_odds += math.log2((1 - p["m"]) / (1 - p["u"]))
+
+        # 5. Phone
+        pa = _get(a, ["phone_hash"])
+        pb = _get(b, ["phone_hash"])
+        if pa and pb:
+            p = self.params["phone_hash"]
+            if pa == pb:
+                w = math.log2(p["m"] / p["u"])
+                log_odds += w
+                reasons.append(f"Shared phone (key={pa}, w={w:.1f})")
+                shared_keys.append(f"phone_hash:{pa}")
+            else:
+                log_odds += math.log2((1 - p["m"]) / (1 - p["u"]))
+
+        # 6. Crime Type
+        ca = _get(a, ["crime_type"])
+        cb = _get(b, ["crime_type"])
+        if ca and cb:
+            p = self.params["crime_type"]
+            if ca == cb:
+                w = math.log2(p["m"] / p["u"])
+                log_odds += w
+                reasons.append(f"Same crime type (w={w:.1f})")
+                shared_keys.append("crime_type")
+            else:
+                log_odds += math.log2((1 - p["m"]) / (1 - p["u"]))
+
+        prob = 1.0 / (1.0 + math.pow(2.0, -log_odds))
+        
+        meta = {
+            "engine": "Fellegi-Sunter Probabilistic Linkage",
+            "log_odds": round(log_odds, 2),
+            "shared_keys": shared_keys
+        }
+        return round(prob, 4), reasons, meta
+
+_fs_linker = FellegiSunterLinker()
+
 def suggest_identity_links(rows: list[dict] | dict, threshold: float = 0.75) -> list[dict]:
     """
     Layer 5 Cross-Source Identity Hypothesis Generator.
     Scans internal FIR/suspect rows for candidate identity overlaps across records
-    using Bipartite Graph Structural Embeddings + Phonetic Name Similarity.
+    using Fellegi-Sunter Probabilistic Linkage + Bipartite Graph Embeddings.
     Returns actionable hypotheses ready for officer review via Layer 4 RBAC endpoints.
     NEVER auto-merges records.
     """
@@ -354,7 +474,14 @@ def suggest_identity_links(rows: list[dict] | dict, threshold: float = 0.75) -> 
             if pair_key in seen_pairs:
                 continue
 
-            score, reasons, meta = bipartite_linkage_score(a, b)
+            # Additive scoring: compute both, take the highest confidence signal
+            score_bip, reasons_bip, meta_bip = bipartite_linkage_score(a, b)
+            score_fs, reasons_fs, meta_fs = _fs_linker.score(a, b)
+
+            if score_fs >= score_bip:
+                score, reasons, meta = score_fs, reasons_fs, meta_fs
+            else:
+                score, reasons, meta = score_bip, reasons_bip, meta_bip
 
             if score >= threshold and reasons:
                 seen_pairs.add(pair_key)

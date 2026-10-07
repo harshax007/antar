@@ -17,7 +17,7 @@
 * [T23 — Beat-level or village/area-level crime hotspots inside a district (patrol planning)](./t23-beat-level-or-village-area-level-crime-hotspots-inside-a.md) - 8 parameter(s)
 * [T3 — Monthly crime trend (count per month)](./t3-monthly-crime-trend-count-per-month.md) - 4 parameter(s)
 * [T4 — Top suspects by linked-crime count in a zone](./t4-top-suspects-by-linked-crime-count-in-a-zone.md) - 2 parameter(s)
-* [T5 — Repeat offenders (prior_count ≥ N)](./t5-repeat-offenders-prior-count-n.md) - 2 parameter(s)
+* [T5 — Repeat offenders (prior_count ≥ N)](./t5-repeat-offenders-prior-count-n.md) - 3 parameter(s)
 * [T7 — Demographic breakdown of victims/suspects](./t7-demographic-breakdown-of-victims-suspects.md) - 2 parameter(s)
 * [T8 — Crime counts by investigation status (filter by zone, crime type and period)](./t8-crime-counts-by-investigation-status-filter-by-zone-crime.md) - 5 parameter(s)
 * [T9 — All crimes linked to a suspect](./t9-all-crimes-linked-to-a-suspect.md) - 1 parameter(s)

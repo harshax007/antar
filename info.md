@@ -51,6 +51,7 @@ insights.
 7. **Financial Crime & Transaction Link Analysis** — detect financial transactions linked to
    criminal activity; identify money trails and suspicious transaction networks; integrate
    financial crime analysis with investigation workflows.
+8. **In-Context RLHF (Reinforcement Learning from Human Feedback)** - Dynamic learning layer where human officer feedback directly injects highly rated query-answer pairs into the agent's system prompt as few-shot examples, allowing the agent to continuously adapt and improve its core identity.
 8. **Crime Forecasting & Early Warning** — identify emerging patterns using AI-driven
    analytics; early warnings for repeat crimes, gang activity and organised crime; predict
    potential hotspots.

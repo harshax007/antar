@@ -7,7 +7,7 @@ tags:
   - law
 generated:
   by: process:antar-okf-export
-  at: "2026-09-24T22:09:49Z"
+  at: "2026-10-07T00:58:49Z"
 sources:
   - id: ksp-fir-registry-actsection
     resource: urn:antar:registry:firs

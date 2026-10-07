@@ -166,10 +166,12 @@ async def forecast_node(state: AgentState) -> dict:
     # Each sub-agent under its OWN declared limit (geo 8s, predict 15s, pattern 8s,
     # alert_suggest 6s). Previously all four were awaited bare, so one slow scan held the
     # whole composite node — and the map, the forecast and the alerts with it.
-    ok_geo, geo, r_geo = await _run("geo", lambda: geo_agent_run(text, prm))
-    ok_pred, pred, r_pred = await _run("predict", lambda: prediction_agent_run(text, prm))
-    ok_pat, pat, r_pat = await _run("pattern", lambda: pattern_agent_run(text, prm))
-    ok_sug, sugg, r_sug = await _run("alert_suggest", lambda: alert_suggest_agent_run(text, prm))
+    t1 = asyncio.create_task(_run("geo", lambda: geo_agent_run(text, prm)))
+    t2 = asyncio.create_task(_run("predict", lambda: prediction_agent_run(text, prm)))
+    t3 = asyncio.create_task(_run("pattern", lambda: pattern_agent_run(text, prm)))
+    t4 = asyncio.create_task(_run("alert_suggest", lambda: alert_suggest_agent_run(text, prm)))
+
+    (ok_geo, geo, r_geo), (ok_pred, pred, r_pred), (ok_pat, pat, r_pat), (ok_sug, sugg, r_sug) = await asyncio.gather(t1, t2, t3, t4)
 
     degraded = [{"agent": a, "step": "degraded", "detail": f"{a} unavailable: {r}"}
                 for a, okf, r in (("geo", ok_geo, r_geo), ("predict", ok_pred, r_pred),

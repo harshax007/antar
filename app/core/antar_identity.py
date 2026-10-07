@@ -94,6 +94,28 @@ _REFUSAL_RE = re.compile(
 
 # ── 5. LLM prompts ───────────────────────────────────────────────────────────────
 
+
+_RLHF_CACHE = None
+def _get_rlhf_examples(lang="en"):
+    global _RLHF_CACHE
+    if _RLHF_CACHE is None:
+        try:
+            from app.api.feedback import _read
+            rows = _read()
+            ups = [r for r in rows if r.get("rating") == "up" and r.get("answer") and r.get("lang") == lang]
+            _RLHF_CACHE = ups[-2:] # take last 2
+        except Exception:
+            _RLHF_CACHE = []
+    return _RLHF_CACHE
+
+def _format_rlhf(lang):
+    ex = _get_rlhf_examples(lang)
+    if not ex: return ""
+    res = "HIGHLY RATED EXAMPLES (Learn from these past successes):\n"
+    for r in ex:
+        res += f"Q: {r.get('question')}\nA: {r.get('answer')}\n\n"
+    return res
+
 def system_prompt(task: str = "answer", lang: str = "en") -> str:
     """The shared preamble for every LLM call that writes to an officer.
 
@@ -136,7 +158,9 @@ TEMPLATE — in this order, plain lines:
   Then    any limit on its own line, starting "Note: ".
   If the rows cannot answer the question, line 1 says so plainly and nothing is invented.
 
-TASK: {tasks.get(task, tasks['answer'])}{kannada}"""
+TASK: {tasks.get(task, tasks["answer"])}{kannada}
+
+{_format_rlhf(lang)}"""
 
 
 # ── 6. Shaping every answer into the template ────────────────────────────────────

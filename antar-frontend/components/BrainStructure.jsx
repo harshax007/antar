@@ -11,6 +11,7 @@ import CrimeGraph from "@/components/CrimeGraph";
 import BrainViewSummary from "@/components/BrainViewSummary";
 import BrainLoader from "@/components/BrainLoader";
 import TypingSearchInput from "@/components/TypingSearchInput";
+import AgentMascot from "@/components/AgentMascot";
 
 
 function CustomDropdown({ value, options, onChange, label, ariaLabel }) {
@@ -589,6 +590,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
   return (
     <div className="bsx-stage">
+      <AgentMascot onRun={runThink} />
       <div className="bsx-orbits" aria-hidden="true"><i /><i /></div>
       {filterNote && (
         <div className="bsx-filternote" role="status" aria-live="polite">
@@ -1190,5 +1192,6 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     </div>
   );
 }
+
 
 

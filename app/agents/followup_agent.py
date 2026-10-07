@@ -23,7 +23,7 @@ from app.services.zcql_local import run_query
 def _has_rows(template_id: str, params: dict) -> bool:
     """Dry-run a candidate query. Cheap (local SQLite) and side-effect free."""
     try:
-        return len(run_query(build_spec(template_id, params))) > 0
+        p = dict(params); p["limit"] = 1; return len(run_query(build_spec(template_id, p))) > 0
     except Exception:
         return False
 

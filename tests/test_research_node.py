@@ -76,11 +76,11 @@ def test_dossier_carries_its_own_rebuttal():
     if not results["research"].get("inferred_hypotheses"):
         pytest.skip("anchor produced no inferred hypotheses in the current dataset")
 
-    challenge = results.get("adversarial_audit")
+    challenge = results.get("advocate_agent")
     assert challenge, "a dossier with inferred hypotheses must carry its challenge"
     assert challenge["challenges"]
     assert sum(challenge["tally"].values()) == len(challenge["challenges"])
-    assert any(s.get("agent") == "adversarial_audit" for s in out["reasoning"])
+    assert any(s.get("agent") == "advocate_agent" for s in out["reasoning"])
 
 
 def test_broken_adversary_still_yields_a_dossier_but_says_so(monkeypatch):
@@ -88,12 +88,12 @@ def test_broken_adversary_still_yields_a_dossier_but_says_so(monkeypatch):
     check ran."""
     def _boom(*_a, **_k):
         raise RuntimeError("index corrupt")
-    monkeypatch.setattr("app.agents.adversarial_audit.challenge_dossier", _boom)
+    monkeypatch.setattr("app.agents.advocate_agent.challenge_dossier", _boom)
 
     out = asyncio.run(research_node(_state("deep research on Raju")))
     assert out["results"]["research"]
-    assert "adversarial_audit" not in out["results"]
-    trail = [s["detail"] for s in out["reasoning"] if s.get("agent") == "adversarial_audit"]
+    assert "advocate_agent" not in out["results"]
+    trail = [s["detail"] for s in out["reasoning"] if s.get("agent") == "advocate_agent"]
     assert trail and "unavailable" in trail[0]
 
 
@@ -184,4 +184,4 @@ def test_manifest_declares_research_as_reachable():
     assert a and a.reachable, "research should now have a graph node"
     assert a.graph_node == "research"
     assert a not in manifest.load().unreachable()
-    assert "adversarial_audit" in a.hosts
+    assert "advocate_agent" in a.hosts

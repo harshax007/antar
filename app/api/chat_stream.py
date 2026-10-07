@@ -276,7 +276,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
             # answer. Left as NONE, self-heal substituted an unrelated 419k-case list.
             return {"template_id": "CLARIFY", "answer_lang": lng,
                     "params": {"missing": "crime_types", "intent": "alerts"}}
-        if use_llm and choice.get("template_id") in ("CLARIFY", "NONE") and not _agent_ask:
+        if use_llm and choice.get("template_id") in ("CLARIFY", "NONE") and not _agent_ask and _route_fn(text)[0] == ["query"]:
             try:
                 from app.agents.query_agent import select_template
                 from app.services.zcql_repo import TEMPLATES as _T

@@ -5,7 +5,7 @@ Confirming promotes a hypothesis from Inferred to Known, after which downstream 
 treat it as fact and the Second Brain ingests it as institutional memory. These tests
 cover the gate that stands in front of that transition.
 
-The auditor's arithmetic is tested in test_adversarial_audit.py. Here the verdict is
+The auditor's arithmetic is tested in test_advocate_agent.py. Here the verdict is
 mostly stubbed, because what is under test is the GATE's behaviour for each verdict —
 the two concerns are kept separate on purpose.
 
@@ -139,11 +139,11 @@ async def test_unassessable_does_not_gate(monkeypatch):
 
 @pytest.mark.anyio
 async def test_broken_auditor_degrades_to_unassessable_not_to_silence(monkeypatch):
-    """If adversarial_audit raises, the confirm proceeds (officers are not held hostage to
+    """If advocate_agent raises, the confirm proceeds (officers are not held hostage to
     a broken auditor) but the record must say the review did not happen."""
     def _boom(_h):
         raise RuntimeError("index corrupt")
-    monkeypatch.setattr("app.agents.adversarial_audit.challenge", _boom)
+    monkeypatch.setattr("app.agents.advocate_agent.challenge", _boom)
 
     res = await confirm_hypothesis(_store("HYP-GATE-BROKEN"), _req(reason="proceed"))
     assert res["status"] == "confirmed"
@@ -221,7 +221,7 @@ async def test_real_weak_hypothesis_is_gated_end_to_end():
     """No monkeypatch: a hypothesis built only from population-typical traits must be
     refused by the live auditor."""
     from app.services.zcql_local import _world
-    from app.agents import adversarial_audit as da
+    from app.agents import advocate_agent as da
     da.reset_index()
 
     common = [s for s in _world()["suspects"]
@@ -246,7 +246,7 @@ async def test_real_weak_hypothesis_is_gated_end_to_end():
 async def test_legacy_hypothesis_without_subjects_still_confirms():
     """Backwards compatibility: the pre-existing lifecycle test confirms an id that was
     never stored, so it has no subject_ids. That path must keep working."""
-    from app.agents import adversarial_audit as da
+    from app.agents import advocate_agent as da
     da.reset_index()
     res = await confirm_hypothesis("HYP-LEGACY-NO-SUBJECTS", _req(reason="legacy path"))
     assert res["status"] == "confirmed"
