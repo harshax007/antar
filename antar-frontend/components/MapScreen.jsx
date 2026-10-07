@@ -20,6 +20,39 @@ import { asset } from "@/lib/assets";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
+const GADM_CENTROIDS = {
+  "Bagalkote": [16.181, 75.696],
+  "Ballari": [15.139, 76.921],
+  "Belagavi": [15.849, 74.498],
+  "Bengaluru Rural": [13.198, 77.708],
+  "Bengaluru Urban": [12.972, 77.594],
+  "Bidar": [17.913, 77.520],
+  "Chamarajanagara": [11.926, 76.940],
+  "Chikkaballapura": [13.435, 77.728],
+  "Chikkamagaluru": [13.316, 75.772],
+  "Chitradurga": [14.226, 76.400],
+  "Dakshina Kannada": [12.840, 75.060],
+  "Davanagere": [14.464, 75.921],
+  "Dharwad": [15.458, 75.008],
+  "Gadag": [15.432, 75.630],
+  "Hassan": [13.005, 76.103],
+  "Haveri": [14.793, 75.404],
+  "Kalaburagi": [17.329, 76.834],
+  "Kodagu": [12.421, 75.740],
+  "Kolar": [13.137, 78.130],
+  "Koppal": [15.346, 76.155],
+  "Mandya": [12.523, 76.895],
+  "Mysuru": [12.295, 76.639],
+  "Raichur": [16.195, 77.360],
+  "Ramanagara": [12.715, 77.281],
+  "Shivamogga": [13.929, 75.568],
+  "Tumakuru": [13.337, 77.101],
+  "Udupi": [13.340, 74.742],
+  "Uttara Kannada": [14.818, 74.536],
+  "Vijayapura": [16.827, 75.713],
+  "Yadgir": [16.766, 77.137]
+};
+
 // Backend seed crime types (app/seeds/generator.py CRIME_TYPES) - quick pills
 // for the frequent ones, a "More" select for the rest.
 const PILLS = [
@@ -101,10 +134,14 @@ function riskClass(level) {
   return l === "high" ? "mx-risk-h" : l === "medium" || l === "moderate" ? "mx-risk-m" : "mx-risk-l";
 }
 
-function ZoomButtons() {
+function ZoomButtons({ geo, onReset }) {
   const map = useMap();
   return (
-    <div className="mx-zoom mx-panel">
+    <div className="mx-zoom mx-panel" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+      <button onClick={() => { 
+        if (geo) map.flyToBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0] });
+        if (onReset) onReset();
+      }} aria-label="Reset View" title="Reset Map" style={{ fontSize: "14px", lineHeight: 1 }}>?</button>
       <button onClick={() => map.zoomIn()} aria-label="Zoom in">+</button>
       <button onClick={() => map.zoomOut()} aria-label="Zoom out">&minus;</button>
     </div>
@@ -404,7 +441,7 @@ export default function MapScreen() {
 
   // Gi* zones with CORRECTED coordinates (canonical table beats backend drift)
   const topGiZones = useMemo(
-    () => [...(giStar.zones || [])].filter((z) => z.observed > 0).sort((a, b) => b.gi_stat - a.gi_stat).slice(0, 18)
+    () => [...(giStar.zones || [])].filter((z) => z.observed > 0).sort((a, b) => b.gi_stat - a.gi_stat)
       .map((z) => { const c = coordFor(z.zone, z.lat, z.lon); return { ...z, lat: c.lat, lon: c.lon }; }),
     [giStar]
   );
@@ -891,8 +928,17 @@ export default function MapScreen() {
             <GeoJSON key="ka-edge" data={stateOutline} style={stateEdgeStyle} interactive={false} />
           )}
 
+          {/* Permanent District Labels */}
+          {Object.entries(GADM_CENTROIDS).map(([name, coords]) => (
+            <CircleMarker key={"lbl-"+name} center={coords} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
+              <Tooltip permanent direction="center" className="mx-district-lbl">
+                {name}
+              </Tooltip>
+            </CircleMarker>
+          ))}
+
           {fc.clustersOn && !fc.on && topGiZones.map((z, i) => (
-            <CircleMarker key={"heat" + i} center={[z.lat, z.lon]} radius={10 + Math.sqrt(Math.max(z.observed, 1)) * 3}
+            <CircleMarker key={"heat" + i} center={[z.lat, z.lon]} radius={6 + Math.sqrt(Math.max(z.observed, 1)) * 1.2}
               pathOptions={{ stroke: false, fillColor: z.is_hotspot ? "#E14038" : "#22E6F0", fillOpacity: 0.12 }} />
           ))}
 
@@ -905,7 +951,7 @@ export default function MapScreen() {
             </CircleMarker>
           ))}
           {fc.clustersOn && !fc.on && topGiZones.map((z, i) => (
-            <CircleMarker key={"hs" + i} center={[z.lat, z.lon]} radius={4 + Math.sqrt(Math.max(z.observed, 1)) * 1.4}
+            <CircleMarker key={"hs" + i} center={[z.lat, z.lon]} radius={2 + Math.sqrt(Math.max(z.observed, 1)) * 0.6}
               pathOptions={{ color: z.is_hotspot ? "#ff5a5a" : "#5d6b80", weight: 1.4, fillColor: z.is_hotspot ? "#ff2f2f" : "#7a8aa3", fillOpacity: 0.55 }}>
               <Tooltip className="mx-hs" sticky>{z.zone} · z={z.gi_stat.toFixed(2)} · {z.observed} incidents{z.is_hotspot ? " · confirmed hotspot" : ""}</Tooltip>
             </CircleMarker>
@@ -985,7 +1031,10 @@ export default function MapScreen() {
           <MouseCoords onMove={setCoords} />
           <FlyTo bounds={flyBounds} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} />
-          <ZoomButtons />
+          <ZoomButtons geo={geo} onReset={() => { setSelectedDistrict(null); setDistrictDetail(null); }} />
+        
+          
+
         </MapContainer></div>
         {/* inside the map frame, so it sits on the map, not on the page grid */}
       {selectedDistrict && (
@@ -1009,26 +1058,6 @@ export default function MapScreen() {
           {MORE_TYPES.map((m) => <option key={m.key} value={m.key}>{kn ? m.kn : m.en}</option>)}
         </select>
         <span className="mx-pills-gap" aria-hidden="true" />
-      <button
-            type="button"
-            onClick={() => setShowDossier((v) => !v)}
-            style={{
-              pointerEvents: "auto",
-              background: showDossier ? "rgba(34,230,240,0.1)" : "rgba(11,18,32,0.5)",
-              border: showDossier ? "1px solid rgba(34,230,240,0.3)" : "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "6px",
-              padding: "6px 10px",
-              color: "#22E6F0",
-              fontSize: "10px",
-              fontWeight: 600,
-              fontFamily: "Inter, sans-serif",
-              letterSpacing: "0.02em",
-              cursor: "pointer",
-              transition: "all 0.2s ease"
-            }}
-          >
-            {kn ? "ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್" : "GEO-INTEL DASHBOARD"}
-          </button>
       </div>
 
       {/* Left column: the calendar and the crime report. */}
@@ -1116,8 +1145,9 @@ export default function MapScreen() {
               <div style={{ fontSize: '11px', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{kn ? "ದೈನಂದಿನ ಪ್ರಕರಣಗಳು" : "Daily Incidents"}</div>
             </div>
             
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", marginBottom: "14px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
               <span>{prettyDate(endDate, kn)}</span>
+              <span style={{ color: "var(--cyan)", fontWeight: 600 }}>&bull; {shownTotal.toLocaleString("en-IN")} generated FIRs</span>
               {deltaPct !== null && !giLoading && (
                 <span className={`mx-delta ${deltaPct > 0 ? "up" : deltaPct < 0 ? "down" : ""}`} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
                   {deltaPct > 0 ? `▲ ${Math.abs(deltaPct).toFixed(0)}%` : deltaPct < 0 ? `▼ ${Math.abs(deltaPct).toFixed(0)}%` : "—"}
@@ -1144,7 +1174,28 @@ export default function MapScreen() {
           </div>
           {coords && <div className="coords">{coords.lat.toFixed(4)}&deg;N {coords.lng.toFixed(4)}&deg;E · <span className="live">LIVE</span></div>}
       </button>
-      </div>
+      
+        {/* Simple Bar Chart Legend */}
+        {Object.keys(districtFirTotals).length > 0 && (
+          <div inert={reportOpen || showDossier ? "" : undefined} className="mx-panel" style={{ marginTop: "12px", padding: "16px", background: "rgba(6,11,20,0.85)", border: "1px solid var(--glass-border)", borderRadius: "12px", pointerEvents: "auto", backdropFilter: "blur(10px)", zIndex: 10 }}>
+            <div style={{ fontSize: "11px", color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px", fontWeight: 600 }}>{kn ? "???? ????????? (???????)" : "Top Districts (Daily)"}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {Object.entries(districtFirTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([name, count]) => (
+                  <div key={name} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "90px", fontSize: "11px", color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={name}>{name}</div>
+                    <div style={{ flex: 1, height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px", overflow: "hidden" }}>
+                      <div style={{ width: `${(count / Math.max(1, maxFir)) * 100}%`, height: "100%", background: count === maxFir ? "var(--red)" : "var(--cyan)", borderRadius: "3px" }} />
+                    </div>
+                    <div style={{ width: "24px", fontSize: "11px", color: "#fff", textAlign: "right", fontWeight: 600 }}>{count}</div>
+                  </div>
+              ))}
+            </div>
+          </div>
+        )}
+        </div>
 
       {reportOpen && createPortal(
         <>
@@ -1210,23 +1261,48 @@ export default function MapScreen() {
       {/* Right column: View summary (default) and Where next as tabs. Where next opens
           on click - or by itself when a station or beat is clicked on the map. */}
       <div className="mx-rightrail fx-rail">
-          <div className="mx-rtabs" role="tablist" aria-label={kn ? "ಬಲ ಫಲಕ" : "Right panel"}>
+          <div className="mx-rtabs" role="tablist" aria-label={kn ? "?? ???????" : "Right panel"}>
             <button role="tab" aria-selected={rightTab === "summary"} className={rightTab === "summary" ? "on" : ""}
-                    onClick={() => setRightTab(rightTab === "summary" ? null : "summary")}>{kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"}</button>
+                    onClick={() => setRightTab(rightTab === "summary" ? null : "summary")}>{kn ? "??????? ??????" : "View summary"}</button>
             <button role="tab" aria-selected={rightTab === "where"} className={rightTab === "where" ? "on" : ""}
                     onClick={() => setRightTab(rightTab === "where" ? null : "where")}>
-              {kn ? "ಮುಂದೆ ಎಲ್ಲಿ" : "Where next"}
+              {kn ? "????? ???????" : "Where next"}
               {fc.hot?.items?.length ? <span className="mx-rtab-n">{fc.hot.items.length}</span> : null}
             </button>
           </div>
-
+          
           {rightTab === "where" && (
-            fc.selected
+            <>
+            <button
+            type="button"
+            onClick={() => setShowDossier((v) => !v)}
+            style={{
+              pointerEvents: "auto",
+              background: showDossier ? "rgba(34,230,240,0.1)" : "rgba(11,18,32,0.5)",
+              border: showDossier ? "1px solid rgba(34,230,240,0.3)" : "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "6px",
+              padding: "6px 10px",
+              color: "#22E6F0",
+              fontSize: "10px",
+              fontWeight: 600,
+              fontFamily: "Inter, sans-serif",
+              letterSpacing: "0.02em",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              width: "100%",
+              marginBottom: "12px",
+              textAlign: "center"
+            }}
+          >
+            {kn ? "????-?????? ?????????????" : "GEO-INTEL DASHBOARD"}
+          </button>
+            {fc.selected
               ? <ForecastCard fc={fc} kn={kn} sessionRole={sessionRole} />
               : <ForecastPanel fc={fc} kn={kn} crimeLabel={crimeType ? crimeLabel : null} onModelCard={() => setModelCardOpen(true)} />
-          )}
-
-          {rightTab === "summary" && (
+          }
+          </>
+        )}
+{rightTab === "summary" && (
             <aside inert={reportOpen || showDossier ? "" : undefined}
                    className={`mx-vs mx-panel lvl-${viewInsight?.level || "normal"} ${giLoading ? "is-loading" : ""}`}
                    aria-label={kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"} aria-busy={giLoading}>
@@ -1253,11 +1329,38 @@ export default function MapScreen() {
 
                   <div className="mx-vs-llm" style={{ fontSize: '13px', lineHeight: '1.6', color: 'rgba(226,232,240,0.88)', marginTop: '12px' }}>
                     {llmLoading ? (
-                      <div style={{ opacity: 0.5, fontStyle: 'italic' }}>{kn ? "ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : "Synthesizing intelligence..."}</div>
+                      <div style={{ opacity: 0.5, fontStyle: 'italic' }}>{kn ? "ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : "Working on it..."}</div>
                     ) : (
                       <p style={{ margin: 0 }}>{llmSummary || (kn ? "ಲಭ್ಯವಿಲ್ಲ." : "Summary unavailable.")}</p>
-                    )}
-                  </div>
+                      )}
+                    </div>
+
+                      {/* Integrated Geo-Intel Ticker */}
+                      <div 
+                        onClick={() => setShowDossier(true)}
+                        style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
+                        title={kn ? "????-?????? ????????????? ????????" : "Open Geo Intel Dashboard"}
+                      >
+                        <span style={{ color: "var(--cyan)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Geo Intel</span>
+                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
+                          {kn ? "????-??????: ???-???? ??????? ??????? ??????????? ??????????????????..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
+                        </marquee>
+                      </div>
+                      {/* Integrated Prediction Ticker */}
+                      <div 
+                        onClick={() => setRightTab("where")}
+                        style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
+                        title={kn ? "????? ??????? ??????? ????????" : "Open Where Next Panel"}
+                      >
+                        <span style={{ color: "var(--amber)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Prediction</span>
+                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
+                          {kn ? "?????? 7 ????? ???????????????? ???????????????????????..." : (fc.hot?.items?.length ? `Predictive forecast indicates ${fc.hot.items.length} emerging hotspots across the state. Highest risk identified at ${fc.hot.items[0]?.name} (projecting up to ${fc.hot.items[0]?.band80?.hi} cases).` : "Gathering real-time predictive intelligence...")}
+                        </marquee>
+                      </div>
+                    
+                    
+                    
+                    
                 </div>
               )}
             </aside>
