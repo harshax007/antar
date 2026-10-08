@@ -216,12 +216,96 @@ function VolumeTrend({ volume, kn }) {
   );
 }
 
+const PREDICT_MODERN_STYLES = `
+/* Modern Industry-Ready Overrides for Predict Dashboard */
+.px-page { background: #030712; color: #f8fafc; }
+.px-title { background: linear-gradient(135deg, #22d3ee 0%, #818cf8 100%); -webkit-background-clip: text; color: transparent; font-size: 26px; }
+.px-sub { font-size: 13px; color: #94a3b8; font-weight: 500; }
+.px-howbtn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; border-radius: 8px; font-weight: 600; padding: 6px 14px; transition: all 0.2s; }
+.px-howbtn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+.px-dash { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding-bottom: 20px; }
+.pxd-card { display: flex; flex-direction: column; min-height: 400px; max-height: 440px; border-radius: 20px; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 12px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); padding: 20px; }
+.pxd-hd { margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px; }
+.pxd-ttl { font-size: 16px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.02em; }
+.pxd-sub { background: rgba(255,255,255,0.04); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #94a3b8; }
+
+.pxd-scroll { flex: 1; overflow-y: auto; padding-right: 6px; }
+.pxd-scroll::-webkit-scrollbar { width: 4px; }
+.pxd-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+.px-card { display: flex; flex-direction: column; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+.px-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+.px-card.on { background: rgba(34,230,240,0.05); border-color: rgba(34,230,240,0.35); box-shadow: 0 4px 20px rgba(34,230,240,0.1); }
+.px-card.on::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #22d3ee; border-radius: 3px 0 0 3px; }
+
+.px-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.px-zone { font-size: 15px; font-weight: 600; color: #f8fafc; letter-spacing: -0.01em; }
+
+.px-risk { font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.px-risk-h { color: #fca5a5; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); }
+.px-risk-m { color: #fde047; background: rgba(250,204,21,0.1); border: 1px solid rgba(250,204,21,0.2); }
+.px-risk-l { color: #94a3b8; background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.2); }
+
+.px-crime-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.px-crime { font-size: 13px; color: #cbd5e1; font-weight: 500; }
+.px-know { font-size: 10px; font-weight: 700; padding: 5px 12px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); border-radius: 8px; color: #7dd3dc; transition: all 0.2s; white-space: nowrap; }
+.px-know:hover { background: rgba(56,189,248,0.2); border-color: rgba(56,189,248,0.4); color: #bae6fd; }
+
+.px-confpct { color: #22d3ee; font-weight: 700; font-size: 12px; }
+.px-meta { margin-top: 10px; font-size: 11px; color: #64748b; }
+.px-tag { font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; }
+.px-tag.ok { color: #22d3ee; border-color: rgba(34,230,240,0.25); background: rgba(34,230,240,0.06); }
+
+/* Stats Row */
+.px-statrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 10px; margin-bottom: 24px; }
+.px-statbox { display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transition: transform 0.2s; }
+.px-statbox:hover { transform: translateY(-2px); }
+.px-statbox .l { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.08em; margin-bottom: 12px; }
+.px-statbox .v { font-size: 34px; font-weight: 800; color: #f8fafc; }
+.px-statbox .v.cyan { color: #22d3ee; }
+.px-statbox .v.red { color: #f87171; }
+
+/* Explanation Panel */
+.px-explain { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
+.px-panel-hd { padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; color: #f1f5f9; }
+.px-hint { font-size: 12px; font-weight: 500; color: #64748b; }
+.px-insp { padding: 24px; }
+.px-insp-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.px-insp-why { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px; }
+.px-big .n { font-size: 42px; font-weight: 800; color: #f8fafc; }
+.px-big .z { font-size: 14px; font-weight: 700; color: #f87171; background: rgba(248,113,113,0.1); padding: 4px 10px; border-radius: 8px; margin-left: 12px; }
+
+.px-bandbox { font-size: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; color: #cbd5e1; }
+.px-bandbox b { color: #22d3ee; font-size: 15px; font-weight: 700; }
+
+.px-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.px-tile { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 16px; transition: background 0.2s; }
+.px-tile:hover { background: rgba(255,255,255,0.04); }
+.px-tile .tv { font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+.px-tile .tl { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.px-acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.px-actbtn { font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #cbd5e1; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.px-actbtn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); color: #fff; transform: translateY(-1px); }
+.px-actbtn.cy { background: rgba(34,230,240,0.08); border-color: rgba(34,230,240,0.3); color: #22d3ee; }
+.px-actbtn.cy:hover { background: rgba(34,230,240,0.15); border-color: rgba(34,230,240,0.5); box-shadow: 0 4px 16px rgba(34,230,240,0.2); }
+
+.px-suggest { background: linear-gradient(135deg, rgba(34,230,240,0.08) 0%, rgba(16,185,129,0.08) 100%); border: 1px solid rgba(34,230,240,0.25); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 24px rgba(0,0,0,0.15); }
+.px-suggest-hd { font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 700; color: #22d3ee; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+.px-suggest-txt { font-size: 14px; color: #f8fafc; line-height: 1.6; }
+
+.px-prov-hd { font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 8px; }
+.px-prov-ids { font-family: "JetBrains Mono", monospace; font-size: 11px; color: #64748b; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); }
+`;
+
 // useSearchParams() forces client-side bailout, which breaks `output: export`
 // prerendering unless the consumer sits inside a Suspense boundary. Keep the page
 // component as a thin Suspense wrapper and do the real work in PredictScreen.
 export default function PredictPage() {
   return (
     <Suspense fallback={null}>
+      <style dangerouslySetInnerHTML={{ __html: PREDICT_MODERN_STYLES }} />
       <PredictScreen />
     </Suspense>
   );
