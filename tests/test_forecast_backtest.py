@@ -88,6 +88,42 @@ def test_save_load_and_report(reg, bt, tmp_path):
     assert "Do not edit by hand" in text and "Property Crimes" in text
 
 
+# ── the scorecard ────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("ut", ["station", "beat"])
+def test_weekly_ledger_is_the_backtest_week_by_week(bt, ut):
+    from datetime import date
+    m = bt["results"][ut]["PROPERTY"]["7"]
+    wk = [date.fromisoformat(r["week"]) for r in m["weekly"]]
+    assert len(wk) == m["origins"]
+    assert wk[0].isoformat() == bt["window"]["first_target_week"]
+    assert wk[-1].isoformat() == bt["window"]["last_target_week"]
+    assert all((b - a).days == 7 for a, b in zip(wk, wk[1:]))
+    # the ledger and the headline calibration are the same sums, so they cannot disagree
+    fc, ac = sum(r["forecast"] for r in m["weekly"]), sum(r["actual"] for r in m["weekly"])
+    assert fc / ac == pytest.approx(m["calibration"], abs=0.01)
+    assert "weekly" not in bt["results"][ut]["PROPERTY"]["28"]
+
+
+def test_scorecard_numbers_are_the_backtest_numbers(reg, bt, monkeypatch):
+    from app.forecast import service as S
+    # S.backtest caches for 5 minutes; without this the next test file would be served
+    # this synthetic registry's back-test as if it were the real one.
+    monkeypatch.setitem(S._bt_cache, "value", None)
+    monkeypatch.setitem(S._bt_cache, "at", 0.0)
+    BT.save(reg, {k: v for k, v in bt.items() if not k.startswith("_")})
+    sc = S.scorecard(reg, unit_type="beat", category="theft")
+    c5 = bt["results"]["beat"]["PROPERTY"]["7"]["capture"]["top_5pct"]
+    assert sc["category"] == "PROPERTY" and sc["evidence_class"] == "D"
+    assert sc["summary"]["weeks_better_than_last4"] == c5["model_beats_last4_weeks"]
+    assert sc["summary"]["weeks_ranked"] == c5["weeks"]
+    assert f"{sc['summary']['actual_total']:,} recorded" in sc["text"]
+    assert all(r["error"] == pytest.approx(r["forecast"] - r["actual"], abs=0.06) for r in sc["weeks"])
+    # an ungraded category is refused as not ready, never answered with another's record
+    with pytest.raises(S.NotReady):
+        S.scorecard(reg, unit_type="beat", category="murder")
+
+
 # ── the model card ───────────────────────────────────────────────────────────
 
 def test_card_says_not_measured_without_a_backtest():

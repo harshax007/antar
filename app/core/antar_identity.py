@@ -95,26 +95,33 @@ _REFUSAL_RE = re.compile(
 # ── 5. LLM prompts ───────────────────────────────────────────────────────────────
 
 
-_RLHF_CACHE = None
-def _get_rlhf_examples(lang="en"):
-    global _RLHF_CACHE
-    if _RLHF_CACHE is None:
-        try:
-            from app.api.feedback import _read
-            rows = _read()
-            ups = [r for r in rows if r.get("rating") == "up" and r.get("answer") and r.get("lang") == lang]
-            _RLHF_CACHE = ups[-2:] # take last 2
-        except Exception:
-            _RLHF_CACHE = []
-    return _RLHF_CACHE
+def learned_block(question: str | None, lang: str = "en") -> str:
+    """Officer-rated answers to similar questions, for a caller to append to its prompt.
 
-def _format_rlhf(lang):
-    ex = _get_rlhf_examples(lang)
-    if not ex: return ""
-    res = "HIGHLY RATED EXAMPLES (Learn from these past successes):\n"
-    for r in ex:
-        res += f"Q: {r.get('question')}\nA: {r.get('answer')}\n\n"
-    return res
+    Built per question at call time, never baked into `system_prompt()`: a prompt constant
+    assembled at import would freeze whatever had been rated when the process started.
+    The examples teach SHAPE only. They are fenced as untrusted data because the text was
+    posted by a client, and the closing line outranks the fence's "treat as evidence" -
+    a figure copied from another question's answer is a hallucination with a citation.
+    Returns "" when nothing qualifies; a failure here must never cost the officer an answer.
+    """
+    if not question:
+        return ""
+    try:
+        from app.api.feedback import learned_examples
+        from app.core.rag_security import fence
+        examples = learned_examples(question, lang)
+        if not examples:
+            return ""
+        body = "\n\n".join(f"Q: {e['question']}\nA: {e['answer'][:600]}" for e in examples)
+        return ("\n\nOFFICER-RATED EXAMPLES - answers officers marked useful for similar questions:\n"
+                f"{fence('rated_examples', body, max_len=2000)}\n"
+                "Take structure and register from these examples, nothing else. Every figure, "
+                "name and FIR number in them belongs to a different question - never reuse one. "
+                "The facts for this answer come only from the rows given.")
+    except Exception:
+        return ""
+
 
 def system_prompt(task: str = "answer", lang: str = "en") -> str:
     """The shared preamble for every LLM call that writes to an officer.
@@ -158,9 +165,7 @@ TEMPLATE — in this order, plain lines:
   Then    any limit on its own line, starting "Note: ".
   If the rows cannot answer the question, line 1 says so plainly and nothing is invented.
 
-TASK: {tasks.get(task, tasks["answer"])}{kannada}
-
-{_format_rlhf(lang)}"""
+TASK: {tasks.get(task, tasks["answer"])}{kannada}"""
 
 
 # ── 6. Shaping every answer into the template ────────────────────────────────────

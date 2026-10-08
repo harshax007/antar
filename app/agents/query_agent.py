@@ -384,7 +384,7 @@ If no template fits, respond {{"template_id": "NONE", "reason": "..."}}.
 
 # Identity, laws, voice and the response template come from the constitution
 # (app/core/antar_identity.py). What follows adds format detail for record answers.
-from app.core.antar_identity import system_prompt as _antar_prompt
+from app.core.antar_identity import system_prompt as _antar_prompt, learned_block as _learned
 COMPOSE_SYSTEM = _antar_prompt("answer") + """
 
 FORMAT DETAIL — the officer is scanning, not reading.
@@ -670,7 +670,7 @@ async def compose_answer(user_text: str, rows: list[dict], lang: str,
     try:
         raw = await asyncio.wait_for(
             llm(
-                system=COMPOSE_SYSTEM,
+                system=COMPOSE_SYSTEM + _learned(user_text, lang),
                 user=COMPOSE_USER_TMPL.format(QUESTION=user_text, ROWS=_fenced_rows(rows, template_id), N=len(rows), LANG=lang),
                 json_mode=False, max_tokens=400, temperature=0.3,
             ),

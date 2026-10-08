@@ -555,7 +555,22 @@ function PredictScreen() {
     router.push("/antar");
   }
 
-  const avgConf = predictions?.length
+
+  const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ") : "";
+  const generateNarrative = (item) => {
+    if (!item) return "";
+    const name = item.zone;
+    const ctype = cap(item.crime_type);
+    const z = item.z_score ? `with an anomaly score of ${item.z_score}` : "";
+    const rs = item.risk === "HIGH" ? "critical" : item.risk === "MEDIUM" ? "elevated" : "moderate";
+    const dir = item.direction === "silence" ? "an unusual drop (possible under-reporting)" : "a predicted spike";
+    if (kn) {
+      return `ಅಂತರ AI ವಿಶ್ಲೇಷಣೆ: ${name} ವಲಯದಲ್ಲಿ ${ctype} ಪ್ರಕರಣಗಳಲ್ಲಿ ${dir === "a predicted spike" ? "ಹೆಚ್ಚಳ" : "ಕಡಿಮೆ"} ಕಂಡುಬಂದಿದೆ. ಇದು ${rs === "critical" ? "ತೀವ್ರ" : rs === "elevated" ? "ಹೆಚ್ಚಿದ" : "ಸಾಧಾರಣ"} ಮಟ್ಟದ ಅಪಾಯವನ್ನು ಸೂಚಿಸುತ್ತದೆ.`;
+    }
+    return `Antar AI Analysis has identified a ${rs} risk of ${dir} for ${ctype} in ${name} ${z}. The underlying cause is linked to: ${item.why || "historical trend patterns"}.`;
+  };
+
+const avgConf = predictions?.length
     ? Math.round(predictions.reduce((s, p) => s + (p.confidence || 0), 0) / predictions.length * 100)
     : null;
   const isAcked = acked.has(keyOf(focusItem));
@@ -587,7 +602,27 @@ function PredictScreen() {
         </div>
       </div>
 
-      {/* Hero row: Predict next 7 days · Volume trend · Antar Alert */}
+      {/* Hotspots KPI strip */}
+      <div className="px-statrow">
+        <div className="px-statbox">
+          <div className="l">{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು" : "hotspots"}</div>
+          <div className="v">{predictions?.length ?? "—"}</div>
+        </div>
+        <div className="px-statbox">
+          <div className="l">{kn ? "ಹೆಚ್ಚಿನ ಅಪಾಯ" : "high risk"}</div>
+          <div className="v red">{predictions?.filter((p) => p.risk === "HIGH").length ?? "—"}</div>
+        </div>
+        <div className="px-statbox">
+          <div className="l">{kn ? "ಮೌನ ಎಚ್ಚರಿಕೆಗಳು" : "silence alerts"}</div>
+          <div className="v">{predictions?.filter((p) => p.direction === "silence").length ?? 0}</div>
+        </div>
+        <div className="px-statbox">
+          <div className="l">{kn ? "ಸರಾಸರಿ ವಿಶ್ವಾಸ" : "avg confidence"}</div>
+          <div className="v cyan">{avgConf != null ? `${avgConf}%` : "—"}</div>
+        </div>
+      </div>
+
+\n      {/* Hero row: Predict next 7 days · Volume trend · Antar Alert */}
       <div className="px-dash">
         {/* 1 · Predict · Next 7 Days (scrollable) */}
         <div className="pxd-card">
@@ -705,26 +740,6 @@ function PredictScreen() {
         </div>
       </div>
 
-      {/* Hotspots KPI strip */}
-      <div className="px-statrow">
-        <div className="px-stattile">
-          <div className="l">{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು" : "hotspots"}</div>
-          <div className="v">{predictions?.length ?? "—"}</div>
-        </div>
-        <div className="px-stattile">
-          <div className="l">{kn ? "ಹೆಚ್ಚಿನ ಅಪಾಯ" : "high risk"}</div>
-          <div className="v red">{predictions?.filter((p) => p.risk === "HIGH").length ?? "—"}</div>
-        </div>
-        <div className="px-stattile">
-          <div className="l">{kn ? "ಮೌನ ಎಚ್ಚರಿಕೆಗಳು" : "silence alerts"}</div>
-          <div className="v">{predictions?.filter((p) => p.direction === "silence").length ?? 0}</div>
-        </div>
-        <div className="px-stattile">
-          <div className="l">{kn ? "ಸರಾಸರಿ ವಿಶ್ವಾಸ" : "avg confidence"}</div>
-          <div className="v cyan">{avgConf != null ? `${avgConf}%` : "—"}</div>
-        </div>
-      </div>
-
       {/* Explanation section - full width, drives off the focused prediction OR alert */}
       <div className="px-panel px-explain" ref={reasonRef}>
         <div className="px-panel-hd">
@@ -746,7 +761,7 @@ function PredictScreen() {
                 {/* left: the explanation */}
                 <div>
                   <div className="px-insp-title">{focusItem.zone} - {cap(focusItem.crime_type)}</div>
-                  <div className="px-insp-why">{focusItem.why || (kn ? "ಸ್ಪಟಿಯೊಟೆಂಪೊರಲ್ ಅಸಂಗತಿ ಪತ್ತೆ" : "Spatiotemporal hotspot anomaly detected.")}</div>
+                  <div className="px-insp-why" style={{ background: "rgba(34,230,240,0.05)", padding: "16px 20px", borderRadius: "14px", borderLeft: "3px solid #22d3ee", color: "#e2e8f0", fontSize: "14.5px", lineHeight: "1.7", marginTop: "12px" }}>{generateNarrative(focusItem)}</div>
 
                   <div className="px-big">
                     <span className="n">{pct(focusItem.confidence)}%</span>

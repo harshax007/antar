@@ -5,6 +5,13 @@ from httpx import AsyncClient, ASGITransport
 from app.api import feedback as fb
 
 
+@pytest.fixture(autouse=True)
+def _own_feedback_file(tmp_path, monkeypatch):
+    # These tests POST real ratings. Against the live file they left 77 of its 78 rows
+    # ("repeat offenders?" up, "q" down), which the app then counted as officer feedback.
+    monkeypatch.setattr(fb, "_FILE", tmp_path / "fb.jsonl")
+
+
 @pytest.fixture()
 async def client():
     from main import app

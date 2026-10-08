@@ -293,6 +293,60 @@ def track_record(conn, unit_type: str, cat: str, unit: str) -> dict | None:
                      f"window, actual {ac}.")}
 
 
+def scorecard(conn: sqlite3.Connection, *, unit_type: str = "beat",
+              category: str | None = None) -> dict:
+    """The forecast graded against what was then recorded, one week at a time.
+
+    Read from the back-test, so it is the real record only and each week was forecast from
+    data strictly before it. It is a replay, not a live feed: the real record ends in
+    2024-03, and grading a forecast against seeded weeks would measure the seeding.
+    Evidence class D - every figure is a count or a ratio of counts.
+    """
+    ut = _check_unit_type(unit_type)
+    cat = resolve_category(category)
+    bt = backtest(conn)
+    m = (bt or {}).get("results", {}).get(ut, {}).get(cat, {}).get("7")
+    if not m or not m.get("weekly"):
+        raise NotReady("The forecast has not been graded yet — python -m app.forecast.backtest.")
+    rows = []
+    for w in m["weekly"]:
+        r = {**w, "error": round(w["forecast"] - w["actual"], 1)}
+        if "caught" in w:
+            r["beat_last4"] = w["caught"] > w["caught_last4"]
+        rows.append(r)
+    ranked = [r for r in rows if "beat_last4" in r]
+    wins = sum(r["beat_last4"] for r in ranked)
+    fc, ac = sum(r["forecast"] for r in rows), sum(r["actual"] for r in rows)
+    cov80, cov90 = m["coverage"]["80"]["coverage"], m["coverage"]["90"]["coverage"]
+    what = "FIRs" if cat == ALL else f"{LABELS[cat].lower()} FIRs"
+    # The ranges are a claim about frequency, so the wording follows the measurement:
+    # a range that held less often than its label is said to be too narrow, not defended.
+    if cov80 >= 0.80:
+        ranges = (f"The 80% ranges held {100 * cov80:.1f}% of the time - at least as often "
+                  f"as stated.")
+    else:
+        ranges = (f"The 80% ranges held {100 * cov80:.1f}% of the time. I'd read them as "
+                  f"narrower than they should be.")
+    w = bt["window"]
+    return {
+        "unit_type": ut, "category": cat, "category_label": LABELS[cat], "horizon_days": 7,
+        "evidence_class": "D",
+        "window": {"from": rows[0]["week"], "to": rows[-1]["week"], "weeks": len(rows)},
+        "weeks": rows,
+        "summary": {"weeks_ranked": len(ranked), "weeks_better_than_last4": wins,
+                    "forecast_total": round(fc, 1), "actual_total": ac,
+                    "calibration": m["calibration"], "coverage80": cov80, "coverage90": cov90},
+        "text": (f"Graded on {len(rows)} weeks of the real record ({rows[0]['week']} to "
+                 f"{rows[-1]['week']}): {fc:,.0f} {what} forecast against {ac:,} recorded. "
+                 f"The top 5% of {ut}s outranked last-4-weeks hotspots in {wins} of "
+                 f"{len(ranked)} weeks."),
+        "ranges": ranges,
+        "method": (f"Each week is forecast from data strictly before it; the model is "
+                   f"refitted every {w['refit_every_weeks']} weeks."),
+        "measured_at": bt["built_at"], "model_version": bt.get("model_version"),
+    }
+
+
 # ── Gi* (confirmed clusters), cached per as-of ────────────────────────────────
 
 _gi_cache: dict = {}

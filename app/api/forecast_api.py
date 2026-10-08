@@ -95,6 +95,14 @@ async def backtest(unit: Optional[str] = None, category: Optional[str] = None) -
     return await _call(work)
 
 
+@router.get("/scorecard")
+async def scorecard(unit: str = "beat", category: Optional[str] = None) -> dict:
+    """The 7-day forecast graded week by week against what was then recorded, on the
+    real record: forecast vs actual, share of FIRs in the top 5% vs last-4-weeks
+    hotspots, and how often the 80% ranges held."""
+    return await _call(S.scorecard, unit_type=unit, category=category)
+
+
 @router.get("/status")
 async def status() -> dict:
     """The configured as-of, the forecast runs on file, and the back-test headline."""

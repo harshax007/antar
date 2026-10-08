@@ -456,9 +456,10 @@ async def synthesize_node(state: AgentState) -> dict:
             
         # One Antar: the constitution's identity and template, not a second persona
         # ("an elite AI … 2-3 paragraph summary") that contradicted the chat voice.
-        from app.core.antar_identity import system_prompt as _antar_prompt
+        from app.core.antar_identity import system_prompt as _antar_prompt, learned_block as _learned
         sys_prompt = _antar_prompt("synthesis", state.get("lang", "en")) + (
-            " Tag each line [VERIFIED], [COMPUTED], [INFERRED] or [GAP] by its evidence class.")
+            " Tag each line [VERIFIED], [COMPUTED], [INFERRED] or [GAP] by its evidence class."
+        ) + _learned(state["user_text"], state.get("lang", "en"))
         # Agent results carry MO summaries and record text written outside this system:
         # fenced as evidence, never instructions (app/core/rag_security.py).
         from app.core.rag_security import fence

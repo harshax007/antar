@@ -19,6 +19,7 @@ answers they rate.
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 from typing import Literal
@@ -82,6 +83,60 @@ def _tally() -> dict[str, dict]:
         if e.get("officer"):
             a["officers"].add(e["officer"])
     return agg
+
+
+# Words that carry no topic, so two questions are not "similar" for sharing them.
+_STOP = frozenset(
+    "a an and are by for from give has have how in is list many me of on show tell that "
+    "the there these this to what which with".split())
+_SPLIT_RE = re.compile(r"[\s,.;:?!()\"'/\-]+")
+
+
+def _terms(q: str) -> set[str]:
+    # Split on punctuation rather than \w+: \w breaks Kannada words at every vowel sign.
+    return {t for t in _SPLIT_RE.split(_norm(q)) if len(t) > 2 and t not in _STOP}
+
+
+def learned_examples(question: str, lang: str = "en", k: int = 2,
+                     min_similarity: float = 0.3) -> list[dict]:
+    """Answers officers rated useful for questions like this one, most similar first.
+
+    The file is read on every call: it is small, the LLM call it feeds takes seconds, and
+    a rating therefore counts from the next question on rather than the next restart.
+    An example qualifies only when
+      - officers rated that question up more often than down (a thumbs-down vetoes it),
+      - it is in the language being answered,
+      - it shares enough topic words with the question to be the same kind of answer, and
+      - it carries no instruction-shaped text - the rating endpoint accepts free text, and
+        what it stores is replayed into a prompt.
+    """
+    want = _terms(question)
+    if not want:
+        return []
+    by_q: dict[str, dict] = {}
+    for e in _read():
+        q = _norm(e.get("question", ""))
+        if not q or e.get("rating") not in ("up", "down"):
+            continue
+        g = by_q.setdefault(q, {"up": 0, "down": 0, "best": None})
+        g[e["rating"]] += 1
+        if e["rating"] == "up" and e.get("answer") and e.get("lang") == lang:
+            g["best"] = e                       # append-only file: the last one is the newest
+    from app.core.rag_security import detect_injection
+    scored = []
+    for q, g in by_q.items():
+        e = g["best"]
+        if e is None or g["up"] <= g["down"]:
+            continue
+        have = _terms(q)
+        sim = len(want & have) / len(want | have) if have else 0.0
+        if sim < min_similarity or detect_injection(f"{e['question']}\n{e['answer']}"):
+            continue
+        scored.append((sim, int(e.get("ts") or 0),
+                       {"question": e["question"], "answer": e["answer"],
+                        "up": g["up"], "down": g["down"], "similarity": round(sim, 2)}))
+    scored.sort(key=lambda s: (s[0], s[1]), reverse=True)
+    return [s[2] for s in scored[:k]]
 
 
 @router.post("")

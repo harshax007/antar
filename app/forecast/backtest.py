@@ -213,6 +213,25 @@ def _unit_record(recs: list[_Rec], names: list[str]) -> dict:
             for i in np.flatnonzero(flagged)}
 
 
+def _weekly(recs: list[_Rec], weeks: list[date]) -> list[dict]:
+    """The ledger behind the scorecard: for each scored week, what was forecast for the
+    7 days ahead and what was then recorded. Totals are over active units, the same scope
+    as `calibration`; `caught` is the top-5% capture of `_metrics`, one week at a time."""
+    out = []
+    for r in recs:
+        a = r.active
+        row = {"week": weeks[r.t + 1].isoformat(),
+               "forecast": round(float(r.mu[a].sum()), 1), "actual": int(round(float(r.y[a].sum()))),
+               "in80": round(float(((r.lo80 <= r.y) & (r.y <= r.hi80))[a].mean()), 3)}
+        total = float(r.y.sum())
+        if total > 0:
+            n = max(1, math.ceil(0.05 * a.sum()))
+            row["caught"] = round(float(r.y[_rank_top(r.mu, a, n)].sum()) / total, 4)
+            row["caught_last4"] = round(float(r.y[_rank_top(r.last4, a, n)].sum()) / total, 4)
+        out.append(row)
+    return out
+
+
 def _station_wins(recs: list[_Rec]) -> dict:
     """Share of units where the model's MAE over the window beats the baseline's."""
     Y = np.stack([r.y for r in recs])
@@ -300,6 +319,7 @@ def run(conn: sqlite3.Connection, *, cats: list[str] | None = None,
                 m["units"] = _unit_record(rs, units[ut].names)
                 m["units_fields"] = ["weeks_flagged", "weeks_flagged_with_crime",
                                      "forecast_total", "actual_total"]
+                m["weekly"] = _weekly(rs, weeks)
             results[ut].setdefault(cat, {})[str(hd)] = m
             if ut == "station":
                 station_wins.setdefault(cat, {})[str(hd)] = _station_wins(rs)
