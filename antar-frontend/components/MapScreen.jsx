@@ -385,8 +385,8 @@ export default function MapScreen() {
   }, [crimeType, endDate]);
 
   const districtFirTotals = useMemo(
-    () => aggregateByDistrict(districtsFiltered.map((d) => ({ zone: d.district, fir_count: d.weight })), "fir_count"),
-    [districtsFiltered]
+    () => aggregateByDistrict(giStar.zones || [], "observed"),
+    [giStar]
   );
   const maxFir = Math.max(...Object.values(districtFirTotals), 1);
 
@@ -897,7 +897,36 @@ export default function MapScreen() {
           </div>
         , document.body)}
 
-          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%" }}><MapContainer center={[15.317, 75.713]} zoom={7} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
+          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%", position: "relative" }}>
+            {giLoading && (
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: "rgba(6, 11, 20, 0.4)",
+                backdropFilter: "blur(2px)",
+                zIndex: 1000,
+                pointerEvents: "none",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                transition: "opacity 0.3s ease"
+              }}>
+                <div style={{
+                  color: "#22E6F0",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "12px",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  background: "rgba(6, 11, 20, 0.8)",
+                  padding: "8px 16px",
+                  border: "1px solid rgba(34, 230, 240, 0.3)",
+                  borderRadius: "20px",
+                  boxShadow: "0 0 20px rgba(34, 230, 240, 0.2)"
+                }}>
+                  {kn ? "??????????..." : "Synchronizing..."}
+                </div>
+              </div>
+            )}
+            <MapContainer center={[15.317, 75.713]} zoom={7} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%", transition: "filter 0.4s ease", filter: giLoading ? "grayscale(0.5) brightness(0.8)" : "none" }}>
             <TileLayer 
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" 
               attribution="&copy; Esri" 
