@@ -910,20 +910,11 @@ export default function MapScreen() {
                 alignItems: "center",
                 transition: "opacity 0.3s ease"
               }}>
-                <div style={{
-                  color: "#22E6F0",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: "12px",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  background: "rgba(6, 11, 20, 0.8)",
-                  padding: "8px 16px",
-                  border: "1px solid rgba(34, 230, 240, 0.3)",
-                  borderRadius: "20px",
-                  boxShadow: "0 0 20px rgba(34, 230, 240, 0.2)"
-                }}>
-                  {kn ? "??????????..." : "Synchronizing..."}
-                </div>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(34, 230, 240, 0.9)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "pulse 1.5s infinite ease-in-out" }}>
+                  <path d="M7 16l-4-4 4-4" />
+                  <path d="M17 8l4 4-4 4" />
+                  <path d="M3 12h18" strokeDasharray="2 4" />
+                </svg>
               </div>
             )}
             <MapContainer center={[15.317, 75.713]} zoom={7} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%", transition: "filter 0.4s ease", filter: giLoading ? "grayscale(0.5) brightness(0.8)" : "none" }}>
@@ -1360,8 +1351,12 @@ export default function MapScreen() {
                     {llmLoading ? (
                       <div style={{ opacity: 0.5, fontStyle: 'italic' }}>{kn ? "ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : "Working on it..."}</div>
                     ) : (
-                      <p style={{ margin: 0 }}>{llmSummary || (kn ? "ಲಭ್ಯವಿಲ್ಲ." : "Summary unavailable.")}</p>
-                      )}
+                      <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+                        {llmSummary 
+                          ? llmSummary.replace(/^[\s\n]*[●*•]?\s*Analyzing(\.\.\.)?\s*\n*/i, '') 
+                          : (kn ? "ಸಾರಾಂಶ ಲಭ್ಯವಿಲ್ಲ." : "Summary unavailable.")}
+                      </p>
+                    )}
                     </div>
 
                       {/* Integrated Geo-Intel Ticker */}
