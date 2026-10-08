@@ -1198,7 +1198,7 @@ export default function MapScreen() {
         {/* Simple Bar Chart Legend */}
         {Object.keys(districtFirTotals).length > 0 && (
           <div inert={reportOpen || showDossier ? "" : undefined} className="mx-panel" style={{ marginTop: "12px", padding: "16px", background: "rgba(6,11,20,0.85)", border: "1px solid var(--glass-border)", borderRadius: "12px", pointerEvents: "auto", backdropFilter: "blur(10px)", zIndex: 10 }}>
-            <div style={{ fontSize: "11px", color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px", fontWeight: 600 }}>{kn ? "???? ????????? (???????)" : "Top Districts (Daily)"}</div>
+            <div style={{ fontSize: "11px", color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px", fontWeight: 600 }}>{kn ? "ಅಗ್ರ ಜಿಲ್ಲೆಗಳು (ದೈನಂದಿನ)" : "Top Districts (Daily)"}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {Object.entries(districtFirTotals)
                 .sort((a, b) => b[1] - a[1])
@@ -1281,12 +1281,12 @@ export default function MapScreen() {
       {/* Right column: View summary (default) and Where next as tabs. Where next opens
           on click - or by itself when a station or beat is clicked on the map. */}
       <div className="mx-rightrail fx-rail">
-          <div className="mx-rtabs" role="tablist" aria-label={kn ? "?? ???????" : "Right panel"}>
+          <div className="mx-rtabs" role="tablist" aria-label={kn ? "ಬಲ ಫಲಕ" : "Right panel"}>
             <button role="tab" aria-selected={rightTab === "summary"} className={rightTab === "summary" ? "on" : ""}
-                    onClick={() => setRightTab(rightTab === "summary" ? null : "summary")}>{kn ? "??????? ??????" : "View summary"}</button>
+                    onClick={() => setRightTab(rightTab === "summary" ? null : "summary")}>{kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"}</button>
             <button role="tab" aria-selected={rightTab === "where"} className={rightTab === "where" ? "on" : ""}
                     onClick={() => setRightTab(rightTab === "where" ? null : "where")}>
-              {kn ? "????? ???????" : "Where next"}
+              {kn ? "ಮುಂದೆ ಎಲ್ಲಿ" : "Where next"}
               {fc.hot?.items?.length ? <span className="mx-rtab-n">{fc.hot.items.length}</span> : null}
             </button>
           </div>
@@ -1314,7 +1314,7 @@ export default function MapScreen() {
               textAlign: "center"
             }}
           >
-            {kn ? "????-?????? ?????????????" : "GEO-INTEL DASHBOARD"}
+            {kn ? "ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್" : "GEO-INTEL DASHBOARD"}
           </button>
             {fc.selected
               ? <ForecastCard fc={fc} kn={kn} sessionRole={sessionRole} />
@@ -1363,22 +1363,22 @@ export default function MapScreen() {
                       <div 
                         onClick={() => setShowDossier(true)}
                         style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
-                        title={kn ? "????-?????? ????????????? ????????" : "Open Geo Intel Dashboard"}
+                        title={kn ? "ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ತೆರೆಯಿರಿ" : "Open Geo Intel Dashboard"}
                       >
                         <span style={{ color: "var(--cyan)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Geo Intel</span>
                         <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "????-??????: ???-???? ??????? ??????? ??????????? ??????????????????..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
+                          {kn ? "ಜಿಯೋ-ಇಂಟೆಲ್: ನೈಜ-ಸಮಯದ ಭೌಗೋಳಿಕ ಗುಪ್ತಚರ ಮಾಹಿತಿಯನ್ನು ಸಂಗ್ರಹಿಸಲಾಗುತ್ತಿದೆ..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
                         </marquee>
                       </div>
                       {/* Integrated Prediction Ticker */}
                       <div 
                         onClick={() => setRightTab("where")}
                         style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
-                        title={kn ? "????? ??????? ??????? ????????" : "Open Where Next Panel"}
+                        title={kn ? "ಮುಂದೆ ಎಲ್ಲಿ ಫಲಕ ತೆರೆಯಿರಿ" : "Open Where Next Panel"}
                       >
                         <span style={{ color: "var(--amber)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Prediction</span>
                         <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "?????? 7 ????? ???????????????? ???????????????????????..." : (fc.hot?.items?.length ? `Predictive forecast indicates ${fc.hot.items.length} emerging hotspots across the state. Highest risk identified at ${fc.hot.items[0]?.name} (projecting up to ${fc.hot.items[0]?.band80?.hi} cases).` : "Gathering real-time predictive intelligence...")}
+                          {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (fc.hot?.items?.length ? `Predictive forecast indicates ${fc.hot.items.length} emerging hotspots across the state. Highest risk identified at ${fc.hot.items[0]?.name} (projecting up to ${fc.hot.items[0]?.band80?.hi} cases).` : "Gathering real-time predictive intelligence...")}
                         </marquee>
                       </div>
                     
