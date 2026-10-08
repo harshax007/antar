@@ -3718,6 +3718,15 @@ html[data-chatnav="1"] .xw { top: 60px !important; height: calc(100vh - 60px) !i
 .fx-acc b { color: var(--text); }
 .fx-acc u { grid-column: 2; color: var(--cyan); text-decoration: none; font-size: 10px; }
 
+.fx-score { display: flex; flex-direction: column; gap: 3px; padding: 6px 10px 7px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--glass-border); }
+.fx-panel .fx-score header b, .fx-rail .fx-panel .fx-score header b { font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+.fx-score header .fx-sub b, .fx-rail .fx-panel .fx-score header .fx-sub b { display: inline; font: inherit; font-weight: 600; color: var(--text); }
+.fx-score .fx-small b { color: var(--text); }
+.fx-score .fx-muted { font-size: 9.5px; line-height: 1.35; }
+.fx-weeks.fx-score-weeks { height: 38px; }
+.fx-score-weeks .fc { fill: #FF8A3C; }
+.fx-score-weeks .win { fill: #6FCFB4; } .fx-score-weeks .miss { fill: var(--amber); }
+
 .fx-range { position: relative; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--glass-border); }
 .fx-range .fx-i { position: absolute; top: 8px; right: 8px; }
 .fx-range .big { font: 700 24px 'JetBrains Mono'; line-height: 1.1; }

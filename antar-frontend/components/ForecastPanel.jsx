@@ -38,6 +38,7 @@ const T = {
   propose: ["Propose patrol", "ಗಸ್ತು ಪ್ರಸ್ತಾಪಿಸಿ"],
   why: ["Why", "ಏಕೆ"],
   record: ["Track record", "ಹಿಂದಿನ ಸಾಧನೆ"],
+  score: ["Scorecard", "ಅಂಕಪಟ್ಟಿ"],
   heads: ["What gets reported here", "ಇಲ್ಲಿ ದಾಖಲಾಗುವ ಅಪರಾಧಗಳು"],
   weeks26: ["Last 26 weeks · the week ahead", "ಕಳೆದ 26 ವಾರ · ಮುಂದಿನ ವಾರ"],
   limits: ["Limits", "ಮಿತಿಗಳು"],
@@ -58,6 +59,7 @@ export function useForecast({ crimeType, gadmDistrict, initial = {} }) {
   const [status, setStatus] = useState(null);
   const [layer, setLayer] = useState(null);
   const [hot, setHot] = useState(null);
+  const [score, setScore] = useState(null);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(initial.unit || null);     // unit name
   const [detail, setDetail] = useState(null);
@@ -99,6 +101,16 @@ export function useForecast({ crimeType, gadmDistrict, initial = {} }) {
     return () => ctrl.abort();
   }, [on, horizon, category, unitType, districts, tick]);
 
+  // Scorecard: the 7-day forecast graded week by week on the real record. It has no
+  // as-of and no horizon, so it only follows the unit type and category; absent (503,
+  // or a category that was never graded) the strip is simply not drawn.
+  useEffect(() => {
+    const ctrl = new AbortController();
+    getForecast("/scorecard", { unit: unitType, category }, ctrl.signal)
+      .then(setScore).catch((e) => { if (e.name !== "AbortError") setScore(null); });
+    return () => ctrl.abort();
+  }, [unitType, category, tick]);
+
   // Recent FIRs: the 3 months up to the shared as-of date, clean coordinates only
   useEffect(() => {
     if (!firsOn || firPoints.length) return;
@@ -120,7 +132,7 @@ export function useForecast({ crimeType, gadmDistrict, initial = {} }) {
 
   return {
     on, setOn, clustersOn, setClustersOn, firsOn, setFirsOn, horizon, setHorizon,
-    category, setCategory, status, layer, hot, error, unitType, districts,
+    category, setCategory, status, layer, hot, score, error, unitType, districts,
     selected, openUnit, close: () => setSelected(null), detail, detailLoading, firPoints,
   };
 }
@@ -184,6 +196,58 @@ export function ForecastLayer({ fc, kn, contains }) {
 
 export function AsOfChip({ fc, kn }) {
   return null;
+}
+
+// Forecast against record, one column per graded week: the bar is what was recorded, the
+// dot is what had been forecast the week before, and the tick underneath says whether the
+// forecast's top 5% outranked last-4-weeks hotspots that week. Zero-based, so a small gap
+// between dot and bar is a small miss and is not drawn as a large one.
+function Scorecard({ sc, kn }) {
+  const W = 262, H = 38, pad = 3, base = H - 7;
+  const rows = sc.weeks, s = sc.summary;
+  const max = Math.max(1, ...rows.map((r) => Math.max(r.forecast, r.actual)));
+  const bw = (W - pad * 2) / rows.length;
+  const y = (v) => base - (v / max) * (base - pad);
+  const n = (v) => Math.round(v).toLocaleString("en-IN");
+  const pct = (v) => `${(100 * v).toFixed(1)}%`;
+  const units = sc.unit_type === "beat" ? t("beats", kn) : t("stations", kn);
+  // The rail is one fixed-height window and the hotspot list is what flexes, so every
+  // line here is a row taken from that list: four short rows, the rest in tooltips.
+  const ranked = kn
+    ? `ಮೇಲಿನ 5% ${units} ${s.weeks_ranked} ವಾರಗಳಲ್ಲಿ ${s.weeks_better_than_last4} ವಾರ ಕಳೆದ 4 ವಾರಗಳ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳಿಗಿಂತ ಹೆಚ್ಚು FIR ಹಿಡಿದವು.`
+    : `The top 5% of ${units} caught more FIRs than last-4-weeks hotspots in ${s.weeks_better_than_last4} of ${s.weeks_ranked} weeks.`;
+  return (
+    <div className="fx-score" title={ranked}>
+      <header>
+        <b>{t("score", kn)}<span className="fx-i" title={kn ? "ದಾಖಲೆಯಿಂದ ಲೆಕ್ಕಿಸಿದ್ದು" : "Derived from the record"}>D</span></b>
+        <span className="fx-sub">{kn
+          ? <>{s.weeks_ranked} ವಾರಗಳಲ್ಲಿ <b>{s.weeks_better_than_last4}</b> ಮುಂದೆ</>
+          : <><b>{s.weeks_better_than_last4} of {s.weeks_ranked}</b> weeks ahead of last-4-weeks</>}</span>
+      </header>
+      <svg className="fx-weeks fx-score-weeks" viewBox={`0 0 ${W} ${H}`} role="img"
+           aria-label={`Forecast against recorded FIRs over ${rows.length} weeks`}>
+        {rows.map((r, i) => {
+          const x = pad + i * bw;
+          return (
+            <g key={r.week}>
+              <rect x={x + 0.5} y={y(r.actual)} width={Math.max(bw - 1, 1)} height={base - y(r.actual)} className="bar" />
+              <circle cx={x + bw / 2} cy={y(r.forecast)} r="2.2" className="fc" />
+              {r.beat_last4 !== undefined && (
+                <rect x={x + 0.5} y={base + 3} width={Math.max(bw - 1, 1)} height="3" className={r.beat_last4 ? "win" : "miss"} />)}
+              <title>{`Week of ${prettyIso(r.week)}: forecast ${n(r.forecast)}, recorded ${n(r.actual)}`
+                + (r.caught !== undefined ? ` · top 5% caught ${pct(r.caught)} (last-4-weeks ${pct(r.caught_last4)})` : "")}</title>
+            </g>
+          );
+        })}
+      </svg>
+      <p className="fx-small">{kn
+        ? <>ಮುನ್ಸೂಚನೆ <b>{n(s.forecast_total)}</b> · ದಾಖಲು <b>{n(s.actual_total)}</b> FIR</>
+        : <>Forecast <b>{n(s.forecast_total)}</b> · recorded <b>{n(s.actual_total)}</b> FIRs</>}</p>
+      <p className="fx-muted">{kn
+        ? `ನೈಜ ದಾಖಲೆ ${prettyIso(sc.window.from)} – ${prettyIso(sc.window.to)} · 80% ವ್ಯಾಪ್ತಿ ${pct(s.coverage80)} ಸರಿ · ಪಟ್ಟಿ ದಾಖಲು · ಚುಕ್ಕೆ ಮುನ್ಸೂಚನೆ`
+        : `Real record ${prettyIso(sc.window.from)} – ${prettyIso(sc.window.to)} · 80% ranges held ${pct(s.coverage80)} · bar recorded · dot forecast`}</p>
+    </div>
+  );
 }
 
 export function ForecastPanel({ fc, kn, crimeLabel, onModelCard }) {
@@ -255,6 +319,8 @@ export function ForecastPanel({ fc, kn, crimeLabel, onModelCard }) {
           </div>
         </>
       )}
+
+      {fc.score?.weeks?.length > 0 && <Scorecard sc={fc.score} kn={kn} />}
 
       {acc && (
         <button className="fx-acc" onClick={onModelCard} title={t("card", kn)}>
