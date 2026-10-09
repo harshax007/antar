@@ -62,7 +62,8 @@ function nearest(word, pool) {
   return pool.find((p) => p.startsWith(w) || w.startsWith(p)) || pool.find((p) => p[0] === w[0]) || null;
 }
 
-// `agentsOn`  the agents are drawn - only on the Brain's All Data view
+// `agentsOn`  the agents are drawn - on the Brain graph (All Data, and Focus once a record
+//             is selected, since a selected record is what a clicked agent works on)
 // `consoleOn` the terminal and notices are available - on the Brain graph, not the Crime Graph
 // `suggestions` things in the current view worth a look: [{ agent, text, ask, cmd }]
 export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, agentsOn = true, consoleOn = true, suggestions = [] }) {
@@ -113,8 +114,11 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     fetchAPI("/api/console/identity").then(setPack).catch((e) => setPack({ error: e.message || "unreachable" }));
   }, []);
   // A record the officer clicks in the graph becomes the terminal's selected target.
+  // Leaving the selection clears it, so a later click on an agent cannot run on a record
+  // the officer is no longer looking at.
   useEffect(() => {
     if (focus?.node?.kind === "fir") setTarget({ label: nodeLabel(focus.node), payload: nodeTarget(focus.node) });
+    else if (!focus) setTarget(null);
   }, [focus]);
   useEffect(() => { outRef.current?.scrollTo({ top: outRef.current.scrollHeight }); }, [lines, open, small]);
 
@@ -478,7 +482,14 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       const moved = S.moved;
       a.held = false; S.held = null; S.moved = false; setDragging(null);
       a.tx = a.x; a.ty = a.y; a.arrived = true; a.wait = performance.now() + 6000;
-      if (!moved) { setOpen(true); setSmall(false); exec(`about ${id}`); return; }
+      if (!moved) {
+        // A click: with a record selected the agent goes to work on it and answers in the
+        // terminal; with nothing selected there is nothing to work on, so it shows its card.
+        setOpen(true); setSmall(false);
+        if (target) { say({ kind: "in", text: `run ${id} ${target.label}` }); runAgent(id, target.payload, target.label); }
+        else exec(`about ${id}`);
+        return;
+      }
       const n = controlRef?.current?.nodeAt?.(ev.clientX, ev.clientY);
       if (!n) return;
       // The record becomes the terminal's target, but the graph is not zoomed into it:
@@ -525,8 +536,8 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
             <div key={id} ref={(el) => { bugEls.current[id] = el; }}
                  className={`bt-bug${busy.includes(id) ? " busy" : ""}${dragging === id ? " held" : ""}${talk?.from === id ? " speaking" : ""}${talk?.to === id ? " hearing" : ""}`}
                  onPointerDown={(e) => startCarry(e, id)} role="button" tabIndex={0} aria-label={a ? `${a.name} agent` : id}
-                 onKeyDown={(e) => { if (e.key === "Enter") { openTerminal(); exec(`about ${id}`); } }}
-                 title={a ? `${a.name}: ${a.purpose} Drag onto a ${a.needs === "suspect" ? "record with an accused" : "FIR"}, or click to read how it works.` : id}>
+                 onKeyDown={(e) => { if (e.key === "Enter") { openTerminal(); exec(target ? `run ${id}` : `about ${id}`); } }}
+                 title={a ? `${a.name}: ${a.purpose} ${target ? `Click to run on ${target.label}.` : "Select a record and click, or drag onto one."}` : id}>
               <i><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[id]} /></svg></i>
               <span>{a?.name || id}</span>
             </div>

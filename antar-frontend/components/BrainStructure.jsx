@@ -516,7 +516,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   return (
     <div className="bsx-stage">
       <AgentMascot controlRef={controlRef} apiRef={consoleRef} focus={focus} onThink={runThink} kn={kn}
-                   agentsOn={!loading && view === "net" && !focus} consoleOn={view === "net"} suggestions={suggestions} />
+                   agentsOn={!loading && view === "net"} consoleOn={view === "net"} suggestions={suggestions} />
       <div className="bsx-orbits" aria-hidden="true"><i /><i /></div>
       {filterNote && (
         <div className="bsx-filternote" role="status" aria-live="polite">
