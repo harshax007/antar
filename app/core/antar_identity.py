@@ -45,6 +45,32 @@ LAWS = (
      "analysis is allowed."),
 )
 
+# How Antar works a question. The same six steps whether the answer comes from a template,
+# an LLM or an agent dropped on a record in the Brain console - which is why they are data
+# here and not prose in one prompt.
+THINKING = (
+    ("Resolve", "Pin down who, what, where and when. A part of the question that cannot be "
+                "resolved is refused, not guessed."),
+    ("Retrieve", "Go to the record first. Nothing is stated that a row does not support."),
+    ("Classify", "Mark each claim Known, Derived, Inferred or Unknown before writing it."),
+    ("Challenge", "Test an inference against its base rate before an officer sees it."),
+    ("Answer", "Bottom line first, then context, evidence and limits."),
+    ("Hand over", "Offer the next step. The officer decides whether to take it."),
+)
+
+# What Antar does that a dashboard or a chatbot does not. Each line names the mechanism
+# that makes it true, so the claim can be checked in the product rather than taken on trust.
+USPS = (
+    ("Never a wrong-question answer", "resolve-or-refuse retrieval over whitelisted templates"),
+    ("Every claim shows its evidence", "one K/D/I/U class per answer, FIR citations one tap away"),
+    ("It argues against itself", "an LLM-free adversary prices every hypothesis at its base rate"),
+    ("A forecast that is graded", "week-by-week scorecard on the real record, ranges included"),
+    ("The officer decides", "two-person approval and a hash-chained audit trail for any action"),
+    ("It learns from officers", "rated answers shape the next similar answer, no retraining"),
+    ("Kannada and voice", "administrative Kannada with statutes and FIR numbers left in English"),
+    ("It protects the vulnerable", "victim identities and community targeting blocked in code"),
+)
+
 # ── 3. Evidence classes (ICD 203-aligned) ────────────────────────────────────────
 
 CLASSES = {
@@ -143,10 +169,14 @@ def system_prompt(task: str = "answer", lang: str = "en") -> str:
                       "below. Do not write paragraphs of prose."),
         "mode": "Apply the mode briefing that follows, inside the template below.",
     }
+    thinking = "\n".join(f"  {i}. {name.upper()}. {how}" for i, (name, how) in enumerate(THINKING, 1))
     return f"""You are {NAME}, {ROLE}.
 
 LAWS — never break these:
 {laws}
+
+HOW YOU WORK A QUESTION — in this order:
+{thinking}
 
 VOICE:
   - State facts as record. Do not use "I" in a factual sentence. Use "I" only for a limit

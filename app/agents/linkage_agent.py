@@ -44,6 +44,68 @@ def compile_linkage(fir_id: str) -> dict[str, Any]:
     return payload
 
 
+# The hard keys a Brain-graph record can carry: (column, label).
+BRAIN_KEYS = [("Accused_ID", "accused"), ("Vehicle_Reg_No", "vehicle"),
+              ("UPI_ID", "UPI"), ("IP_Address", "IP")]
+
+
+def brain_linkage(keys: dict[str, str], limit: int = 8) -> dict[str, Any]:
+    """FIRs in the Brain dataset that carry any of the given hard keys.
+
+    `keys` is {column: value} taken from the record itself - never a row number. A record
+    on the Brain graph has no id the backend can use: the graph numbers its nodes by
+    position in the list it was sent, the registry numbers rows its own way, and
+    `compile_linkage` speaks 'EV-{i}', a row of the evidence CSV. Passing one numbering to
+    another returns a confident answer about an unrelated case, so linkage for a graph
+    record goes by the keys it carries and nothing else.
+
+    Reads the same store the Brain screen draws from (/api/dataset/graph): the curated
+    intelligent.db when it is present, otherwise the registry. Exact matches only; every
+    row returned names the keys it shares. The counts INCLUDE the record the keys came from.
+    """
+    import os
+    import sqlite3
+    from app.core.db_path import DB_PATH, ensure_db_staged
+
+    wanted = {c: str(keys.get(c) or "").strip() for c, _ in BRAIN_KEYS}
+    wanted = {c: v for c, v in wanted.items() if v}
+    if not wanted:
+        return {"keys": {}, "by_key": {}, "total": 0, "rows": []}
+    intel = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "intelligent.db"))
+    if os.path.exists(intel):
+        con = sqlite3.connect(f"file:{intel}?immutable=1", uri=True)
+    else:
+        ensure_db_staged()
+        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    cols = ("rowid AS rid, District_Name, UnitName, FIR_YEAR, FIR_MONTH, CrimeGroup_Name, "
+            "CrimeHead_Name, " + ", ".join(c for c, _ in BRAIN_KEYS))
+    try:
+        where = " OR ".join(f"{c} = ?" for c in wanted)
+        found = con.execute(f"SELECT {cols} FROM FIRs WHERE {where} LIMIT 1000",
+                            list(wanted.values())).fetchall()
+    finally:
+        con.close()
+
+    labels = dict(BRAIN_KEYS)
+    by_key = {c: 0 for c in wanted}
+    rows = []
+    for r in found:
+        shared = [c for c, v in wanted.items() if str(r[c] or "").strip() == v]
+        if not shared:
+            continue
+        for c in shared:
+            by_key[c] += 1
+        rows.append({"district": r["District_Name"] or "", "station": r["UnitName"] or "",
+                     "crime_type": r["CrimeHead_Name"] or r["CrimeGroup_Name"] or "",
+                     "when": f"{r['FIR_YEAR']}-{int(r['FIR_MONTH'] or 0):02d}" if r["FIR_YEAR"] else "",
+                     "shares": [f"{labels[c]} {wanted[c]}" for c in shared], "n_shared": len(shared),
+                     "rid": r["rid"]})
+    rows.sort(key=lambda x: (-x["n_shared"], x["when"], x["rid"]), reverse=False)
+    return {"keys": wanted, "by_key": {labels[c]: {"value": wanted[c], "firs": n} for c, n in by_key.items()},
+            "total": len(rows), "rows": rows[:limit]}
+
+
 def compile_all_linkages(limit: int = 10) -> list[dict[str, Any]]:
     """Compile linkage products for the highest-priority FIRs (most-active multi-FIR
     offenders) — real, deterministic set from the evidence ledger."""

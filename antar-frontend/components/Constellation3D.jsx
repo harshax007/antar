@@ -359,6 +359,22 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       clear: clearFocus,
       refit: () => fgRef.current?.zoomToFit(700, 90),
       think: flyAgents,
+      // The FIR drawn nearest a screen point, for dropping a console agent on a record.
+      nodeAt: (cx, cy, radius = 26) => {
+        const fg = fgRef.current, el = containerRef.current;
+        if (!fg || !el || !dataRef.current) return null;
+        const box = el.getBoundingClientRect();
+        const px = cx - box.left, py = cy - box.top;
+        let best = null, bestD = radius * radius;
+        for (const m of dataRef.current.nodes) {
+          if (m.kind !== "fir" || m.x == null) continue;
+          const s = fg.graph2ScreenCoords(m.x, m.y, m.z || 0);
+          const d = (s.x - px) ** 2 + (s.y - py) ** 2;
+          if (d < bestD) { best = m; bestD = d; }
+        }
+        return best;
+      },
+      focus: (n) => { if (n) focusComponent(n); },
       find: (q) => {
         const needle = String(q || "").trim().toLowerCase();
         if (!needle || !dataRef.current) return false;

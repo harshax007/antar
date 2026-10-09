@@ -10,7 +10,8 @@ import {
 import { useLang } from "@/components/Providers";
 import { CATEGORIES, categorize, filterRecords, overviewStats } from "@/lib/crimeGraph";
 
-const PAGE = 50;
+// The FIR list closes the page: a short page of rows, with the pager to go further.
+const PAGE = 8;
 const CYAN = "#22E6F0";
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -552,6 +553,10 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
 // The outcome figures are rates of FIRs, not a funnel: a chargesheet can be filed against
 // an accused who was never arrested, so the second can be larger than the first.
 function OfficerPanels({ o, kn }) {
+  // Both panels start closed: the title and its one headline figure show, the rest opens
+  // when the officer asks for it.
+  const [open, setOpen] = useState({ clock: false, outcomes: false });
+  const toggle = (k) => setOpen((s) => ({ ...s, [k]: !s[k] }));
   if (!o) {
     return (
       <div className="ov-officer">
@@ -571,11 +576,15 @@ function OfficerPanels({ o, kn }) {
 
   return (
     <div className="ov-officer">
-      <div className="ov-panel ov-clock">
-        <div className="ov-ptitle" style={{cursor: "pointer"}}>
+      <div className={`ov-panel ov-clock${open.clock ? "" : " shut"}`}>
+        <button className="ov-ptitle ov-toggle" onClick={() => toggle("clock")} aria-expanded={open.clock}>
           {kn ? "ದೋಷಾರೋಪ ಗಡುವು" : "Chargesheet deadline"}
-          <span>{kn ? "ತನಿಖೆಯಲ್ಲಿರುವ ಪ್ರಕರಣಗಳು · BNSS §187(3)" : "open investigations · BNSS s.187(3)"}</span>
-         </div>
+          <span>{open.clock
+            ? (kn ? "ತನಿಖೆಯಲ್ಲಿರುವ ಪ್ರಕರಣಗಳು · BNSS §187(3)" : "open investigations · BNSS s.187(3)")
+            : `${nf(d.over_90)} ${kn ? "90 ದಿನ ದಾಟಿದವು" : "past the 90-day limit"}`}</span>
+          <i aria-hidden="true">{open.clock ? "–" : "+"}</i>
+        </button>
+        {open.clock && (<>
           <div className="ov-clock-head">
           <div>
             <b className="ov-clock-big">{nf(d.over_90)}</b>
@@ -616,13 +625,18 @@ function OfficerPanels({ o, kn }) {
             ? `ನೋಂದಣಿ ದಿನಾಂಕದಿಂದ ಲೆಕ್ಕ. ಅತಿ ಹಳೆಯ ತೆರೆದ ತನಿಖೆ ${nf(d.oldest_days)} ದಿನ${years ? ` (~${years} ವರ್ಷ)` : ""}. ಇಂದಿನ ನಂತರದ ದಿನಾಂಕದ FIR ಗಳನ್ನು ಬಿಡಲಾಗಿದೆ. ಕಸ್ಟಡಿ ಮತ್ತು ಅಪರಾಧದ ತೀವ್ರತೆ FIR ನಲ್ಲಿ ದಾಖಲಾಗಿಲ್ಲ, ಆದ್ದರಿಂದ ಎರಡೂ ಮಿತಿಗಳನ್ನು ತೋರಿಸಲಾಗಿದೆ.`
             : `Aged from registration date. Oldest open investigation: ${nf(d.oldest_days)} days${years ? ` (~${years} yr)` : ""}. FIRs dated after today are left out (an age cannot be negative), so this can be lower than the stage count above. Custody and offence gravity are not recorded per FIR, so both limits are shown.`}
         </div>
+        </>)}
       </div>
 
-      <div className="ov-panel ov-outcomes">
-        <div className="ov-ptitle">
+      <div className={`ov-panel ov-outcomes${open.outcomes ? "" : " shut"}`}>
+        <button className="ov-ptitle ov-toggle" onClick={() => toggle("outcomes")} aria-expanded={open.outcomes}>
           {kn ? "ಪ್ರಕರಣ ಫಲಿತಾಂಶ" : "Case outcomes"}
-          <span>{kn ? `ಪ್ರತಿ 100 FIR ಗೆ · ${nf(out.firs)} FIR` : `per 100 FIRs · ${nf(out.firs)} FIRs`}</span>
-        </div>
+          <span>{open.outcomes
+            ? (kn ? `ಪ್ರತಿ 100 FIR ಗೆ · ${nf(out.firs)} FIR` : `per 100 FIRs · ${nf(out.firs)} FIRs`)
+            : `${Math.round(per.conviction || 0)} ${kn ? "ಪ್ರತಿ 100 FIR ಗೆ ಶಿಕ್ಷೆ" : "of 100 FIRs ended in a conviction"}`}</span>
+          <i aria-hidden="true">{open.outcomes ? "–" : "+"}</i>
+        </button>
+        {open.outcomes && (<>
         {[
           ["arrest", kn ? "ಕನಿಷ್ಠ ಒಬ್ಬ ಬಂಧನ" : "saw at least one arrest"],
           ["chargesheet", kn ? "ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಕೆ" : "reached a chargesheet"],
@@ -644,6 +658,7 @@ function OfficerPanels({ o, kn }) {
             ? "ಇವು ಸ್ವತಂತ್ರ ದರಗಳು, ಹಂತ ಹಂತದ ಕೊಳವೆ ಅಲ್ಲ: ಬಂಧಿಸದ (ತಲೆಮರೆಸಿಕೊಂಡ) ಆರೋಪಿಯ ವಿರುದ್ಧವೂ ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಸಬಹುದು."
             : "Independent rates, not a funnel: a chargesheet can be filed against an accused who was never arrested (absconding)."}
         </div>
+        </>)}
       </div>
     </div>
   );

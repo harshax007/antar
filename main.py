@@ -440,6 +440,9 @@ app.include_router(hitl_api.router, prefix="/api/hitl", tags=["Human-in-the-Loop
 app.include_router(adversarial_audit_api.router, prefix="/api/adversarial-audit",
                    tags=["Adversarial Audit"], dependencies=_inspector)
 app.include_router(workspace.router,   prefix="/api/workspace", tags=["Workspace"])
+# Runs suspect-level agents, so it is gated like /api/graph and /api/profile.
+from app.api import console
+app.include_router(console.router,     prefix="/api/console", tags=["Brain Console"], dependencies=_inspector)
 app.include_router(obs.router,         tags=["Observability"])
 app.include_router(sdar.router,        prefix="/api/obs", tags=["SDAR"])
 

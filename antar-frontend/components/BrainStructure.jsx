@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLang } from "@/components/Providers";
 import { buildCrimeGraph, filterRecords, isFutureRecord, dayGrid, aliasFor, CATEGORIES, LINK_COLORS, soften } from "@/lib/crimeGraph";
-import { thinkInsights } from "@/lib/festivals";
+import { fastRun } from "@/lib/fastRun";
 import Constellation from "@/components/Constellation";
 import Constellation3D from "@/components/Constellation3D";
 import CrimeGraph from "@/components/CrimeGraph";
@@ -84,6 +84,8 @@ function Donut({ cats, total }) {
 }
 
 // Severity as a word, not a colour alone - readable at a glance and for colour-blind users.
+const EVIDENCE_CLASS = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
+
 function SevPill({ sev = "low", kn }) {
   const label = sev === "high" ? (kn ? "ಹೆಚ್ಚು" : "High")
     : sev === "med" ? (kn ? "ಮಧ್ಯಮ" : "Medium")
@@ -134,6 +136,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   // progress strip names each one) then "done" (results open in a large window).
   const [think, setThink] = useState(null);            // {phase, at, findings, total, lead, counts, n, scope}
   const [thinkOpen, setThinkOpen] = useState(false);
+  const consoleRef = useRef(null);                     // { run(cmd) } - the Brain terminal
+  const [showAllFindings, setShowAllFindings] = useState(false);
   const [copied, setCopied] = useState(false);
   const closeRef = useRef(null);
 
@@ -209,6 +213,13 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     () => (recs ? buildCrimeGraph(filtered, { sampleUnlinkedPerCat: 9999, maxNodes: 9999, backendData }) : null),
     [recs, filtered, backendData]
   );
+  // What an agent may point the officer at: the Fast Run findings for this view that have
+  // a next step, each put forward by the agent that would take it.
+  const suggestions = useMemo(() => {
+    const f = fastRun(filtered || []);
+    return ["network", "linkage", "geo"].flatMap((k) => (f[k] || []).filter((c) => c.next?.length)
+      .map((c) => ({ agent: /^run (\w+)/.exec(c.next[0].cmd)?.[1] || k, text: c.title, ask: c.next[0].label, cmd: c.next[0].cmd })));
+  }, [filtered]);
   const years = useMemo(() => (recs ? [...new Set(recs.map((r) => r._year).filter(Boolean))].sort() : []), [recs]);
   const districts = useMemo(() => (recs ? [...new Set(recs.map((r) => r.District_Name).filter(Boolean))].sort() : []), [recs]);
 
@@ -358,8 +369,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       how: kn ? "ಹಂಚಿದ ಆರೋಪಿ/ವಾಹನ/UPI/IP ಕೀಗಳ ಮೇಲೆ ≥2 FIR ಸಮೂಹಗಳ ಎಣಿಕೆ" : "counts clusters where ≥2 FIRs share an accused / vehicle / UPI / IP key" },
     { id: "corridor", name: kn ? "ಕಾರಿಡಾರ್" : "Corridors",
       how: kn ? "ಜಿಲ್ಲೆಗಳ ನಡುವೆ ಒಂದೇ ಆರೋಪಿಯ ಚಲನೆ ಪತ್ತೆ" : "traces the same accused across districts to surface movement corridors" },
-    { id: "vigil", name: kn ? "ವಿಜಿಲ್" : "Provenance",
-      how: kn ? "ಪ್ರತಿ ಸಂಕೇತ ದಾಖಲೆಯಿಂದ ಬಂದದ್ದೇ ಎಂದು ಪರಿಶೀಲನೆ (ಪ್ರೊವೆನೆನ್ಸ್)" : "audits that every signal is derived from records - provenance guard" },
+    { id: "vigil", name: kn ? "ಕೊರತೆಗಳು" : "Gaps",
+      how: kn ? "ಲಿಂಕ್ ಮಾಡಲು ಏನೂ ಇಲ್ಲದ FIR ಗಳ ಎಣಿಕೆ" : "counts the FIRs that carry nothing to link on - what this view cannot show" },
   ];
 
   async function runThink() {
@@ -371,95 +382,19 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     // matches the staged reveal below so the two finish together.
     controlRef.current?.think?.(2600);
 
-    const findings = { pattern: [], network: [], geo: [], forecast: [], linkage: [], corridor: [], vigil: [] };
-    thinkInsights(filtered).forEach((c) => {
-      if (c.kind === "trend" || c.kind === "festival") findings.pattern.push(c);
-      else findings.network.push(c);
-    });
+    // Counted from the records in view - see lib/fastRun.js for what each finding claims.
+    const findings = fastRun(filtered);
 
-    const byDist = new Map();
-    filtered.forEach((r) => { if (r.District_Name) byDist.set(r.District_Name, (byDist.get(r.District_Name) || 0) + 1); });
-    const top = [...byDist.entries()].sort((a, b) => b[1] - a[1])[0];
-    if (top && filtered.length) {
-      const pct = Math.round((top[1] / filtered.length) * 100);
-      findings.geo.push({
-        kind: "geo", sev: pct > 25 ? "med" : "low",
-        title: `${kn ? "ಸಾಂದ್ರತೆ" : "Concentration"}: ${top[0]}`,
-        detail: `${top[1]} of ${filtered.length} FIRs in view (${pct}%) fall in ${top[0]} - the heaviest district in the current selection.`,
-        source: "district aggregation",
-      });
-    }
-
-    // ── Linkage Agent (A3) - clusters where ≥2 FIRs share an evidence key ──
-    const sharedClusters = (field) => {
-      const m = new Map();
-      filtered.forEach((r) => { const v = r[field]; if (v) m.set(v, (m.get(v) || 0) + 1); });
-      return [...m.values()].filter((n) => n > 1).length;
-    };
-    const repeatC = sharedClusters("Accused_ID");
-    const vehC = sharedClusters("Vehicle_Reg_No");
-    const cyberC = sharedClusters("UPI_ID") + sharedClusters("IP_Address");
-    if (repeatC + vehC + cyberC > 0) {
-      findings.linkage.push({
-        kind: "network", sev: repeatC + vehC + cyberC > 8 ? "med" : "low",
-        title: kn ? "ಸಾಕ್ಷ್ಯ ಲಿಂಕೇಜ್ ಸಮೂಹಗಳು" : "Evidence-linkage clusters",
-        detail: `${repeatC} repeat-accused, ${vehC} shared-vehicle and ${cyberC} cyber-key cluster(s) each tie ≥2 FIRs together in this view.`,
-        source: "shared-key union (Accused / Vehicle / UPI / IP)",
-      });
-    }
-
-    // ── Corridor Agent (A2) - same accused seen across multiple districts ──
-    const acc2dist = new Map();
-    filtered.forEach((r) => {
-      if (r.Accused_ID && r.District_Name) {
-        const s = acc2dist.get(r.Accused_ID) || new Set();
-        s.add(r.District_Name);
-        acc2dist.set(r.Accused_ID, s);
-      }
-    });
-    const pairCount = new Map();
-    for (const s of acc2dist.values()) {
-      const ds = [...s];
-      for (let i = 0; i < ds.length; i++)
-        for (let j = i + 1; j < ds.length; j++) {
-          const key = [ds[i], ds[j]].sort().join(" ↔ ");
-          pairCount.set(key, (pairCount.get(key) || 0) + 1);
-        }
-    }
-    const topPair = [...pairCount.entries()].sort((a, b) => b[1] - a[1])[0];
-    if (topPair) {
-      findings.corridor.push({
-        kind: "network", sev: topPair[1] > 2 ? "med" : "low",
-        title: `${kn ? "ಕಾರಿಡಾರ್" : "Corridor"}: ${topPair[0]}`,
-        detail: `${topPair[1]} offender(s) operate across ${topPair[0]} - a candidate movement corridor for coordinated patrol.`,
-        source: "cross-district accused linkage",
-      });
-    }
-
-    const live = Promise.allSettled([
-      fetchJson(`${API}/api/graph/stats`),
-      fetchJson(`${API}/api/alerts`),
-    ]).then(([gs, al]) => {
-      if (gs.status === "fulfilled" && gs.value) {
-        const g = gs.value;
-        const bits = [];
-        const n = g.nodes ?? g.node_count ?? g.total_nodes;
-        const c = g.communities ?? g.community_count;
-        if (n) bits.push(`${n} entities indexed`);
-        if (c) bits.push(`${c} communities (Louvain)`);
-        findings.network.push({
-          kind: "network", sev: "low",
-          title: kn ? "ಬ್ಯಾಕೆಂಡ್ ಗ್ರಾಫ್ ಮೆಟ್ರಿಕ್ಸ್ (ಲೈವ್)" : "Backend graph metrics (live)",
-          detail: `Graph service online${bits.length ? " - " + bits.join(", ") : ""}. PageRank, betweenness and k-core are precomputed for instant lookup.`,
-          source: "graph_cache (live)",
-        });
-      }
-      const a = al.status === "fulfilled" ? (al.value?.alerts || [])[0] : null;
+    // The one finding that is not counted from the view: the top live anomaly alert.
+    // (The size of the whole suspect graph used to be listed too; it says nothing about
+    // this view, so it is no longer fetched.)
+    const live = fetchJson(`${API}/api/alerts`).then((al) => {
+      const a = (al?.alerts || [])[0];
       if (a) findings.forecast.push({
-        kind: "alert", sev: "high",
-        title: `${kn ? "ಲೈವ್ ಎಚ್ಚರಿಕೆ" : "Live alert"} · ${a.zone}`,
-        detail: `${(a.crime_type || "").replace(/_/g, " ")} anomaly, z=${a.z_score?.toFixed?.(2)} - ${a.observed} cases observed.`,
-        source: "forecast agent (live)",
+        kind: "alert", cls: "D", sev: "high",
+        title: `${a.zone}: ${(a.crime_type || "").replace(/_/g, " ").toLowerCase().replace(/\b[a-z]/g, (ch) => ch.toUpperCase())} above usual`,
+        detail: `${a.observed} FIRs recorded${a.z_score?.toFixed ? `, ${a.z_score.toFixed(1)} standard deviations above the usual level` : ""}.`,
+        source: "anomaly scan",
       });
     }).catch(() => {});
 
@@ -470,19 +405,6 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       await new Promise((r) => setTimeout(r, 300));
     }
     await live;
-
-    // ── Vigil Agent (A5) - provenance guard: confirm every signal is record-derived ──
-    const derivedCount = Object.entries(findings)
-      .filter(([k]) => k !== "vigil")
-      .reduce((n, [, arr]) => n + arr.length, 0);
-    findings.vigil.push({
-      kind: "alert", sev: "low",
-      title: kn ? "ಪ್ರೊವೆನೆನ್ಸ್ ಪರಿಶೀಲನೆ" : "Provenance check",
-      detail: kn
-        ? `${filtered.length} ದಾಖಲೆಗಳಿಂದ ${derivedCount} ಸಂಕೇತ ಪಡೆಯಲಾಗಿದೆ - ಯಾವುದೇ ಸಂಖ್ಯೆ ಕಲ್ಪಿತವಲ್ಲ; ಊಹಿತ ಅಂಶಗಳು ಲೇಬಲ್ ಆಗಿವೆ.`
-        : `${derivedCount} signal(s) derived from ${filtered.length} records in view - no fabricated numbers; inferred items are labelled.`,
-      source: "A5 Vigil (provenance guard)",
-    });
 
     // Output quality: rank each agent's findings by severity (high→low), count the
     // total, and surface the single most important cross-agent takeaway as a synthesis.
@@ -523,7 +445,10 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       const f = think.findings[a.id] || [];
       if (!f.length) return;
       lines.push(a.name);
-      f.forEach((c) => lines.push(`  [${word[c.sev || "low"]}] ${c.title}${c.detail ? ` - ${c.detail}` : ""}`));
+      f.forEach((c) => {
+        lines.push(`  [${word[c.sev || "low"]}] ${c.title}${c.detail ? ` - ${c.detail}` : ""}`);
+        (c.evidence || []).forEach((e) => lines.push(`      ${e}`));
+      });
       lines.push("");
     });
     try {
@@ -590,7 +515,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
   return (
     <div className="bsx-stage">
-      <AgentMascot onRun={runThink} />
+      <AgentMascot controlRef={controlRef} apiRef={consoleRef} focus={focus} onThink={runThink} kn={kn}
+                   agentsOn={!loading && view === "net" && !focus} consoleOn={view === "net"} suggestions={suggestions} />
       <div className="bsx-orbits" aria-hidden="true"><i /><i /></div>
       {filterNote && (
         <div className="bsx-filternote" role="status" aria-live="polite">
@@ -802,7 +728,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
         <button className={`bsx-pill think ${think?.phase === "run" ? "busy" : ""}`} onClick={runThink}
                 aria-busy={think?.phase === "run"}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4-2.5 5.4-.9 1-1.5 1.8-1.5 3.1V19h-6v-1.5c0-1.3-.6-2.1-1.5-3.1C6.2 13 5 11.4 5 9a7 7 0 0 1 7-7z" /><path d="M9 22h6" strokeLinecap="round" /></svg>
-          {think?.phase === "run" ? (kn ? "ಆಲೋಚಿಸುತ್ತಿದೆ…" : "Thinking…") : (kn ? "ಆಲೋಚಿಸು" : "Think")}
+          {think?.phase === "run" ? (kn ? "ಚಾಲನೆಯಲ್ಲಿದೆ…" : "Running…") : (kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run")}
         </button>
       )}
       {/* Closed the results? They stay one click away until the next run. */}
@@ -812,109 +738,67 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
         </button>
       )}
 
-      {/* Phase 1 - a slim strip names each agent while they fly, so the brain stays visible. */}
-      {view === "net" && think?.phase === "run" && (() => {
-        const cur = AGENTS[Math.min(think.at, AGENTS.length - 1)];
+      {/* While it runs: one line, so the brain stays visible. */}
+      {view === "net" && think?.phase === "run" && (
+        <div className="bsx-thinkdock" role="status" aria-live="polite">
+          <div className="top">
+            <span className="ttl"><i />{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"} · {AGENTS[Math.min(think.at, AGENTS.length - 1)].name}</span>
+            <span className="ct">{Math.min(think.at + 1, AGENTS.length)} / {AGENTS.length}</span>
+          </div>
+          <div className="bar"><b style={{ width: `${((think.at + 1) / AGENTS.length) * 100}%` }} /></div>
+        </div>
+      )}
+
+      {/* The results: one line per finding, worst first. The headline and its number are
+          all that shows; the records behind it and the next step open on demand. */}
+      {think?.phase === "done" && thinkOpen && (() => {
+        const rank = { high: 0, med: 1, low: 2 };
+        const rows = AGENTS.flatMap((a) => (think.findings[a.id] || []).map((c) => ({ ...c, agent: a.name })))
+          .sort((x, y) => (rank[x.sev] ?? 3) - (rank[y.sev] ?? 3));
+        const shown = showAllFindings ? rows : rows.slice(0, 5);
         return (
-          <div className="bsx-thinkdock" role="status" aria-live="polite">
-            <div className="top">
-              <span className="ttl"><i />{kn ? "ಏಜೆಂಟ್‌ಗಳು ಈ ವೀಕ್ಷಣೆಯನ್ನು ವಿಶ್ಲೇಷಿಸುತ್ತಿವೆ" : "Agents analysing this view"}</span>
-              <span className="ct">{Math.min(think.at + 1, AGENTS.length)} / {AGENTS.length}</span>
-            </div>
-            <div className="bar"><b style={{ width: `${((think.at + 1) / AGENTS.length) * 100}%` }} /></div>
-            <div className="now"><b>{cur.name}</b> - {cur.how}</div>
+          <div className="bsx-tm-overlay" onClick={() => setThinkOpen(false)}>
+            <section className="bsx-fr" role="dialog" aria-modal="true" aria-labelledby="bsx-fr-title" onClick={(e) => e.stopPropagation()}>
+              <header>
+                <h2 id="bsx-fr-title">{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"}</h2>
+                <span>{think.n.toLocaleString()} FIRs · {think.scope}</span>
+                <button onClick={copyThink}>{copied ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ನಕಲಿಸಿ" : "Copy")}</button>
+                <button onClick={runThink}>{kn ? "ಮತ್ತೆ" : "Again"}</button>
+                <button ref={closeRef} onClick={() => setThinkOpen(false)} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close"}>×</button>
+              </header>
+              {!rows.length && <p className="none">{kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಗಮನಾರ್ಹ ಸಂಕೇತವಿಲ್ಲ." : "Nothing stands out in this view."}</p>}
+              <ol>
+                {shown.map((c, i) => (
+                  <li key={i} className={`sev-${c.sev || "low"}`}>
+                    <details>
+                      <summary>
+                        <i className="dot" title={{ high: "High", med: "Medium", low: "Low" }[c.sev || "low"]} />
+                        <b>{c.title}</b>
+                        <em title={c.cls ? EVIDENCE_CLASS[c.cls] : undefined}>{c.agent}{c.cls ? ` · ${c.cls}` : ""}</em>
+                      </summary>
+                      {c.detail && <p>{c.detail}</p>}
+                      {c.evidence?.length > 0 && <ul>{c.evidence.map((e, k) => <li key={k}>{e}</li>)}</ul>}
+                      {c.next?.length > 0 && (
+                        <div className="next">
+                          {/* Hands the record to a console agent: the finding says what is there, the agent works it. */}
+                          {c.next.map((x) => (
+                            <button key={x.cmd} onClick={() => { setThinkOpen(false); consoleRef.current?.run(x.cmd); }}>{x.label}</button>
+                          ))}
+                        </div>
+                      )}
+                    </details>
+                  </li>
+                ))}
+              </ol>
+              {rows.length > 5 && (
+                <button className="more" onClick={() => setShowAllFindings((v) => !v)}>
+                  {showAllFindings ? (kn ? "ಕಡಿಮೆ ತೋರಿಸಿ" : "Show fewer") : `${kn ? "ಇನ್ನೂ" : "Show"} ${rows.length - 5} ${kn ? "ತೋರಿಸಿ" : "more"}`}
+                </button>
+              )}
+            </section>
           </div>
         );
       })()}
-
-      {/* Phase 2 - the results, in a window large enough to actually read. */}
-      {think?.phase === "done" && thinkOpen && (
-        <div className="bsx-tm-overlay" onClick={() => setThinkOpen(false)}>
-          <section className="bsx-tm" role="dialog" aria-modal="true" aria-labelledby="bsx-tm-title"
-                   onClick={(e) => e.stopPropagation()}>
-            <header className="bsx-tm-head">
-              <div>
-                <span className="eyebrow">{kn ? "ಆಲೋಚನೆ · ಏಜೆಂಟ್ ವಿಶ್ಲೇಷಣೆ" : "Think · agent analysis"}</span>
-                <h2 id="bsx-tm-title">{kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಏಜೆಂಟ್‌ಗಳು ಕಂಡುಕೊಂಡದ್ದು" : "What the agents found in this view"}</h2>
-                <p className="meta">
-                  {think.n.toLocaleString()} FIRs · {think.scope} · {AGENTS.length} {kn ? "ಏಜೆಂಟ್‌ಗಳು" : "agents"}
-                </p>
-              </div>
-              <div className="acts">
-                <button className="bsx-tm-btn" onClick={copyThink}>
-                  {copied ? (kn ? " ನಕಲಿಸಲಾಗಿದೆ" : " Copied") : (kn ? "ಸಾರಾಂಶ ನಕಲಿಸಿ" : "Copy summary")}
-                </button>
-                <button className="bsx-tm-btn" onClick={runThink}>{kn ? "ಮತ್ತೆ ಚಲಾಯಿಸಿ" : "Run again"}</button>
-                <button ref={closeRef} className="bsx-tm-btn close" onClick={() => setThinkOpen(false)}>
-                   {kn ? "ಮುಚ್ಚಿ" : "Close"}
-                </button>
-              </div>
-            </header>
-
-            <div className={`bsx-tm-lead sev-${think.lead?.sev || "low"}`}>
-              <span className="lbl">{kn ? "ಮುಖ್ಯ ಅಂಶ" : "Key takeaway"}</span>
-              {think.lead ? (
-                <>
-                  <div className="row"><SevPill sev={think.lead.sev} kn={kn} /><b>{think.lead.title}</b></div>
-                  {think.lead.detail && <p>{think.lead.detail}</p>}
-                </>
-              ) : <p>{think.summary}</p>}
-              <div className="bsx-tm-tally">
-                <span className="h"><i />{kn ? "ಹೆಚ್ಚು" : "High"} <b>{think.counts.high}</b></span>
-                <span className="m"><i />{kn ? "ಮಧ್ಯಮ" : "Medium"} <b>{think.counts.med}</b></span>
-                <span className="l"><i />{kn ? "ಕಡಿಮೆ" : "Low"} <b>{think.counts.low}</b></span>
-                <span className="tot">{think.total} {kn ? "ಸಂಕೇತಗಳು" : think.total === 1 ? "signal" : "signals"}</span>
-              </div>
-            </div>
-
-            <div className="bsx-tm-body">
-              <nav className="bsx-tm-rail" aria-label={kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"}>
-                {AGENTS.map((a) => {
-                  const n = think.findings[a.id]?.length || 0;
-                  return (
-                    <button key={a.id} disabled={!n}
-                            onClick={() => document.getElementById(`bsx-tm-${a.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-                      <span>{a.name}</span><b>{n}</b>
-                    </button>
-                  );
-                })}
-              </nav>
-
-              <div className="bsx-tm-list">
-                {AGENTS.filter((a) => think.findings[a.id]?.length).map((a) => (
-                  <section key={a.id} id={`bsx-tm-${a.id}`} className="bsx-tm-agent">
-                    <h3>{a.name}</h3>
-                    <p className="how">{a.how}</p>
-                    <div className="bsx-tm-cards">
-                      {think.findings[a.id].map((c, j) => {
-                        const sev = c.sev || "low";
-                        return (
-                          <article key={j} className={`bsx-tm-card sev-${sev}`} style={{ animationDelay: `${j * 50}ms` }}>
-                            <div className="hd"><SevPill sev={sev} kn={kn} /><b>{c.title || (kn ? "ಸಂಕೇತ" : "Signal")}</b></div>
-                            {c.detail && <p>{c.detail}</p>}
-                            {c.source && <div className="src">{kn ? "ಮೂಲ" : "Source"}: {c.source}</div>}
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-                {AGENTS.some((a) => !think.findings[a.id]?.length) && (
-                  <p className="bsx-tm-none">
-                    {kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಸಂಕೇತವಿಲ್ಲ: " : "No signal in this view: "}
-                    {AGENTS.filter((a) => !think.findings[a.id]?.length).map((a) => a.name).join(", ")}
-                  </p>
-                )}
-                <p className="bsx-tm-foot">
-                  {kn
-                    ? "ಪ್ರತಿ ಸಂಖ್ಯೆಯನ್ನು ಈ ವೀಕ್ಷಣೆಯ FIR ದಾಖಲೆಗಳಿಂದ ಎಣಿಸಲಾಗಿದೆ ಅಥವಾ ಲೈವ್ ಬ್ಯಾಕೆಂಡ್‌ನಿಂದ ಓದಲಾಗಿದೆ - ಯಾವುದನ್ನೂ ಭಾಷಾ ಮಾದರಿ ಬರೆದಿಲ್ಲ."
-                    : "Every figure here is counted from the FIR records in this view or read from the live backend services - none of it is written by a language model."}
-                </p>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
 
       {/* ── Focus panel - the crime intelligence of the selected group ── */}
       {view === "net" && focus && (
