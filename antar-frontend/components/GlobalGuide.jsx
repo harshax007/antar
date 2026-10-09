@@ -17,91 +17,34 @@ const L = (en, kn) => ({ en, kn });
 const GUIDES = {
   chat: {
     title: L("Chat Guide", "ಚಾಟ್ ಮಾರ್ಗದರ್ಶಿ"),
-    lead: L("Ask anything about the FIR records in English or Kannada, by typing or speaking. The answer comes first, then the proof.",
-            "FIR ದಾಖಲೆಗಳ ಬಗ್ಗೆ ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ, ಬರೆದು ಅಥವಾ ಮಾತನಾಡಿ ಏನು ಬೇಕಾದರೂ ಕೇಳಿ. ಮೊದಲು ಉತ್ತರ, ನಂತರ ಸಾಕ್ಷ್ಯ."),
+    lead: L("Interact with the FIR database using natural language in English or Kannada. Ask questions, request summaries, or trigger expert agents.",
+            "ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ ನೈಸರ್ಗಿಕ ಭಾಷೆಯನ್ನು ಬಳಸಿಕೊಂಡು FIR ಡೇಟಾಬೇಸ್‌ನೊಂದಿಗೆ ಸಂವಹನ ನಡೆಸಿ. ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳಿ, ಸಾರಾಂಶಗಳನ್ನು ವಿನಂತಿಸಿ ಅಥವಾ ತಜ್ಞ ಏಜೆಂಟ್‌ಗಳನ್ನು ಬಳಸಿ."),
     blocks: [
-      { h: L("Reading an answer", "ಉತ್ತರವನ್ನು ಓದುವುದು"), items: [
-        [L("Top line", "ಮೊದಲ ಸಾಲು"), L("The direct answer with the key number.", "ಮುಖ್ಯ ಸಂಖ್ಯೆಯೊಂದಿಗೆ ನೇರ ಉತ್ತರ.")],
-        [L("Direction", "ಪ್ರವೃತ್ತಿ"), L("UPWARD, DOWNWARD or STABLE against recent months.", "ಇತ್ತೀಚಿನ ತಿಂಗಳುಗಳಿಗೆ ಹೋಲಿಸಿದರೆ ಏರಿಕೆ, ಇಳಿಕೆ ಅಥವಾ ಸ್ಥಿರ.")],
-        [L("Evidence badge", "ಸಾಕ್ಷ್ಯ ಬ್ಯಾಡ್ಜ್"), L("One letter - K, D, I or U - for how the answer is known. See below.", "ಉತ್ತರ ಹೇಗೆ ತಿಳಿದಿದೆ ಎಂಬುದಕ್ಕೆ ಒಂದು ಅಕ್ಷರ - K, D, I ಅಥವಾ U. ಕೆಳಗೆ ನೋಡಿ.")],
-        [L("Thought for …", "ಯೋಚಿಸಿದ ಸಮಯ"), L("How long it took. Click it to see every step.", "ಉತ್ತರಕ್ಕೆ ತೆಗೆದುಕೊಂಡ ಸಮಯ. ಪ್ರತಿ ಹಂತ ನೋಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+      { h: L("Reading Responses", "ಪ್ರತ್ಯುತ್ತರಗಳನ್ನು ಅರ್ಥೈಸಿಕೊಳ್ಳುವುದು"), items: [
+        [L("The Bottom Line First", "ಮೊದಲಿಗೆ ನೇರ ಉತ್ತರ"), L("Antar provides the direct answer immediately, followed by the supporting evidence and reasoning.", "ಅಂತರ ತಕ್ಷಣವೇ ನೇರ ಉತ್ತರವನ್ನು ನೀಡುತ್ತದೆ, ಅದರ ನಂತರ ಪೂರಕ ಸಾಕ್ಷ್ಯ ಮತ್ತು ತಾರ್ಕಿಕ ವಿವರಣೆಯನ್ನು ನೀಡುತ್ತದೆ.")],
+        [L("Source Citations", "ಮೂಲ ಉಲ್ಲೇಖಗಳು"), L("Every factual claim is backed by specific FIR record numbers. Click them to view the original case file.", "ಪ್ರತಿಯೊಂದು ವಾಸ್ತವಿಕ ಹೇಳಿಕೆಯು ನಿರ್ದಿಷ್ಟ FIR ದಾಖಲೆ ಸಂಖ್ಯೆಗಳಿಂದ ಬೆಂಬಲಿತವಾಗಿದೆ. ಮೂಲ ಪ್ರಕರಣದ ಫೈಲ್ ಅನ್ನು ವೀಕ್ಷಿಸಲು ಅವುಗಳ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+        [L("Evidence Badges (K-D-I)", "ಸಾಕ್ಷ್ಯ ಬ್ಯಾಡ್ಜ್‌ಗಳು (K-D-I)"), L("Answers are strictly tagged: K (Known fact from FIR), D (Derived calculation), or I (Inferred/Prediction).", "ಉತ್ತರಗಳನ್ನು ಕಟ್ಟುನಿಟ್ಟಾಗಿ ಟ್ಯಾಗ್ ಮಾಡಲಾಗಿದೆ: K (FIR ನಿಂದ ತಿಳಿದಿರುವ ವಾಸ್ತವ), D (ಪಡೆದ ಲೆಕ್ಕಾಚಾರ), ಅಥವಾ I (ಊಹಿಸಲಾದ/ಮುನ್ಸೂಚನೆ).")],
       ] },
-      // The four evidence classes (ICD 203). This is the single most important thing an
-      // officer must be able to read off an answer: what is record, and what is judgment.
-      { h: L("What the badge means (K · D · I · U)", "ಬ್ಯಾಡ್ಜ್ ಅರ್ಥ (K · D · I · U)"), items: [
-        [L("K - Known", "K - ತಿಳಿದಿರುವುದು"), L("Read straight from a record. \"FIR 2023-BLR-04412 was registered on 12 March.\" Check it in Evidence.",
-                                                  "ನೇರವಾಗಿ ದಾಖಲೆಯಿಂದ ಓದಿದ್ದು. \"FIR 2023-BLR-04412 ಮಾರ್ಚ್ 12 ರಂದು ದಾಖಲಾಗಿದೆ.\" ಸಾಕ್ಷ್ಯದಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.")],
-        [L("D - Derived", "D - ಗಣಿಸಿದ್ದು"), L("Counted or calculated from records - totals, shares, trends. The arithmetic is shown, not guessed.",
-                                                  "ದಾಖಲೆಗಳಿಂದ ಎಣಿಸಿದ್ದು ಅಥವಾ ಲೆಕ್ಕ ಹಾಕಿದ್ದು - ಒಟ್ಟು, ಪಾಲು, ಪ್ರವೃತ್ತಿ. ಲೆಕ್ಕಾಚಾರ ತೋರಿಸಲಾಗಿದೆ, ಊಹೆಯಲ್ಲ.")],
-        [L("I - Inferred", "I - ಊಹಿಸಿದ್ದು"), L("A judgment with its basis and its confidence - a forecast, a link, a risk. Treat as a lead, not a fact.",
-                                                  "ಆಧಾರ ಮತ್ತು ವಿಶ್ವಾಸದೊಂದಿಗೆ ತೀರ್ಮಾನ - ಮುನ್ಸೂಚನೆ, ಕೊಂಡಿ, ಅಪಾಯ. ಸತ್ಯವಲ್ಲ, ಸುಳಿವಾಗಿ ಪರಿಗಣಿಸಿ.")],
-        [L("U - Unknown", "U - ಗೊತ್ತಿಲ್ಲ"), L("The record does not say. Antar names the gap instead of filling it.",
-                                                  "ದಾಖಲೆಯಲ್ಲಿ ಇಲ್ಲ. ಅಂತರ್ ಅದನ್ನು ತುಂಬದೆ, ಕೊರತೆಯನ್ನು ಹೇಳುತ್ತದೆ.")],
+      { h: L("Core Agent Commands", "ಮುಖ್ಯ ಏಜೆಂಟ್ ಆಜ್ಞೆಗಳು"), items: [
+        [L("/query", "/query"), L("Forces a strict structural search of the database (e.g. '/query how many thefts in Koramangala').", "ಡೇಟಾಬೇಸ್‌ನ ಕಟ್ಟುನಿಟ್ಟಾದ ರಚನಾತ್ಮಕ ಹುಡುಕಾಟವನ್ನು ಒತ್ತಾಯಿಸುತ್ತದೆ (ಉದಾ. '/query ಕೋರಮಂಗಲದಲ್ಲಿ ಎಷ್ಟು ಕಳ್ಳತನಗಳಿವೆ').")],
+        [L("/connect", "/connect"), L("Invokes the Linkage agent to build suspect networks and uncover hidden syndicates across cases.", "ಶಂಕಿತ ನೆಟ್‌ವರ್ಕ್‌ಗಳನ್ನು ನಿರ್ಮಿಸಲು ಮತ್ತು ಪ್ರಕರಣಗಳಾದ್ಯಂತ ಗುಪ್ತ ಸಿಂಡಿಕೇಟ್‌ಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸಲು ಲಿಂಕೇಜ್ ಏಜೆಂಟ್ ಅನ್ನು ಕರೆಯುತ್ತದೆ.")],
+        [L("/anticipate", "/anticipate"), L("Triggers the Forecast engine to run risk models on a specific zone or crime type.", "ನಿರ್ದಿಷ್ಟ ವಲಯ ಅಥವಾ ಅಪರಾಧದ ಪ್ರಕಾರದಲ್ಲಿ ಅಪಾಯದ ಮಾದರಿಗಳನ್ನು ಚಲಾಯಿಸಲು ಮುನ್ಸೂಚನೆ ಎಂಜಿನ್ ಅನ್ನು ಪ್ರಚೋದಿಸುತ್ತದೆ.")],
+        [L("/osint", "/osint"), L("Scans open web sources for external intelligence (always explicitly flagged as UNVERIFIED).", "ಬಾಹ್ಯ ಗುಪ್ತಚರಕ್ಕಾಗಿ ಮುಕ್ತ ವೆಬ್ ಮೂಲಗಳನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡುತ್ತದೆ (ಯಾವಾಗಲೂ UNVERIFIED ಎಂದು ಸ್ಪಷ್ಟವಾಗಿ ಫ್ಲ್ಯಾಗ್ ಮಾಡಲಾಗುತ್ತದೆ).")],
       ] },
-      { h: L("What Antar checks before answering", "ಉತ್ತರಿಸುವ ಮೊದಲು ಪರಿಶೀಲನೆ"), items: [
-        [L("Every number", "ಪ್ರತಿ ಸಂಖ್ಯೆ"), L("Must exist in the records behind the answer, or the sentence is dropped.", "ಉತ್ತರದ ಹಿಂದಿನ ದಾಖಲೆಗಳಲ್ಲಿ ಇರಬೇಕು, ಇಲ್ಲದಿದ್ದರೆ ವಾಕ್ಯ ತೆಗೆಯಲಾಗುತ್ತದೆ.")],
-        [L("Every FIR id", "ಪ್ರತಿ FIR ಸಂಖ್ಯೆ"), L("Must appear in the cited rows - no invented case numbers or names.", "ಉಲ್ಲೇಖಿತ ಸಾಲುಗಳಲ್ಲಿ ಇರಬೇಕು - ಸೃಷ್ಟಿಸಿದ ಪ್ರಕರಣ ಸಂಖ್ಯೆ ಅಥವಾ ಹೆಸರು ಇಲ್ಲ.")],
-        [L("Nothing found", "ಏನೂ ಸಿಗದಿದ್ದರೆ"), L("You are told plainly. A related answer is never passed off as the one you asked for.", "ಸ್ಪಷ್ಟವಾಗಿ ತಿಳಿಸಲಾಗುತ್ತದೆ. ಸಂಬಂಧಿತ ಉತ್ತರವನ್ನು ನೀವು ಕೇಳಿದ್ದೆಂದು ತೋರಿಸುವುದಿಲ್ಲ.")],
-        [L("Records only", "ದಾಖಲೆಗಳು ಮಾತ್ರ"), L("Text inside a record is evidence, never an instruction Antar will follow.", "ದಾಖಲೆಯೊಳಗಿನ ಪಠ್ಯ ಸಾಕ್ಷ್ಯ, ಅಂತರ್ ಪಾಲಿಸುವ ಸೂಚನೆಯಲ್ಲ.")],
+      { h: L("Interaction Controls", "ಸಂವಹನ ನಿಯಂತ್ರಣಗಳು"), items: [
+        [L("Voice Input (Mic)", "ಧ್ವನಿ ಇನ್‌ಪುಟ್ (ಮೈಕ್)"), L("Speak your query directly. The system automatically transcribes English and Kannada.", "ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ನೇರವಾಗಿ ಮಾತನಾಡಿ. ಸಿಸ್ಟಮ್ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಇಂಗ್ಲಿಷ್ ಮತ್ತು ಕನ್ನಡವನ್ನು ಲಿಪ್ಯಂತರ ಮಾಡುತ್ತದೆ.")],
+        [L("Audio Playback", "ಆಡಿಯೋ ಪ್ಲೇಬ್ಯಾಕ್"), L("Click the listen icon to have Antar read the intelligence brief aloud.", "ಅಂತರ ಇಂಟೆಲಿಜೆನ್ಸ್ ಬ್ರೀಫ್ ಅನ್ನು ಗಟ್ಟಿಯಾಗಿ ಓದುವುದನ್ನು ಕೇಳಲು ಆಲಿಸಿ ಐಕಾನ್ ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+        [L("Export to PDF", "PDF ಗೆ ರಫ್ತು ಮಾಡಿ"), L("Download the entire session as a tamper-evident, audit-ready PDF report for case files.", "ಪ್ರಕರಣದ ಫೈಲ್‌ಗಳಿಗಾಗಿ ಸಂಪೂರ್ಣ ಸೆಶನ್ ಅನ್ನು ಟ್ಯಾಂಪರ್-ಎವಿಡೆಂಟ್, ಆಡಿಟ್-ರೆಡಿ PDF ವರದಿಯಾಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.")],
       ] },
-      { h: L("Questions offered to you", "ನಿಮಗೆ ನೀಡಲಾದ ಪ್ರಶ್ನೆಗಳು"), items: [
-        [L("Next", "ಮುಂದೆ"), L("The single most useful step after this answer.", "ಈ ಉತ್ತರದ ನಂತರದ ಅತ್ಯಂತ ಉಪಯುಕ್ತ ಹೆಜ್ಜೆ.")],
-        [L("Related", "ಸಂಬಂಧಿತ"), L("Checked against the database first - each one has data behind it.", "ಮೊದಲು ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಪರಿಶೀಲಿಸಲಾಗಿದೆ - ಪ್ರತಿಯೊಂದಕ್ಕೂ ಮಾಹಿತಿ ಇದೆ.")],
-        [L("For your role", "ನಿಮ್ಮ ಪಾತ್ರಕ್ಕೆ"), L("Chosen for the work you do - operations or supervising approval.", "ನೀವು ಮಾಡುವ ಕೆಲಸಕ್ಕೆ ಆಯ್ಕೆ - ಕಾರ್ಯಾಚರಣೆ ಅಥವಾ ಮೇಲ್ವಿಚಾರಣೆ.")],
-        [L(" / ", " / "), L("Rating an answer teaches Antar: poor ones go to a review queue, good ones guide what is suggested next.",
-                                     "ಉತ್ತರಕ್ಕೆ ರೇಟಿಂಗ್ ನೀಡಿದರೆ ಅಂತರ್ ಕಲಿಯುತ್ತದೆ: ಕಳಪೆ ಉತ್ತರ ಪರಿಶೀಲನೆಗೆ, ಉತ್ತಮವಾದವು ಮುಂದಿನ ಸಲಹೆಗಳಿಗೆ ದಾರಿ.")],
-      ] },
-      { h: L("Controls", "ನಿಯಂತ್ರಣಗಳು"), items: [
-        [L("Mic", "ಮೈಕ್"), L("Speak your question in English or Kannada.", "ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ ಪ್ರಶ್ನೆಯನ್ನು ಹೇಳಿ.")],
-        [L("Listen", "ಆಲಿಸಿ"), L("Hear the answer read aloud.", "ಉತ್ತರವನ್ನು ಗಟ್ಟಿಯಾಗಿ ಕೇಳಿ.")],
-        [L("Export", "ರಫ್ತು"), L("Download a sealed, audit-ready PDF of the session.", "ಸೆಷನ್‌ನ ಮುದ್ರೆಯುಳ್ಳ, ಆಡಿಟ್-ಸಿದ್ಧ PDF ಪಡೆಯಿರಿ.")],
-        [L("Expert", "ತಜ್ಞ"), L("Watch the reasoning appear step by step.", "ತರ್ಕವನ್ನು ಹಂತ ಹಂತವಾಗಿ ನೋಡಿ.")],
-      ] },
-      { h: L("Shortcuts", "ಶಾರ್ಟ್‌ಕಟ್‌ಗಳು"), items: [
-        [L("/think", "/think"), L("Show the full reasoning trail.", "ಸಂಪೂರ್ಣ ತರ್ಕದ ಹಾದಿ ತೋರಿಸಿ.")],
-        [L("/connect", "/connect"), L("Bring in the network and profile agents.", "ಜಾಲ ಮತ್ತು ಪ್ರೊಫೈಲ್ ಏಜೆಂಟ್‌ಗಳನ್ನು ಸೇರಿಸಿ.")],
-        [L("/anticipate", "/anticipate"), L("Bring in the forecast and map agents.", "ಮುನ್ಸೂಚನೆ ಮತ್ತು ನಕ್ಷೆ ಏಜೆಂಟ್‌ಗಳನ್ನು ಸೇರಿಸಿ.")],
-        [L("why?", "ಯಾಕೆ?"), L("Explain how the last answer was reached.", "ಹಿಂದಿನ ಉತ್ತರ ಹೇಗೆ ಬಂತು ಎಂದು ವಿವರಿಸಿ.")],
+      { h: L("Trust & Verification", "ನಂಬಿಕೆ ಮತ್ತು ಪರಿಶೀಲನೆ"), items: [
+        [L("Zero Hallucination Guard", "ಶೂನ್ಯ ಭ್ರಮೆ ಕಾವಲು"), L("If no relevant FIR exists, Antar will explicitly state 'Nothing found' rather than guessing.", "ಯಾವುದೇ ಸಂಬಂಧಿತ FIR ಇಲ್ಲದಿದ್ದರೆ, ಊಹಿಸುವ ಬದಲು ಅಂತರ ಸ್ಪಷ್ಟವಾಗಿ 'ಏನೂ ಕಂಡುಬಂದಿಲ್ಲ' ಎಂದು ಹೇಳುತ್ತದೆ.")],
+        [L("Reasoning Trace", "ತಾರ್ಕಿಕ ಜಾಡು"), L("Click the 'Thought for X seconds' pill to audit the exact steps the AI took to gather your answer.", "ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಸಂಗ್ರಹಿಸಲು AI ತೆಗೆದುಕೊಂಡ ನಿಖರವಾದ ಹಂತಗಳನ್ನು ಆಡಿಟ್ ಮಾಡಲು 'X ಸೆಕೆಂಡುಗಳ ಕಾಲ ಯೋಚಿಸಿದೆ' ಪಿಲ್ ಅನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ.")],
       ] },
     ],
     examples: {
-      en: ["most crimes?", "how many murders in Bengaluru City?", "which UPI IDs are used in more than one district",
-           "cases for accused ACC-KA-500777", "conviction rate by district in 2023", "top beats for theft in Bengaluru City"],
-      kn: ["ಅತಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ಎಲ್ಲಿ?", "ಹಲವು ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಬಳಸಿದ UPI ಐಡಿಗಳು", "ಜಿಲ್ಲಾವಾರು ಶಿಕ್ಷೆ ಪ್ರಮಾಣ",
-           "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು"],
-    },
-  },
-
-  expert: {
-    title: L("Expert Workspace Guide", "ತಜ್ಞ ಕಾರ್ಯಕ್ಷೇತ್ರ ಮಾರ್ಗದರ್ಶಿ"),
-    lead: L("Expert mode runs deeper multi-agent investigations and keeps a working dossier beside the chat.",
-            "ತಜ್ಞ ಮೋಡ್ ಆಳವಾದ ಬಹು-ಏಜೆಂಟ್ ತನಿಖೆ ನಡೆಸುತ್ತದೆ ಮತ್ತು ಚಾಟ್ ಪಕ್ಕದಲ್ಲಿ ಡಾಸಿಯರ್ ಇರಿಸುತ್ತದೆ."),
-    blocks: [
-      { h: L("The Brief", "ಸಾರಾಂಶ"), items: [
-        [L("Bottom line", "ಮುಖ್ಯ ತೀರ್ಮಾನ"), L("The answer, with its K/D/I/U badge.", "K/D/I/U ಬ್ಯಾಡ್ಜ್‌ನೊಂದಿಗೆ ಉತ್ತರ.")],
-        [L("Sources & method", "ಆಧಾರ ಮತ್ತು ವಿಧಾನ"), L("The method that produced the answer, how many records it read, the FIRs cited, and its integrity hash.",
-                                                         "ಉತ್ತರ ನೀಡಿದ ವಿಧಾನ, ಓದಿದ ದಾಖಲೆಗಳು, ಉಲ್ಲೇಖಿತ FIR ಮತ್ತು ಸಮಗ್ರತಾ ಹ್ಯಾಶ್.")],
-        [L("Insights", "ಒಳನೋಟಗಳು"), L("Concentration and gaps calculated from the table (D) - arithmetic you can check, never generated.",
-                                        "ಕೋಷ್ಟಕದಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ ಕೇಂದ್ರೀಕರಣ ಮತ್ತು ಅಂತರ (D) - ಪರಿಶೀಲಿಸಬಹುದಾದ ಲೆಕ್ಕ, ಉತ್ಪಾದಿಸಿದ್ದಲ್ಲ.")],
-      ] },
-      { h: L("Background tasks", "ಹಿನ್ನೆಲೆ ಕಾರ್ಯಗಳು"), items: [
-        [L("Choose, then Run", "ಆಯ್ಕೆ, ನಂತರ ಚಲಾಯಿಸಿ"), L("OSINT search, AI/ML forecast, deep research, network, pattern, threat or a custom task. Nothing starts until you click Run.",
-                                                         "OSINT, AI/ML ಮುನ್ಸೂಚನೆ, ಆಳವಾದ ಸಂಶೋಧನೆ, ಜಾಲ, ಮಾದರಿ, ಬೆದರಿಕೆ ಅಥವಾ ಕಸ್ಟಮ್. ಚಲಾಯಿಸಿ ಒತ್ತುವವರೆಗೆ ಏನೂ ಆರಂಭವಾಗುವುದಿಲ್ಲ.")],
-        [L("Trust level", "ನಂಬಿಕೆಯ ಮಟ್ಟ"), L("Each task shows its class: OSINT and forecasts are I - leads and ranges, not facts.",
-                                             "ಪ್ರತಿ ಕಾರ್ಯ ತನ್ನ ವರ್ಗ ತೋರಿಸುತ್ತದೆ: OSINT ಮತ್ತು ಮುನ್ಸೂಚನೆ I - ಸುಳಿವು ಮತ್ತು ವ್ಯಾಪ್ತಿ, ಸತ್ಯವಲ್ಲ.")],
-        [L("Launch", "ಪ್ರಾರಂಭಿಸಿ"), L("Start a heavy analysis without blocking the chat.", "ಚಾಟ್ ನಿಲ್ಲಿಸದೆ ಭಾರೀ ವಿಶ್ಲೇಷಣೆ ಆರಂಭಿಸಿ.")],
-        [L("Results", "ಫಲಿತಾಂಶ"), L("Pull finished analysis into the workspace.", "ಮುಗಿದ ವಿಶ್ಲೇಷಣೆಯನ್ನು ಕಾರ್ಯಕ್ಷೇತ್ರಕ್ಕೆ ತನ್ನಿ.")],
-        [L("Stop", "ನಿಲ್ಲಿಸಿ"), L("Cancel a job you no longer need.", "ಅಗತ್ಯವಿಲ್ಲದ ಕಾರ್ಯವನ್ನು ರದ್ದುಗೊಳಿಸಿ.")],
-      ] },
-      { h: L("Dossier", "ಡಾಸಿಯರ್"), items: [
-        [L("Notes", "ಟಿಪ್ಪಣಿಗಳು"), L("The right panel is your live report. Add notes and evidence as you go.", "ಬಲ ಪ್ಯಾನೆಲ್ ನಿಮ್ಮ ಲೈವ್ ವರದಿ. ಟಿಪ್ಪಣಿ ಮತ್ತು ಸಾಕ್ಷ್ಯ ಸೇರಿಸುತ್ತಾ ಹೋಗಿ.")],
-        [L("Brief", "ವರದಿ"), L("Compile the final intelligence brief from what you collected.", "ಸಂಗ್ರಹಿಸಿದ ಮಾಹಿತಿಯಿಂದ ಅಂತಿಮ ಗುಪ್ತಚರ ವರದಿ ತಯಾರಿಸಿ.")],
-      ] },
-      { h: L("Agents", "ಏಜೆಂಟ್‌ಗಳು"), items: [
-        [L("Specialists", "ತಜ್ಞರು"), L("Network, profile, forecast, map and alert agents work on the same question.", "ಜಾಲ, ಪ್ರೊಫೈಲ್, ಮುನ್ಸೂಚನೆ, ನಕ್ಷೆ ಮತ್ತು ಎಚ್ಚರಿಕೆ ಏಜೆಂಟ್‌ಗಳು ಒಂದೇ ಪ್ರಶ್ನೆಯ ಮೇಲೆ ಕೆಲಸ ಮಾಡುತ್ತವೆ.")],
-        [L("Live steps", "ಲೈವ್ ಹಂತಗಳು"), L("Each step appears as it runs, so you can see what was checked.", "ಪ್ರತಿ ಹಂತ ನಡೆಯುತ್ತಿದ್ದಂತೆ ಕಾಣುತ್ತದೆ, ಏನು ಪರಿಶೀಲಿಸಲಾಯಿತು ಎಂದು ತಿಳಿಯುತ್ತದೆ.")],
-      ] },
-    ],
+      en: ["how many vehicle thefts in Bengaluru City?", "show me the suspect network for FIR 2023-BLR-04412", "what is the forecast for chain snatching next week?"],
+      kn: ["ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಎಷ್ಟು ವಾಹನ ಕಳ್ಳತನಗಳಾಗಿವೆ?", "FIR 2023-BLR-04412 ಗಾಗಿ ಶಂಕಿತ ನೆಟ್‌ವರ್ಕ್ ಅನ್ನು ನನಗೆ ತೋರಿಸಿ", "ಮುಂದಿನ ವಾರ ಚೈನ್ ಸ್ನ್ಯಾಚಿಂಗ್‌ನ ಮುನ್ಸೂಚನೆ ಏನು?"]
+    }
   },
 
   predict: {
