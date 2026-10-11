@@ -10,14 +10,20 @@ export async function fetchAPI(endpoint, options = {}) {
   let role = ADMIN_ROLE;
   let officer = ADMIN_ID;
   
+  let token = null;
+
   if (typeof window !== "undefined") {
     try {
       const session = JSON.parse(sessionStorage.getItem("antar_session") || "{}");
       if (session.role) role = session.role;
       if (session.officer) officer = session.officer;
+      if (session.token) token = session.token;
     } catch {}
   }
   
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
   if (!headers.has("X-Role")) {
     headers.set("X-Role", role);
   }

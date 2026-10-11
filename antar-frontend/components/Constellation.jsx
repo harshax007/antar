@@ -33,7 +33,7 @@ function bubbleRadius(ms, cx, cy) {
   return d.length ? d[Math.min(d.length - 1, Math.floor(d.length * 0.85))] : 0;
 }
 
-export default function Constellation({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus }) {
+export default function Constellation({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
   const containerRef = useRef(null);
   const fgRef = useRef(null);
   const focusRef = useRef(null);     // Set of node ids in the focused group
@@ -393,6 +393,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
       };
       fg.graphData(dataRef.current);
       buildMeta(constel);
+      onReady?.();
       // 130px padding keeps the category labels on the rim clear of the tool column.
       setTimeout(() => fg.zoomToFit(600, 130), 900);
     });
@@ -423,6 +424,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
     fg.d3Force("charge")?.strength(groupByRef.current === "type" ? -14 : -80);
     fg.graphData(dataRef.current);
     buildMeta(constel);
+    onReady?.();
     setTimeout(() => fg.zoomToFit(600, 130), 900);
   }, [constel]); // eslint-disable-line
 

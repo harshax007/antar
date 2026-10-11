@@ -469,7 +469,17 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     return () => window.removeEventListener("keydown", onKey);
   }, [thinkOpen]);
 
-  const loading = !recs;
+  const [graphReady, setGraphReady] = useState(false);
+  const handleGraphReady = () => setGraphReady(true);
+  const isReady = !!recs && graphReady;
+
+  // Fallback safety: guarantee curtain lift quickly once records are parsed
+  useEffect(() => {
+    if (!recs) { setGraphReady(false); return; }
+    const t = setTimeout(() => setGraphReady(true), 800);
+    return () => clearTimeout(t);
+  }, [recs]);
+
   // Right side of the Case-activity bar. It used to fall back to "all activity · 3,360
   // events" - a count across EVERY year, printed beside a single calendar year, so it
   // read as that year's total. It now only speaks when there is something specific to say.
@@ -517,7 +527,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   return (
     <div className="bsx-stage">
       <AgentMascot controlRef={controlRef} apiRef={consoleRef} focus={focus} onThink={runThink} kn={kn}
-                   agentsOn={!loading && view === "net"} consoleOn={view === "net"} suggestions={suggestions}
+                   agentsOn={isReady && view === "net"} consoleOn={view === "net"} suggestions={suggestions}
                    flying={think?.phase === "run"} flyAgent={think?.phase === "run" ? AGENTS[Math.min(think.at, AGENTS.length - 1)].id : null} />
       <div className="bsx-orbits" aria-hidden="true"><i /><i /></div>
       {filterNote && (
@@ -526,21 +536,41 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           <span>{filterNote.n.toLocaleString()} {kn ? "FIR" : "FIRs"}</span>
         </div>
       )}
-      {loading && <BrainLoader kn={kn} />}
-      
 
-      {!loading && (
+      {/* Smooth Loading Curtain over the stage */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "#03050c",
+          zIndex: 25,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "opacity 0.4s ease",
+          opacity: isReady ? 0 : 1,
+          pointerEvents: isReady ? "none" : "auto",
+        }}
+        aria-hidden={isReady}
+      >
+        <BrainLoader kn={kn} />
+      </div>
+
+      {recs && (
         <div className="bsx-netwrap" style={{ visibility: view === "graph" ? "hidden" : "visible" }}>
           {dim3d ? (
             <Constellation3D graph={graph} groupBy={groupBy} active={active} kinds={kinds} controlRef={controlRef}
-                             onFocus={setFocus} onStats={setOvStats} onAgent={runThink} focusId={focusId} legendFocus={legendFocus} />
+                             onFocus={setFocus} onStats={setOvStats} onAgent={runThink} focusId={focusId} legendFocus={legendFocus}
+                             onReady={handleGraphReady} />
           ) : (
             <Constellation graph={graph} groupBy={groupBy} active={active} kinds={kinds} controlRef={controlRef}
-                           onFocus={setFocus} onStats={setOvStats} onAgent={runThink} focusId={focusId} legendFocus={legendFocus} />
+                           onFocus={setFocus} onStats={setOvStats} onAgent={runThink} focusId={focusId} legendFocus={legendFocus}
+                           onReady={handleGraphReady} />
           )}
         </div>
       )}
-      {!loading && view === "graph" && <CrimeGraph recs={recs} kn={kn} />}
+      {recs && view === "graph" && <CrimeGraph recs={recs} kn={kn} />}
 
       {/* ── Top-Left · tools column (kept short so it never meets the calendar) ── */}
       <div className="bsx-tools">

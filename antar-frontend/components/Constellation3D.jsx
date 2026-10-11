@@ -106,7 +106,7 @@ function makeLabelSprite(THREE, text, sub, color) {
   return sprite;
 }
 
-export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId }) {
+export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
   const containerRef = useRef(null);
   const fgRef = useRef(null);
   const threeRef = useRef(null);
@@ -308,23 +308,28 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
 
       fg.graphData(dataRef.current);
       fgRef.current = fg;
+      onReady?.();
       
-      if (groupByRef.current === "type") {
-        fg.cameraPosition({ z: 3500 }, { x: 0, y: 0, z: 0 }, 0);
-        setTimeout(() => fg.cameraPosition({ z: 750 }, null, 9000), 100);
-      } else {
-        fg.cameraPosition({ z: 980 }, { x: 0, y: 0, z: 0 }, 0);
-      }
-      setTimeout(() => {
+      // Automatic smooth zoom-in animation:
+      // Starts automatically by itself from entry distance (z: 1800) into optimal framing (z: 820)
+      fg.cameraPosition({ x: 0, y: 0, z: 1800 }, { x: 0, y: 0, z: 0 }, 0);
+      
+      const zoomTimer = setTimeout(() => {
+        fg.cameraPosition({ x: 0, y: 0, z: 820 }, { x: 0, y: 0, z: 0 }, 1400);
+      }, 100);
+
+      const rotateTimer = setTimeout(() => {
         if (fg.controls) {
           const controls = fg.controls();
           controls.autoRotate = true;
-          controls.autoRotateSpeed = 0.4;
+          controls.autoRotateSpeed = 0.45;
         }
-      }, 100);
+      }, 1600);
     });
     return () => {
       destroyed = true;
+      clearTimeout(zoomTimer);
+      clearTimeout(rotateTimer);
       if (flightRef.current) cancelAnimationFrame(flightRef.current);
       try { fgRef.current?._destructor?.(); } catch {}
       fgRef.current = null;
@@ -344,11 +349,11 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     };
     fg.graphData(dataRef.current);
     refreshVisuals();
+    onReady?.();
     if (groupByRef.current === "type") {
-      fg.cameraPosition({ z: 3500 }, { x: 0, y: 0, z: 0 }, 0);
-      setTimeout(() => fg.cameraPosition({ z: 750 }, null, 9000), 100);
+      fg.cameraPosition({ x: 0, y: 0, z: 820 }, { x: 0, y: 0, z: 0 }, 900);
     } else {
-      setTimeout(() => fg.zoomToFit(700, 90), 1100);
+      setTimeout(() => fg.zoomToFit(700, 90), 800);
     }
   }, [constel]); // eslint-disable-line
 

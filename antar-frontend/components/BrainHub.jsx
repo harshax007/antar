@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { parseCSV, fromRecords, prepare } from "@/lib/crimeGraph";
 import { getBrainCache, setBrainCache } from "@/lib/brainCache";
+import { fetchAPI } from "@/lib/api";
 const DataOverview = dynamic(() => import("@/components/DataOverview"), { ssr: false });
 import { useLang } from "@/components/Providers";
 import { asset } from "@/lib/assets";
@@ -38,17 +39,16 @@ export default function BrainHub() {
   useEffect(() => {
     if (isCase) return;
     let alive = true;
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-    
+
     // Intelligent Data (the constellation) = the curated, densely-linked world from
     // intelligent.db (3,500 rows) served by /api/dataset/graph. Falls back to the
     // bundled fir_synthetic.csv if the API is unreachable (e.g. static-only deploy).
     getBrainCache().then((cached) => {
       if (cached && alive) setRecs(prepare(cached));
-      
-      fetch(`${API}/api/dataset/graph?limit=3500`)
-        .then((r) => r.ok ? r.json() : Promise.reject())
+
+      fetchAPI("/api/dataset/graph?limit=3500")
         .then((d) => {
+          if (!d?.rows) return;
           const recsRaw = fromRecords(d.rows);
           setBrainCache(recsRaw);
           if (alive) setRecs(prepare(recsRaw));
