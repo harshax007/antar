@@ -31,3 +31,10 @@ data_feedback.jsonl
 main.db.gz.prev
 graphify-out
 graphify-out/**
+auth_users.json
+auth_local_credentials.txt
+data
+data/**
+gstack
+gstack/**
+run_update*

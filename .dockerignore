@@ -81,3 +81,19 @@ catalyst-debug.log
 .gitignore
 .DS_Store
 *.swp
+
+# -- Not part of the running service --------------------------------------------------
+# A second copy of the registry and its vectors (1.5 GB). The image ships main.db.gz only.
+data/
+# Officer accounts and local sign-in notes. Set ANTAR_USERS in the Catalyst console
+# instead - nothing in the image should be a credential.
+auth_users.json
+auth_local_credentials.txt
+# One-off patch scripts, tool folders and their output.
+run_update*
+update_guide.py
+fix_*.py
+find_emojis.js
+out.txt
+gstack/
+graphify-out/
