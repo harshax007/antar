@@ -857,7 +857,7 @@ def learnings() -> dict:
 # The whole command set. The terminal accepts nothing else; an unknown word is answered
 # with the nearest of these, never passed to a model.
 COMMANDS = [
-    {"cmd": "help", "does": "List these commands."},
+    {"cmd": "help [command]", "does": "List these commands, or show examples for one."},
     {"cmd": "agents", "does": "List the agents and what each one needs."},
     {"cmd": "about <agent>", "does": "How that agent works a problem, and what it refuses."},
     {"cmd": "select <id>", "does": "Pick a record by accused id, e.g. select S0041."},
@@ -874,6 +874,7 @@ COMMANDS = [
     {"cmd": "identity", "does": "Who Antar is, its laws and how it thinks."},
     {"cmd": "evolution", "does": "How Antar has changed with use: ratings, graded forecasts, challenged hypotheses."},
     {"cmd": "learnings", "does": "What the records show today: FIRs dated today, movers, alerts, ratings."},
+    {"cmd": "history", "does": "The commands typed this session."},
     {"cmd": "clear", "does": "Clear the terminal."},
 ]
 

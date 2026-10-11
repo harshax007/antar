@@ -47,7 +47,20 @@ const ICON = {
   pattern: "M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z",
 };
 const ORDER = ["network", "profile", "research", "advocate", "recall", "linkage", "forecast", "geo", "pattern"];
-const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "learnings", "clear"];
+const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "learnings", "history", "clear"];
+// Worked examples per command, for `help <command>` and for the hint under the prompt.
+const USAGE = {
+  run: ["run network S0041", "run profile ACC-KA-500777", "run geo Bengaluru City", "run forecast Bellanduru PS", "run linkage upi:name@bank", "run network   (uses the selected record)"],
+  about: ["about advocate", "about forecast"],
+  select: ["select S0041", "select ACC-KA-500777"],
+  memory: ["memory", "memory network"],
+  auto: ["auto off", "auto on"],
+  notify: ["notify on", "notify off"],
+  help: ["help", "help run"],
+  history: ["history"],
+};
+// Which agents a record of each kind can be handed to, in the order worth trying.
+const FOR_KIND = { accused: ["network", "profile", "research", "linkage"], station: ["forecast"], district: ["geo"], crime_group: ["pattern"] };
 const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 
 // Slow enough to follow with the eye and read a name tag on the move.
@@ -244,7 +257,28 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     const [word, ...rest] = text.split(/\s+/);
     const cmd = word.toLowerCase(), arg = rest.join(" ");
     if (cmd === "clear") { setLines([]); return; }
-    if (cmd === "help") { say({ kind: "list", title: "Commands", rows: (pack?.commands || []).map((c) => [c.cmd, c.does]) }); return; }
+    if (cmd === "help") {
+      const all = pack?.commands || [];
+      const want = arg.toLowerCase().split(/\s+/)[0];
+      if (!want) {
+        say({ kind: "list", title: "Commands", lead: "help <command> shows examples. Tab completes; ↑ and ↓ walk your history.",
+              rows: all.map((c) => [c.cmd, c.does]) });
+        return;
+      }
+      const one = all.find((c) => c.cmd.split(" ")[0] === want);
+      if (!one) { const g = nearest(want, WORDS); say({ kind: "err", text: `There is no command '${want}'.${g ? ` Did you mean ${g}?` : ""}` }); return; }
+      say({ kind: "list", title: one.cmd, lead: one.does, rows: [
+        ...(USAGE[want] || [want]).map((x) => ["Example", x]),
+        ...(want === "run" || want === "about" ? agents.map((a) => [a.id, `needs a ${a.needs}`]) : []),
+      ] });
+      return;
+    }
+    if (cmd === "history") {
+      const items = history.current.items;
+      say(items.length ? { kind: "list", title: "History", rows: items.slice(-20).map((x, i) => [String(items.length - Math.min(20, items.length) + i + 1), x]) }
+                       : { kind: "sys", text: "Nothing has been typed yet." });
+      return;
+    }
     if (cmd === "agents") { say({ kind: "list", title: "Agents", rows: agents.map((a) => [a.id, `${a.purpose} Needs a ${a.needs}.`]) }); return; }
     if (cmd === "identity") {
       if (!pack || pack.error) { say({ kind: "err", text: "Identity is not loaded. Restart the backend to load the console." }); return; }
@@ -372,8 +406,47 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     if (apiRef) apiRef.current = { run: (cmd) => { setOpen(true); setSmall(false); exec(cmd); } };
   });
 
+  // What the terminal offers under the prompt. While the officer types: the commands and
+  // agents that complete what is there. With the line empty: what makes sense NOW - the
+  // step the last result recommended, the agents that can take the selected record, or,
+  // with nothing selected, where to start.
+  function offers() {
+    const text = input.trimStart(), cmds = pack?.commands || [];
+    const does = (w) => cmds.find((c) => c.cmd.split(" ")[0] === w)?.does || "";
+    if (text) {
+      const parts = text.split(/\s+/), first = parts[0].toLowerCase();
+      if (parts.length === 1) return WORDS.filter((w) => w.startsWith(first) && w !== first).slice(0, 6).map((w) => ({ fill: `${w} `, show: w, note: does(w) }));
+      if (["run", "about", "memory"].includes(first) && parts.length === 2) {
+        return ORDER.filter((id) => id.startsWith(parts[1].toLowerCase()) && id !== parts[1].toLowerCase()).slice(0, 6)
+          .map((id) => ({ fill: `${first} ${id} `, show: `${first} ${id}`, note: card(id)?.purpose || "" }));
+      }
+      if (first === "help" && parts.length === 2) return WORDS.filter((w) => w.startsWith(parts[1].toLowerCase())).slice(0, 6).map((w) => ({ fill: `help ${w}`, show: `help ${w}`, note: does(w) }));
+      return [];
+    }
+    const out = [];
+    (lastRun.current?.next || []).filter((n) => /^run \w/.test(n)).slice(0, 2).forEach((n) => out.push({ run: n, show: n, note: "recommended by the last result" }));
+    if (target) {
+      const pl = target.payload;
+      const kind = typeof pl === "string" ? (/^(ACC-|S\d)/i.test(pl) ? "accused" : / PS$/i.test(pl) ? "station" : "district")
+        : pl.accused ? "accused" : pl.station ? "station" : pl.district ? "district" : "crime_group";
+      (FOR_KIND[kind] || []).forEach((id) => { if (!out.some((o) => o.show.startsWith(`run ${id}`))) out.push({ run: `run ${id}`, show: `run ${id}`, note: `on ${target.label}` }); });
+    } else {
+      out.push({ run: "learnings", show: "learnings", note: "what the records show today" },
+               { run: "agents", show: "agents", note: "who can do what" },
+               { run: "fastrun", show: "fastrun", note: "scan this view" });
+    }
+    if (!out.some((o) => o.show === "help")) out.push({ run: "help", show: "help", note: "every command" });
+    return out.slice(0, 5);
+  }
+
   function onKey(e) {
     const h = history.current;
+    // The keys a terminal answers to: Ctrl+L clears the screen, Ctrl+C or Esc drops the line.
+    if (e.ctrlKey && e.key.toLowerCase() === "l") { e.preventDefault(); setLines([]); return; }
+    if ((e.ctrlKey && e.key.toLowerCase() === "c" && !window.getSelection()?.toString()) || e.key === "Escape") {
+      if (input) { e.preventDefault(); say({ kind: "in", text: `${input}^C` }); setInput(""); }
+      return;
+    }
     if (e.key === "Enter") {
       if (input.trim()) { h.items.push(input.trim()); h.at = h.items.length; }
       exec(input); setInput("");
@@ -382,11 +455,9 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     } else if (e.key === "ArrowDown") {
       e.preventDefault(); h.at = Math.min(h.items.length, h.at + 1); setInput(h.items[h.at] || "");
     } else if (e.key === "Tab") {
-      e.preventDefault();
-      const parts = input.split(/\s+/);
-      const pool = parts.length === 1 ? WORDS : ["run", "about", "memory"].includes(parts[0]) && parts.length === 2 ? ORDER : [];
-      const hit = pool.find((p) => p.startsWith(parts[parts.length - 1].toLowerCase()));
-      if (hit) { parts[parts.length - 1] = hit; setInput(parts.join(" ") + " "); }
+      e.preventDefault();                            // Tab takes the first offer, as a shell would
+      const first = offers()[0];
+      if (first) setInput(first.fill || `${first.run} `);
     }
   }
 
@@ -752,15 +823,31 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
               <div ref={outRef} className="bt-out" onClick={() => { if (!window.getSelection()?.toString()) inRef.current?.focus(); }}>
                 {pack?.error && <p className="bt-err">The console backend did not answer. Restart the backend to load it.</p>}
                 {!lines.length && (
-                  <p className="bt-sys">Drag an agent onto a record, or type a command. Try <u onClick={() => exec("help")}>help</u> or <u onClick={() => exec("agents")}>agents</u>.</p>
+                  <p className="bt-sys">Antar brain terminal. Drag an agent onto a record, or type a command: the line under the prompt
+                    shows what fits right now. <u onClick={() => exec("help")}>help</u> lists everything, Tab completes, ↑ recalls.</p>
                 )}
                 {lines.map((l) => <Line key={l.id} l={l} onRun={exec} nameOf={nameOf} />)}
                 {busy.length > 0 && <p className="bt-sys bt-busy">{busy.map(nameOf).join(" and ")} {busy.length > 1 ? "are" : "is"} working…</p>}
               </div>
+              {(() => {
+                const list = offers();
+                if (!list.length) return null;
+                return (
+                  <div className="bt-offers" role="listbox" aria-label={input.trim() ? "Completions" : "Suggested commands"}>
+                    <em>{input.trim() ? "tab" : (kn ? "ಸಲಹೆ" : "try")}</em>
+                    {list.map((o) => (
+                      <button key={o.show} role="option" aria-selected="false" title={o.note}
+                              onClick={() => { if (o.run) { history.current.items.push(o.run); history.current.at = history.current.items.length; exec(o.run); setInput(""); } else setInput(o.fill); inRef.current?.focus(); }}>
+                        <b>{o.show}</b>{o.note && <span>{o.note}</span>}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
               <div className="bt-in">
-                <span>antar ›</span>
+                <span>antar@brain{target ? <i> [{target.label}]</i> : null} ›</span>
                 <input ref={inRef} autoFocus value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey}
-                       placeholder="run network S0041" spellCheck={false} autoComplete="off" aria-label="Command" />
+                       placeholder={target ? "run network" : "help"} spellCheck={false} autoComplete="off" autoCapitalize="off" aria-label="Command" />
               </div>
             </>
           )}
@@ -771,7 +858,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
 }
 
 function Line({ l, onRun, nameOf }) {
-  if (l.kind === "in") return <p className="bt-cmd"><span>›</span> {l.text}</p>;
+  if (l.kind === "in") return <p className="bt-cmd"><span>antar@brain ›</span> {l.text}</p>;
   if (l.kind === "sys") return <p className="bt-sys">{l.text}</p>;
   if (l.kind === "err") return <p className="bt-err">{l.text}</p>;
   if (l.kind === "list") {
@@ -933,6 +1020,17 @@ const CSS = `
 .bt-res footer span { font: 10.5px 'Inter', sans-serif; color: #94A3B8; }
 .bt-in { display: flex; align-items: center; gap: 7px; padding: 7px 11px; border-top: 1px solid rgba(255,255,255,.09); flex-shrink: 0; }
 .bt-in span { color: #22E6F0; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.bt-in span i { font-style: normal; font-weight: 500; color: #94A3B8; }
+.bt-in input { caret-color: #22E6F0; }
+/* What fits right now, or what completes the line: one row above the prompt. */
+.bt-offers { display: flex; align-items: center; gap: 6px; padding: 5px 11px; border-top: 1px solid rgba(255,255,255,.07); overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+.bt-offers::-webkit-scrollbar { display: none; }
+.bt-offers em { font: 600 9px 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .08em; text-transform: uppercase; color: #64748B; flex: none; }
+.bt-offers button { flex: none; display: inline-flex; align-items: baseline; gap: 7px; padding: 2px 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); cursor: pointer; }
+.bt-offers button:first-of-type { border-color: rgba(34,230,240,.4); }
+.bt-offers button:hover { border-color: #22E6F0; background: rgba(34,230,240,.08); }
+.bt-offers b { font: 500 11px 'JetBrains Mono', monospace; color: #E2E8F0; }
+.bt-offers span { font: 10.5px 'Inter', sans-serif; color: #64748B; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bt-in input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #fff; font: 12px 'JetBrains Mono', monospace; }
 @media (prefers-reduced-motion: reduce) { .bt-say, .bt-bug > i::before, .bt-bug > i::after, .bt-orbits ellipse, .bt-wires line, .bt-bug.hearing > i { animation: none; } }
 `;
