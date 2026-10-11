@@ -154,6 +154,7 @@ def semantic_recall(
     mmr_lambda: float = 0.7,
     terms: list[str] | None = None,
     use_hybrid: bool = True,
+    expand_with_llm: bool = False,
 ) -> list[dict]:
     """Three-stage Brain recall: Decompose/Hybrid (HNSW+BM25) → cross-encoder rerank → MMR diversification.
 
@@ -182,7 +183,12 @@ def semantic_recall(
             loop = asyncio.get_running_loop()
             sub_queries = [query_text] # fallback if already in an event loop without nesting capability
         except RuntimeError:
-            sub_queries = asyncio.run(decompose_query(query_text, use_llm=use_hybrid))
+            # Query expansion by the language model is opt-in. It used to run on every
+            # call, and the chat stream makes this call on every question: each answer
+            # waited 16-19 s for three rewordings of the question before it searched a
+            # curated index of a handful of rows. The answer itself had been ready in
+            # 0.1 s, and officers stopped the turn before it arrived.
+            sub_queries = asyncio.run(decompose_query(query_text, use_llm=use_hybrid and expand_with_llm))
 
         merged_candidates = {}
 

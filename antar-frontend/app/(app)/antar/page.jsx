@@ -15,7 +15,8 @@ import { WhisperMicButton, WhisperWaveform } from "@/components/WhisperMic";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { asset } from "@/lib/assets";
 import { openReport } from "@/lib/auth";
-import AgentStrip from "@/components/AgentStrip";
+import AgentStrip, { AGENTS as STRIP_AGENTS, LENS } from "@/components/AgentStrip";
+import { FACE as AGENT_FACE } from "@/components/WorkspaceAgents";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -586,6 +587,15 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
   }, [send]);
 
   const stepLabel = (s) => s.label || s.step || s.agent;
+  const StepAgent = ({ id }) => {
+    const face = AGENT_FACE[String(id || "").toLowerCase()];
+    return (
+      <span className="ag">
+        {face && <i className="wa-face" aria-hidden="true" style={{ backgroundImage: `url(/mascots/sm/${face}-directions.webp)` }} />}
+        {id}
+      </span>
+    );
+  };
   const liveSecs = ((now - (msg.ts || now)) / 1000).toFixed(1);
 
   if (msg.streaming) {
@@ -597,6 +607,11 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
         <div className="cx-think" aria-live="polite">
           <div className="cx-think-live">
             <span className="cx-spin" aria-hidden="true" />
+            <span className="cx-think-faces" aria-hidden="true">
+              {[...new Set(visible.map((v) => String(v.agent || "").toLowerCase()))].filter((a) => AGENT_FACE[a]).map((a) => (
+                <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(/mascots/sm/${AGENT_FACE[a]}-directions.webp)` }} />
+              ))}
+            </span>
             <span key={current ? stepLabel(current) : "start"} className="lbl">
               {current ? stepLabel(current) : (kn ? "ಯೋಚಿಸುತ್ತಿದೆ…" : "Thinking…")}
             </span>
@@ -618,7 +633,7 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
             return (
               <li key={`${s.agent}-${i}`} className={running ? "running" : "done"}>
                 <span className="dot" aria-hidden="true" />
-                <span className="ag">{s.agent}</span>
+                <StepAgent id={s.agent} />
                 <span className="tx">{stepLabel(s)}</span>
               </li>
             );
@@ -643,7 +658,7 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
           {steps.map((s, i) => (
             <li key={`s-${i}`} className="done">
               <span className="dot" aria-hidden="true" />
-              <span className="ag">{s.agent}</span>
+              <StepAgent id={s.agent} />
               <span className="tx">{stepLabel(s)}</span>
             </li>
           ))}
@@ -655,6 +670,20 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
           ))}
         </ol>
       )}
+      {(() => {
+        // Who worked on the answer. The second half is what the pipeline does to every
+        // answer before it is shown (the numbers and identifiers in it are checked against
+        // the rows it was written from), stated once, plainly.
+        const who = [...new Set(steps.map((x) => String(x.agent || "").toLowerCase()))].filter((a) => AGENT_FACE[a]);
+        if (!who.length) return null;
+        return (
+          <p className="cx-think-check">
+            {who.map((a) => <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(/mascots/sm/${AGENT_FACE[a]}-directions.webp)` }} />)}
+            <span>{kn ? `${who.length} ಏಜೆಂಟ್‌ಗಳು ಕೆಲಸ ಮಾಡಿವೆ · ಸಂಖ್ಯೆಗಳನ್ನು ದಾಖಲೆಗಳೊಂದಿಗೆ ಪರಿಶೀಲಿಸಲಾಗಿದೆ`
+              : `${who.length} ${who.length === 1 ? "agent" : "agents"} worked on this · figures checked against the records before showing`}</span>
+          </p>
+        );
+      })()}
     </div>
   );
 }
@@ -1405,6 +1434,7 @@ export default function ChatPage() {
       .catch(() => {});
   }, [loading, messages.length]);
 
+  const [lens, setLens] = useState(null);            // the agent picked above the chat box, or none
   const recogRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const voiceTurnRef = useRef(false);   // true when the pending question was dictated → speak the answer
@@ -1733,7 +1763,9 @@ export default function ChatPage() {
       const res = await fetch(`${API}/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Officer": getActiveOfficerId() },
-        body: JSON.stringify({ text: q, lang, session_id: sessionId, deep_think: deepThink }),
+        // With an agent picked on the landing screen, the first question is asked through
+        // that agent's mode. Later questions are asked as typed.
+        body: JSON.stringify({ text: (lens && messages.length === 0 && !q.startsWith("/")) ? `${LENS[lens]} ${q}` : q, lang, session_id: sessionId, deep_think: deepThink }),
         signal: abortControllerRef.current.signal,
       });
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
@@ -2392,7 +2424,17 @@ export default function ChatPage() {
               </p>
             </motion.div>
 
-            <AgentStrip />
+            <AgentStrip selected={lens} onSelect={setLens} />
+            {lens && (() => {
+              const a = STRIP_AGENTS.find(([n]) => n === lens);
+              return (
+                <p className="ags-lens" role="status">
+                  <b>{lens}</b> {a?.[2]} {kn ? "ಮೊದಲ ಪ್ರಶ್ನೆ" : "Your first question goes through"} <code>{LENS[lens]}</code>.
+                  <button type="button" onClick={() => router.push(`/docs?agent=${encodeURIComponent(lens)}`)}>{kn ? "ಇದು ಏನು ಮಾಡುತ್ತದೆ" : "What it does"} →</button>
+                  <button type="button" onClick={() => setLens(null)} aria-label="Clear the selected agent">×</button>
+                </p>
+              );
+            })()}
 
             <motion.div
               initial={{ opacity: 0, y: 25, scale: 0.98 }}

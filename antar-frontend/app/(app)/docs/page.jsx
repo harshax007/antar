@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/components/Providers";
 import { newAssistantMsg, applyEvent, streamChat } from "@/lib/chatStream";
 import { asset } from "@/lib/assets";
+import AgentDoc from "@/components/AgentDoc";
 
 const ANTAR_ASCII = ` █████ ███   ██║███████ █████ ██████ 
 ██╔══██╗████║ ██║╔══██╔══╗██╔══██╗
@@ -524,7 +525,16 @@ function TypingResponse({ text, isMain = false, speed = 20 }) {
   return <span>{displayed}{n < text?.length && <span className="antar-cur">▌</span>}</span>;
 }
 
+// /docs?agent=Network shows that one agent and nothing else (components/AgentDoc.jsx);
+// without the parameter this is the full docs screen, unchanged.
 export default function DocsPage() {
+  const [agent, setAgent] = useState(undefined);
+  useEffect(() => { setAgent(new URLSearchParams(window.location.search).get("agent") || null); }, []);
+  if (agent === undefined) return null;
+  return agent ? <AgentDoc name={agent} /> : <DocsFull />;
+}
+
+function DocsFull() {
   const router = useRouter();
   const { lang, toggleLang } = useLang();
   

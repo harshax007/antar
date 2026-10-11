@@ -13,7 +13,7 @@ import { Mascot } from "page-mascot";
 
 // What each agent does, in the words of AGENTS.md. The nine that also walk the Brain
 // screen keep the character they have there.
-const AGENTS = [
+export const AGENTS = [
   ["Query", "tv", "Answers from the FIR registry through fixed, checked queries."],
   ["Network", "gearbot", "Builds the links around a suspect."],
   ["Profile", "scout", "Scores a suspect's risk and shows what drives it."],
@@ -31,12 +31,24 @@ const AGENTS = [
   ["Linkage", "cube", "Matches cases that share a vehicle, phone, UPI or IP."],
 ];
 
-export default function AgentStrip() {
+// The chat mode each agent answers under. Picking an agent sends the first question
+// through that mode, which is how the backend brings that agent's kind of work in
+// (app/core/agent_modes.py): think for the record and its reasoning, connect for links
+// between people and cases, anticipate for what to expect at a place.
+export const LENS = {
+  Query: "/think", Research: "/think", Recall: "/think", Adversary: "/think", Vigil: "/think",
+  Network: "/connect", Profile: "/connect", Linkage: "/connect", Corridor: "/connect", OSINT: "/connect",
+  Forecast: "/anticipate", Geo: "/anticipate", Pattern: "/anticipate", Alerts: "/anticipate", Social: "/anticipate",
+};
+
+// `selected` / `onSelect`: the agent whose perspective the first question is asked from.
+export default function AgentStrip({ selected = null, onSelect }) {
   return (
     <div className="ags" role="list" aria-label="Antar's agents">
       <span className="ags-l" aria-hidden="true">Antar Agents:</span>
       {AGENTS.map(([name, face, does]) => (
-        <div key={name} className="ags-a" role="listitem" aria-label={`${name}: ${does}`}>
+        <div key={name} className={`ags-a${selected === name ? " on" : ""}`} role="listitem" aria-label={`${name}: ${does}`}
+             onClick={onSelect ? () => onSelect(selected === name ? null : name) : undefined}>
           <Mascot className="ags-f" size={40} label={`${name} agent`}
                   directions={`/mascots/sm/${face}-directions.webp`} reactions={`/mascots/sm/${face}-reactions.webp`} />
           <span className="ags-t"><b>{name}</b>{does}</span>
