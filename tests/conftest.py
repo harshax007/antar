@@ -54,6 +54,32 @@ def _rowid_marks(con) -> dict[str, int]:
     return marks
 
 
+# Tables the suite must never clean in main.db: the tests write these to a ledger of their
+# own (see _audit_ledger_in_its_own_file), so any row above the mark was written by a
+# backend that is serving the demo while the suite runs - deleting it breaks the hash chain.
+_NEVER_CLEANED = {"audit_log", "agent_reasoning_logs"}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _audit_ledger_in_its_own_file(tmp_path_factory):
+    """Point the audit store at a throwaway database for the whole session.
+
+    The audit tests call `audit_store.clear()`, which deletes every row of `audit_log`.
+    Against main.db that erased the demo's ledger (595 entries on 2026-10-11), and the
+    clean-up below then removed rows a live backend wrote during the run, leaving
+    /api/audit/integrity reporting a broken chain. A tamper-evident ledger that the test
+    suite can wipe is not one, so the suite gets its own file and main.db is left alone.
+    """
+    from app.services import audit_store
+    live = audit_store.DB_PATH
+    audit_store.DB_PATH = str(tmp_path_factory.mktemp("audit") / "audit_ledger.db")
+    audit_store._log.clear()
+    audit_store._last_hash = "0" * 64
+    audit_store.init_db()
+    yield
+    audit_store.DB_PATH = live
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _keep_main_db_clean():
     """Remove rows the test run leaves behind in main.db.
@@ -89,6 +115,8 @@ def _keep_main_db_clean():
     removed: dict[str, int] = {}
     try:
         for table, mark in before.items():
+            if table in _NEVER_CLEANED:
+                continue
             n = con.execute(f'DELETE FROM "{table}" WHERE rowid > ?', (mark,)).rowcount
             if n:
                 removed[table] = n
@@ -126,3 +154,6 @@ def _force_offline(monkeypatch):
     monkeypatch.setattr(settings, "QUICKML_ACCESS_TOKEN", "", raising=False)
     monkeypatch.setattr(settings, "QUICKML_REFRESH_TOKEN", "", raising=False)
     monkeypatch.setattr(settings, "DEMO_MODE", False, raising=False)
+    # Header identity unless a test opts in: a developer's .env may now carry
+    # ANTAR_AUTH_SECRET, which would put every TestClient call behind a token.
+    monkeypatch.setattr(settings, "ANTAR_AUTH_SECRET", "", raising=False)

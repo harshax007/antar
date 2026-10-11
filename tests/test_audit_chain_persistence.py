@@ -17,7 +17,6 @@ import sqlite3
 
 import pytest
 
-from app.core.db_path import DB_PATH
 from app.services import audit_store
 
 
@@ -132,7 +131,7 @@ def test_tampering_with_the_stored_hash_is_detected():
 # ── legacy rows: counted, never silently passed or falsely failed ────────────
 def _insert_legacy_row():
     """A row exactly as the pre-fix code wrote it: no payload_json, no prev_hash."""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(audit_store.DB_PATH)
     conn.execute(
         "INSERT INTO audit_log (ts, officer, role, method, path, status, type, hash) "
         "VALUES (?,?,?,?,?,?,?,?)",
