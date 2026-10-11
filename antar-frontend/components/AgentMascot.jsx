@@ -1058,5 +1058,41 @@ const CSS = `
 .bt-offers b { font: 500 11px 'JetBrains Mono', monospace; color: #E2E8F0; }
 .bt-offers span { font: 10.5px 'Inter', sans-serif; color: #64748B; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bt-in input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #fff; font: 12px 'JetBrains Mono', monospace; }
+/* ── A quieter terminal ──
+   One accent, used sparingly: the prompt and what can be clicked. Everything read at
+   length is soft grey-white at normal weight, nothing is in capitals, and a result is set
+   apart by space rather than by a coloured rail and a row of outlined badges. */
+.bt-win { background: rgba(8,12,20,.97); border-color: rgba(255,255,255,.1); box-shadow: 0 14px 40px rgba(0,0,0,.6); }
+.bt-win > header { background: transparent; border-bottom-color: rgba(255,255,255,.07); }
+.bt-win > header b { color: #94A3B8; font-weight: 500; letter-spacing: .04em; }
+.bt-out { gap: 12px; padding: 12px 14px; font-size: 11.5px; line-height: 1.6; }
+.bt-cmd { color: #CBD5E1; } .bt-cmd span { color: #5B7083; font-weight: 400; }
+.bt-sys, .bt-via, .bt-seen { color: #6B7A8D; }
+.bt-err { color: #D9B66A; }
+.bt-res { border-left: 1px solid rgba(255,255,255,.1); padding: 0 0 0 12px; gap: 3px; }
+.bt-res.refused, .bt-res.error { border-left-color: rgba(255,255,255,.1); }
+.bt-res > header { gap: 8px; }
+.bt-res > header b { color: #8FD3DA; text-transform: none; font-weight: 500; font-size: 11px; letter-spacing: 0; }
+.bt-res > header span { color: #6B7A8D; max-width: 220px; }
+.bt-res > header em { color: #4E5C6E; }
+.bt-cls { border: 0; padding: 0; font-size: 10.5px; opacity: .85; }
+.bt-bl { font: 400 12.5px/1.55 'Inter', sans-serif; color: #E2E8F0; }
+.bt-res.refused .bt-bl, .bt-res.empty .bt-bl { color: #A9B6C6; }
+.bt-cx, .bt-res ul { color: #9AA8B9; font-size: 11.5px; }
+.bt-lim { color: #6B7A8D; }
+.bt-res footer button { background: none; border: 0; padding: 0; color: #8FD3DA; font-size: 10.5px; }
+.bt-res footer button:hover { background: none; text-decoration: underline; }
+.bt-list b { color: #8FD3DA; font-weight: 500; } .bt-list p { color: #A9B6C6; }
+.bt-list dt { color: #6B7A8D; } .bt-list dd { color: #CBD5E1; }
+.bt-offers { gap: 14px; padding: 6px 14px; border-top-color: rgba(255,255,255,.06); }
+.bt-offers em { color: #4E5C6E; }
+.bt-offers button, .bt-offers button:first-of-type { border: 0; background: none; padding: 0; gap: 6px; }
+.bt-offers button:hover { background: none; }
+.bt-offers b { color: #A9B6C6; font-weight: 400; } .bt-offers button:first-of-type b { color: #8FD3DA; }
+.bt-offers button:hover b { color: #fff; }
+.bt-offers span { color: #4E5C6E; }
+.bt-in { padding: 9px 14px; border-top-color: rgba(255,255,255,.06); }
+.bt-in span { color: #8FD3DA; font-weight: 500; } .bt-in span i { color: #6B7A8D; }
+.bt-in input { color: #E2E8F0; }
 @media (prefers-reduced-motion: reduce) { .bt-say, .bt-bug > i::before, .bt-bug > i::after, .bt-orbits ellipse, .bt-wires line, .bt-bug.hearing > i { animation: none; } }
 `;
