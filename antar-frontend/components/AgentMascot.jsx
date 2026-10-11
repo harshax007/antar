@@ -1007,7 +1007,8 @@ const CSS = `
 .bt-toasts span { font: 12px/1.45 'Inter', sans-serif; color: #E2E8F0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 @keyframes bt-rise { from { opacity: 0; transform: translateY(8px); } }
 
-.bt-win { position: fixed; left: calc(50% - 230px); bottom: 64px; z-index: 950; width: 460px; height: 300px; min-width: 300px; min-height: 200px; max-width: 92vw; max-height: 78vh;
+/* Opens wide enough to read a result without resizing: about 980 by 410, centred. */
+.bt-win { position: fixed; left: max(8px, calc(50% - min(490px, 46vw))); bottom: 64px; z-index: 950; width: min(980px, 92vw); height: 410px; min-width: 300px; min-height: 200px; max-width: 92vw; max-height: 78vh;
   display: flex; flex-direction: column; resize: both; overflow: hidden; border-radius: 10px; background: rgba(6,11,18,.96);
   border: 1px solid rgba(34,230,240,.28); box-shadow: 0 14px 44px rgba(0,0,0,.7); font-family: 'JetBrains Mono', monospace; color: #E2E8F0; }
 .bt-win.small { height: auto; min-height: 0; resize: none; }

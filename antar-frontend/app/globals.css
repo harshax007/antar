@@ -3965,10 +3965,12 @@ html[data-chatnav="1"] .xw { top: 60px !important; height: calc(100vh - 60px) !i
 .brl-full { position: fixed; background: #03050c; z-index: 50; }
 @keyframes brlPulse { 0%, 100% { transform: scale(0.85); opacity: .75; } 50% { transform: scale(1.12); opacity: 1; } }
 .brl-cap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.brl-step { font-family: 'Chakra Petch', sans-serif; font-size: 13px; letter-spacing: .08em; color: #cfe9ee; animation: brlFade .45s ease; }
-@keyframes brlFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.brl-step { font-family: 'Chakra Petch', sans-serif; font-size: 13px; letter-spacing: .08em; color: #cfe9ee; animation: brlFade .7s cubic-bezier(.22,.61,.36,1) both; min-width: 260px; text-align: center; white-space: nowrap; }
+/* A loader taking over from the one before it is already on screen: no second fade-in. */
+.brl.brl-on { animation: none; } .brl-step.still { animation: none; }
+@keyframes brlFade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 .brl-dots { display: flex; gap: 6px; }
-.brl-dots i { width: 18px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.12); transition: background .4s; }
+.brl-dots i { width: 18px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.12); transition: background .9s ease; }
 .brl-dots i.on { background: #22e6f0; }
 @media (prefers-reduced-motion: reduce) {
   .brl-step { animation: none; }
