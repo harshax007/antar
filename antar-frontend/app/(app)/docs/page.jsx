@@ -7,6 +7,7 @@ import { useLang } from "@/components/Providers";
 import { newAssistantMsg, applyEvent, streamChat } from "@/lib/chatStream";
 import { asset } from "@/lib/assets";
 import AgentDoc from "@/components/AgentDoc";
+import { Mascot } from "page-mascot";
 
 const ANTAR_ASCII = ` █████ ███   ██║███████ █████ ██████ 
 ██╔══██╗████║ ██║╔══██╔══╗██╔══██╗
@@ -153,63 +154,219 @@ function StageTerminal({ stage, run }) {
 }
 
 // ─── 3D Animation Slot ───────────────────────────────────────────────────────
+const STAGE_MASCOTS = {
+  think: {
+    face: "tv",
+    name: "Query Intelligence",
+    engine: "DETERMINISTIC REASONING ENGINE",
+    telemetry: ["T1-T23 TEMPLATES", "K/D/I/U ATTRIBUTION", "0.0% HALLUCINATION"],
+  },
+  connect: {
+    face: "gearbot",
+    name: "Network Linkage",
+    engine: "CRIMINAL SYNDICATE ENGINE",
+    telemetry: ["PAGERANK CLUSTERING", "SHARED EVIDENCE KEY", "MULTI-HOP GRAPH"],
+  },
+  anticipate: {
+    face: "clockwork",
+    name: "Risk Forecast",
+    engine: "SPATIOTEMPORAL FORECAST ENGINE",
+    telemetry: ["7-DAY CONFORMAL BAND", "PAI@5% 14.2 RATIO", "Gi* HOTSPOT SCAN"],
+  },
+};
+
 function AnimSlot({ stage, isActive, isDone }) {
-  const cfg = STAGES.find((s) => s.key === stage);
+  const cfg = STAGES.find((s) => s.key === stage) || STAGES[0];
+  const mascotInfo = STAGE_MASCOTS[stage] || STAGE_MASCOTS.think;
+
   return (
     <div id={`anim-slot-${stage}`} data-stage={stage} data-active={String(isActive)} data-done={String(isDone)}
-      style={{ position: "relative", borderRadius: "10px", border: `1px solid ${cfg.color}${isDone ? "42" : isActive ? "26" : "0e"}`, background: `radial-gradient(ellipse at 50% 40%, ${cfg.color}${isDone ? "0e" : isActive ? "07" : "03"} 0%, transparent 65%)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", transition: "border-color 0.6s, background 0.6s", flex: 1, minHeight: "150px" }}>
+      style={{
+        position: "relative",
+        borderRadius: "10px",
+        border: `1px solid ${cfg.color}${isDone ? "40" : isActive ? "30" : "12"}`,
+        background: `radial-gradient(ellipse at 50% 35%, ${cfg.color}${isDone ? "10" : isActive ? "0c" : "04"} 0%, rgba(2,4,9,0.95) 75%)`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        transition: "border-color 0.6s, background 0.6s",
+        flex: 1,
+        minHeight: "155px",
+        padding: "12px 16px",
+      }}
+    >
       {/* HUD corner brackets */}
       {[["top:8px;left:8px;border-top-width:1.5px;border-left-width:1.5px","tl"],["top:8px;right:8px;border-top-width:1.5px;border-right-width:1.5px","tr"],["bottom:8px;left:8px;border-bottom-width:1.5px;border-left-width:1.5px","bl"],["bottom:8px;right:8px;border-bottom-width:1.5px;border-right-width:1.5px","br"]].map(([sty,k]) => {
         const s = {};
         sty.split(";").filter(Boolean).forEach((p) => { const [prop,val] = p.split(":"); s[prop.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())] = val; });
-        return <span key={k} style={{ position:"absolute", width:"9px", height:"9px", borderColor:`${cfg.color}${isDone?"50":isActive?"32":"15"}`, borderStyle:"solid", borderWidth:0, transition:"border-color 0.5s", ...s }} />;
+        return <span key={k} style={{ position:"absolute", width:"9px", height:"9px", borderColor:`${cfg.color}${isDone?"50":isActive?"35":"18"}`, borderStyle:"solid", borderWidth:0, transition:"border-color 0.5s", ...s }} />;
       })}
-      {/* Scanlines */}
+
+      {/* Cyber Grid & Scanline Background */}
+      <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)`, backgroundSize: "24px 24px", pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 4px)", pointerEvents: "none" }} />
-      {/* Content */}
-      <div style={{ textAlign: "center", padding: "18px", zIndex: 1 }}>
-        {/* Removed 3D.VIZ label as requested */}
-        <div style={{ width: "160px", height: "70px", opacity: isDone ? 1 : isActive ? 1 : 0.25, transition: "opacity 0.5s", color: cfg.color, filter: isActive ? `drop-shadow(0 0 8px ${cfg.color}50)` : "none" }}>
-          {stage === "think" && (
-            <svg viewBox="0 0 200 88" preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "100%" }}>
-              <line className="thk-edge" x1="34" y1="26" x2="96" y2="44" style={{ stroke: "currentColor" }}/>
-              <line className="thk-edge" x1="34" y1="64" x2="96" y2="44" style={{ stroke: "currentColor" }}/>
-              <line className="thk-edge" x1="96" y1="44" x2="164" y2="44" style={{ stroke: "currentColor" }}/>
-              <circle className="thk-n1" cx="34" cy="26" r="3" style={{ fill: "currentColor" }}/>
-              <circle className="thk-n2" cx="34" cy="64" r="3" style={{ fill: "currentColor" }}/>
-              <circle className="thk-n3" cx="96" cy="44" r="3" style={{ fill: "currentColor" }}/>
-              <circle className="thk-nf" cx="164" cy="44" r="3.6" style={{ fill: "currentColor" }}/>
-            </svg>
-          )}
-          {stage === "connect" && (
-            <svg viewBox="0 0 200 88" preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "100%" }}>
-              <circle className="cnc-dim cnc-p1" cx="20" cy="18" r="2.4" style={{ fill: "currentColor" }}/>
-              <circle className="cnc-dim cnc-p2" cx="16" cy="66" r="2.4" style={{ fill: "currentColor" }}/>
-              <circle className="cnc-dim cnc-p3" cx="180" cy="20" r="2.4" style={{ fill: "currentColor" }}/>
-              <circle className="cnc-dim cnc-p4" cx="184" cy="68" r="2.4" style={{ fill: "currentColor" }}/>
-              <path className="cnc-link" d="M34,44 C70,10 130,78 166,48" style={{ stroke: "currentColor" }}/>
-              <circle className="cnc-end" cx="34" cy="44" r="3" style={{ fill: "currentColor" }}/>
-              <circle className="cnc-end" cx="166" cy="48" r="3" style={{ fill: "currentColor" }}/>
-            </svg>
-          )}
-          {stage === "anticipate" && (
-            <svg viewBox="0 0 200 88" preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "100%" }}>
-              <circle className="ant-ring" cx="100" cy="44" r="14" style={{ stroke: "currentColor" }}/>
-              <circle className="ant-ring" cx="100" cy="44" r="24" style={{ stroke: "currentColor" }}/>
-              <circle className="ant-ring" cx="100" cy="44" r="34" style={{ stroke: "currentColor" }}/>
-              <path className="ant-sweep" d="M100,44 L100,10 A34,34 0 0,1 119.5,16.1 Z" style={{ fill: "currentColor" }}/>
-              <circle className="ant-b1" cx="122.6" cy="52.2" r="2.4" style={{ fill: "currentColor" }}/>
-              <circle className="ant-b2" cx="71.8" cy="33.7" r="2.4" style={{ fill: "currentColor" }}/>
-              <circle className="ant-b3" cx="96.9" cy="61.7" r="2.4" style={{ fill: "currentColor" }}/>
-              <circle cx="100" cy="44" r="2.4" style={{ fill: "currentColor" }}/>
-            </svg>
-          )}
-          {!["think", "connect", "anticipate"].includes(stage) && (
-            <div style={{ fontSize: "18px", marginTop: "24px" }}>{cfg.icon}</div>
-          )}
+
+      {/* Engine Status Header Bar */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        width: "100%",
+        marginBottom: "8px",
+        zIndex: 2,
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: "8.5px",
+        letterSpacing: "0.12em",
+        color: `${cfg.color}90`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <motion.span
+            animate={isActive ? { opacity: [1, 0.2, 1] } : { opacity: 1 }}
+            transition={{ repeat: Infinity, duration: 1.2 }}
+            style={{
+              width: "5px",
+              height: "5px",
+              borderRadius: "50%",
+              background: isDone ? "#10B981" : isActive ? cfg.color : `${cfg.color}50`,
+              boxShadow: `0 0 8px ${isDone ? "#10B981" : cfg.color}`,
+              display: "inline-block",
+            }}
+          />
+          <span style={{ fontWeight: 600 }}>{mascotInfo.engine}</span>
         </div>
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", fontWeight: 500, color: `${cfg.color}${isDone ? "90" : isActive ? "70" : "40"}`, letterSpacing: "0.08em", marginTop: "16px", transition: "color 0.5s" }}>
-          /{stage}
+        <span style={{ color: isDone ? "#10B981" : isActive ? cfg.color : "#475569", fontWeight: 600 }}>
+          {isDone ? "[LOCKED: VERIFIED]" : isActive ? "[ACTIVE SYNTHESIS]" : "[STANDBY READY]"}
+        </span>
+      </div>
+
+      {/* Reasoning Core Center Chamber */}
+      <div style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        padding: "4px 0",
+        zIndex: 2,
+      }}>
+        {/* Hologram Aperture Frame */}
+        <div style={{
+          position: "relative",
+          width: "90px",
+          height: "82px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          {/* Active Laser Scan Line Sweeping across the mascot */}
+          <motion.div
+            animate={isActive ? { y: [-36, 36, -36], opacity: [0.3, 0.85, 0.3] } : { opacity: 0 }}
+            transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
+            style={{
+              position: "absolute",
+              left: "-12px",
+              right: "-12px",
+              height: "2px",
+              background: `linear-gradient(90deg, transparent, ${cfg.color}, #FFFFFF, ${cfg.color}, transparent)`,
+              boxShadow: `0 0 10px ${cfg.color}, 0 0 4px #FFFFFF`,
+              zIndex: 4,
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Aperture Frame Glow Backdrop */}
+          <div style={{
+            position: "absolute",
+            inset: "4px",
+            borderRadius: "14px",
+            border: `1px solid ${cfg.color}${isActive ? "35" : isDone ? "25" : "10"}`,
+            background: `radial-gradient(circle, ${cfg.color}${isActive ? "15" : isDone ? "10" : "05"} 0%, transparent 70%)`,
+            boxShadow: isActive ? `inset 0 0 16px ${cfg.color}25` : "none",
+            pointerEvents: "none",
+          }} />
+
+          {/* Interactive Mascot Core */}
+          <div style={{
+            position: "relative",
+            zIndex: 3,
+            filter: isActive
+              ? `drop-shadow(0 0 14px ${cfg.color}80)`
+              : isDone
+              ? `drop-shadow(0 0 10px ${cfg.color}50)`
+              : `drop-shadow(0 0 4px ${cfg.color}25)`,
+            transition: "filter 0.4s ease",
+            cursor: "pointer",
+          }}>
+            <Mascot
+              size={66}
+              label={`${mascotInfo.name} Core`}
+              directions={`/mascots/sm/${mascotInfo.face}-directions.webp`}
+              reactions={`/mascots/sm/${mascotInfo.face}-reactions.webp`}
+            />
+          </div>
+        </div>
+
+        {/* Live Reasoning Telemetry Stream */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          marginTop: "6px",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: "8.5px",
+          color: `${cfg.color}aa`,
+          letterSpacing: "0.06em",
+        }}>
+          {mascotInfo.telemetry.map((t, idx) => (
+            <span key={idx} style={{
+              background: "rgba(255,255,255,0.02)",
+              border: `1px solid ${cfg.color}20`,
+              padding: "2px 6px",
+              borderRadius: "4px",
+              whiteSpace: "nowrap",
+            }}>
+              {t}
+            </span>
+          ))}
+        </div>
+
+        {/* Neural Waveform Equalizer Bars */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "3px",
+          marginTop: "6px",
+          height: "12px",
+        }}>
+          {[0.4, 0.8, 0.6, 1.0, 0.5, 0.9, 0.3, 0.7].map((h, i) => (
+            <motion.div
+              key={i}
+              animate={isActive ? { scaleY: [0.3, 1.4, 0.5, 1.2, 0.3] } : { scaleY: isDone ? 0.7 : 0.35 }}
+              transition={{ repeat: Infinity, duration: 0.8 + (i * 0.12), ease: "easeInOut" }}
+              style={{
+                width: "2px",
+                height: "10px",
+                borderRadius: "1px",
+                background: isDone ? "#10B981" : cfg.color,
+                opacity: isDone ? 0.8 : isActive ? 0.9 : 0.35,
+                transformOrigin: "bottom",
+              }}
+            />
+          ))}
+          <span style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: "10.5px",
+            fontWeight: 600,
+            color: cfg.color,
+            letterSpacing: "0.08em",
+            marginLeft: "6px",
+          }}>
+            /{stage}
+          </span>
         </div>
       </div>
     </div>
