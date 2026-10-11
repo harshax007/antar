@@ -17,7 +17,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchAPI } from "@/lib/api";
 
 // The character each agent has everywhere else (AgentStrip, the Brain screen).
-const FACE = {
+export const FACE = {
   query: "tv", vault: "tv", network: "gearbot", link: "gearbot", profile: "scout", motive: "scout",
   forecast: "clockwork", predict: "clockwork", prediction: "clockwork", core: "clockwork",
   social: "toaster", sense: "toaster", geo: "drone", pattern: "radio",
@@ -33,6 +33,13 @@ const ACCEPTS = { suspect: ["accused"], FIR: ["accused"], station: ["station"], 
 const SUSPECT_RE = /\b(ACC-[A-Z]{2}-\d{3,}|S\d{4,})\b/g;
 const STATION_RE = /\b([A-Z][A-Za-z.]+(?: [A-Z][A-Za-z.]+){0,3} PS)\b/g;
 const DISTRICT_RE = /\b([A-Z][a-z]+(?: [A-Z][a-z]+){0,2} (?:City|Dist|District|Railways))\b/g;
+
+// The agents the pipeline names for one answer. When the final event carries no list, the
+// steps it reported while answering do: each names the agent that took it. Nothing is added.
+export function agentsUsed(usedAgents, trace) {
+  const named = (usedAgents || []).length ? usedAgents : (trace || []).map((s) => s?.agent).filter((a) => a && FACE[String(a).toLowerCase()]);
+  return [...new Set(named.map((a) => String(a).toLowerCase()))];
+}
 
 function Face({ id, size = 26 }) {
   const face = FACE[String(id || "").toLowerCase()];
@@ -93,10 +100,7 @@ export default function WorkspaceAgents({ answer = "", question = "", suspects =
     setResults((rs) => [{ ...r, on: target.value, key: `${agent.id}-${Date.now()}` }, ...rs].slice(0, 8));
   }
 
-  // The agents the pipeline names for this answer. When the final event carries no list,
-  // the steps it reported while answering do: each names the agent that took it.
-  const named = (usedAgents || []).length ? usedAgents : (trace || []).map((s) => s?.agent).filter((a) => a && FACE[String(a).toLowerCase()]);
-  const used = [...new Set(named.map((a) => String(a).toLowerCase()))];
+  const used = agentsUsed(usedAgents, trace);
   const list = Array.isArray(cards) ? cards : [];
 
   return (

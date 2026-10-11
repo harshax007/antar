@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, FileSpreadsheet, Radio, Crosshair, ShieldCheck, Activity, Square, Map, Cpu, Search } from "lucide-react";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { openReport } from "@/lib/auth";
-import WorkspaceAgents from "@/components/WorkspaceAgents";
+import WorkspaceAgents, { FACE, agentsUsed } from "@/components/WorkspaceAgents";
 import { useRouter } from "next/navigation";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -469,14 +469,22 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             the most prominent line of a screen an officer reads for evidence. */}
         <div className="c2-callsign">
           <span>{kn ? "ತಜ್ಞ ಕಾರ್ಯಕ್ಷೇತ್ರ" : "Expert workspace"}</span>
-          {/* The agents, on the move beside the title: one click goes to where they work. */}
-          <button type="button" className="c2-agents" onClick={() => router.push("/antarBrain")}
-                  title={kn ? "ಏಜೆಂಟ್‌ಗಳ ಕಾರ್ಯಕ್ಷೇತ್ರ ತೆರೆಯಿರಿ" : "Open the agents' workspace"} aria-label="Open the agents' workspace">
-            {["gearbot", "postbot", "clockwork", "drone", "crt"].map((f, i) => (
-              <i key={f} className="wa-face" style={{ backgroundImage: `url(/mascots/sm/${f}-directions.webp)`, animationDelay: `${i * -0.45}s` }} />
-            ))}
-            <em>{kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"}</em>
-          </button>
+          {/* The agents that produced THIS answer, beside the title. One click goes to where
+              they work. Nothing is shown when the answer names none. */}
+          {(() => {
+            const used = agentsUsed(meta?.agents, trace).filter((a) => FACE[a]);
+            if (!answer || !used.length) return null;
+            return (
+              <button type="button" className="c2-agents" onClick={() => router.push("/antarBrain")}
+                      title={`${kn ? "ಬಳಸಿದ ಏಜೆಂಟ್‌ಗಳು" : "Agents used"}: ${used.map((a) => a.replace(/_/g, " ")).join(", ")}`}
+                      aria-label={`Agents used: ${used.join(", ")}. Open the agents' workspace.`}>
+                <em>{kn ? "ಬಳಸಿದ ಏಜೆಂಟ್‌ಗಳು" : "Agents used"}</em>
+                {used.map((a, i) => (
+                  <i key={a} className="wa-face" style={{ backgroundImage: `url(/mascots/sm/${FACE[a]}-directions.webp)`, animationDelay: `${i * -0.45}s` }} />
+                ))}
+              </button>
+            );
+          })()}
         </div>
         <div className="c2-leds" role="status" aria-live="polite">
           <span className={`c2-led ${link}`} title={lastSync ? `Last sync ${Math.round((now - lastSync) / 1000)}s ago` : "Waiting for first sync"}>
