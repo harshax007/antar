@@ -27,8 +27,8 @@ const ACCENT = "#22E6F0";
 // Each agent's character: two page-mascot sprite sheets in public/mascots (nine head
 // directions, nine expressions). The face watches the cursor and reacts when clicked.
 const FACE = {
-  network: "builder", profile: "glasses", research: "scientist", advocate: "beard", recall: "grandpa",
-  linkage: "sikh", forecast: "astronaut", geo: "cap", pattern: "hijabi",
+  network: "gearbot", profile: "scout", research: "postbot", advocate: "knight", recall: "crt",
+  linkage: "cube", forecast: "clockwork", geo: "drone", pattern: "radio",
 };
 const FACE_PX = 78;
 const ICON = {
