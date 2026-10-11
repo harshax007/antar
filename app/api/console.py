@@ -2,6 +2,7 @@
 Antar - Brain console API
 =========================
 GET  /api/console/identity   who Antar is, how it thinks, and a card per console agent
+GET  /api/console/evolution  how Antar has changed with use, counted from the stores that record it
 POST /api/console/run        {agent, target} -> one agent's answer on one record
 
 `target` is either the node an officer dropped the agent on ({accused, fir_i, station,
@@ -29,6 +30,11 @@ class RunRequest(BaseModel):
 @router.get("/identity")
 async def console_identity() -> dict:
     return brain_console.identity_pack()
+
+
+@router.get("/evolution")
+async def console_evolution() -> dict:
+    return await asyncio.to_thread(brain_console.evolution)
 
 
 @router.post("/run")

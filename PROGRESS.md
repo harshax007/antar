@@ -1834,3 +1834,12 @@ was checked by executing the old and new forms side by side and comparing rows e
   * Optimized pp/agents/followup_agent.py to use limit=1 to prevent full table scans when evaluating suggested follow-up questions.
   * Reduced overall response latency for suggested forecasting questions from ~21s to ~7s.
 
+
+## Identity and evolution as USPs, Brain console polish - 2026-10-11
+
+* **Two USPs added** to `antar_identity.USPS` (now 10): *One identity on every answer* and *Its growth is on the record*. The constitution carries a version in code (`VERSION` 1.0, `SINCE` 2026-09-18).
+* **Evolution record**: `GET /api/console/evolution` and the terminal command `evolution`. Six lines, each counted from the store that keeps it: identity, officer ratings, graded forecast weeks, hypothesis decisions, audit ledger, recall memory. A store that cannot be read says "not available"; it never shows a zero.
+* **Reasoning trail doubled every turn on `/api/chat`** - fixed in `supervisor.py`, trace capped at 500 steps in `audit_store.py`. Eight runaway rows held 2.66 GB; `main.db` is back to 1.4 GB.
+* **Brain corpus was not being found** (`brain_vectors.db` sat in `data/`, the live database in the root). Copied beside `main.db` and packed: 100,000 FIRs indexed again.
+* **Brain agents** are page-mascot robot characters, fly two rings round the brain during a Fast Run, and the Fast Run results window lists every agent with its findings in full.
+* **Known damage, not yet repaired**: running the test suite against the live database on 2026-10-11 cleared the audit log (`tests/test_audit*.py` and `test_governance.py` call `audit_store.clear()`), and a later run removed live audit rows through the `conftest.py` clean-up, so `/api/audit/integrity` reports the chain broken at entry 499. Do not run the suite while the backend is serving the demo database until the audit tests use their own file.

@@ -463,6 +463,7 @@ def identity_pack() -> dict:
                        "guardrails": list(m.guardrails) if m else []})
     return {
         "name": identity.NAME, "meaning": "ಅಂತರ್ - within",
+        "version": identity.VERSION, "since": identity.SINCE,
         "role": identity.ROLE[0].upper() + identity.ROLE[1:] + ".",
         "laws": [{"law": n, "rule": r} for n, r in identity.LAWS],
         "thinking": [{"step": n, "how": h} for n, h in identity.THINKING],
@@ -471,6 +472,77 @@ def identity_pack() -> dict:
         "agents": agents,
         "commands": COMMANDS,
     }
+
+
+def evolution() -> dict:
+    """How Antar has changed with use - each line counted from the store that records it.
+
+    Not a claim that Antar is better than it was: a count is a count. A line whose store
+    cannot be read says so; it never shows a zero that would read as "nothing happened".
+    """
+    rows: list[dict] = []
+
+    def line(what: str, fn: Callable[[], tuple[str, str]]) -> None:
+        try:
+            value, how = fn()
+        except Exception as e:                       # one unreadable store must not hide the rest
+            value, how = "not available", f"this store could not be read ({type(e).__name__})"
+        rows.append({"what": what, "value": value, "how": how})
+
+    def ratings():
+        from app.api.feedback import _tally
+        t = list(_tally().values())
+        up, down = sum(q["up"] for q in t), sum(q["down"] for q in t)
+        usable = sum(1 for q in t if q["up"] > q["down"])
+        return (f"{_plural(up + down, 'rating')} from officers: {up} useful, {down} not",
+                f"{_plural(usable, 'question')} now {'has' if usable == 1 else 'have'} a rated answer that "
+                "shapes the next similar one; a thumbs-down removes it")
+
+    def forecast():
+        from app.forecast import service as S
+        con = _ro()
+        try:
+            sc = S.scorecard(con, unit_type="beat", category=None)
+        finally:
+            con.close()
+        weeks = sc.get("weeks") or []
+        beat = sum(1 for w in weeks if w.get("beat_last4"))
+        return (f"{_plural(len(weeks), 'forecast week')} graded, {beat} ahead of the last-4-weeks baseline",
+                f"each week forecast from the data before it, real record {sc['window']['from']} to {sc['window']['to']}")
+
+    def adversary():
+        con = _ro()
+        try:
+            n = dict(con.execute("SELECT type, COUNT(*) FROM audit_log WHERE type IN "
+                                 "('hypothesis_confirmed', 'hypothesis_rejected') GROUP BY type"))
+        finally:
+            con.close()
+        confirmed, rejected = n.get("hypothesis_confirmed", 0), n.get("hypothesis_rejected", 0)
+        return (f"{_plural(confirmed + rejected, 'hypothesis decision')} recorded: {confirmed} confirmed, {rejected} rejected",
+                "each one went past the base-rate adversary first; its verdict and the officer's reason are on the audit chain")
+
+    def ledger():
+        from app.services import audit_store
+        r = audit_store.verify_chain_report()
+        state = "every entry verified" if r.get("ok") and not r.get("legacy_unverifiable") else (
+            f"{r.get('verified', 0):,} verified" + (f", broken at entry {r['broken_at_index']}" if r.get("broken_at_index") is not None else ""))
+        return (f"{r.get('total_entries', 0):,} audit entries, {state}", "hash-chained; a changed entry breaks the chain from that point on")
+
+    def memory():
+        from app.second_brain import vec_store
+        by = vec_store.stats()["by_kind"]
+        firs, curated = by.get("fir", 0), sum(n for k, n in by.items() if k != "fir")
+        return (f"{firs:,} FIRs and {_plural(curated, 'curated note')} in recall",
+                "a similar FIR is returned as a lead (Derived), never as a finding")
+
+    line("Identity", lambda: (f"Constitution {identity.VERSION}, in force since {identity.SINCE}",
+                              f"{len(identity.LAWS)} laws and {len(identity.THINKING)} working steps, the same on every answer"))
+    line("Learned from officers", ratings)
+    line("Forecast, graded", forecast)
+    line("Challenged before confirmed", adversary)
+    line("Accountable", ledger)
+    line("Memory", memory)
+    return {"name": identity.NAME, "version": identity.VERSION, "since": identity.SINCE, "record": rows}
 
 
 # The whole command set. The terminal accepts nothing else; an unknown word is answered
@@ -491,6 +563,7 @@ COMMANDS = [
     {"cmd": "forget", "does": "Clear the agents' memory and message log."},
     {"cmd": "why", "does": "The steps the last agent took."},
     {"cmd": "identity", "does": "Who Antar is, its laws and how it thinks."},
+    {"cmd": "evolution", "does": "How Antar has changed with use: ratings, graded forecasts, challenged hypotheses."},
     {"cmd": "clear", "does": "Clear the terminal."},
 ]
 

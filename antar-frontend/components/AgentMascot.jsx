@@ -43,7 +43,7 @@ const ICON = {
   pattern: "M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z",
 };
 const ORDER = ["network", "profile", "research", "advocate", "recall", "linkage", "forecast", "geo", "pattern"];
-const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "clear"];
+const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "clear"];
 const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 
 // Slow enough to follow with the eye and read a name tag on the move.
@@ -232,10 +232,22 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     if (cmd === "identity") {
       if (!pack || pack.error) { say({ kind: "err", text: "Identity is not loaded. Restart the backend to load the console." }); return; }
       say({ kind: "list", title: `${pack.name} (${pack.meaning})`, lead: pack.role, rows: [
+        ...(pack.version ? [["Constitution", `Version ${pack.version}, in force since ${pack.since}. Type evolution for how it has changed with use.`]] : []),
         ...pack.laws.map((l, i) => [`Law ${i + 1}`, `${l.law}. ${l.rule}`]),
         ...pack.thinking.map((s, i) => [`${i + 1} ${s.step}`, s.how]),
         ...pack.usps.map((u) => ["USP", `${u.claim} - ${u.how}.`]),
       ] });
+      return;
+    }
+    if (cmd === "evolution") {
+      // Read when asked, not with the identity pack: these are counts, and they move.
+      fetchAPI("/api/console/evolution")
+        .then((ev) => say({ kind: "list", title: `How ${ev.name} has changed with use`,
+                            lead: "Each line is counted from the store that records it.",
+                            rows: ev.record.flatMap((r) => [[r.what, r.value], ["", r.how]]) }))
+        .catch((e) => say({ kind: "err", text: e.status === 404
+          ? "This backend does not have the evolution record yet. Restart the backend to load it."
+          : `The evolution record could not be read (${e.message}).` }));
       return;
     }
     if (cmd === "about") {

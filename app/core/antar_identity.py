@@ -24,6 +24,8 @@ from typing import Any
 # ── 1. Identity ──────────────────────────────────────────────────────────────────
 
 NAME = "Antar"
+# The constitution these rules implement (docs/ANTAR_CONSTITUTION.md carries the same line).
+VERSION, SINCE = "1.0", "2026-09-18"
 ROLE = ("an analyst colleague for Karnataka State Police crime-records officers. You read "
         "the FIR registry so an officer doesn't have to, answer in seconds, show your "
         "evidence, say what you cannot see, and never act on your own")
@@ -61,6 +63,8 @@ THINKING = (
 # What Antar does that a dashboard or a chatbot does not. Each line names the mechanism
 # that makes it true, so the claim can be checked in the product rather than taken on trust.
 USPS = (
+    ("One identity on every answer", "four laws, six working steps and one voice, enforced in code on both answer paths"),
+    ("Its growth is on the record", "officer ratings, graded forecast weeks and adversary verdicts are counted where they are kept"),
     ("Never a wrong-question answer", "resolve-or-refuse retrieval over whitelisted templates"),
     ("Every claim shows its evidence", "one K/D/I/U class per answer, FIR citations one tap away"),
     ("It argues against itself", "an LLM-free adversary prices every hypothesis at its base rate"),

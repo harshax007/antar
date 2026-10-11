@@ -133,3 +133,23 @@ def test_console_api_is_inspector_gated():
     r = c.post("/api/console/run", json={"agent": "network", "target": FIR_NO_ACCUSED},
                headers={"X-Role": "Inspector"})
     assert r.status_code == 200 and r.json()["status"] == "refused"
+
+
+def test_the_evolution_record_counts_or_says_it_cannot(monkeypatch):
+    """Every line is a count from a store, and a store that fails is reported, not zeroed."""
+    rec = C.evolution()
+    assert rec["version"] == identity.VERSION
+    assert [r["what"] for r in rec["record"]][0] == "Identity"
+    assert all(r["value"] and r["how"] for r in rec["record"])
+
+    from app.services import audit_store
+    monkeypatch.setattr(audit_store, "verify_chain_report", lambda: 1 / 0)
+    broken = {r["what"]: r for r in C.evolution()["record"]}
+    assert broken["Accountable"]["value"] == "not available"
+    assert broken["Identity"]["value"] != "not available", "one unreadable store hid the others"
+
+
+def test_identity_and_evolution_are_claimed_as_usps():
+    claims = [c for c, _ in identity.USPS]
+    assert "One identity on every answer" in claims and "Its growth is on the record" in claims
+    assert any(c["cmd"] == "evolution" for c in C.COMMANDS), "the claim has no command to check it with"
