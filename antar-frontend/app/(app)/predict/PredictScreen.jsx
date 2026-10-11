@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
+import { Mascot } from "page-mascot";
 import {
   ReactFlow,
   Background,
@@ -95,7 +96,75 @@ function toRfEdges(raw) {
 }
 
 const RISK_BADGE = { HIGH: "px-risk-h", MEDIUM: "px-risk-m", LOW: "px-risk-l" };
-const cap = (s) => (s || "").replace(/_/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+// Case types arrive in capitals from the register ("MOTOR VEHICLE ACCIDENTS NON-FATAL").
+// They are shown as a sentence; a statute keeps its title ("Karnataka Police Act 1963") and
+// an abbreviation keeps its capitals.
+const ABBR = new Set(["IPC", "NDPS", "POCSO", "BNS", "BNSS", "UPI", "FIR", "IT", "SC", "ST", "COTPA", "KP"]);
+const cap = (s) => {
+  const words = String(s || "").replace(/_/g, " ").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "";
+  const statute = words.some((w) => /^act$/i.test(w));
+  return words.map((w, i) => {
+    if (ABBR.has(w.toUpperCase())) return w.toUpperCase();
+    const l = w.toLowerCase();
+    return i === 0 || statute ? l.charAt(0).toUpperCase() + l.slice(1) : l;
+  }).join(" ");
+};
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? (Math.round(n * 10) / 10).toLocaleString("en-IN") : null; };
+const RISK_WORD = { HIGH: "High risk", MEDIUM: "Medium risk", LOW: "Low risk" };
+// The anomaly score, said in words. The number itself stays one click away.
+function levelOf(p) {
+  if (p?.direction === "silence") return "Unusual drop in reports";
+  const z = Number(p?.z_score) || 0;
+  if (z >= 4) return "Far above normal";
+  if (z >= 2.5) return "Well above normal";
+  if (z >= 2) return "Above normal";
+  if (z > 0) return "Slightly above normal";
+  return "At its usual level";
+}
+function rangeOf(p) {
+  let lo = p?.conformal_lo, hi = p?.conformal_hi;
+  if (lo == null || hi == null) {
+    const m = /([\d.]+)\s*-\s*([\d.]+)/.exec(p?.band || "");
+    if (!m) return null;
+    lo = m[1]; hi = m[2];
+  }
+  return `${num(lo)} to ${num(hi)} cases`;
+}
+const coverOf = (c) => (c == null || c === "" ? null : typeof c === "number" ? `${Math.round(c <= 1 ? c * 100 : c)}%` : String(c));
+const dayOf = (iso) => { const d = new Date(`${iso}T00:00:00`); return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); };
+// What the model saw, one plain line per signal the backend names in `why`.
+function sawOf(item) {
+  const out = [];
+  for (const part of String(item?.why || "").split(/\s[·-]\s/)) {
+    const t = part.trim();
+    if (!t) continue;
+    let m;
+    if (/^MAD-z/i.test(t)) out.push(`Recent cases are ${levelOf(item).toLowerCase()} for this area (anomaly score ${item.z_score}).`);
+    else if (/hotspot/i.test(t)) out.push("Neighbouring areas are high too, so this is a cluster and not a one-off.");
+    else if (/DBSCAN|cluster/i.test(t)) out.push("A group of recent cases sits close together in place and time.");
+    else if ((m = /seasonal uplift \+?(\d+)%/i.exec(t))) out.push(`This time of year usually adds about ${m[1]}%.`);
+    else if (/silence|under-reporting/i.test(t)) out.push("Reports fell well below what this area normally files.");
+    else if (/baseline/i.test(t)) out.push("Nothing unusual in the recent trend.");
+    else out.push(cap(t) + ".");
+  }
+  return [...new Set(out)];
+}
+// A figure that counts up when it arrives. A timer, not an animation frame: frames stop
+// in a background tab and the figure would sit at zero.
+function Count({ n, suffix = "" }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (n == null) return;
+    let i = 0;
+    const t = setInterval(() => { i += 1; setV(Math.round((n * i) / 16)); if (i >= 16) clearInterval(t); }, 30);
+    return () => clearInterval(t);
+  }, [n]);
+  return n == null ? "—" : `${v}${suffix}`;
+}
+const Agent = ({ face, name, size = 36 }) => (
+  <Mascot className="px-agent" size={size} label={`${name} agent`} directions={`/mascots/sm/${face}-directions.webp`} reactions={`/mascots/sm/${face}-reactions.webp`} />
+);
 const pct = (c) => Math.round((c || 0) * 100);
 const keyOf = (it) => (it ? `${it.zone}|${it.crime_type}` : "");
 
@@ -160,7 +229,7 @@ function VolumeTrend({ volume, kn }) {
             {k === "month" ? (kn ? "ತಿಂಗಳು" : "Month") : (kn ? "ವರ್ಷ" : "Year")}
           </button>
         ))}
-        <span className="pxd-granhint">{kn ? "ಬಿಂದು ಕ್ಲಿಕ್ ಮಾಡಿ" : "click a point"}</span>
+        <span className="pxd-granhint">{kn ? "ಬಿಂದು ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click a point to read it"}</span>
       </div>
 
       {!hasData ? (
@@ -177,7 +246,7 @@ function VolumeTrend({ volume, kn }) {
                 </linearGradient>
               </defs>
               <path d={area} fill="url(#pxdGrad)" />
-              <path d={line} className="pxd-liner" fill="none" />
+              <path key={gran} d={line} className="pxd-liner" fill="none" pathLength="1" />
             </svg>
             {series.map((p, i) => (
               <button
@@ -190,7 +259,7 @@ function VolumeTrend({ volume, kn }) {
               />
             ))}
             <div className={`pxd-callout ${selIdx > N / 2 ? "left" : ""}`} style={at(selIdx)}>
-              <b>{cur.value}</b>
+              <b>{num(cur.value)}</b>
               <span className={rising ? "up" : "down"}>
                 {dPct == null ? cur.label : `${dPct > 0 ? "▲ +" : dPct < 0 ? "▼ " : ""}${dPct}%`}
               </span>
@@ -200,15 +269,15 @@ function VolumeTrend({ volume, kn }) {
           <div className="pxd-xlabels">{ticks.map((ti) => <span key={ti}>{series[ti].label}</span>)}</div>
 
           <div className="pxd-selline">
-            <b>{cur.label}</b> · {cur.value} {g.unit}
-            {dPct != null && <> · {dPct > 0 ? "+" : ""}{dPct}% {kn ? "ಹಿಂದಿನ ಎದುರು" : "vs prev"}</>}
-            {cur.partial && <span className="pxd-partial">{kn ? "ಭಾಗಶಃ" : "partial / YTD"}</span>}
+            <b>{cur.label}</b> {num(cur.value)} {kn ? "ಪ್ರಕರಣಗಳು" : "cases"}
+            {dPct != null && selIdx > 0 && <>, {dPct === 0 ? "the same as" : `${Math.abs(dPct)}% ${dPct > 0 ? "more than" : "fewer than"}`} {series[selIdx - 1].label}</>}
+            {cur.partial && <span className="pxd-partial">{kn ? "ಭಾಗಶಃ" : "year not complete"}</span>}
           </div>
 
           <div className="pxd-stats">
-            <span><i>{kn ? "ಒಟ್ಟು" : "Total"}</i>{g.total}</span>
-            <span><i>{kn ? "ಸರಾಸರಿ" : "Avg"}</i>{g.avg}</span>
-            <span><i>{kn ? "ಗರಿಷ್ಠ" : "Peak"}</i>{g.peak}</span>
+            <span><i>{kn ? "ಒಟ್ಟು" : "Total"}</i>{num(g.total)}</span>
+            <span><i>{kn ? "ಸರಾಸರಿ" : gran === "month" ? "Monthly average" : "Yearly average"}</i>{num(g.avg)}</span>
+            <span><i>{kn ? "ಗರಿಷ್ಠ" : gran === "month" ? "Highest month" : "Highest year"}</i>{num(g.peak)}</span>
           </div>
         </>
       )}
@@ -318,6 +387,105 @@ const PREDICT_MODERN_STYLES = `
 
 .px-prov-hd { font-size: 12px; font-weight: 600; color: #8b949e; margin-bottom: 8px; /* text-transform: uppercase; */ letter-spacing: 0.05em; }
 .px-prov-ids { font-family: "JetBrains Mono", monospace; font-size: 11px; color: #8b949e; background: #000000; padding: 12px; border-radius: 6px; border: 1px dashed #222222; }
+
+/* ── Plain-language pass: sentence case, a reading face, calmer type ── */
+.px-sub { font-family: 'Inter', sans-serif; font-size: 14px; color: #a3adb8; letter-spacing: 0; }
+.px-chip { font-family: 'Inter', sans-serif; font-size: 12px; }
+.px-panel-hd, .px-suggest-hd, .pxd-stats i, .px-crime, .px-know { text-transform: none; letter-spacing: 0; }
+.px-agent { flex: none; }
+
+.px-brief { display: flex; gap: 22px; align-items: center; margin-top: 14px; padding: 18px 22px; border: 1px solid #1a1a1a; border-radius: 12px; background: linear-gradient(100deg, rgba(34,211,238,0.06), rgba(5,5,5,0.9) 42%); }
+.px-brief-who { flex: none; display: flex; flex-direction: column; align-items: center; gap: 0; width: 116px; }
+.px-brief-who .px-agent { animation: pxBob 3.6s ease-in-out infinite; }
+.px-brief-who span { font-size: 11px; color: #8b949e; }
+.px-brief-body { flex: 1; min-width: 0; }
+.px-brief-body h2 { font-family: 'Chakra Petch', sans-serif; font-size: 16px; font-weight: 700; color: #e6edf3; margin: 0 0 8px; }
+.px-brief-body ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.px-brief-body li { position: relative; padding-left: 18px; font-size: 14.5px; line-height: 1.55; color: #d5dce4; opacity: 0; animation: pxRise .4s ease forwards; }
+.px-brief-body li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 7px; height: 7px; border-radius: 50%; background: #3d4652; }
+.px-brief-body li.k-hi::before { background: #ff7b72; } .px-brief-body li.k-up::before { background: #e0a458; }
+.px-brief-body li.k-dn::before { background: #d2a8ff; } .px-brief-body li.k-ok::before { background: #3fb950; }
+.px-brief-body li.go { cursor: pointer; } .px-brief-body li.go:hover { color: #fff; }
+.px-brief-body li em { font-style: normal; font-size: 12px; color: #58a6ff; margin-left: 8px; white-space: nowrap; }
+.px-brief-body li.go:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; border-radius: 4px; }
+.px-brief-wait { font-size: 14px; color: #8b949e; margin: 0; }
+.px-brief-ai { margin-top: 12px; padding-top: 12px; border-top: 1px solid #1a1a1a; animation: pxRise .4s ease both; }
+.px-brief-ai span { font-size: 11.5px; font-weight: 600; color: #58a6ff; }
+.px-brief-ai p { margin: 4px 0 0; font-size: 14.5px; line-height: 1.6; color: #c9d1d9; }
+
+.px-statrow { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+.px-statbox { padding: 16px 18px 16px 22px; animation: pxRise .45s ease both; }
+.px-statbox:nth-child(2) { animation-delay: 60ms; } .px-statbox:nth-child(3) { animation-delay: 120ms; }
+.px-statbox:nth-child(4) { animation-delay: 180ms; } .px-statbox:nth-child(5) { animation-delay: 240ms; }
+.px-statbox .l { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: #a3adb8; letter-spacing: 0; margin-bottom: 8px; }
+.px-statbox .v { font-size: 34px; font-variant-numeric: tabular-nums; }
+.px-statbox .d { margin-top: 8px; font-size: 12px; color: #7d8794; }
+
+.pxd-hd2 { justify-content: flex-start; align-items: center; gap: 12px; }
+.pxd-hd2 > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pxd-ttl { letter-spacing: 0; }
+.pxd-ttl i { font-style: normal; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: #8b949e; border: 1px solid #262b31; border-radius: 10px; padding: 1px 8px; margin-left: 6px; vertical-align: 1px; }
+.pxd-note { font-size: 12px; line-height: 1.45; color: #8b949e; }
+.pxd-sub, .pxd-granhint { font-family: 'Inter', sans-serif; font-size: 12px; }
+.pxd-xlabels { font-family: 'Inter', sans-serif; font-size: 11px; }
+.pxd-selline { font-size: 13px; color: #c9d1d9; }
+.pxd-plot { margin-top: 26px; }
+.pxd-stats i { font-family: 'Inter', sans-serif; font-size: 11px; }
+.pxd-liner { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pxDrawLine 1.1s ease-out forwards; }
+
+.px-card { animation: pxRise .35s ease both; }
+.px-card-top { gap: 10px; }
+.px-zone { min-width: 0; }
+.px-risk { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
+.px-crime { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: #a3adb8; }
+.px-know { width: auto; animation: none; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; padding: 4px 12px; }
+.px-say { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 10px; font-size: 13px; color: #8b949e; }
+.px-say b { font-weight: 600; color: #c9d1d9; } .px-say b.up { color: #e0a458; } .px-say b.dn { color: #d2a8ff; }
+.px-conffill { transform-origin: left; animation: pxGrow .7s ease-out both; }
+.px-confpct { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.px-tag { font-family: 'Inter', sans-serif; font-size: 11px; align-self: flex-start; }
+
+.pxd-alert-ttl { font-size: 13.5px; justify-content: space-between; flex-wrap: nowrap; }
+.pxd-alert-ttl > span:first-child { min-width: 0; }
+.pxd-alert-sub { font-family: 'Inter', sans-serif; font-size: 12px; color: #8b949e; margin-top: 4px; }
+.pxd-sev { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0; padding: 1px 8px; flex: none; }
+.pxd-adot { display: none; }
+
+.px-fade { animation: pxRise .3s ease both; }
+.px-big { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+.px-big .nl { font-size: 14px; color: #8b949e; margin-left: -4px; }
+.px-big .z { font-family: 'Inter', sans-serif; margin-left: 0; vertical-align: baseline; color: #e0a458; background: rgba(224,164,88,0.08); border-color: rgba(224,164,88,0.3); cursor: help; }
+.px-bandbox { font-family: 'Inter', sans-serif; font-size: 14px; }
+.px-bandbox span { display: block; margin-top: 4px; font-size: 12.5px; }
+.px-saw { margin-bottom: 24px; }
+.px-saw h4 { font-size: 13px; font-weight: 600; color: #a3adb8; margin: 0 0 8px; }
+.px-saw ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; line-height: 1.55; color: #c9d1d9; }
+.px-tile .tl, .px-prov-hd { font-family: 'Inter', sans-serif; font-size: 12px; letter-spacing: 0; }
+.px-tile .tv { font-size: 22px; }
+.px-more { padding: 14px 16px; background: rgba(255,255,255,0.02); border: 1px solid #1a1a1a; border-radius: 8px; }
+.px-more summary { cursor: pointer; color: #58a6ff; font-size: 13px; font-weight: 600; }
+.px-more .px-prov { margin-top: 14px; }
+.px-method { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: #8b949e; }
+.px-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.px-loading .px-agent { animation: pxBob 1.8s ease-in-out infinite; }
+.px-footer { font-family: 'Inter', sans-serif; font-size: 12px; }
+
+@keyframes pxRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pxGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes pxDrawLine { to { stroke-dashoffset: 0; } }
+@keyframes pxBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@media (max-width: 820px) {
+  .px-statrow { grid-template-columns: repeat(2, 1fr) !important; }
+  .px-statbox:last-child { grid-column: 1 / -1; }
+  .px-brief-who .px-agent { width: 72px !important; height: 72px !important; }
+  .px-brief { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
+  .px-brief-who { flex-direction: row; width: auto; gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .px-brief-who .px-agent, .px-loading .px-agent, .px-statbox, .px-card, .px-fade, .px-brief-ai, .px-conffill { animation: none !important; }
+  .px-brief-body li { animation: none !important; opacity: 1; }
+  .pxd-liner { animation: none !important; stroke-dashoffset: 0; }
+}
 `;
 
 // useSearchParams() forces client-side bailout, which breaks `output: export`
@@ -362,6 +530,7 @@ function PredictScreen() {
   const [alertList, setAlertList] = useState([]);    // real /api/alerts
   const [runningHypotheses, setRunningHypotheses] = useState(false);
   const [hypothesesList, setHypothesesList] = useState([]);
+  const [reading, setReading] = useState(null);      // Antar's worded reading of the board
   const [nodes, setNodes, onNodesChange] = useNodesState(toRfNodes(DEMO_NODES));
   const [edges, setEdges, onEdgesChange] = useEdgesState(toRfEdges(DEMO_EDGES));
   const consoleRef = useRef(null);
@@ -389,6 +558,8 @@ function PredictScreen() {
       setPredictions(items);
     }).catch(() => { setOfflineSample(true); setPredictions([...DEMO_PREDICTIONS]); });
 
+    // Worded by the model from counted facts; absent if the model is slow, down, or adds a number.
+    fetch(`${API}/api/predict/briefing`).then((r) => (r.ok ? r.json() : null)).then((d) => setReading(d?.reading || null)).catch(() => {});
     fetch(`${API}/api/predict/model-card`).then((r) => r.json()).then(setModelCard).catch(() => {});
     fetch(`${API}/api/predict/dashboard`).then((r) => r.json()).then(setDash).catch(() => setDash("offline"));
 
@@ -577,18 +748,50 @@ function PredictScreen() {
   }
 
 
-  const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ") : "";
   const generateNarrative = (item) => {
     if (!item) return "";
-    const name = item.zone;
-    const ctype = cap(item.crime_type);
-    const z = item.z_score ? `with an anomaly score of ${item.z_score}` : "";
-    const rs = item.risk === "HIGH" ? "critical" : item.risk === "MEDIUM" ? "elevated" : "moderate";
-    const dir = item.direction === "silence" ? "an unusual drop (possible under-reporting)" : "a predicted spike";
+    const name = item.zone, ctype = cap(item.crime_type), range = rangeOf(item);
     if (kn) {
-      return `ಅಂತರ AI ವಿಶ್ಲೇಷಣೆ: ${name} ವಲಯದಲ್ಲಿ ${ctype} ಪ್ರಕರಣಗಳಲ್ಲಿ ${dir === "a predicted spike" ? "ಹೆಚ್ಚಳ" : "ಕಡಿಮೆ"} ಕಂಡುಬಂದಿದೆ. ಇದು ${rs === "critical" ? "ತೀವ್ರ" : rs === "elevated" ? "ಹೆಚ್ಚಿದ" : "ಸಾಧಾರಣ"} ಮಟ್ಟದ ಅಪಾಯವನ್ನು ಸೂಚಿಸುತ್ತದೆ.`;
+      const up = item.direction !== "silence";
+      return `ಅಂತರ್ ವಿಶ್ಲೇಷಣೆ: ${name} ವಲಯದಲ್ಲಿ ${ctype} ಪ್ರಕರಣಗಳಲ್ಲಿ ${up ? "ಹೆಚ್ಚಳ" : "ಕಡಿಮೆ"} ಕಂಡುಬಂದಿದೆ.`;
     }
-    return `Antar AI Analysis has identified a ${rs} risk of ${dir} for ${ctype} in ${name} ${z}. The underlying cause is linked to: ${item.why || "historical trend patterns"}.`;
+    if (item.direction === "silence") {
+      return `Far fewer ${ctype.toLowerCase()} cases than usual have been reported in ${name}. A drop this sharp can mean the crime really fell, or that cases are not being reported or registered. It is worth a check with the station.`;
+    }
+    if (!(Number(item.z_score) > 0)) {
+      return `${name} is at its usual level. ${ctype} is its most common case type, and nothing unusual is expected in the next 7 days.`;
+    }
+    return `${ctype} cases in ${name} are ${levelOf(item).toLowerCase().replace(/^at its/, "at their")} for this area.`
+      + (range ? ` The model expects ${range} in the next 7 days.` : "")
+      + ` It rates this ${(RISK_WORD[item.risk] || "risk").toLowerCase()} and is ${pct(item.confidence)}% confident.`
+      + (item.festival_driver ? ` Season: ${item.festival_driver.replace(/^Seasonal\s*/i, "").trim()} at this time of year.` : "");
+  };
+
+  // The week in a few counted sentences. Each one opens the area it is about.
+  const P = predictions || [];
+  const highs = P.filter((x) => x.risk === "HIGH");
+  const aboves = P.filter((x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2).sort((a, b) => (b.z_score || 0) - (a.z_score || 0));
+  const drops = P.filter((x) => x.direction === "silence");
+  const usual = P.filter((x) => x.risk !== "HIGH" && x.direction !== "silence" && (Number(x.z_score) || 0) < 2).length;
+  const names = (a, n = 3) => a.slice(0, n).map((x) => x.zone).join(", ") + (a.length > n ? ` and ${a.length - n} more` : "");
+  const are = (n) => (n === 1 ? "area is" : "areas are");
+  const brief = !P.length ? [] : [
+    highs.length
+      ? { k: "hi", go: highs[0], t: `${highs.length} ${are(highs.length)} at high risk this week: ${names(highs)}.` }
+      : { k: "ok", t: "No area is at high risk this week." },
+    aboves.length
+      ? { k: "up", go: aboves[0], t: `${aboves.length} ${are(aboves.length)} above the normal level. The strongest is ${aboves[0].zone} (${cap(aboves[0].crime_type).toLowerCase()})${rangeOf(aboves[0]) ? `, where ${rangeOf(aboves[0])} are expected` : ""}.` }
+      : { k: "ok", t: "No area is above its normal level." },
+    drops.length
+      ? { k: "dn", go: drops[0], t: `${drops.length} ${drops.length === 1 ? "area has" : "areas have"} unusually few reports (${names(drops)}). That can mean under-reporting and is worth a check.` }
+      : null,
+    usual ? { k: "eq", t: `${usual} ${are(usual)} at the usual level.` } : null,
+  ].filter(Boolean);
+  const openItem = (it) => {
+    const i = P.indexOf(it);
+    if (i < 0) return;
+    setFocusKind("prediction"); setSelected(i);
+    setTimeout(() => reasonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   };
 
 const avgConf = predictions?.length
@@ -602,44 +805,81 @@ const avgConf = predictions?.length
       <div className="px-head">
         <div className="px-head-l">
           <h1 className="px-title" style={{ background: "linear-gradient(to right, #22d3ee, #d8b4fe)", WebkitBackgroundClip: "text", color: "transparent" }}>
-              {kn ? "ಅಂತರ್ ಮುನ್ಸೂಚನೆ ಎಂಜಿನ್" : "Antar Forecast Engine"}
-            </h1>
-            <div className="px-sub" style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
-              {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ವಿಶ್ಲೇಷಣೆ • ಇಂಟೆಲಿಜೆನ್ಸ್ ಆಧಾರಿತ ಮುನ್ಸೂಚನೆ" : "7-Day Predictive Analysis • Intelligence-Driven Foresight and Risk Assessment"}
-            </div>
+            {kn ? "ಅಂತರ್ ಮುನ್ಸೂಚನೆ ಎಂಜಿನ್" : "Antar Forecast Engine"}
+          </h1>
+          <div className="px-sub">
+            {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ವಿಶ್ಲೇಷಣೆ" : "What the case records suggest for the next 7 days, area by area."}
+          </div>
         </div>
         <div className="px-head-r">
-          {boardMeta && <span className="px-chip">{kn ? "ಮೌಲ್ಯಮಾಪನ" : "assessed"} <b>{boardMeta.as_of}</b></span>}
-          {boardMeta?.zones_covered != null && <span className="px-chip"><b>{boardMeta.zones_covered}</b> {kn ? "ವಲಯ" : "zones"}</span>}
-          {offlineSample && <span className="px-offline">{kn ? "ಆಫ್‌ಲೈನ್ · ಮಾದರಿ" : "OFFLINE · sample"}</span>}
+          {boardMeta && <span className="px-chip">{kn ? "ಮೌಲ್ಯಮಾಪನ" : "Assessed"} <b>{dayOf(boardMeta.as_of)}</b></span>}
+          {boardMeta?.zones_covered != null && <span className="px-chip"><b>{boardMeta.zones_covered}</b> {kn ? "ವಲಯ" : "areas"}</span>}
+          {offlineSample && <span className="px-offline">{kn ? "ಆಫ್‌ಲೈನ್ · ಮಾದರಿ" : "Offline: sample data"}</span>}
           {modelCard && (
             <button className="px-howbtn" onClick={() => {
               const btn = document.getElementById("cx-guide-trigger");
               if (btn) btn.click();
             }}>
-              ⓘ {kn ? "ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ" : "How it works"}
+              {kn ? "ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ" : "How it works"}
             </button>
           )}
         </div>
       </div>
 
-      {/* Hotspots KPI strip */}
+      {/* The week in brief: counted sentences first, Antar's wording of them after */}
+      <div className="px-brief">
+        <div className="px-brief-who">
+          <Agent face="clockwork" name="Forecast" size={112} />
+          <span>{kn ? "ಮುನ್ಸೂಚನೆ ಏಜೆಂಟ್" : "Forecast agent"}</span>
+        </div>
+        <div className="px-brief-body">
+          <h2>{kn ? "ಈ ವಾರ ಸಂಕ್ಷಿಪ್ತವಾಗಿ" : "This week in brief"}</h2>
+          {predictions === null && <p className="px-brief-wait">{kn ? "ದಾಖಲೆಗಳನ್ನು ಓದುತ್ತಿದೆ…" : "Reading the records…"}</p>}
+          {predictions?.length === 0 && <p className="px-brief-wait">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "There is nothing to forecast yet."}</p>}
+          <ul>
+            {brief.map((b, i) => (
+              <li key={i} className={`k-${b.k}${b.go ? " go" : ""}`} style={{ animationDelay: `${i * 90}ms` }}
+                  onClick={b.go ? () => openItem(b.go) : undefined} role={b.go ? "button" : undefined} tabIndex={b.go ? 0 : undefined}
+                  onKeyDown={b.go ? (e) => { if (e.key === "Enter") openItem(b.go); } : undefined}>
+                {b.t}{b.go ? <em>{kn ? "ತೆರೆಯಿರಿ" : "Open"}</em> : null}
+              </li>
+            ))}
+          </ul>
+          {reading && (
+            <div className="px-brief-ai">
+              <span>{kn ? "ಅಂತರ್ ಓದು" : "Antar's reading"}</span>
+              <p>{reading}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Figures for the week */}
       <div className="px-statrow">
         <div className="px-statbox">
-          <div className="l">{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು" : "hotspots"}</div>
-          <div className="v">{predictions?.length ?? "—"}</div>
+          <div className="l">{kn ? "ಮೌಲ್ಯಮಾಪನ ಮಾಡಿದ ವಲಯಗಳು" : "Areas assessed"}</div>
+          <div className="v"><Count n={predictions ? P.length : null} /></div>
+          <div className="d">{kn ? "ಸಾಕಷ್ಟು ದಾಖಲೆಗಳಿರುವ ಪ್ರತಿ ವಲಯ" : "Every area with enough records"}</div>
         </div>
         <div className="px-statbox">
-          <div className="l">{kn ? "ಹೆಚ್ಚಿನ ಅಪಾಯ" : "high risk"}</div>
-          <div className="v red">{predictions?.filter((p) => p.risk === "HIGH").length ?? "—"}</div>
+          <div className="l">{kn ? "ಹೆಚ್ಚಿನ ಅಪಾಯ" : "High risk"}</div>
+          <div className={`v ${highs.length ? "red" : ""}`}><Count n={predictions ? highs.length : null} /></div>
+          <div className="d">{kn ? "ಈ ವಾರ ಗಮನ ಬೇಕು" : "Need attention this week"}</div>
         </div>
         <div className="px-statbox">
-          <div className="l">{kn ? "ಮೌನ ಎಚ್ಚರಿಕೆಗಳು" : "silence alerts"}</div>
-          <div className="v">{predictions?.filter((p) => p.direction === "silence").length ?? 0}</div>
+          <div className="l">{kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal"}</div>
+          <div className="v"><Count n={predictions ? aboves.length : null} /></div>
+          <div className="d">{kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳು" : "More cases than usual"}</div>
         </div>
         <div className="px-statbox">
-          <div className="l">{kn ? "ಸರಾಸರಿ ವಿಶ್ವಾಸ" : "avg confidence"}</div>
-          <div className="v cyan">{avgConf != null ? `${avgConf}%` : "—"}</div>
+          <div className="l">{kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops"}</div>
+          <div className="v"><Count n={predictions ? drops.length : null} /></div>
+          <div className="d">{kn ? "ಕಡಿಮೆ ವರದಿ ಸಾಧ್ಯತೆ" : "Unusually few reports"}</div>
+        </div>
+        <div className="px-statbox">
+          <div className="l">{kn ? "ಸರಾಸರಿ ವಿಶ್ವಾಸ" : "Average confidence"}</div>
+          <div className="v cyan"><Count n={avgConf} suffix="%" /></div>
+          <div className="d">{kn ? "ಮಾದರಿಯ ಖಚಿತತೆ" : "How sure the model is"}</div>
         </div>
       </div>
 
@@ -648,15 +888,15 @@ const avgConf = predictions?.length
         {/* 1 · Predict · Next 7 Days (scrollable) */}
         <div className="pxd-card">
           <div className="pxd-hd">
-            <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast • Upcoming 7 Days"}</span>
-            <span className="pxd-sub">{predictions?.length ?? 0} {kn ? "ವಲಯ" : "zones"}</span>
+            <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast for the next 7 days"}</span>
+            <span className="pxd-sub">{predictions?.length ?? 0} {kn ? "ವಲಯ" : "areas"}</span>
           </div>
           <div className="pxd-scroll" role="group" aria-label={kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್ ಪ್ರಾಧಾನ್ಯ" : "Hotspot rankings"}>
             {predictions === null && (
-              <div className="px-loading">{kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Loading…"}<div className="signal-pulse" style={{ marginTop: 10 }} /></div>
+              <div className="px-loading"><Agent face="clockwork" name="Forecast" size={56} /><div>{kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Working out the week…"}</div></div>
             )}
             {predictions?.length === 0 && (
-              <div className="px-loading">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "no active predictions. the board is honest-empty."}</div>
+              <div className="px-loading">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "No forecasts right now."}</div>
             )}
             {predictions?.map((p, i) => (
               <div
@@ -669,70 +909,65 @@ const avgConf = predictions?.length
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFocusKind("prediction"); setSelected(i); } }}
               >
                 <div className="px-card-top">
-                  <span className={`px-risk ${RISK_BADGE[p.risk] || ""}`}>{p.risk?.toLowerCase()}</span>
                   <span className="px-zone">{p.zone}</span>
+                  <span className={`px-risk ${RISK_BADGE[p.risk] || ""}`}>{kn ? p.risk?.toLowerCase() : (RISK_WORD[p.risk] || p.risk)}</span>
                 </div>
                 <div className="px-crime-row">
-                  <span className="px-crime">{cap(p.crime_type)}</span>
+                  <span className="px-crime" title={cap(p.crime_type)}>{cap(p.crime_type)}</span>
                   <button
                     type="button"
-                    className="px-know" style={{ textTransform: "none", letterSpacing: "normal", fontWeight: 500 }}
+                    className="px-know"
                     onClick={(e) => { e.stopPropagation(); setFocusKind("prediction"); setSelected(i); setShowReasoning(true); }}
-                    aria-label={`${kn ? "ತರ್ಕದಲ್ಲಿ ಇನ್ನಷ್ಟು ತಿಳಿಯಿರಿ" : "Know more in reasoning"} - ${p.zone}`}
+                    aria-label={`${kn ? "ತರ್ಕದಲ್ಲಿ ಇನ್ನಷ್ಟು ತಿಳಿಯಿರಿ" : "Why this forecast"} - ${p.zone}`}
                   >
-                    {kn ? "ಸಂದರ್ಭವನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಿ" : "Understand Context"}
+                    {kn ? "ಏಕೆ?" : "Why?"}
                   </button>
+                </div>
+                <div className="px-say" title={p.z_score ? `Anomaly score ${p.z_score}` : undefined}>
+                  <b className={p.direction === "silence" ? "dn" : (Number(p.z_score) || 0) >= 2 ? "up" : ""}>{levelOf(p)}</b>
+                  {rangeOf(p) ? <span>{kn ? "ನಿರೀಕ್ಷಿತ" : "Expected"} {rangeOf(p)}</span> : null}
                 </div>
                 <div className="px-confbar">
                   <div className="px-conftrack"><div className="px-conffill" style={{ width: `${pct(p.confidence)}%` }} /></div>
-                  <span className="px-confpct">{pct(p.confidence)}%</span>
+                  <span className="px-confpct">{pct(p.confidence)}% {kn ? "ವಿಶ್ವಾಸ" : "confident"}</span>
                 </div>
-                <div className="px-meta">
-                  {p.z_score ? <span>z = {p.z_score}</span> : null}
-                  {p.band ? <span>{kn ? "ನಿರೀಕ್ಷಿತ" : "expected"} {p.band}</span> : null}
-                </div>
-                {p.direction === "silence" && <span className="px-tag">[{kn ? "ಅಸಂಗತಿ" : "anomaly"}] {kn ? "ಮೌನ ಇಳಿಕೆ" : "silence drop"}</span>}
-                {p.festival_driver && <span className="px-tag">[{kn ? "ಘಟನೆ" : "event"}] {p.festival_driver}</span>}
-                {acked.has(keyOf(p)) && <span className="px-tag ok"> {kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Reviewed"}</span>}
+                {p.festival_driver && <span className="px-tag">{p.festival_driver}</span>}
+                {acked.has(keyOf(p)) && <span className="px-tag ok">{kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Reviewed"}</span>}
               </div>
             ))}
           </div>
         </div>
 
-        {/* 2 · Prediction Volume Trend */}
+        {/* 2 · Cases recorded per month */}
         <div className="pxd-card">
-          <div className="pxd-hd" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ ಪರಿಮಾಣದ ಪ್ರವೃತ್ತಿ" : "Prediction Volume Trend"}</span>
-                <span className="pxd-sub" style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{dash && dash !== "offline" ? (kn ? "ಲೈವ್" : "live") : "—"}</span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>
-                {kn ? "ಐತಿಹಾಸಿಕ ಡೇಟಾದ ವಿರುದ್ಧ ಊಹಿಸಲಾದ ಸಂಪುಟಗಳು" : "Predicted incident volumes charted against historical baselines"}
-              </span>
+          <div className="pxd-hd pxd-hd2">
+            <Agent face="radio" name="Pattern" />
+            <div>
+              <span className="pxd-ttl">{kn ? "ತಿಂಗಳಿಗೆ ದಾಖಲಾದ ಪ್ರಕರಣಗಳು" : "Cases recorded per month"}</span>
+              <span className="pxd-note">{kn ? "ಪ್ರತಿ ತಿಂಗಳು ದಾಖಲಾದ FIR ಗಳು" : "FIRs registered each month. This is the history the forecast is measured against."}</span>
             </div>
+          </div>
           {dash && dash !== "offline"
             ? <VolumeTrend volume={dash.volume} kn={kn} />
-            : <div className="pxd-empty">{kn ? "ಬ್ಯಾಕೆಂಡ್ ಆಫ್‌ಲೈನ್" : "Backend offline - start the Antar API."}</div>}
+            : <div className="pxd-empty">{kn ? "ಬ್ಯಾಕೆಂಡ್ ಆಫ್‌ಲೈನ್" : "The server is not answering."}</div>}
         </div>
 
-        {/* 3 · Antar Alert (all, scrollable, clickable) */}
+        {/* 3 · Active alerts (all, scrollable, clickable) */}
         <div className="pxd-card">
-          <div className="pxd-hd" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                <span className="pxd-ttl">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active Alerts"}</span>
-                <span className="pxd-sub" style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{alertList.length} {kn ? "ಸಕ್ರಿಯ" : "active"}</span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>
-                {kn ? "ರಿಯಲ್-ಟೈಮ್ ಅಸಂಗತತೆಗಳು ಮತ್ತು ಪತ್ತೆಯಾದ ಅಪಾಯದ ಏರಿಕೆಗಳು" : "Real-time anomalies and localized risk spikes"}
-              </span>
+          <div className="pxd-hd pxd-hd2">
+            <Agent face="lantern" name="Alerts" />
+            <div>
+              <span className="pxd-ttl">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts"} <i>{alertList.length}</i></span>
+              <span className="pxd-note">{kn ? "ಸಾಮಾನ್ಯ ಮಾದರಿಯಿಂದ ಭಿನ್ನವಾದ ವಲಯಗಳು" : "Areas where recent cases departed from the usual pattern. Click one to see why."}</span>
             </div>
+          </div>
           <div className="pxd-scroll pxd-alerts">
             {alertList.length === 0 && <div className="pxd-empty">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆ ಇಲ್ಲ" : "No active alerts"}</div>}
             {alertList.map((a, i) => {
               const z = a.z_score ?? 0;
               const hi = z >= 4;
               const sev = hi ? "hi" : "md";
-              const sevlbl = hi ? "HIGH" : z >= 2.5 ? "MED" : "LOW";
+              const sevlbl = hi ? "High" : z >= 2.5 ? "Medium" : "Low";
               const on = focusKind === "alert" && selAlert === i;
               return (
                 <div
@@ -746,11 +981,12 @@ const avgConf = predictions?.length
                 >
                   <div className="pxd-alert-main">
                     <div className="pxd-alert-ttl">
-                      {cap(a.crime_type)} · {a.zone}
+                      <span>{cap(a.crime_type)}</span>
                       <span className={`pxd-sev ${sev}`}>{sevlbl}</span>
                     </div>
-                    <div className="pxd-alert-sub">
-                      {a.anomaly_type ? cap(a.anomaly_type) : a.direction === "silence" ? (kn ? "ವರದಿ ಮೌನ" : "reporting silence") : (kn ? "ಅಸಂಗತಿ" : "anomaly")} · z = {Number(z).toFixed(2)}
+                    <div className="pxd-alert-sub" title={`Anomaly score ${Number(z).toFixed(2)}`}>
+                      {a.zone} · {a.anomaly_type ? cap(a.anomaly_type) : a.direction === "silence" ? (kn ? "ವರದಿ ಮೌನ" : "Reporting drop") : (kn ? "ಅಸಂಗತಿ" : "Unusual activity")}
+                      {z > 0 ? ` · ${levelOf(a).toLowerCase()}` : ` · ${kn ? "ಗಮನದಲ್ಲಿದೆ" : "on watch"}`}
                     </div>
                   </div>
                   <span className={`pxd-adot ${sev}`} />
@@ -764,9 +1000,9 @@ const avgConf = predictions?.length
       {/* Explanation section - full width, drives off the focused prediction OR alert */}
       <div className="px-panel px-explain" ref={reasonRef}>
         <div className="px-panel-hd">
-          <span>{kn ? "ಮುನ್ಸೂಚನೆ ವಿವರಣೆ" : "Prediction Explanation"}</span>
+          <span>{kn ? "ಮುನ್ಸೂಚನೆ ವಿವರಣೆ" : "Why this forecast"}</span>
           <span className="px-hint">
-            {focusKind === "alert" ? (kn ? "ಅಂತರ ಎಚ್ಚರಿಕೆಯಿಂದ" : "from Antar Alert") : (kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಂದ" : "from Predict · next 7 days")}
+            {focusKind === "alert" ? (kn ? "ಅಂತರ ಎಚ್ಚರಿಕೆಯಿಂದ" : "From an active alert") : (kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಂದ" : "From the 7-day forecast")}
           </span>
         </div>
 
@@ -780,53 +1016,52 @@ const avgConf = predictions?.length
             <>
               <div className="px-explain-grid">
                 {/* left: the explanation */}
-                <div>
-                  <div className="px-insp-title">{focusItem.zone} - {cap(focusItem.crime_type)}</div>
-                  <div className="px-insp-why" style={{ background: "rgba(34,230,240,0.05)", padding: "16px 20px", borderRadius: "14px", borderLeft: "3px solid #22d3ee", color: "#e2e8f0", fontSize: "14.5px", lineHeight: "1.7", marginTop: "12px" }}>{generateNarrative(focusItem)}</div>
+                <div key={keyOf(focusItem) + focusKind} className="px-fade">
+                  <div className="px-insp-title">{focusItem.zone}: {cap(focusItem.crime_type)}</div>
+                  <div className="px-insp-why">{generateNarrative(focusItem)}</div>
 
                   <div className="px-big">
                     <span className="n">{pct(focusItem.confidence)}%</span>
-                    {focusItem.z_score
-                      ? <span className="z">▲ z = {focusItem.z_score} {kn ? "ಅಸಂಗತಿ" : "anomaly"}</span>
-                      : <span className="z base">{kn ? "ಬೇಸ್‌ಲೈನ್" : "baseline"}</span>}
-                    <span className={`px-risk ${RISK_BADGE[focusItem.risk] || ""}`}>{focusItem.risk?.toLowerCase()}</span>
+                    <span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confident"}</span>
+                    <span className={`px-risk ${RISK_BADGE[focusItem.risk] || ""}`}>{kn ? focusItem.risk?.toLowerCase() : (RISK_WORD[focusItem.risk] || focusItem.risk)}</span>
+                    {Number(focusItem.z_score) > 0 && (
+                      <span className="z" title="How far recent cases sit from this area's usual level. 2 is unusual, 4 is rare.">{kn ? "ಅಸಂಗತಿ" : "Anomaly score"} {focusItem.z_score}</span>
+                    )}
                   </div>
 
-                  {focusItem.band && (
+                  {rangeOf(focusItem) && (
                     <div className="px-bandbox">
-                      {kn ? "ನಿರೀಕ್ಷಿತ ಅವಧಿ" : "Expected window"} <b>{focusItem.band}</b>
-                      {focusItem.coverage ? ` · ${focusItem.coverage} ${kn ? "ಕಾನ್ಫಾರ್ಮಲ್" : "conformal"}` : ""}
-                      {focusItem.festival_driver ? ` · ${focusItem.festival_driver}` : ""}
+                      {kn ? "ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ನಿರೀಕ್ಷಿತ" : "Expected in the next 7 days"} <b>{rangeOf(focusItem)}</b>
+                      {coverOf(focusItem.coverage) ? <span>{kn ? `${coverOf(focusItem.coverage)} ವ್ಯಾಪ್ತಿ` : `A range like this holds about ${coverOf(focusItem.coverage)} of the time.`}</span> : null}
+                    </div>
+                  )}
+
+                  {sawOf(focusItem).length > 0 && (
+                    <div className="px-saw">
+                      <h4>{kn ? "ಮಾದರಿ ಕಂಡದ್ದು" : "What the model saw"}</h4>
+                      <ul>{sawOf(focusItem).map((t, i) => <li key={i}>{t}</li>)}</ul>
                     </div>
                   )}
 
                   <div className="px-tiles">
-                    <div className="px-tile"><div className="tv">{focusItem.evidence_row_ids?.length ?? 0} FIRs</div><div className="tl">{kn ? "ಸಾಕ್ಷ್ಯ ಸಾಲುಗಳು" : "Evidence rows"}</div></div>
-                    <div className="px-tile"><div className="tv">{focusItem.coverage || "—"}</div><div className="tl">{kn ? "ಬ್ಯಾಂಡ್ ವ್ಯಾಪ್ತಿ" : "Band coverage"}</div></div>
-                    <div className="px-tile"><div className="tv" style={{ textTransform: "capitalize" }}>{focusItem.direction || "spike"}</div><div className="tl">{kn ? "ದಿಕ್ಕು" : "Direction"}</div></div>
-                    <div className="px-tile"><div className="tv">{focusItem.festival_driver ? (kn ? "ಹೌದು" : "yes") : (kn ? "ಇಲ್ಲ" : "none")}</div><div className="tl">{kn ? "ಋತುಮಾನ ಚಾಲಕ" : "Seasonal driver"}</div></div>
+                    <div className="px-tile"><div className="tv">{focusItem.evidence_row_ids?.length ?? 0}</div><div className="tl">{kn ? "ಸಾಕ್ಷ್ಯ ಸಾಲುಗಳು" : "Case records used"}</div></div>
+                    <div className="px-tile"><div className="tv">{coverOf(focusItem.coverage) || "—"}</div><div className="tl">{kn ? "ಬ್ಯಾಂಡ್ ವ್ಯಾಪ್ತಿ" : "Range reliability"}</div></div>
+                    <div className="px-tile"><div className="tv">{focusItem.direction === "silence" ? (kn ? "ಇಳಿಕೆ" : "Drop") : Number(focusItem.z_score) > 0 ? (kn ? "ಏರಿಕೆ" : "Rise") : (kn ? "ಸ್ಥಿರ" : "Steady")}</div><div className="tl">{kn ? "ದಿಕ್ಕು" : "Direction"}</div></div>
+                    <div className="px-tile"><div className="tv">{focusItem.festival_driver ? focusItem.festival_driver.replace(/^Seasonal\s*/i, "") : (kn ? "ಇಲ್ಲ" : "None")}</div><div className="tl">{kn ? "ಋತುಮಾನ ಚಾಲಕ" : "Seasonal effect"}</div></div>
                   </div>
 
                   {focusItem.evidence_row_ids?.length > 0 && (
-                      <details style={{ marginTop: '20px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid #1a1a1a' }}>
-                        <summary style={{ cursor: 'pointer', color: '#58a6ff', fontSize: '13px', fontWeight: 600, userSelect: 'none', display: 'flex', alignItems: 'center', outline: 'none' }}>
-                          {kn ? "ಹೆಚ್ಚಿನ ತಾಂತ್ರಿಕ ವಿವರಗಳನ್ನು ತೋರಿಸಿ (Show Details)" : "Show Deep Context & Evidence"}
-                        </summary>
-                        <div style={{ marginTop: '16px' }}>
-                          <div className="px-prov">
-                            <div className="px-prov-hd"><span className="dot" />{kn ? "ಹೊಣೆಗಾರಿಕೆ ಲೆಡ್ಜರ್" : "Warning Ledger"} • {focusItem.evidence_row_ids.length} {kn ? "ಆದಾನ FIR ಸಾಲುಗಳು" : "input FIR rows persisted for audit"}</div>
-                            <div className="px-prov-ids">
-                              {focusItem.evidence_row_ids.slice(0, 4).join(" • ")}{focusItem.evidence_row_ids.length > 4 ? ` • +${focusItem.evidence_row_ids.length - 4}` : ""}
-                            </div>
-                          </div>
-                          <div style={{ marginTop: '12px', fontSize: '12px', color: '#8b949e', fontFamily: 'JetBrains Mono' }}>
-                            Model: Spatiotemporal MAD-z (Confidence {focusItem.coverage || "90%"})<br />
-                            Z-score algorithm isolates true spikes from random statistical noise.<br />
-                            {focusItem.festival_driver ? `Holiday/Season Context: ${focusItem.festival_driver}` : ""}
-                          </div>
+                    <details className="px-more">
+                      <summary>{kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ ದಾಖಲೆಗಳನ್ನು ತೋರಿಸಿ" : "Show the case records behind this"}</summary>
+                      <div className="px-prov">
+                        <div className="px-prov-hd">{focusItem.evidence_row_ids.length} {kn ? "ಆದಾನ FIR ಸಾಲುಗಳು" : "FIR records were used and are kept for audit"}</div>
+                        <div className="px-prov-ids">
+                          {focusItem.evidence_row_ids.slice(0, 4).join(" • ")}{focusItem.evidence_row_ids.length > 4 ? ` • +${focusItem.evidence_row_ids.length - 4}` : ""}
                         </div>
-                      </details>
-                    )}
+                      </div>
+                      {!kn && <p className="px-method">Method: recent weekly counts are compared with the area's own history, and a range is drawn around the expected count.</p>}
+                    </details>
+                  )}
                 </div>
 
                 {/* right: recommended action + controls */}
@@ -841,37 +1076,37 @@ const avgConf = predictions?.length
 
                   <div className="px-acts">
                     <button className={`px-actbtn cy ${showReasoning ? "on" : ""}`} onClick={() => setShowReasoning((v) => !v)}>
-                      {kn ? "ತರ್ಕ" : "Reasoning"} {showReasoning ? "▾" : "▸"}
+                      {kn ? "ತರ್ಕ" : "How the agents reasoned"} {showReasoning ? "▾" : "▸"}
                     </button>
                     <button className={`px-actbtn ${showScenario ? "on" : ""}`} onClick={() => setShowScenario((v) => !v)}>
-                      {kn ? "ಸನ್ನಿವೇಶ" : "Scenario"} {showScenario ? "▾" : "▸"}
+                      {kn ? "ಸನ್ನಿವೇಶ" : "What if"} {showScenario ? "▾" : "▸"}
                     </button>
                     <button className="px-actbtn" onClick={() => openDerivationModal(focusItem.id || focusItem.zone || "HYP-101")}>
-                      {loadingDerivation ? "…" : (kn ? "ಡೆರಿವೇಷನ್ ಆಡಿಟ್ ▸" : "Derivation audit ▸")}
+                      {loadingDerivation ? "…" : (kn ? "ಡೆರಿವೇಷನ್ ಆಡಿಟ್ ▸" : "Audit trail ▸")}
                     </button>
                     <button className="px-actbtn" onClick={() => router.push(`/map?zone=${encodeURIComponent(focusItem.zone)}&crime_type=${focusItem.crime_type}`)}>
-                      {kn ? "ನಕ್ಷೆ ▸" : "Map ▸"}
+                      {kn ? "ನಕ್ಷೆ ▸" : "Open on map ▸"}
                     </button>
                     <button className="px-actbtn ask" onClick={() => askAntar(focusItem)}>
-                      {kn ? "ಅಂತರ‍ಗೆ ಕೇಳಿ ▸" : "Ask a question ▸"}
+                      {kn ? "ಅಂತರ‍ಗೆ ಕೇಳಿ ▸" : "Ask Antar ▸"}
                     </button>
                     {isAcked
-                      ? <span className="px-ackdone"> {kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Acknowledged"}</span>
-                      : <button className="px-actbtn ack" onClick={() => acknowledge(focusItem)}>{kn ? "ಸ್ವೀಕರಿಸಿ" : "Acknowledge"}</button>}
+                      ? <span className="px-ackdone"> {kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Marked as reviewed"}</span>
+                      : <button className="px-actbtn ack" onClick={() => acknowledge(focusItem)}>{kn ? "ಸ್ವೀಕರಿಸಿ" : "Mark as reviewed"}</button>}
                   </div>
 
                   {showScenario && (
                     scenarioBand?.scenario ? (
                       <div className="px-scn">
                         <div className="px-scn-row">
-                          <span className="px-scn-badge">{scenarioBand.scenario.badge || "INFERRED"} · {kn ? "ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್" : "scenario band"}</span>
+                          <span className="px-scn-badge">{cap(scenarioBand.scenario.badge || "Inferred")} · {kn ? "ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್" : "scenario range"}</span>
                           <span className="px-scn-val">{scenarioBand.scenario.lo}–{scenarioBand.scenario.hi} {kn ? "ಘಟನೆಗಳು" : "incidents"}</span>
                           <span className="px-scn-base">({kn ? "ಬೇಸ್‌ಲೈನ್ ಎದುರು" : "vs baseline"} {scenarioBand.baseline?.lo}–{scenarioBand.baseline?.hi})</span>
                         </div>
                         <div className="px-scn-narr">{scenarioBand.narrative}</div>
                       </div>
                     ) : (
-                      <div className="px-scn muted">{kn ? "ಈ ವಲಯಕ್ಕೆ ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್ ಇಲ್ಲ" : "No scenario band available for this zone."}</div>
+                      <div className="px-scn muted">{kn ? "ಈ ವಲಯಕ್ಕೆ ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್ ಇಲ್ಲ" : "No scenario range for this area: there is no measured alert to build one on."}</div>
                     )
                   )}
                 </div>
@@ -881,8 +1116,8 @@ const avgConf = predictions?.length
               {showReasoning && (
                 <div className="px-reason">
                   <div className="px-drawer-hd">
-                    <span className="px-dagttl">{kn ? "ಏಜೆಂಟ್ ತರ್ಕ ಗ್ರಾಫ್" : "Agent Reasoning Graph"} · <span className="px-dagzone">{focusItem.zone}</span></span>
-                    {streaming && <span className="px-live"><span className="d" />{kn ? "ಲೈವ್" : "LIVE"}</span>}
+                    <span className="px-dagttl">{kn ? "ಏಜೆಂಟ್ ತರ್ಕ ಗ್ರಾಫ್" : "How the agents reasoned"} · <span className="px-dagzone">{focusItem.zone}</span></span>
+                    {streaming && <span className="px-live"><span className="d" />{kn ? "ಲೈವ್" : "Live"}</span>}
                     <button className="px-drawer-x" onClick={() => setShowReasoning(false)} aria-label="Close reasoning"></button>
                   </div>
                   <div className="px-drawer-body">
@@ -901,7 +1136,7 @@ const avgConf = predictions?.length
                       </ReactFlow>
                     </div>
                     <div className="px-console">
-                      <div className="px-consolehdr"><span className="px-consolettl">{kn ? "ತರ್ಕ ಟ್ರೇಸ್" : "Reasoning Trace"}</span></div>
+                      <div className="px-consolehdr"><span className="px-consolettl">{kn ? "ತರ್ಕ ಟ್ರೇಸ್" : "Step by step"}</span></div>
                       <div className="px-consolebody" ref={consoleRef} aria-live="polite" aria-label="Reasoning trace">
                         {traceLines.map((line, i) => {
                           const [agent, ...rest] = line.split(" ▸ ");
@@ -1000,7 +1235,7 @@ const avgConf = predictions?.length
 
       <div className="px-footer">
         {engine ? `${kn ? "ಎಂಜಿನ್" : "engine"}: ${engine} · ` : ""}
-        {kn ? "ನಿರ್ಧಾರ-ಬೆಂಬಲ ಮಾತ್ರ · ತೀರ್ಪು ಅಲ್ಲ · ಅಧಿಕಾರಿ ತೀರ್ಮಾನ ಕಡ್ಡಾಯ" : "Decision-support only · Not a verdict · Officer judgement required"}
+        {kn ? "ನಿರ್ಧಾರ-ಬೆಂಬಲ ಮಾತ್ರ · ತೀರ್ಪು ಅಲ್ಲ · ಅಧಿಕಾರಿ ತೀರ್ಮಾನ ಕಡ್ಡಾಯ" : "Decision support only. Not a verdict. The officer decides."}
       </div>
 
       {/* Model card modal - real /model-card */}
@@ -1102,7 +1337,7 @@ const avgConf = predictions?.length
           padding: "12px 18px", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
           fontSize: "13px", fontWeight: 500,
         }}>
-          [LEDGER STATUS] {confirmToast}
+          {confirmToast}
         </div>
       )}
     </div>

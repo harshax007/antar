@@ -294,6 +294,72 @@ async def predict_dashboard(months: int = 5, trend_months: int = 12, top: int = 
     })
 
 
+def _plain_crime(ct: str | None) -> str:
+    return (ct or "crime").replace("_", " ").strip().lower()
+
+
+def board_facts(board: dict) -> dict:
+    """The week's board as counted facts - the only numbers a briefing may use."""
+    preds = board.get("predictions") or []
+    high = [c for c in preds if c.get("risk") == "HIGH"]
+    above = [c for c in preds if c.get("direction") != "silence" and (c.get("z_score") or 0) >= 2]
+    quiet = [c for c in preds if c.get("direction") == "silence"]
+    usual = len(preds) - len({id(c) for c in high + above + quiet})
+
+    def _row(c: dict) -> dict:
+        return {"zone": c.get("zone"), "crime": _plain_crime(c.get("crime_type")),
+                "lo": c.get("conformal_lo"), "hi": c.get("conformal_hi")}
+
+    return {
+        "as_of": board.get("as_of"), "areas": len(preds),
+        "high": [_row(c) for c in high[:5]], "high_count": len(high),
+        "above_normal": [_row(c) for c in above[:5]], "above_normal_count": len(above),
+        "reporting_drop": [_row(c) for c in quiet[:5]], "reporting_drop_count": len(quiet),
+        "usual_count": max(0, usual),
+    }
+
+
+_BRIEFING: dict = {}      # as_of -> reading; one model call a day, not one per page view
+
+
+@router.get("/predict/briefing")
+async def predict_briefing() -> dict:
+    """The week's forecast in two or three plain sentences.
+
+    The facts are counted from the board; the model only words them. A reading that
+    carries a number the facts do not is discarded rather than shown - the screen then
+    keeps its own counted briefing, which never depends on the model.
+    """
+    import json
+    import re
+    from app.core.date_guard import redact_future_dates
+
+    facts = board_facts(compile_board(0))
+    key = facts.get("as_of")
+    if key in _BRIEFING:
+        return {"facts": facts, "reading": _BRIEFING[key]}
+    reading = None
+    try:
+        from app.services.quickml import quickml_generate
+        text = await quickml_generate(
+            system=("You brief a police station officer on the next 7 days. Plain English, short "
+                    "sentences, no jargon, no statistics terms, no markdown. Two or three sentences. "
+                    "Use only the facts given: never add a number, a place or a cause that is not in "
+                    "them. Say what deserves attention first and what an officer could check. This is "
+                    "decision support, not an instruction."),
+            user=json.dumps(facts, ensure_ascii=False), temperature=0.2, max_tokens=220, budget_s=12.0)
+        text = re.sub(r"\s+", " ", (text or "")).strip()
+        allowed = set(re.findall(r"\d+(?:\.\d+)?", json.dumps(facts))) | {"7"}
+        if text and all(n in allowed for n in re.findall(r"\d+(?:\.\d+)?", text)):
+            reading = redact_future_dates({"t": text})["t"]
+    except Exception:
+        reading = None
+    if reading:
+        _BRIEFING.clear()
+        _BRIEFING[key] = reading
+    return {"facts": facts, "reading": reading}
+
+
 @router.get("/predict/{zone}/scenario")
 async def predict_scenario(
     zone: str,
