@@ -507,6 +507,26 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
 
   function onKey(e) {
     const h = history.current;
+    if (!unlocked && using) {
+      // Reached by clicking an agent: this is that agent's own session. It takes a target,
+      // its card, and the way out - the rest of the console is behind the login.
+      if (e.key !== "Enter") return;
+      const text = input.trim();
+      setInput("");
+      if (!text) return;
+      const word = text.toLowerCase().replace(/^\//, "");
+      if (word === "about" || word === `about ${using}`) { exec(`about ${using}`); return; }   // exec echoes the line itself
+      say({ kind: "in", text, at: `antar@brain@${using}` });
+      if (word === "exit" || word === "back") { say({ kind: "sys", text: `Left ${nameOf(using)}. Log in for the full terminal.` }); setUsing(null); return; }
+      if (word === "clear") { setLines([]); return; }
+      if (word === "help") {
+        say({ kind: "list", title: `In ${nameOf(using)}`, lead: `Type a ${card(using)?.needs || "target"} on its own to run ${nameOf(using)} on it.`,
+              rows: [["about", "how this agent works"], ["exit", "leave this agent"], ["clear", "clear the screen"], ["everything else", "press Terminal and log in"]] });
+        return;
+      }
+      runAgent(using, text, text);
+      return;
+    }
     if (!unlocked) {
       if (e.key !== "Enter") return;
       const typed = input;
@@ -787,12 +807,6 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       const moved = S.moved;
       a.held = false; S.held = null; S.moved = false; setDragging(null);
       a.tx = a.x; a.ty = a.y; a.arrived = true; a.wait = performance.now() + 6000;
-      if (!unlocked) {
-        setOpen(true); setSmall(false);
-        say({ kind: "sys", text: `Log in to the terminal to run ${nameOf(id)}.` });
-        setTimeout(() => inRef.current?.focus(), 60);
-        return;
-      }
       if (!moved) {
         // A click: with a record selected the agent goes to work on it and answers in the
         // terminal; with nothing selected there is nothing to work on, so it shows its card.
@@ -886,7 +900,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
 
       {showConsole && (
         <div className="bt-pills">
-          <button className={`bsx-pill bt-pill${open ? " on" : ""}`} onClick={() => { setOpen((v) => !v); setSmall(false); }}
+          <button className={`bsx-pill bt-pill${open ? " on" : ""}`} onClick={() => { if (!unlocked) setUsing(null); setOpen((v) => (!unlocked && using ? true : !v)); setSmall(false); }}
                   title={kn ? "ಬ್ರೈನ್ ಟರ್ಮಿನಲ್" : "Brain terminal"} aria-label="Brain terminal" aria-pressed={open}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v14H4zM8 10l3 2-3 2M13 15h3" /></svg>
             {kn ? "ಟರ್ಮಿನಲ್" : "Terminal"}
@@ -934,7 +948,8 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                 {busy.length > 0 && <p className="bt-sys bt-busy">{busy.map(nameOf).join(" and ")} {busy.length > 1 ? "are" : "is"} working…</p>}
               </div>
               {(() => {
-                const list = unlocked ? offers() : [];
+                const list = unlocked ? offers()
+                  : using ? [{ run: `about ${using}`, show: "about", note: "how it works" }, { fill: "exit", show: "exit", note: `leave ${using}` }] : [];
                 if (!list.length) return null;
                 return (
                   <div className="bt-offers" role="listbox" aria-label={input.trim() ? "Completions" : "Suggested commands"}>
@@ -949,10 +964,11 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                 );
               })()}
               <div className="bt-in">
-                <span className={unlocked ? "root" : ""}>{unlocked ? <>{prompt}{target ? <i> [{target.label}]</i> : null} #</> : (auth === "pass" ? "password:" : "brain login:")}</span>
+                <span className={unlocked ? "root" : ""}>{unlocked ? <>{prompt}{target ? <i> [{target.label}]</i> : null} #</>
+                  : using ? <>antar@brain@{using}{target ? <i> [{target.label}]</i> : null} ›</> : (auth === "pass" ? "password:" : "brain login:")}</span>
                 <input ref={inRef} autoFocus value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey}
-                       type={auth === "pass" ? "password" : "text"} name={unlocked ? undefined : "antar-terminal-login"}
-                       placeholder={!unlocked ? "" : using ? `${card(using)?.needs || "target"} for ${using}, or exit` : target ? "run network" : "help"} spellCheck={false} autoComplete="off" autoCapitalize="off" aria-label="Command" />
+                       type={auth === "pass" && !unlocked && !using ? "password" : "text"} name={unlocked || using ? undefined : "antar-terminal-login"}
+                       placeholder={!unlocked && !using ? "" : using ? `${card(using)?.needs || "target"} for ${using}, or exit` : target ? "run network" : "help"} spellCheck={false} autoComplete="off" autoCapitalize="off" aria-label="Command" />
               </div>
             </>
           )}
