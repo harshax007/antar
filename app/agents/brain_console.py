@@ -699,6 +699,47 @@ def evolution() -> dict:
     return {"name": identity.NAME, "version": identity.VERSION, "since": identity.SINCE, "record": rows}
 
 
+def starting_points() -> dict:
+    """Records an agent can be pointed at when an answer names none of its own.
+
+    A statewide answer ("IPC against special laws in 2023") has no accused, station or
+    district in it, so every agent in the workspace sat disabled. These are offered instead:
+    the district, station and crime group with the most FIRs dated today, and the accused id
+    named on the most FIRs in the Brain dataset. Each says why it was picked - a count, not a
+    judgment that it is the right place to look.
+    """
+    from datetime import date
+    d0 = date.today().isoformat()
+    out: list[dict] = []
+    con = _ro()
+    try:
+        for kind, col, word in (("district", "District_Name", "district"), ("station", "UnitName", "station"),
+                                ("crime_group", "CrimeGroup_Name", "crime group")):
+            try:
+                row = con.execute(f"SELECT {col}, COUNT(*) FROM FIRs WHERE date = ? AND COALESCE({col}, '') <> '' "
+                                  "GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 1", (d0,)).fetchone()
+            except sqlite3.OperationalError:
+                row = None
+            if row:
+                out.append({"kind": kind, "value": row[0],
+                            "why": f"the {word} with the most FIRs dated today ({row[1]:,})"})
+    finally:
+        con.close()
+    try:
+        bc = _brain_con()
+        try:
+            row = bc.execute("SELECT Accused_ID, COUNT(*) FROM FIRs WHERE COALESCE(Accused_ID, '') <> '' "
+                             "GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 1").fetchone()
+        finally:
+            bc.close()
+        if row:
+            out.append({"kind": "accused", "value": row[0],
+                        "why": f"the accused id named on the most FIRs in the Brain dataset ({row[1]:,})"})
+    except sqlite3.OperationalError:
+        pass
+    return {"date": d0, "targets": out}
+
+
 _learn_cache: tuple[float, dict] | None = None
 
 

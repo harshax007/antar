@@ -469,15 +469,19 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             the most prominent line of a screen an officer reads for evidence. */}
         <div className="c2-callsign">
           <span>{kn ? "ತಜ್ಞ ಕಾರ್ಯಕ್ಷೇತ್ರ" : "Expert workspace"}</span>
-          {/* The agents that produced THIS answer, beside the title. One click goes to where
-              they work. Nothing is shown when the answer names none. */}
+          {/* The agents that produced THIS answer, beside the title. One click goes to the
+              Agents block below, where they can be run. Nothing is shown when the answer names none. */}
           {(() => {
             const used = agentsUsed(meta?.agents, trace).filter((a) => FACE[a]);
             if (!answer || !used.length) return null;
             return (
-              <button type="button" className="c2-agents" onClick={() => router.push("/antarBrain")}
+              <button type="button" className="c2-agents" onClick={() => {
+                        // The Agents block lives in the Brief; go there and bring it into view.
+                        setActiveTab("document");
+                        setTimeout(() => document.getElementById("wa-block")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+                      }}
                       title={`${kn ? "ಬಳಸಿದ ಏಜೆಂಟ್‌ಗಳು" : "Agents used"}: ${used.map((a) => a.replace(/_/g, " ")).join(", ")}`}
-                      aria-label={`Agents used: ${used.join(", ")}. Open the agents' workspace.`}>
+                      aria-label={`Agents used: ${used.join(", ")}. Go to the agents for this answer.`}>
                 <em>{kn ? "ಬಳಸಿದ ಏಜೆಂಟ್‌ಗಳು" : "Agents used"}</em>
                 {used.map((a, i) => (
                   <i key={a} className="wa-face" style={{ backgroundImage: `url(/mascots/sm/${FACE[a]}-directions.webp)`, animationDelay: `${i * -0.45}s` }} />

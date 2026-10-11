@@ -8,7 +8,9 @@
 //   Take it further         the console agents (the same nine as on the Brain screen), run
 //                           here on a record named in the answer or typed by the officer.
 //                           An agent that has nothing it can work on says what it needs
-//                           instead of running on a guess.
+//                           instead of running on a guess. When the answer names nothing
+//                           at all, the block offers starting points from today's records,
+//                           each with the count that put it there.
 //
 // A run goes to POST /api/console/run and comes back in Antar's template: bottom line,
 // evidence class, context, evidence, limits. Styles are in app/globals.css (.wa-).
@@ -29,6 +31,9 @@ const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 const KIND_LABEL = { accused: "accused", station: "station", district: "district", crime_group: "crime type" };
 // What each console agent can be pointed at, from its card's `needs`.
 const ACCEPTS = { suspect: ["accused"], FIR: ["accused"], station: ["station"], district: ["district"], "crime type": ["crime_group"] };
+// How a need is worded to the officer. Linkage's card says "FIR", but what it is given here
+// is the accused id on one.
+const NEEDS_WORD = { suspect: "an accused id", FIR: "an accused id", station: "a station", district: "a district", "crime type": "a crime type" };
 
 const SUSPECT_RE = /\b(ACC-[A-Z]{2}-\d{3,}|S\d{4,})\b/g;
 const STATION_RE = /\b([A-Z][A-Za-z.]+(?: [A-Z][A-Za-z.]+){0,3} PS)\b/g;
@@ -66,9 +71,11 @@ export default function WorkspaceAgents({ answer = "", question = "", suspects =
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState([]);
   const [results, setResults] = useState([]);        // newest first
+  const [starts, setStarts] = useState([]);          // [{ kind, value, why }]
 
   useEffect(() => {
     fetchAPI("/api/console/identity").then((p) => setCards(p.agents || [])).catch((e) => setCards({ error: e.message }));
+    fetchAPI("/api/console/targets").then((r) => setStarts(r.targets || [])).catch(() => {});   // optional: an older backend has none
   }, []);
 
   // Records this answer names. An id on the answer's suspect list comes first; places and
@@ -87,24 +94,38 @@ export default function WorkspaceAgents({ answer = "", question = "", suspects =
   // A new answer starts clean: the old target and its results belonged to the last one.
   useEffect(() => { setTarget(found[0] || null); setResults([]); }, [answer]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function run(agent) {
-    if (!target || busy.includes(agent.id)) return;
+  async function run(agent, on = target) {
+    if (!on || busy.includes(agent.id)) return;
     setBusy((b) => [...b, agent.id]);
     let r;
     try {
-      r = await fetchAPI("/api/console/run", { method: "POST", body: JSON.stringify({ agent: agent.id, target: { [target.kind]: target.value } }) });
+      r = await fetchAPI("/api/console/run", { method: "POST", body: JSON.stringify({ agent: agent.id, target: { [on.kind]: on.value } }) });
     } catch (e) {
       r = { agent: agent.id, name: agent.name, status: "error", bottom_line: `The ${agent.name} agent could not be reached (${e.message}).`, evidence: [], limits: [] };
     }
     setBusy((b) => b.filter((x) => x !== agent.id));
-    setResults((rs) => [{ ...r, on: target.value, key: `${agent.id}-${Date.now()}` }, ...rs].slice(0, 8));
+    setResults((rs) => [{ ...r, on: on.value, key: `${agent.id}-${Date.now()}` }, ...rs].slice(0, 12));
+  }
+
+  // Every agent that can work on the selected record, one after another: the answers arrive
+  // in order and none of them waits behind a slow one for long.
+  async function runAll() {
+    for (const a of list.filter((x) => target && (ACCEPTS[x.needs] || []).includes(target.kind))) await run(a, target);
+  }
+
+  // A result's "run <agent> <target>" suggestion, taken up from here.
+  function follow(text) {
+    const m = /^run (\w+)\s*(.*)$/.exec(text);
+    const a = m && list.find((x) => x.id === m[1]);
+    const on = m && m[2].trim() ? readTyped(m[2]) : target;
+    if (a && on) { setTarget(on); run(a, on); }
   }
 
   const used = agentsUsed(usedAgents, trace);
   const list = Array.isArray(cards) ? cards : [];
 
   return (
-    <div className="c2-block wa">
+    <div className="c2-block wa" id="wa-block">
       <div className="c2-block-t">{kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"}</div>
 
       <div className="wa-row">
@@ -132,21 +153,42 @@ export default function WorkspaceAgents({ answer = "", question = "", suspects =
           </form>
         </div>
       </div>
-      {!found.length && !target && (
-        <p className="wa-note">{kn ? "ಈ ಉತ್ತರವು ಯಾವುದೇ ಆರೋಪಿ, ಠಾಣೆ ಅಥವಾ ಜಿಲ್ಲೆಯನ್ನು ಹೆಸರಿಸಿಲ್ಲ. ಏಜೆಂಟ್ ನಡೆಸಲು ಒಂದನ್ನು ಟೈಪ್ ಮಾಡಿ."
-          : "This answer names no accused, station or district. Type one to run an agent on it."}</p>
+      {!found.length && (
+        <div className="wa-row">
+          <span className="wa-k">{kn ? "ಅಥವಾ ಇಲ್ಲಿಂದ ಪ್ರಾರಂಭಿಸಿ" : "Or start from"}</span>
+          <div className="wa-targets">
+            {starts.length ? starts.map((t) => (
+              <button key={`${t.kind}:${t.value}`} className={`wa-tgt${target && target.kind === t.kind && target.value === t.value ? " on" : ""}`}
+                      onClick={() => setTarget({ kind: t.kind, value: t.value })} title={`Offered because it is ${t.why}.`}>
+                <em>{KIND_LABEL[t.kind]}</em>{t.value}
+              </button>
+            )) : <span className="wa-none">{kn ? "ಈ ಉತ್ತರವು ಯಾವುದೇ ಆರೋಪಿ, ಠಾಣೆ ಅಥವಾ ಜಿಲ್ಲೆಯನ್ನು ಹೆಸರಿಸಿಲ್ಲ. ಒಂದನ್ನು ಟೈಪ್ ಮಾಡಿ."
+              : "This answer names no accused, station or district. Type one above."}</span>}
+          </div>
+        </div>
+      )}
+      {!found.length && starts.length > 0 && (
+        <p className="wa-note">{target && starts.some((t) => t.kind === target.kind && t.value === target.value)
+          ? `${target.value} is offered because it is ${starts.find((t) => t.kind === target.kind && t.value === target.value).why}. It is a starting point, not something this answer is about.`
+          : (kn ? "ಈ ಉತ್ತರವು ಯಾವುದೇ ದಾಖಲೆಯನ್ನು ಹೆಸರಿಸಿಲ್ಲ; ಇವು ಇಂದಿನ ದಾಖಲೆಗಳಿಂದ ಪ್ರಾರಂಭದ ಬಿಂದುಗಳು." : "This answer names no record of its own. These are starting points from today's records, each picked by a count.")}</p>
       )}
 
       {cards?.error && <p className="wa-note">The agents could not be loaded ({cards.error}).</p>}
+      {target && list.some((a) => (ACCEPTS[a.needs] || []).includes(target.kind)) && (
+        <button className="wa-all" onClick={runAll} disabled={busy.length > 0}>
+          {kn ? "ಅನ್ವಯಿಸುವ ಎಲ್ಲವನ್ನೂ ನಡೆಸಿ" : `Run every agent that works on ${target.value}`}
+          <em>{list.filter((a) => (ACCEPTS[a.needs] || []).includes(target.kind)).map((a) => a.name).join(" · ")}</em>
+        </button>
+      )}
       <div className="wa-agents">
         {list.map((a) => {
           const ok = !!target && (ACCEPTS[a.needs] || []).includes(target.kind);
           const working = busy.includes(a.id);
           return (
             <button key={a.id} className={`wa-agent${working ? " busy" : ""}`} disabled={!ok || working} onClick={() => run(a)}
-                    title={ok ? `${a.purpose} Run on ${target.value}.` : `${a.purpose} Needs a ${a.needs}.`}>
+                    title={ok ? `${a.purpose} Run on ${target.value}.` : `${a.purpose} Needs ${NEEDS_WORD[a.needs] || a.needs}.`}>
               <Face id={a.id} size={30} />
-              <span><b>{a.name}</b><small>{working ? (kn ? "ಕೆಲಸ ಮಾಡುತ್ತಿದೆ…" : "working…") : ok ? `${kn ? "ನಡೆಸಿ" : "run on"} ${target.value}` : `${kn ? "ಬೇಕು" : "needs a"} ${a.needs}`}</small></span>
+              <span><b>{a.name}</b><small>{working ? (kn ? "ಕೆಲಸ ಮಾಡುತ್ತಿದೆ…" : "working…") : ok ? `${kn ? "ನಡೆಸಿ" : "run on"} ${target.value}` : `${kn ? "ಬೇಕು:" : "needs"} ${NEEDS_WORD[a.needs] || a.needs}`}</small></span>
             </button>
           );
         })}
@@ -166,6 +208,11 @@ export default function WorkspaceAgents({ answer = "", question = "", suspects =
           {r.context && <p className="wa-cx">{r.context}</p>}
           {r.evidence?.length > 0 && <ul>{r.evidence.map((e, i) => <li key={i}>{e}</li>)}</ul>}
           {(r.limits || []).map((x, i) => <p key={i} className="wa-lim">Note: {x}</p>)}
+          {(r.next || []).length > 0 && (
+            <footer>{r.next.map((n, i) => (/^run \w/.test(n)
+              ? <button key={i} onClick={() => follow(n)}>{n}</button>
+              : <span key={i}>Next: {n}</span>))}</footer>
+          )}
         </article>
       ))}
     </div>

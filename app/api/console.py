@@ -38,6 +38,12 @@ async def console_evolution() -> dict:
     return await asyncio.to_thread(brain_console.evolution)
 
 
+@router.get("/targets")
+async def console_targets() -> dict:
+    """Records to point an agent at when an answer names none of its own."""
+    return await asyncio.to_thread(brain_console.starting_points)
+
+
 @router.get("/learnings")
 async def console_learnings() -> dict:
     return await asyncio.to_thread(brain_console.learnings)
