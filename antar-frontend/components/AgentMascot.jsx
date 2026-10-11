@@ -70,6 +70,7 @@ const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 
 // Slow enough to follow with the eye and read a name tag on the move.
 const SPEED = 30, ACCEL = 40, APART = 76;       // px/s, px/s², px between two agents
+const MUSTER = 520;                             // px/s, how fast the agents come when called into line
 const FLY_MAX = 620, FLY_PULL = 5;              // Fast Run: top speed in px/s, and how hard an agent is drawn to its place
 const MEM_KEY = "antar_console_memory", MEM_MAX = 60;
 // The terminal's own login (see `auth` below), and where a passed login is remembered for the tab.
@@ -673,7 +674,10 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
           }
           let dx = a.tx - a.x, dy = a.ty - a.y;
           const d = Math.hypot(dx, dy) || 1;
-          const want = Math.min(SPEED, d * 1.7);                               // ease in to the goal
+          // Roaming is slow enough to read a name tag on the move. Called into line - the
+          // terminal has opened - they come quickly and still ease in over the last stretch.
+          const called = !prefs.current.roam;
+          const want = Math.min(called ? MUSTER : SPEED, d * (called ? 5 : 1.7));  // ease in to the goal
           let wx = (dx / d) * want, wy = (dy / d) * want;
           for (const o of ORDER) {                                             // keep clear of each other
             const q = S.a[o];
@@ -687,7 +691,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
               wx += out[1] * SPEED * 1.6; wy += out[2] * SPEED * 1.6;
             }
           }
-          const ax = wx - a.vx, ay = wy - a.vy, am = Math.hypot(ax, ay) || 1, cap = Math.min(am, ACCEL * dt);
+          const ax = wx - a.vx, ay = wy - a.vy, am = Math.hypot(ax, ay) || 1, cap = Math.min(am, (called ? MUSTER * 4 : ACCEL) * dt);
           a.vx += (ax / am) * cap; a.vy += (ay / am) * cap;
           a.x = Math.max(34, Math.min(W - 34, a.x + a.vx * dt));
           a.y = Math.max(50, Math.min(H - 72, a.y + a.vy * dt));
