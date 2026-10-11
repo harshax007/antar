@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Mascot } from "page-mascot";
 import { fetchAPI } from "@/lib/api";
+import { readSession } from "@/lib/auth";
 
 // Presentation only: what an agent IS comes from the backend identity pack. One colour for
 // all of them - an agent is told apart by its face, glyph and name, and state is shown by motion.
@@ -47,7 +48,7 @@ const ICON = {
   pattern: "M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z",
 };
 const ORDER = ["network", "profile", "research", "advocate", "recall", "linkage", "forecast", "geo", "pattern"];
-const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "learnings", "history", "think", "connect", "anticipate", "clear"];
+const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "learnings", "history", "think", "connect", "anticipate", "use", "exit", "clear"];
 // Worked examples per command, for `help <command>` and for the hint under the prompt.
 const USAGE = {
   run: ["run network S0041", "run profile ACC-KA-500777", "run geo Bengaluru City", "run forecast Bellanduru PS", "run linkage upi:name@bank", "run network   (uses the selected record)"],
@@ -58,6 +59,8 @@ const USAGE = {
   notify: ["notify on", "notify off"],
   help: ["help", "help run"],
   history: ["history"],
+  use: ["use geo", "use network", "then type a target on its own: Bengaluru City"],
+  exit: ["exit"],
   think: ["think", "/think"],
   connect: ["connect S0041", "connect ACC-KA-500777", "/connect   (uses the selected record)"],
   anticipate: ["anticipate Bellanduru PS", "anticipate Bengaluru City", "/anticipate   (uses the selected record)"],
@@ -121,6 +124,15 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   const [dragging, setDragging] = useState(null);  // agent id while it is being carried
   const [target, setTarget] = useState(null);      // { label, payload }
   const [roam, setRoam] = useState(true);          // agents move over the brain | hold a line
+  // The agent the terminal is "in", as a shell is in a directory: antar@brain@geo. With one
+  // in use, a line that is not a command is taken as that agent's target.
+  const [using, setUsing] = useState(null);
+  // The prompt's first word is the level signed in at: root for the Admin account, antar
+  // for any other. It is read from the session the server issued - the terminal has no
+  // password of its own, and what a command may do is still decided by the server.
+  const [who, setWho] = useState("antar");
+  useEffect(() => { setWho(readSession()?.role === "Admin" ? "root" : "antar"); }, []);
+  const prompt = `${who}@brain${using ? `@${using}` : ""}`;
   const [talk, setTalk] = useState(null);          // { from, to, text, key } - the line on screen
   const [toasts, setToasts] = useState([]);        // notifications to the officer
   const [unread, setUnread] = useState(0);
@@ -150,6 +162,9 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   useEffect(() => { prefs.current.drawn = showAgents; }, [showAgents]);
 
   useEffect(() => { prefs.current.roam = roam; }, [roam]);
+  // The terminal is where the agents take orders, so they line up when it opens and go
+  // back to the graph when it closes. `assemble` and `roam` still override this by hand.
+  useEffect(() => { setRoam(!open); }, [open]);
   // Fast Run: start the flight when it begins, and let it wind down when it ends. The
   // frame loop below does the flying; this only marks the two moments.
   useEffect(() => {
@@ -256,7 +271,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   const exec = useCallback((raw) => {
     const text = raw.trim();
     if (!text) return;
-    say({ kind: "in", text });
+    say({ kind: "in", text, at: prompt });
     const [word, ...rest] = text.split(/\s+/);
     // A leading slash is accepted, as in the chat box: /help is help.
     const cmd = word.toLowerCase().replace(/^\//, ""), arg = rest.join(" ");
@@ -265,6 +280,22 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     //   think        scan the records in view (Fast Run)
     //   connect      who and what a record is tied to (Network, then Linkage)
     //   anticipate   what to expect at a place (Forecast for a station, Geo for a district)
+    if (cmd === "use") {
+      const id = arg.toLowerCase().trim();
+      if (!ICON[id]) { say({ kind: "err", text: id ? `There is no agent called '${arg}'. Type agents to list them.` : "Use which agent? Example: use geo" }); return; }
+      setUsing(id);
+      const c = card(id);
+      say({ kind: "sys", text: `Now in ${c?.name || id}. Type a ${c?.needs || "target"} on its own to run it, or exit to leave.` });
+      return;
+    }
+    if (cmd === "exit" || cmd === "back") {
+      if (!using) { say({ kind: "sys", text: "No agent is in use. Close the terminal with ×." }); return; }
+      say({ kind: "sys", text: `Left ${nameOf(using)}.` });
+      setUsing(null);
+      return;
+    }
+    // Inside an agent, a line that is not a command is what to run it on.
+    if (using && !WORDS.includes(cmd)) { runAgent(using, text, text); return; }
     if (cmd === "think") { onThink?.(); say({ kind: "sys", text: "Think: scanning the records in this view. The findings open when it finishes." }); return; }
     if (cmd === "connect" || cmd === "anticipate") {
       const typed = arg.trim();
@@ -403,6 +434,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       const [first, ...tgt] = rest;
       if (!first) { say({ kind: "err", text: "Run which agent? Example: run network S0041" }); return; }
       const id = first.toLowerCase(), typed = tgt.join(" ");
+      if (ICON[id]) setUsing(id);
       if (typed) { runAgent(id, typed, typed); return; }
       if (target) { runAgent(id, target.payload, target.label); return; }
       // Nothing named and nothing selected: the record this agent last worked, if it has one.
@@ -414,7 +446,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     }
     const guess = nearest(cmd, WORDS);
     say({ kind: "err", text: `'${word}' is not a command.${guess ? ` Did you mean ${guess}?` : ""} Type help for the list.` });
-  }, [agents, pack, target, controlRef, onThink, runAgent, say]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [agents, pack, target, controlRef, onThink, runAgent, say, using, prompt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One learning, with the working shown: the rows it was counted from, its evidence class
   // and where it was read.
@@ -461,8 +493,9 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                { run: "agents", show: "agents", note: "who can do what" },
                { run: "fastrun", show: "fastrun", note: "scan this view" });
     }
+    if (using) out.unshift({ run: `about ${using}`, show: `about ${using}`, note: "how it works" }, { run: "exit", show: "exit", note: `leave ${using}` });
     if (!out.some((o) => o.show === "help")) out.push({ run: "help", show: "help", note: "every command" });
-    return out.slice(0, 5);
+    return out.slice(0, 6);
   }
 
   function onKey(e) {
@@ -727,7 +760,8 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
         // A click: with a record selected the agent goes to work on it and answers in the
         // terminal; with nothing selected there is nothing to work on, so it shows its card.
         setOpen(true); setSmall(false);
-        if (target) { say({ kind: "in", text: `run ${id} ${target.label}` }); runAgent(id, target.payload, target.label); }
+        setUsing(id);
+        if (target) { say({ kind: "in", text: `run ${id} ${target.label}`, at: `${who}@brain@${id}` }); runAgent(id, target.payload, target.label); }
         else exec(`about ${id}`);
         return;
       }
@@ -871,9 +905,9 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                 );
               })()}
               <div className="bt-in">
-                <span>antar@brain{target ? <i> [{target.label}]</i> : null} ›</span>
+                <span className={who === "root" ? "root" : ""}>{prompt}{target ? <i> [{target.label}]</i> : null} {who === "root" ? "#" : "›"}</span>
                 <input ref={inRef} autoFocus value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey}
-                       placeholder={target ? "run network" : "help"} spellCheck={false} autoComplete="off" autoCapitalize="off" aria-label="Command" />
+                       placeholder={using ? `${card(using)?.needs || "target"} for ${using}, or exit` : target ? "run network" : "help"} spellCheck={false} autoComplete="off" autoCapitalize="off" aria-label="Command" />
               </div>
             </>
           )}
@@ -884,7 +918,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
 }
 
 function Line({ l, onRun, nameOf }) {
-  if (l.kind === "in") return <p className="bt-cmd"><span>antar@brain ›</span> {l.text}</p>;
+  if (l.kind === "in") return <p className="bt-cmd"><span>{l.at || "antar@brain"} {String(l.at || "").startsWith("root") ? "#" : "›"}</span> {l.text}</p>;
   if (l.kind === "sys") return <p className="bt-sys">{l.text}</p>;
   if (l.kind === "err") return <p className="bt-err">{l.text}</p>;
   if (l.kind === "list") {
@@ -1048,6 +1082,8 @@ const CSS = `
 .bt-in { display: flex; align-items: center; gap: 7px; padding: 7px 11px; border-top: 1px solid rgba(255,255,255,.09); flex-shrink: 0; }
 .bt-in span { color: #22E6F0; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .bt-in span i { font-style: normal; font-weight: 500; color: #94A3B8; }
+/* Signed in as the Admin account: the prompt says so, in the colour a root shell uses. */
+.bt-in span.root { color: #E0A458; }
 .bt-in input { caret-color: #22E6F0; }
 /* What fits right now, or what completes the line: one row above the prompt. */
 .bt-offers { display: flex; align-items: center; gap: 6px; padding: 5px 11px; border-top: 1px solid rgba(255,255,255,.07); overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
@@ -1094,6 +1130,7 @@ const CSS = `
 .bt-offers span { color: #4E5C6E; }
 .bt-in { padding: 9px 14px; border-top-color: rgba(255,255,255,.06); }
 .bt-in span { color: #8FD3DA; font-weight: 500; } .bt-in span i { color: #6B7A8D; }
+.bt-in span.root { color: #E0A458; }
 .bt-in input { color: #E2E8F0; }
 @media (prefers-reduced-motion: reduce) { .bt-say, .bt-bug > i::before, .bt-bug > i::after, .bt-orbits ellipse, .bt-wires line, .bt-bug.hearing > i { animation: none; } }
 `;

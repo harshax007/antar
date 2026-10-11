@@ -877,6 +877,8 @@ COMMANDS = [
     {"cmd": "think", "does": "Think: scan the records in the current view (the same as fastrun). /think also works."},
     {"cmd": "connect [id]", "does": "Connect: run Network then Linkage on an accused id, or on the selected record."},
     {"cmd": "anticipate [place]", "does": "Anticipate: Forecast for a station, Geo for a district. Places only, never a person."},
+    {"cmd": "use <agent>", "does": "Step into an agent (the prompt shows it); a line typed on its own is then its target."},
+    {"cmd": "exit", "does": "Leave the agent in use."},
     {"cmd": "history", "does": "The commands typed this session."},
     {"cmd": "clear", "does": "Clear the terminal."},
 ]
