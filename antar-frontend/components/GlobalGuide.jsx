@@ -300,7 +300,10 @@ export default function GlobalGuide() {
 
   if (path && (path.startsWith("/account") || path.startsWith("/about") || path.startsWith("/docs"))) return null;
 
-  const g = GUIDES[pickGuide(path, expertOn)];
+  // The Expert console has no guide of its own yet: it is the chat screen with more shown,
+  // so the chat guide stands in. Without a fallback, a missing key crashed the page.
+  const picked = pickGuide(path, expertOn);
+  const g = GUIDES[picked] || (picked === "expert" ? GUIDES.chat : GUIDES.general);
   const title = kn ? g.title.kn : g.title.en;
   const wide = g.blocks.length > 1;
 
