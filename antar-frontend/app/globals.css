@@ -4059,3 +4059,99 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
   .ags-t { max-width: 190px; }
 }
 @media (prefers-reduced-motion: reduce) { .ags-f, .ags-t { transition: none; } }
+
+/* ══ Responsive ═══════════════════════════════════════════════════════════════════════
+   One block for every screen, so the phone and tablet behaviour can be read in one place.
+   Breakpoints: 1100 (small laptop / tablet landscape), 820 (tablet portrait and phones),
+   480 (small phones). 1920 and up is handled at the end.
+
+   Rules that follow, for anything touched here:
+     - body text is never under 12px on a phone, and never under 11px anywhere it is read
+     - the main controls are at least 40px tall on a phone
+     - nothing sits under another control, and nothing scrolls the page sideways
+   Many of these elements are styled inline in JSX, which is why !important appears. */
+
+/* ── Navigation: the pill keeps the brand and the account; the screens move to a tab bar
+      at the bottom, where a thumb reaches them. ── */
+@media (max-width: 820px) {
+  .cx-pillnav { top: 6px !important; width: calc(100% - 16px) !important; padding: 5px 12px !important; border-radius: 16px !important;
+    grid-template-columns: auto 1fr !important; background: rgba(6,11,20,.92) !important;
+    /* a backdrop filter would make this bar the box that the fixed tab bar is positioned in */
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .cx-pill-right { gap: 4px !important; }
+  .cx-pill-aux { font-size: 11px !important; padding: 10px 6px !important; }
+  .cx-pill-hide { display: none !important; }
+  /* justify-self is reset because a positioned child of a grid still honours it, and would shrink to its content */
+  .cx-pill-center { position: fixed; left: 0; right: 0; bottom: 0; z-index: 100000; gap: 0 !important; justify-content: space-around !important; justify-self: stretch !important; box-sizing: border-box; width: 100%;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); background: rgba(6,11,20,.97); border-top: 1px solid rgba(34,230,240,.18); }
+  .cx-pill-link { flex: 1; min-height: 46px; font-size: 11px !important; letter-spacing: .08em !important; padding: 4px 2px !important;
+    border-bottom: 0 !important; border-top: 2px solid transparent !important; }
+  .cx-pill-link[aria-current="page"] { border-top-color: #22E6F0 !important; }
+  /* room for the tab bar under whatever the screen ends with */
+  .ax-main { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 480px) {
+  .cx-pill-aux { display: none !important; }      /* Docs and About stay reachable from Account */
+}
+
+/* ── Chat ── */
+@media (max-width: 820px) {
+  /* at the top it sat on the headline; above the tab bar it is clear of everything and under the thumb */
+  .cx-lang { top: auto !important; bottom: calc(66px + env(safe-area-inset-bottom)) !important; right: 10px !important; padding: 8px 12px !important; font-size: 12px !important; }
+  .cx-tabhint { display: none !important; }        /* there is no Tab key to press */
+}
+
+/* ── Predict ── */
+@media (max-width: 1100px) {
+  .px-dash { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
+  .px-statrow { gap: 14px !important; }
+}
+@media (max-width: 820px) {
+  .px-page { padding-left: 12px !important; padding-right: 12px !important; }
+  .px-head { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+  .px-title { font-size: 22px !important; }
+  .px-dash { grid-template-columns: 1fr !important; }
+  .px-statrow { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; margin-bottom: 20px !important; }
+  .px-statbox { padding: 14px 14px 14px 18px !important; min-width: 0; }
+  .px-statbox .l { font-size: 11px !important; letter-spacing: .04em !important; margin-bottom: 8px !important; overflow-wrap: anywhere; }
+  .px-statbox .v { font-size: 28px !important; }
+  .pxd-card { min-height: 0 !important; max-height: none !important; padding: 16px !important; }
+  .px-insp { padding: 16px !important; }
+  .px-insp-title { font-size: 22px !important; }
+  .px-insp-why { padding: 14px 16px !important; font-size: 14px !important; }
+  .px-big .n { font-size: 36px !important; }
+  .px-panel-hd { padding: 12px 16px !important; flex-wrap: wrap; gap: 6px; }
+  .px-tiles { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+}
+
+/* ── Brain ── */
+@media (max-width: 820px) {
+  .bsx-stage { height: calc(100dvh - 124px) !important; min-height: 480px !important; }
+  /* the controls become a short scrolling column, so the graph keeps most of the screen */
+  .bsx-tools { top: 10px !important; left: 10px !important; width: min(232px, 60vw) !important; max-height: 34vh !important; }
+  .bt-pills { top: 10px !important; right: 10px !important; left: auto !important; flex-direction: column; align-items: flex-end; }
+  .bsx-pill.think { top: 112px !important; right: 10px !important; }
+  .bsx-pill.think-res { top: 160px !important; right: 10px !important; }
+  .bsx-layers, .bsx-hint, .bsx-title { display: none !important; }
+  .bsx-cal { left: 10px !important; bottom: 10px !important; width: calc(100% - 20px) !important; max-height: 30vh; overflow-y: auto; }
+  .bsx-focus, .bsx-cg-detail { right: 10px !important; left: 10px !important; top: auto !important; bottom: 10px !important; width: auto !important; max-height: 44vh !important; }
+  .bsx-fr { padding: 12px !important; }
+  /* a wide table scrolls inside its own box instead of being cut off at the edge of the screen */
+  .ov-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .bt-win { left: 8px !important; right: 8px !important; width: auto !important; bottom: 66px !important; }
+}
+@media (max-width: 480px) {
+  .bsx-cal { display: none !important; }           /* the same counts are in the data overview below */
+}
+
+/* ── Sizes that hold everywhere ── */
+@media (max-width: 820px) {
+  html { -webkit-text-size-adjust: 100%; }
+  input, select, textarea { font-size: 16px !important; }      /* under 16px, iOS zooms the page on focus */
+  .bsx-pill, .px-howbtn, .lg-eye { min-height: 40px; }
+}
+/* ── Large monitors: wider than a line is comfortable to read, so the content stops growing ── */
+@media (min-width: 1920px) {
+  .px-page > * { max-width: 1760px; margin-left: auto; margin-right: auto; }
+  .cx-pillnav { max-width: 1440px !important; }
+}

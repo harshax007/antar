@@ -2251,7 +2251,7 @@ export default function ChatPage() {
       <div className="nx-glow" aria-hidden="true" />
       
       {/* EN / KN Toggle */}
-      <button
+      <button className="cx-lang"
         type="button"
         onClick={toggleLang}
         style={{
@@ -2326,7 +2326,7 @@ export default function ChatPage() {
 
       {empty ? (
         <>
-        <style>{`.cx-pillnav { display: none !important; }`}</style>
+        <style>{`@media (min-width: 821px) { .cx-pillnav { display: none !important; } }`}</style>
         <div style={{
           position: "fixed",
           top: 0,
@@ -2363,8 +2363,8 @@ export default function ChatPage() {
                 maxWidth: "680px"
               }}
             >
-              <h1 style={{
-                fontSize: "clamp(34px, 5.5vw, 54px)",
+              <h1 className="cx-hero-h1" style={{
+                fontSize: "clamp(26px, 5.5vw, 54px)",
                 fontWeight: 800,
                 color: "#FFFFFF",
                 letterSpacing: "-0.03em",
@@ -2543,7 +2543,7 @@ export default function ChatPage() {
                       {typedText}
                       <span style={{ opacity: 0.65, marginLeft: "2px" }}>|</span>
                     </span>
-                    <span
+                    <span className="cx-tabhint"
                       style={{
                         fontSize: "10.5px",
                         color: "rgba(255, 255, 255, 0.45)",

@@ -182,8 +182,10 @@ export default function PillNav() {
         </span>
       </div>
 
-      {/* Center: Same Font as Think/Connect/Anticipate */}
+      {/* Center: Same Font as Think/Connect/Anticipate. On a phone this row becomes the
+          tab bar at the bottom of the screen (globals.css, "Responsive"). */}
       <div
+        className="cx-pill-center"
         style={{
           display: "flex",
           alignItems: "center",
@@ -200,6 +202,8 @@ export default function PillNav() {
             <button
               key={item.en}
               type="button"
+              className="cx-pill-link"
+              aria-current={active ? "page" : undefined}
               onClick={() => switchScreen(item.href)}
               style={{
                 background: "transparent",
@@ -221,11 +225,12 @@ export default function PillNav() {
         })}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifySelf: "end", gap: "12px" }}>
+      <div className="cx-pill-right" style={{ display: "flex", alignItems: "center", justifySelf: "end", gap: "12px" }}>
         <OfficerSelector pending={hitlPending} />
 
         <button
           type="button"
+          className="cx-pill-aux"
           onClick={() => switchScreen("/docs")}
           style={{
             background: "transparent",
@@ -249,6 +254,7 @@ export default function PillNav() {
 
         <button
           type="button"
+          className="cx-pill-aux"
           onClick={() => switchScreen("/about")}
           style={{
             background: "transparent",
