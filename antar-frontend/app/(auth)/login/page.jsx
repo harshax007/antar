@@ -4,20 +4,26 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLang, useTheme } from "@/components/Providers";
 import { asset } from "@/lib/assets";
-import { ADMIN_ID, APPROVER_ID, accountFor, writeSessionFor } from "@/lib/auth";
+import { ADMIN_ID, APPROVER_ID, signIn, homeFor } from "@/lib/auth";
 
 const COPY = {
   en: {
     tag: "Think. Connect. Anticipate.", badge: "User ID", pw: "Password", auth: "Authenticate",
     verifying: "Verifying credentials…", granted: "Access granted", empty: "Enter your User ID and password to continue.",
     demoT: "Demo credentials", officer: "Officer", admin: "Admin", anyPw: "any password",
-    unknown: "Unknown User ID. Use U-7001 (operations) or U-9001 (supervising approver).",
+    bad: "User ID or password is incorrect.",
+    locked: "Too many failed attempts. Wait a few minutes and try again.",
+    down: "The server could not be reached. Check that the backend is running.",
+    off: "Sign-in is not set up on this server yet.",
   },
   kn: {
     tag: "ಯೋಚಿಸಿ. ಸಂಪರ್ಕಿಸಿ. ನಿರೀಕ್ಷಿಸಿ.", badge: "ಬಳಕೆದಾರ ID", pw: "ಗುಪ್ತಪದ", auth: "ದೃಢೀಕರಿಸಿ",
     verifying: "ರುಜುವಾತುಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…", granted: "ಪ್ರವೇಶ ನೀಡಲಾಗಿದೆ", empty: "ಮುಂದುವರಿಯಲು ನಿಮ್ಮ ಬಳಕೆದಾರರ ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ.",
     demoT: "ಡೆಮೊ ರುಜುವಾತುಗಳು", officer: "ಅಧಿಕಾರಿ", admin: "ನಿರ್ವಾಹಕ", anyPw: "ಯಾವುದೇ ಪಾಸ್‌ವರ್ಡ್",
-    unknown: "ಅಪರಿಚಿತ ಬಳಕೆದಾರ ID. U-7001 (ಕಾರ್ಯಾಚರಣೆ) ಅಥವಾ U-9001 (ಅನುಮೋದಕ) ಬಳಸಿ.",
+    bad: "ಬಳಕೆದಾರ ID ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ.",
+    locked: "ಹಲವು ವಿಫಲ ಪ್ರಯತ್ನಗಳು. ಕೆಲವು ನಿಮಿಷಗಳ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    down: "ಸರ್ವರ್ ಸಂಪರ್ಕ ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಬ್ಯಾಕೆಂಡ್ ಚಾಲನೆಯಲ್ಲಿದೆಯೇ ಪರಿಶೀಲಿಸಿ.",
+    off: "ಈ ಸರ್ವರ್‌ನಲ್ಲಿ ಸೈನ್-ಇನ್ ಇನ್ನೂ ಸಿದ್ಧವಾಗಿಲ್ಲ.",
   },
 };
 
@@ -68,18 +74,19 @@ export default function LoginPage() {
       setError(t.empty);
       return;
     }
-    // Two accounts: U-7001 (Admin, proposes actions) and U-9001 (Approver, decides them).
-    // Checked before the "verifying" beat so a wrong ID is rejected immediately rather
-    // than after a fake delay. Catalyst Auth is not wired, so the password is not checked.
-    const acct = accountFor(badge);
-    if (!acct) {
-      setError(t.unknown);
-      return;
-    }
+    // The server checks the password and answers the same way for a wrong password and
+    // an unknown ID, so this page cannot be used to find out which IDs exist.
     setError("");
     setStatus("verifying");
-    await new Promise((r) => setTimeout(r, 300));
-    writeSessionFor(badge);
+    let acct;
+    try {
+      acct = await signIn(badge, password);
+    } catch (err) {
+      setStatus("idle");
+      setPassword("");
+      setError(err.status === 429 ? t.locked : err.status === 0 ? t.down : err.status === 503 ? t.off : t.bad);
+      return;
+    }
     setStatus("granted");
     await new Promise((r) => setTimeout(r, 300));
     
@@ -100,9 +107,9 @@ export default function LoginPage() {
     } catch {}
     
     if (document.startViewTransition) {
-      document.startViewTransition(() => router.push(acct.home));
+      document.startViewTransition(() => router.push(homeFor(acct.role)));
     } else {
-      router.push(acct.home);
+      router.push(homeFor(acct.role));
     }
   }
 
@@ -175,7 +182,8 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setBadge(APPROVER_ID);
-              setPassword("antar-demo");
+              setPassword("");
+              document.getElementById("pw")?.focus();
               setError("");
             }}
             disabled={busy}
@@ -198,7 +206,8 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setBadge(ADMIN_ID);
-              setPassword("antar-demo");
+              setPassword("");
+              document.getElementById("pw")?.focus();
               setError("");
             }}
             disabled={busy}

@@ -1843,3 +1843,15 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Brain corpus was not being found** (`brain_vectors.db` sat in `data/`, the live database in the root). Copied beside `main.db` and packed: 100,000 FIRs indexed again.
 * **Brain agents** are page-mascot robot characters, fly two rings round the brain during a Fast Run, and the Fast Run results window lists every agent with its findings in full.
 * **Known damage, not yet repaired**: running the test suite against the live database on 2026-10-11 cleared the audit log (`tests/test_audit*.py` and `test_governance.py` call `audit_store.clear()`), and a later run removed live audit rows through the `conftest.py` clean-up, so `/api/audit/integrity` reports the chain broken at entry 499. Do not run the suite while the backend is serving the demo database until the audit tests use their own file.
+
+## Real sign-in, and the API closed to anonymous callers - 2026-10-12
+
+* **Measured first**: with no identity at all, 75 of 79 parameter-free GET routes answered - FIR records, the suspect registry, the officer list, observability sessions - and `X-Role: Admin` opened the audit log. The login page accepted any password.
+* **Sign-in**: `POST /api/auth/login` checks a salted scrypt hash (`app/core/accounts.py`) and issues the signed token the gateway already knew how to verify. Same answer for a wrong password and an unknown id; five failures lock the id for five minutes. Accounts are created with `scripts/set_password.py`; in a container they come from `ANTAR_USERS`.
+* **Frontend**: the login page signs in for real, and `lib/auth.js` attaches the token to every backend request (96 call sites used a bare `fetch`). A 401 ends the session and returns the officer to sign-in. Reports are fetched with the token and opened as a page, since a new tab cannot carry one.
+* **Gateway**: `/trace`, `/trust` and `/report/*` are now behind it (they sit outside `/api`), and its 401 carries the CORS origin so a browser can tell a refusal from an outage.
+* **After**: 79 of 80 routes refuse without a token; only `/api/health` answers, and it no longer prints a server path.
+* **Tests no longer touch the live audit ledger**: the suite's audit store points at a throwaway file, and `audit_log` / `agent_reasoning_logs` are excluded from the main.db clean-up.
+* **Build**: `.dockerignore` and `.appignore` now exclude the second database copy in `data/` (1.5 GB), `gstack/` (207 MB), the one-off patch scripts and the accounts file.
+* **Still open**: the live audit chain is broken at entry 499 from the 2026-10-11 test runs and has not been reset; Docker images run as root; `Dockerfile.onnx` is still unbuilt.
+

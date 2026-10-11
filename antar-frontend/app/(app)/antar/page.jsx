@@ -14,6 +14,7 @@ import { SLASH_COMMANDS as SLASH_HINTS } from "@/lib/chatStream";
 import { WhisperMicButton, WhisperWaveform } from "@/components/WhisperMic";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { asset } from "@/lib/assets";
+import { openReport } from "@/lib/auth";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -1894,7 +1895,7 @@ export default function ChatPage() {
 
   function exportReport() {
     if (!sessionId) return;
-    window.open(`${API}/report/${sessionId}`, "_blank");
+    openReport(`/report/${sessionId}`);
   }
 
   async function toggleVoice() {

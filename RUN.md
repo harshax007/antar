@@ -76,6 +76,22 @@ curl -s -X POST http://127.0.0.1:8000/api/chat -H "Content-Type: application/jso
 
 The request field is **`text`**, not `message`.
 
+## Signing in
+
+The backend refuses every call without a token once `ANTAR_AUTH_SECRET` is set in `.env`
+(it is, on this machine). Accounts live in `auth_users.json` as salted hashes; the
+passwords generated for the two local accounts are in `auth_local_credentials.txt`.
+Neither file is in git or in the Docker image.
+
+Change a password, or add an account (asked for twice, never echoed):
+
+```powershell
+D:\Project\.venv\Scripts\python.exe scripts\set_password.py U-7001 Admin --name "Operations Officer"
+```
+
+For the Catalyst deployment, set `ANTAR_AUTH_SECRET` and `ANTAR_USERS` in the console.
+`python scripts\set_password.py --show-env` prints the value for `ANTAR_USERS`.
+
 ## Tests
 
 ```powershell
@@ -83,7 +99,10 @@ cd D:\Project
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Takes about 10 minutes.
+Takes about 12 minutes. **Stop the backend first.** The suite runs against the real
+`main.db` and, when it finishes, removes every row added to it during the run - including
+rows a serving backend wrote in the meantime. The audit ledger is exempt (the suite keeps
+its own), but nothing else is.
 
 ## The frontend
 

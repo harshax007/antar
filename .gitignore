@@ -63,6 +63,10 @@ brain_vectors.mult
 *.pre_inject
 *.rej_backup
 
+# Officer accounts (password hashes) and the local sign-in notes that go with them
+auth_users.json
+auth_local_credentials.txt
+
 # Session encryption key (generated at runtime by app/api/session_api.py)
 .session_key
 

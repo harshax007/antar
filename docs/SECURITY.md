@@ -134,10 +134,28 @@ output is blocked, the officer still gets a correct, record-backed answer.
 
 | Mode | When | Behaviour |
 |---|---|---|
-| `header` | `ANTAR_AUTH_SECRET` empty (current demo) | Officer and role from `X-Officer` / `X-Role`. **Anyone can claim any role.** The startup log prints a SECURITY warning. |
-| `signed` | `ANTAR_AUTH_SECRET` set | Every `/api/*` call (except `/api/health` and the two cron endpoints) needs `Authorization: Bearer <token>`: HMAC-SHA256 over `{sub, role, iat, exp}`, compared in constant time. `X-Role`/`X-Officer` are ignored. HITL decisions, hypothesis confirmations, session ownership and the audit log all use the token identity. |
+| `header` | `ANTAR_AUTH_SECRET` empty (tests, and a developer who has not set one) | Officer and role from `X-Officer` / `X-Role`. **Anyone can claim any role.** The startup log prints a SECURITY warning, and `/api/auth/login` refuses to issue anything. |
+| `signed` | `ANTAR_AUTH_SECRET` set (**the build as of 2026-10-12**) | Every call to `/api/*`, `/trace`, `/trust` and `/report/*` needs `Authorization: Bearer <token>`: HMAC-SHA256 over `{sub, role, iat, exp}`, compared in constant time. The only exceptions are `/api/health`, `/api/auth/login` and the two cron endpoints (which take the cron secret). `X-Role`/`X-Officer` are ignored. HITL decisions, hypothesis confirmations, session ownership and the audit log all use the token identity. |
 
-Mint a token: `ANTAR_AUTH_SECRET=… python scripts/mint_token.py U-7001 Admin`.
+### Sign-in
+
+`POST /api/auth/login {user_id, password}` checks the password and returns the token; the
+frontend keeps it in `sessionStorage` and attaches it to every backend request (`lib/auth.js`).
+
+| Property | How |
+|---|---|
+| No password is stored | Salted scrypt hashes only (`app/core/accounts.py`), written by `scripts/set_password.py` to `auth_users.json` (git- and docker-ignored) or supplied as `ANTAR_USERS` in a container |
+| No default account | With no accounts configured nobody can sign in, and the startup log says so |
+| An attacker cannot list ids | A wrong password and an unknown id get the same answer, after the same hashing work |
+| Guessing is slow | Five failures lock the id for five minutes; the route is rate-limited per address as well |
+| A stolen role header is worthless | The role comes from the token, never from a header or the browser session |
+| An expired session is visible | The gateway's 401 carries the CORS origin, so the browser sees a refusal (not a network error) and returns the officer to sign-in |
+
+Measured on 2026-10-12 against the running backend: before, 75 of 79 parameter-free GET
+routes answered with no identity at all and `X-Role: Admin` opened the audit log; after,
+79 of 80 refuse and only `/api/health` answers.
+
+Mint a token by hand (scripts, cron-like jobs): `ANTAR_AUTH_SECRET=… python scripts/mint_token.py U-7001 Admin`.
 
 Also fixed while unifying identity: the AI-reasoning audit ledger read a header nobody
 sends (`x-officer-id`), so every entry was attributed to `OF-1001`; `/api/brain/ingest_session`
@@ -153,7 +171,8 @@ shipped default and the `.env.example` placeholder.
 
 ```text
 [ ] ANTAR_ENV=production            (docs off, HSTS on, weak cron secrets refused)
-[ ] ANTAR_AUTH_SECRET=<48+ random>  (or Catalyst Auth → token bridge)
+[ ] ANTAR_AUTH_SECRET=<48+ random>
+[ ] ANTAR_USERS=<output of: python scripts/set_password.py --show-env>   (accounts; hashes only)
 [ ] CRON_SECRET_KEY=<32+ random>
 [ ] ANTAR_SESSION_KEY=<Fernet key>  (not the generated .session_key file)
 [ ] ALLOWED_ORIGINS = exact frontend origin(s), never *
@@ -179,9 +198,15 @@ shipped default and the `.env.example` placeholder.
 
 ## 7. Known gaps — next, in order
 
-1. **Wire real authentication.** Catalyst Auth → mint the signed token server-side on
-   login, and have `antar-frontend/lib/api.js` send `Authorization` instead of `X-Role`.
-   Until then role gates are a UX contract, not a boundary.
+1. ~~Wire real authentication.~~ **Done 2026-10-12** - see §4, Sign-in. What that leaves:
+   - The token sits in `sessionStorage`, so a script-injection bug in the frontend could
+     read it. An `HttpOnly` cookie would close that, at the cost of CSRF handling.
+   - A token cannot be revoked before it expires (8 hours). Signing out forgets it in the
+     browser only. Rotating `ANTAR_AUTH_SECRET` ends every session at once.
+   - `/report/{session_id}` is open to any signed-in officer who knows the session id; it
+     is not yet bound to the officer who owns the session.
+   - Both Docker images still run as root. Add a non-root `USER` once an image can be
+     built and tested (the app writes only under `/tmp` on AppSail).
 2. **Rotate the session key and purge it from history.** `.session_key` was committed
    (`f6b8906`). It is now untracked and ignored; no remote exists yet, so rotate
    **before the first push** and rewrite history (`git filter-repo --path .session_key --invert-paths`).

@@ -275,6 +275,11 @@ def posture() -> dict:
     if auth_mode() == "header":
         warnings.append("identity is the unsigned X-Role/X-Officer header — any caller can claim Admin; "
                         "set ANTAR_AUTH_SECRET (or wire Catalyst Auth) before real use")
+    else:
+        from app.core import accounts
+        if not accounts.load():
+            warnings.append("no officer accounts are configured — nobody can sign in; "
+                            "run scripts/set_password.py or set ANTAR_USERS")
     from app.core.auth_middleware import _PLACEHOLDER_SECRETS
     _cs = settings.CRON_SECRET_KEY or ""
     if len(_cs) < 24 or any(p in _cs.lower() for p in _PLACEHOLDER_SECRETS):

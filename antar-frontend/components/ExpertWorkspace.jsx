@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, FileSpreadsheet, Radio, Crosshair, ShieldCheck, Activity, Square, Map, Cpu, Search } from "lucide-react";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
+import { openReport } from "@/lib/auth";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -410,7 +411,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
 
   function exportReport() {
     if (!sessionId) return;
-    window.open(`${API}/report/${sessionId}`, "_blank");
+    openReport(`/report/${sessionId}`);
   }
 
   function copyText() {

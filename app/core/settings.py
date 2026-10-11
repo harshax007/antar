@@ -97,6 +97,11 @@ class Settings(BaseSettings):
     # Empty = demo header identity (anyone can claim any role — never ship that).
     ANTAR_AUTH_SECRET: str = ""
     ANTAR_TOKEN_TTL_S: int = 8 * 3600          # one shift
+    # Who may sign in (app/core/accounts.py). ANTAR_USERS is a JSON object of accounts for
+    # a container; otherwise the file is read. Written by scripts/set_password.py - only
+    # salted hashes, never a password.
+    ANTAR_USERS: str = ""
+    ANTAR_USERS_FILE: str = "auth_users.json"
     # Proxies in front of the app that append to X-Forwarded-For (AppSail gateway = 1).
     # 0 = ignore the header and rate-limit on the socket address.
     ANTAR_TRUSTED_PROXY_HOPS: int = 1

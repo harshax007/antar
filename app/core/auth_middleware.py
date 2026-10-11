@@ -11,8 +11,8 @@ Role hierarchy + a `require_role()` FastAPI dependency, resolved from ONE place:
 
   signed  (ANTAR_AUTH_SECRET set)
       Every /api/* call carries `Authorization: Bearer <token>`, an HMAC-SHA256-signed
-      claim {sub, role, iat, exp} minted by `mint_token()` (scripts/mint_token.py, or a
-      Catalyst Auth bridge). X-Role / X-Officer are ignored. No token -> 401 at the
+      claim {sub, role, iat, exp} minted by `mint_token()` - by POST /api/auth/login after
+      a password check (app/api/auth_api.py), or by scripts/mint_token.py. X-Role / X-Officer are ignored. No token -> 401 at the
       gateway middleware, before any router runs.
 
 Endpoint -> role matrix (6_D/05 §5): /api/audit = Admin; /api/graph|profile|alerts|brain =
@@ -202,8 +202,13 @@ def require_cron_secret(x_cron_secret: str | None = Header(default=None)):
     return True
 
 
-# Paths reachable without a token in signed mode.
-_PUBLIC_PREFIXES = ("/api/health",)
+# Paths reachable without a token in signed mode: the health probe, and the one route
+# whose job is to issue a token.
+_PUBLIC_PREFIXES = ("/api/health", "/api/auth/login")
+# Everything that serves case data. /trace, /trust and /report/ are mounted outside /api,
+# so a gateway that only looked at /api/ left the observability pages and every printed
+# case report open to anyone with the URL.
+_PROTECTED_PREFIXES = ("/api/", "/trace", "/trust", "/report/")
 _CRON_PATHS = ("/api/alerts/scan", "/api/brain/consolidate")
 
 
@@ -215,10 +220,19 @@ def install_gateway(app) -> None:
     async def _auth_gateway(request: Request, call_next):
         path = request.url.path
         if (auth_mode() == "signed" and request.method != "OPTIONS"
-                and path.startswith("/api/")
+                and path.startswith(_PROTECTED_PREFIXES)
                 and not path.startswith(_PUBLIC_PREFIXES)
                 and not path.rstrip("/").endswith(_CRON_PATHS)):
             if resolve_identity(request) is None:
+                headers = {"WWW-Authenticate": "Bearer"}
+                # This refusal is returned from outside the CORS middleware, so it has to
+                # name the origin itself. Without it a browser reports a network error
+                # instead of a 401, and the frontend cannot tell an expired session from
+                # a server that is down.
+                origin = request.headers.get("origin")
+                allowed = settings.allowed_origins_list
+                if origin and (origin in allowed or "*" in allowed):
+                    headers.update({"Access-Control-Allow-Origin": origin, "Vary": "Origin"})
                 return JSONResponse({"detail": "Authentication required."}, status_code=401,
-                                    headers={"WWW-Authenticate": "Bearer"})
+                                    headers=headers)
         return await call_next(request)

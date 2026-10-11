@@ -39,7 +39,11 @@ def _case_file() -> dict:
         if not isinstance(saver, SqliteSaver):
             return {"backend": "memory", "durable": False,
                     "note": "threads do not survive a restart (ANTAR_CHECKPOINT=memory)"}
-        return {**saver.stats(), "durable": True}
+        stats = saver.stats()
+        # This route answers without a token: name the file, not where it sits on the server.
+        if stats.get("path"):
+            stats["path"] = str(stats["path"]).replace("\\", "/").rsplit("/", 1)[-1]
+        return {**stats, "durable": True}
     except Exception:                       # noqa: BLE001 — health must never 500
         return {"backend": "unknown", "durable": False}
 

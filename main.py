@@ -399,6 +399,8 @@ async def _audit(request, call_next):
 # ── API Routers ──────────────────────────────────────────────────────────────
 _inspector = [Depends(require_role("Inspector"))]
 app.include_router(health.router,      prefix="/api",        tags=["Health"])
+from app.api import auth_api
+app.include_router(auth_api.router,    prefix="/api/auth",   tags=["Sign-in"])
 app.include_router(chat.router,        prefix="/api/chat",        tags=["Chat"])
 app.include_router(chat_stream.router, prefix="/api/chat",        tags=["Chat Stream"])
 app.include_router(dashboard.router,   prefix="/api/dashboard", tags=["Dashboard"])
