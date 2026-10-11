@@ -30,7 +30,7 @@ const FACE = {
   network: "gearbot", profile: "scout", research: "postbot", advocate: "knight", recall: "crt",
   linkage: "cube", forecast: "clockwork", geo: "drone", pattern: "radio",
 };
-const FACE_PX = 78;
+const FACE_PX = 60;
 const ICON = {
   network: "M13 9a4 4 0 112 7l-4 4a4 4 0 11-6-6l2-2m13 0l2-2a4 4 0 00-6-6l-4 4a4 4 0 002 7",
   profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0",
@@ -47,7 +47,8 @@ const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble"
 const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 
 // Slow enough to follow with the eye and read a name tag on the move.
-const SPEED = 30, ACCEL = 40, APART = 92;       // px/s, px/s², px between two agents
+const SPEED = 30, ACCEL = 40, APART = 76;       // px/s, px/s², px between two agents
+const FLY_MAX = 620, FLY_PULL = 5;              // Fast Run: top speed in px/s, and how hard an agent is drawn to its place
 const MEM_KEY = "antar_console_memory", MEM_MAX = 60;
 
 const nodeLabel = (n) => (n.accused ? n.accused : `${n.crimeHead || n.crimeGroup || "FIR"} · ${n.zone || n.district || ""}`);
@@ -74,7 +75,9 @@ function nearest(word, pool) {
 //             is selected, since a selected record is what a clicked agent works on)
 // `consoleOn` the terminal and notices are available - on the Brain graph, not the Crime Graph
 // `suggestions` things in the current view worth a look: [{ agent, text, ask, cmd }]
-export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, agentsOn = true, consoleOn = true, suggestions = [] }) {
+// `flying`    a Fast Run is in progress: the agents leave their places and circle the brain
+// `flyAgent`  the agent whose pass the Fast Run is on, shown working while it is
+export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, agentsOn = true, consoleOn = true, suggestions = [], flying = false, flyAgent = null }) {
   const tips = useRef({ list: [], at: 0 });
   useEffect(() => { tips.current = { list: suggestions, at: 0 }; }, [suggestions]);
   const [pack, setPack] = useState(null);          // identity pack, or { error }
@@ -96,6 +99,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   const prefs = useRef({ auto: true, system: false, roam: true, seen: true });
   const winRef = useRef(null), outRef = useRef(null), inRef = useRef(null);
   const layerRef = useRef(null), hintRef = useRef(null), sayRef = useRef(null), wireRef = useRef(null), packetRef = useRef(null);
+  const orbitRef = useRef(null);
   const bugEls = useRef({});
   const sim = useRef({ a: {}, queue: [], talk: null, nextIdle: Date.now() + 9000, held: null, moved: false });
 
@@ -113,6 +117,14 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   useEffect(() => { prefs.current.drawn = showAgents; }, [showAgents]);
 
   useEffect(() => { prefs.current.roam = roam; }, [roam]);
+  // Fast Run: start the flight when it begins, and let it wind down when it ends. The
+  // frame loop below does the flying; this only marks the two moments.
+  useEffect(() => {
+    const S = sim.current;
+    if (flying) {
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) S.fly = { t0: performance.now(), theta: 0, stopAt: 0, p: null };
+    } else if (S.fly && !S.fly.stopAt) S.fly.stopAt = performance.now();
+  }, [flying]);
   useEffect(() => {
     prefs.current.seen = open && !small;           // is the officer looking at the terminal?
     if (prefs.current.seen) setUnread(0);
@@ -341,6 +353,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     if (!layer) return;
     const S = sim.current;
     const rnd = (a, b) => a + Math.random() * (b - a);
+    const ease = (t) => { const k = Math.max(0, Math.min(1, t)); return k * k * (3 - 2 * k); };
     let walls = [], wallsAt = 0;
     const measure = (now) => {
       wallsAt = now;
@@ -355,7 +368,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     const blocked = (x, y) => walls.some((w) => x > w.l && x < w.r && y > w.t && y < w.b);
     const freeSpot = (W, H) => {
       for (let k = 0; k < 24; k++) {
-        const x = rnd(46, W - 46), y = rnd(60, H - 84);
+        const x = rnd(38, W - 38), y = rnd(60, H - 84);
         if (!blocked(x, y)) return [x, y];
       }
       return [W / 2, H / 2];
@@ -379,10 +392,74 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       const lineY = prefs.current.roam ? 0 : [H - 96, H / 2, 110]
         .map((y) => [y, ORDER.filter((_, i) => blocked(slotX(i), y)).length]).sort((a, b) => a[1] - b[1])[0][0];
 
+      // Fast Run flight. Two rings round the middle of the brain, turning opposite ways.
+      // Each agent has a place on a ring and follows it; the place starts where the agent
+      // already is - its own angle and distance carry over and ease onto the ring - so
+      // nothing jumps when the flight starts, and the turn speeds up and slows down rather
+      // than switching on and off.
+      const F = S.fly;
+      if (F) {
+        if (!F.p) {
+          const cx = W / 2, cy = H / 2, rx = Math.min(W * 0.28, 340), ry = Math.min(H * 0.3, 230);
+          F.geo = { cx, cy, rx, ry }; F.p = {};
+          const polar = ORDER.filter((id) => S.a[id]).map((id) => {
+            const u = (S.a[id].x - cx) / rx, v = (S.a[id].y - cy) / ry;
+            return { id, ang: Math.atan2(v, u), rad: Math.hypot(u, v) };
+          }).sort((p, q) => p.ang - q.ang);
+          // The agents nearest the middle take the inner ring, so nobody crosses the
+          // brain to reach a place. On a ring, two agents that start close together are
+          // eased apart just far enough not to overlap - no further.
+          [...polar].sort((p, q) => p.rad - q.rad).forEach((p, k) => { p.outer = k >= Math.floor(polar.length / 2); p.to = p.ang; });
+          for (const outer of [true, false]) {
+            const ring = polar.filter((p) => p.outer === outer), gap = outer ? 0.5 : 0.72;
+            for (let pass = 0; pass < 40 && ring.length > 1; pass++) {
+              ring.forEach((p, j) => {
+                const q = ring[(j + 1) % ring.length];
+                const d = ((q.to - p.to) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+                if (d < gap) { p.to -= (gap - d) / 2; q.to += (gap - d) / 2; }
+              });
+            }
+          }
+          polar.forEach((p, k) => {
+            F.p[p.id] = { ang0: p.ang, turn: p.to - p.ang, rad0: p.rad, ring: p.outer ? 1 : 0.58, spin: p.outer ? 1.5 : -2, k };
+          });
+          [...(orbitRef.current?.children || [])].forEach((el, j) => {
+            el.setAttribute("cx", cx); el.setAttribute("cy", cy);
+            el.setAttribute("rx", rx * (j ? 0.58 : 1)); el.setAttribute("ry", ry * (j ? 0.58 : 1));
+          });
+        }
+        F.e = (now - F.t0) / 1000;
+        F.theta += dt * ease(F.e / 0.9) * (F.stopAt ? 1 - ease((now - F.stopAt) / 700) : 1);
+        if (F.stopAt && now - F.stopAt > 700) {       // landed: carry on roaming from here
+          ORDER.forEach((id) => { const a = S.a[id]; if (a) { a.tx = a.x; a.ty = a.y; a.arrived = true; a.wait = now + rnd(1200, 4200); } });
+          S.fly = null;
+        }
+      }
+
       ORDER.forEach((id, i) => {
         const a = S.a[id], el = bugEls.current[id];
         if (!a || !el) return;
+        const fp = S.fly?.p?.[id];
         if (a.held) { a.vx = a.vy = 0; }
+        else if (fp) {
+          const { cx, cy, rx, ry } = S.fly.geo, on = ease(S.fly.e / 1.1);
+          const ang = fp.ang0 + fp.turn * on + fp.spin * S.fly.theta;
+          const rad = (fp.rad0 + (fp.ring - fp.rad0) * on) * (1 + 0.06 * on * Math.sin(S.fly.e * 2.4 + fp.k));
+          // Follow the place rather than sit on it: speed builds and fades with the
+          // distance still to cover, two agents that come close give way, and nothing
+          // moves faster than the eye can track.
+          let wx = (Math.max(34, Math.min(W - 34, cx + rx * rad * Math.cos(ang))) - a.x) * FLY_PULL;
+          let wy = (Math.max(50, Math.min(H - 72, cy + ry * rad * Math.sin(ang))) - a.y) * FLY_PULL;
+          for (const o of ORDER) {
+            const q = S.a[o];
+            if (o === id || !q) continue;
+            const ex = a.x - q.x, ey = a.y - q.y, e = Math.hypot(ex, ey);
+            if (e > 0 && e < 58) { wx += (ex / e) * (58 - e) * 14; wy += (ey / e) * (58 - e) * 14; }
+          }
+          const sp = Math.hypot(wx, wy), k = sp > FLY_MAX ? FLY_MAX / sp : 1;
+          a.vx = wx * k; a.vy = wy * k;
+          a.x += a.vx * dt; a.y += a.vy * dt;
+        }
         else {
           if (!prefs.current.roam) { a.tx = slotX(i); a.ty = lineY; a.arrived = false; }
           else if (blocked(a.tx, a.ty)) [a.tx, a.ty] = freeSpot(W, H);       // a panel opened over the goal
@@ -408,7 +485,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
           }
           const ax = wx - a.vx, ay = wy - a.vy, am = Math.hypot(ax, ay) || 1, cap = Math.min(am, ACCEL * dt);
           a.vx += (ax / am) * cap; a.vy += (ay / am) * cap;
-          a.x = Math.max(42, Math.min(W - 42, a.x + a.vx * dt));
+          a.x = Math.max(34, Math.min(W - 34, a.x + a.vx * dt));
           a.y = Math.max(50, Math.min(H - 72, a.y + a.vy * dt));
         }
         const hover = a.held ? 0 : Math.sin(now / 620 + i * 1.7) * 2.2;       // never perfectly still
@@ -533,7 +610,8 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
 
       {/* The agents live in this layer and nowhere else: it is the brain stage, so they
           cannot move over the navigation or leave the screen. */}
-      <div ref={layerRef} className={`bt-layer${showAgents ? "" : " off"}`} style={{ "--c": ACCENT }} aria-hidden={!showAgents}>
+      <div ref={layerRef} className={`bt-layer${showAgents ? "" : " off"}${flying ? " fly" : ""}`} style={{ "--c": ACCENT }} aria-hidden={!showAgents}>
+        <svg ref={orbitRef} className="bt-orbits" aria-hidden="true"><ellipse /><ellipse /></svg>
         <svg className="bt-wires" aria-hidden="true" style={{ opacity: talk && talk.to !== "you" ? 1 : 0 }}>
           <line ref={wireRef} />
           <circle ref={packetRef} r="3.2" />
@@ -542,14 +620,14 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
           const a = card(id);
           return (
             <div key={id} ref={(el) => { bugEls.current[id] = el; }}
-                 className={`bt-bug${busy.includes(id) ? " busy" : ""}${dragging === id ? " held" : ""}${talk?.from === id ? " speaking" : ""}${talk?.to === id ? " hearing" : ""}`}
+                 className={`bt-bug${busy.includes(id) || flyAgent === id ? " busy" : ""}${dragging === id ? " held" : ""}${talk?.from === id ? " speaking" : ""}${talk?.to === id ? " hearing" : ""}`}
                  onPointerDown={(e) => startCarry(e, id)} role="button" tabIndex={0} aria-label={a ? `${a.name} agent` : id}
                  onKeyDown={(e) => { if (e.key === "Enter") { openTerminal(); exec(target ? `run ${id}` : `about ${id}`); } }}
                  title={a ? `${a.name}: ${a.purpose} ${target ? `Click to run on ${target.label}.` : "Select a record and click, or drag onto one."}` : id}>
               <i>
                 <Mascot className="bt-face" size={FACE_PX} label={a ? `${a.name} agent` : id}
                         directions={`/mascots/${FACE[id]}-directions.webp`} reactions={`/mascots/${FACE[id]}-reactions.webp`} />
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[id]} /></svg>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[id]} /></svg>
               </i>
               <span>{a?.name || id}</span>
             </div>
@@ -667,6 +745,15 @@ const CSS = `
 .bt-layer.off { opacity: 0; visibility: hidden; }
 .bt-layer.off .bt-bug > i, .bt-layer.off .bt-bug > span { pointer-events: none; }
 .bt-wires { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .3s; }
+/* Fast Run: the two rings the agents fly, drawn only while they are flying. */
+.bt-orbits { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .5s ease; }
+.bt-layer.fly .bt-orbits { opacity: 1; }
+.bt-orbits ellipse { fill: none; stroke: var(--c); stroke-width: 1; stroke-dasharray: 3 9; opacity: .32; animation: bt-dash 2.4s linear infinite; }
+.bt-orbits ellipse + ellipse { animation-direction: reverse; opacity: .22; }
+@keyframes bt-dash { to { stroke-dashoffset: -48; } }
+.bt-layer.fly .bt-bug { opacity: 1; }
+.bt-layer.fly .bt-bug > i { box-shadow: 0 0 0 3px rgba(34,230,240,.18), 0 0 20px var(--c), 0 6px 14px rgba(0,0,0,.45); }
+.bt-layer.fly .bt-bug > i::before { animation-duration: 1.6s; border-color: rgba(34,230,240,.7); border-left-color: transparent; border-right-color: transparent; }
 .bt-wires line { stroke: var(--c); stroke-width: 1; stroke-dasharray: 2 6; opacity: .5; }
 .bt-wires circle { fill: #fff; filter: drop-shadow(0 0 5px var(--c)); }
 
@@ -678,19 +765,19 @@ const CSS = `
 .bt-bug > i, .bt-bug > span { pointer-events: auto; cursor: grab; }
 /* The body: a lit disc the character stands on, leaning into its direction of travel,
    inside a slow scan ring. The disc is pale so the character's dark outline reads on the graph. */
-.bt-bug > i { position: absolute; left: -2px; top: -2px; width: 48px; height: 48px; border-radius: 50%; color: var(--c);
+.bt-bug > i { position: absolute; left: 4px; top: 4px; width: 36px; height: 36px; border-radius: 50%; color: var(--c);
   background: radial-gradient(circle at 50% 34%, #F4FDFF 0%, #BFEAF1 58%, #6FC9D6 100%); border: 1.5px solid var(--c);
   box-shadow: 0 0 14px rgba(34,230,240,.34), 0 6px 14px rgba(0,0,0,.45); transform: rotate(var(--lean, 0deg)); transition: box-shadow .2s, scale .2s; }
-.bt-bug > i::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px dashed rgba(34,230,240,.4); border-left-color: transparent; border-right-color: transparent; animation: bt-spin 9s linear infinite; }
-.bt-bug > i::after { content: ""; position: absolute; right: 1px; top: 1px; width: 6px; height: 6px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); animation: bt-led 2.4s ease-in-out infinite; }
+.bt-bug > i::before { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1px dashed rgba(34,230,240,.4); border-left-color: transparent; border-right-color: transparent; animation: bt-spin 9s linear infinite; }
+.bt-bug > i::after { content: ""; position: absolute; right: 0; top: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); animation: bt-led 2.4s ease-in-out infinite; }
 /* The character. page-mascot sets its own inline box, so the placement here has to win:
    the head (centred at about 50% / 42% of a sprite cell) sits on the middle of the disc. */
 .bt-bug .bt-face { position: absolute !important; left: 50%; top: 50%; margin: ${-Math.round(FACE_PX * 0.44)}px 0 0 ${-FACE_PX / 2}px; cursor: grab !important; outline: none;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
 .bt-bug.held .bt-face { cursor: grabbing !important; }
 /* What the agent does, as a badge on the disc. */
-.bt-bug > i > svg { position: absolute; right: -5px; bottom: -3px; box-sizing: content-box; padding: 3px; border-radius: 50%; background: rgba(6,11,18,.94); border: 1px solid var(--c); }
-.bt-bug > span { position: absolute; left: 50%; top: 52px; transform: translateX(-50%); font: 600 8.5px 'JetBrains Mono', monospace; letter-spacing: .04em; text-transform: uppercase; color: #CFFAFE;
+.bt-bug > i > svg { position: absolute; right: -6px; bottom: -4px; box-sizing: content-box; padding: 2px; border-radius: 50%; background: rgba(6,11,18,.94); border: 1px solid var(--c); }
+.bt-bug > span { position: absolute; left: 50%; top: 45px; transform: translateX(-50%); font: 600 8.5px 'JetBrains Mono', monospace; letter-spacing: .04em; text-transform: uppercase; color: #CFFAFE;
   background: rgba(6,11,18,.78); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
 .bt-bug:hover > i, .bt-bug.speaking > i, .bt-bug.hearing > i { box-shadow: 0 0 0 3px rgba(34,230,240,.22), 0 0 18px var(--c); }
 .bt-bug.held > i { cursor: grabbing; scale: 1.14; box-shadow: 0 0 0 4px rgba(34,230,240,.28), 0 0 22px var(--c); }
@@ -757,5 +844,5 @@ const CSS = `
 .bt-in { display: flex; align-items: center; gap: 7px; padding: 7px 11px; border-top: 1px solid rgba(255,255,255,.09); flex-shrink: 0; }
 .bt-in span { color: #22E6F0; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .bt-in input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #fff; font: 12px 'JetBrains Mono', monospace; }
-@media (prefers-reduced-motion: reduce) { .bt-say, .bt-bug > i::before, .bt-bug > i::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .bt-say, .bt-bug > i::before, .bt-bug > i::after, .bt-orbits ellipse { animation: none; } }
 `;
