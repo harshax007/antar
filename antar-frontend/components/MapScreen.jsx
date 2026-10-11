@@ -1416,10 +1416,28 @@ export default function MapScreen() {
                     </div>
                   )}
 
-                  <div className="mx-vs-links">
-                    <button type="button" onClick={() => setShowDossier(true)}>{kn ? "ಕಾರಿಡಾರ್‌ಗಳು ಮತ್ತು ಕಾರ್ಯಕ್ಷೇತ್ರಗಳು" : "Corridors and operating zones"} →</button>
-                    <button type="button" onClick={() => setRightTab("where")}>{kn ? "ಮುಂದೆ ಎಲ್ಲಿ" : "Where next"}{fc.hot?.items?.length ? ` (${fc.hot.items.length})` : ""} →</button>
-                  </div>
+                      {/* Integrated Geo-Intel Ticker */}
+                      <div 
+                        onClick={() => setShowDossier(true)}
+                        style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
+                        title={kn ? "ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ತೆರೆಯಿರಿ" : "Open Geo Intel Dashboard"}
+                      >
+                        <span style={{ color: "var(--cyan)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Geo Intel</span>
+                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
+                          {kn ? "ಜಿಯೋ-ಇಂಟೆಲ್: ನೈಜ-ಸಮಯದ ಭೌಗೋಳಿಕ ಗುಪ್ತಚರ ಮಾಹಿತಿಯನ್ನು ಸಂಗ್ರಹಿಸಲಾಗುತ್ತಿದೆ..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
+                        </marquee>
+                      </div>
+                      {/* Integrated Prediction Ticker */}
+                      <div 
+                        onClick={() => setRightTab("where")}
+                        style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
+                        title={kn ? "ಮುಂದೆ ಎಲ್ಲಿ ಫಲಕ ತೆರೆಯಿರಿ" : "Open Where Next Panel"}
+                      >
+                        <span style={{ color: "var(--amber)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Prediction</span>
+                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
+                          {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (fc.hot?.items?.length ? `Predictive forecast indicates ${fc.hot.items.length} emerging hotspots across the state. Highest risk identified at ${fc.hot.items[0]?.name} (projecting up to ${fc.hot.items[0]?.band80?.hi} cases).` : "Gathering real-time predictive intelligence...")}
+                        </marquee>
+                      </div>
                 </div>
               )}
             </aside>
