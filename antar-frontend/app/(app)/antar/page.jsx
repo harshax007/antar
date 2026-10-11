@@ -15,6 +15,7 @@ import { WhisperMicButton, WhisperWaveform } from "@/components/WhisperMic";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { asset } from "@/lib/assets";
 import { openReport } from "@/lib/auth";
+import AgentStrip from "@/components/AgentStrip";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -2390,6 +2391,8 @@ export default function ChatPage() {
                 )}
               </p>
             </motion.div>
+
+            <AgentStrip />
 
             <motion.div
               initial={{ opacity: 0, y: 25, scale: 0.98 }}

@@ -4034,3 +4034,28 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
 .integrated-forecast section {
   margin-bottom: 0 !important;
 }
+
+/* ── The agents in a line above the chat box (components/AgentStrip.jsx) ── */
+.ags { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 4px; width: 100%; max-width: 860px; margin: 0 auto 10px; padding: 0 8px; box-sizing: border-box; }
+.ags-a { position: relative; width: 40px; height: 40px; outline: none; }
+/* page-mascot draws a button; in the strip it is the picture, not a control of its own. */
+.ags-f { cursor: default !important; outline: none; transform-origin: 50% 70%; transition: transform .18s ease, filter .18s ease; filter: saturate(.85) brightness(.92); }
+.ags-a:hover, .ags-a:focus-within { z-index: 3; }
+.ags-a:hover .ags-f, .ags-a:focus-within .ags-f { transform: scale(1.75); filter: none; }
+.ags-t { position: absolute; left: 50%; top: calc(100% + 16px); transform: translateX(-50%) translateY(-4px); width: max-content; max-width: 220px;
+  padding: 7px 10px; border-radius: 8px; background: rgba(8,13,22,.96); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 10px 28px rgba(0,0,0,.5);
+  font: 400 11.5px/1.45 'Inter', sans-serif; color: #B8C4D4; text-align: left; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s ease, transform .15s ease; }
+.ags-t b { display: block; margin-bottom: 2px; font: 600 11px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: #EAF1F9; }
+.ags-a:hover .ags-t, .ags-a:focus-within .ags-t { opacity: 1; visibility: visible; transform: translateX(-50%); }
+/* Keep the card on screen for the agents at either end of the line. */
+.ags-a:nth-child(-n+3) .ags-t { left: 0; transform: translateY(-4px); }
+.ags-a:nth-child(-n+3):hover .ags-t, .ags-a:nth-child(-n+3):focus-within .ags-t { transform: none; }
+.ags-a:nth-last-child(-n+3) .ags-t { left: auto; right: 0; transform: translateY(-4px); }
+.ags-a:nth-last-child(-n+3):hover .ags-t, .ags-a:nth-last-child(-n+3):focus-within .ags-t { transform: none; }
+@media (max-width: 640px) {
+  .ags { gap: 0 2px; }
+  .ags-a { width: 34px; height: 34px; }
+  .ags-f { width: 34px !important; height: 34px !important; }
+  .ags-t { max-width: 190px; }
+}
+@media (prefers-reduced-motion: reduce) { .ags-f, .ags-t { transition: none; } }

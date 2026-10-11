@@ -285,7 +285,7 @@ def build_network(seed_id: str, depth: int = DEPTH, cap: int = NODE_CAP) -> dict
             }
             bridged = broker_nbr_comms | {broker_node["community"]}
             broker_alert = (
-                f"⚠️ {broker_node['label']} bridges {len(bridged)} gang cell(s) "
+                f"{broker_node['label']} bridges {len(bridged)} gang cell(s) "
                 f"(betweenness {broker_node['betweenness']:.3f}) — priority arrest target"
             )
 
