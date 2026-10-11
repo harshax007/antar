@@ -111,3 +111,24 @@ def test_the_degraded_helper_names_the_agent_and_the_reason():
     step = d["reasoning"][0]
     assert step["agent"] == "geo" and step["step"] == "degraded"
     assert "geo" in step["detail"] and "timed out" in step["detail"]
+
+
+@pytest.mark.anyio
+async def test_the_reasoning_trail_does_not_grow_across_turns():
+    """A turn's trail is that turn's steps, however long the thread is.
+
+    The supervisor used to return the checkpointed trail plus its own step, and the append
+    reducer added that to the checkpointed trail again — doubling it every turn. An
+    11-turn thread wrote a 612 MB row into `agent_reasoning_logs`.
+    """
+    from app.agents.state import reduce_list
+    from app.agents.supervisor import supervisor_node
+
+    trail: list[dict] = []
+    for _ in range(6):
+        # what the previous turn's worker and synthesize nodes left in the checkpoint
+        trail = reduce_list(trail, [{"step": "query"}, {"step": "synthesize"}])
+        update = await supervisor_node(_state(user_text="theft trend over time",
+                                              reasoning=trail))
+        trail = reduce_list(trail, update["reasoning"])
+        assert [s["step"] for s in trail] == ["intent_classification"]

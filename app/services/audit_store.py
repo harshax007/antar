@@ -42,6 +42,7 @@ from app.core.audit import hash_event
 
 _log: list[dict] = []
 _MAX = 2000
+_MAX_TRACE_STEPS = 500
 _last_hash: str = "0" * 64
 _GENESIS = "0" * 64
 
@@ -239,6 +240,12 @@ def record_ai_reasoning(
               json.dumps(payload, sort_keys=True), entry["prev_hash"]))
 
         if reasoning_id and reasoning_trace:
+            # A turn's trail is a few dozen steps. Anything past the cap is a runaway, and
+            # on Catalyst this table lives in /tmp beside the database.
+            if len(reasoning_trace) > _MAX_TRACE_STEPS:
+                dropped = len(reasoning_trace) - _MAX_TRACE_STEPS
+                reasoning_trace = reasoning_trace[:_MAX_TRACE_STEPS] + [
+                    {"step": "truncated", "detail": f"{dropped} further step(s) not stored."}]
             conn.execute("""
                 INSERT INTO agent_reasoning_logs (reasoning_id, trace_json, ts)
                 VALUES (?, ?, ?)

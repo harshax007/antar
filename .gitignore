@@ -55,6 +55,10 @@ antar.db
 *.db
 *.db-wal
 *.db-shm
+# Packed Brain corpus, rebuilt from brain_vectors.db by vec_store.pack()
+brain_vectors.i8
+brain_vectors.ids
+brain_vectors.mult
 *.bak*
 *.pre_inject
 *.rej_backup

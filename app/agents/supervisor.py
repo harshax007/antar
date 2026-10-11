@@ -235,7 +235,10 @@ async def supervisor_node(state: AgentState) -> dict:
         "visuals": {"__CLEAR__": True},
         "citations": [{"__CLEAR__": True}],
         "brain_hits": [{"__CLEAR__": True}],
-        "reasoning": state.get("reasoning", []) + [{
+        # reasoning is reset the same way. It used to be `state.get("reasoning") + [...]`,
+        # which the append reducer then added to the checkpointed list a second time:
+        # the trail doubled every turn, and an 11-turn thread wrote a 612 MB trace row.
+        "reasoning": [{"__CLEAR__": True}, {
             "agent": "supervisor",
             "step": "intent_classification",
             "routes": parsed.get("routes"),
