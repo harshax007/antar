@@ -657,12 +657,22 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       </div>
 
       {showConsole && (
-        <button className={`bsx-pill bt-pill${open ? " on" : ""}`} onClick={() => { setOpen((v) => !v); setSmall(false); }}
-                title={kn ? "ಬ್ರೈನ್ ಟರ್ಮಿನಲ್" : "Brain terminal"} aria-label="Brain terminal" aria-pressed={open}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v14H4zM8 10l3 2-3 2M13 15h3" /></svg>
-          {kn ? "ಟರ್ಮಿನಲ್" : "Terminal"}
-          {unread > 0 && <em aria-label={`${unread} new`}>{unread}</em>}
-        </button>
+        <div className="bt-pills">
+          <button className={`bsx-pill bt-pill${open ? " on" : ""}`} onClick={() => { setOpen((v) => !v); setSmall(false); }}
+                  title={kn ? "ಬ್ರೈನ್ ಟರ್ಮಿನಲ್" : "Brain terminal"} aria-label="Brain terminal" aria-pressed={open}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v14H4zM8 10l3 2-3 2M13 15h3" /></svg>
+            {kn ? "ಟರ್ಮಿನಲ್" : "Terminal"}
+            {unread > 0 && <em aria-label={`${unread} new`}>{unread}</em>}
+          </button>
+          {/* The same switch as the terminal's assemble / roam: one press lines the agents up, the next lets them go. */}
+          {showAgents && (
+            <button className={`bsx-pill bt-pill bt-asm${roam ? "" : " on"}`} onClick={() => setRoam((v) => !v)} aria-pressed={!roam}
+                    title={roam ? (kn ? "ಏಜೆಂಟ್‌ಗಳನ್ನು ಸಾಲಾಗಿ ನಿಲ್ಲಿಸಿ" : "Assemble the agents") : (kn ? "ಏಜೆಂಟ್‌ಗಳನ್ನು ಬಿಡಿ" : "Release the agents")}
+                    aria-label={roam ? "Assemble the agents" : "Release the agents"}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2.2" /><circle cx="12" cy="12" r="2.2" /><circle cx="19" cy="12" r="2.2" /></svg>
+            </button>
+          )}
+        </div>
       )}
 
       {showConsole && (
@@ -746,10 +756,13 @@ function Line({ l, onRun, nameOf }) {
 
 const CSS = `
 /* Beside the search box, clear of the Fast Run pill on the right. */
-.bsx-pill.bt-pill { position: absolute; top: 16px; left: 336px; z-index: 9; opacity: 1; color: #A5F3FC; background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.05); }
+.bt-pills { position: absolute; top: 16px; left: 336px; z-index: 9; display: flex; align-items: center; gap: 6px; }
+.bsx-pill.bt-pill { position: static; opacity: 1; color: #A5F3FC; background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.05); }
+/* Assemble: a mark, no word - three agents in a line. */
+.bsx-pill.bt-asm { padding: 8px 9px; }
 .bsx-pill.bt-pill:hover, .bsx-pill.bt-pill.on { border-color: rgba(34,230,240,.45); color: #fff; }
 .bsx-pill.bt-pill em { font: 700 9.5px 'JetBrains Mono', monospace; font-style: normal; color: #06121B; background: #22E6F0; border-radius: 999px; padding: 0 5px; min-width: 15px; text-align: center; }
-@media (max-width: 1080px) { .bsx-pill.bt-pill { left: auto; right: 16px; top: 104px; } }
+@media (max-width: 1080px) { .bt-pills { left: auto; right: 16px; top: 104px; } }
 
 /* Above the control panels (z-index 7): the agents steer around them, and are never hidden by one. */
 .bt-layer { --c: #22E6F0; position: absolute; inset: 0; z-index: 8; overflow: hidden; pointer-events: none; transition: opacity .25s ease; }
