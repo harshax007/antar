@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, FileSpreadsheet, Radio, Crosshair, ShieldCheck, Activity, Square, Map, Cpu, Search } from "lucide-react";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { openReport } from "@/lib/auth";
+import WorkspaceAgents from "@/components/WorkspaceAgents";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -607,6 +608,10 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                     })}
                   </div>
                 )}
+
+                {/* The agents: which ones worked on this answer, and the ones that can be run
+                    from here on a record it names. */}
+                {answer && <WorkspaceAgents answer={answer} question={question} suspects={suspects} usedAgents={meta?.agents || []} kn={kn} />}
 
                 {/* What the answer is made of - stated, not implied. Every value here is
                     reported by the pipeline for THIS answer; a missing one reads "—"
