@@ -47,7 +47,7 @@ const ICON = {
   pattern: "M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z",
 };
 const ORDER = ["network", "profile", "research", "advocate", "recall", "linkage", "forecast", "geo", "pattern"];
-const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "learnings", "history", "clear"];
+const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "learnings", "history", "think", "connect", "anticipate", "clear"];
 // Worked examples per command, for `help <command>` and for the hint under the prompt.
 const USAGE = {
   run: ["run network S0041", "run profile ACC-KA-500777", "run geo Bengaluru City", "run forecast Bellanduru PS", "run linkage upi:name@bank", "run network   (uses the selected record)"],
@@ -58,6 +58,9 @@ const USAGE = {
   notify: ["notify on", "notify off"],
   help: ["help", "help run"],
   history: ["history"],
+  think: ["think", "/think"],
+  connect: ["connect S0041", "connect ACC-KA-500777", "/connect   (uses the selected record)"],
+  anticipate: ["anticipate Bellanduru PS", "anticipate Bengaluru City", "/anticipate   (uses the selected record)"],
 };
 // Which agents a record of each kind can be handed to, in the order worth trying.
 const FOR_KIND = { accused: ["network", "profile", "research", "linkage"], station: ["forecast"], district: ["geo"], crime_group: ["pattern"] };
@@ -255,7 +258,30 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     if (!text) return;
     say({ kind: "in", text });
     const [word, ...rest] = text.split(/\s+/);
-    const cmd = word.toLowerCase(), arg = rest.join(" ");
+    // A leading slash is accepted, as in the chat box: /help is help.
+    const cmd = word.toLowerCase().replace(/^\//, ""), arg = rest.join(" ");
+    // The three modes Antar has in chat, as terminal commands. Each is a name for work the
+    // console already does, so nothing new runs behind them:
+    //   think        scan the records in view (Fast Run)
+    //   connect      who and what a record is tied to (Network, then Linkage)
+    //   anticipate   what to expect at a place (Forecast for a station, Geo for a district)
+    if (cmd === "think") { onThink?.(); say({ kind: "sys", text: "Think: scanning the records in this view. The findings open when it finishes." }); return; }
+    if (cmd === "connect" || cmd === "anticipate") {
+      const typed = arg.trim();
+      const pl = typed || target?.payload, label = typed || target?.label;
+      if (!pl) {
+        say({ kind: "err", text: cmd === "connect" ? "Connect what? Click a record, or type an accused id: connect S0041"
+                                                    : "Anticipate where? Type a station or a district: anticipate Bellanduru PS" });
+        return;
+      }
+      const name = typeof pl === "string" ? pl : (pl.station || pl.district || pl.accused || "");
+      if (cmd === "connect") { runAgent("network", pl, label); runAgent("linkage", pl, label); return; }
+      const isPlace = typeof pl === "string" ? !/^(ACC-|S\d)/i.test(pl) : !!(pl.station || pl.district);
+      if (!isPlace) { say({ kind: "err", text: "Anticipate works on a place, never a person. Type a station or a district: anticipate Bellanduru PS" }); return; }
+      const district = typeof pl === "string" ? / (City|Dist|District|Railways)$/i.test(pl) : !pl.station;
+      runAgent(district ? "geo" : "forecast", typeof pl === "string" ? (district ? { district: name } : { station: name }) : pl, label);
+      return;
+    }
     if (cmd === "clear") { setLines([]); return; }
     if (cmd === "help") {
       const all = pack?.commands || [];

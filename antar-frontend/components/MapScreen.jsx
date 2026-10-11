@@ -199,6 +199,9 @@ function FitToKarnataka({ geo, selectedDistrict }) {
   return null;
 }
 
+// Hotspot readings already fetched this session, by crime type and date.
+const GI_CACHE = new Map();
+
 export default function MapScreen() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -255,7 +258,7 @@ export default function MapScreen() {
     initial: { unit: sp?.get("unit") || null, horizon: Number(sp?.get("h")) || 7, category: sp?.get("fc") || null },
   });
     const [modelCardOpen, setModelCardOpen] = useState(false);
-  const [rightTab, setRightTab] = useState(null);
+  const [rightTab, setRightTab] = useState("summary");     // the summary is what an officer sees first
   const [llmSummary, setLlmSummary] = useState(null);
   const [llmLoading, setLlmLoading] = useState(false);
 
@@ -368,16 +371,26 @@ export default function MapScreen() {
     qMonthly.set("days", "30");
     qMonthly.set("end_date", endDate);
 
-    setGiLoading(true);
+    // A date or crime type that was already read this session is drawn at once from memory
+    // and refreshed behind it: flipping between two days no longer waits on three requests
+    // each time. Only a view never seen before shows the loading state.
+    const key = `${crimeType}|${endDate}`;
+    const apply = ([curDaily, prevDaily, curMonthly]) => {
+      setGiStar(curDaily || { zones: [] });
+      setGiPrevTotal(prevDaily?.zones ? prevDaily.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
+      setGiMonthlyTotal(curMonthly?.zones ? curMonthly.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
+    };
+    const cached = GI_CACHE.get(key);
+    if (cached) { apply(cached); setGiLoading(false); } else setGiLoading(true);
     Promise.all([
       fetch(`${API}/api/map/gi_star?${qDaily}`, { signal: ctrl.signal }).then(r => r.json()),
       fetch(`${API}/api/map/gi_star?${qDailyPrev}`, { signal: ctrl.signal }).then(r => r.json()).catch(() => null),
       fetch(`${API}/api/map/gi_star?${qMonthly}`, { signal: ctrl.signal }).then(r => r.json()).catch(() => null)
     ])
-      .then(([curDaily, prevDaily, curMonthly]) => {
-        setGiStar(curDaily || { zones: [] });
-        setGiPrevTotal(prevDaily?.zones ? prevDaily.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
-        setGiMonthlyTotal(curMonthly?.zones ? curMonthly.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
+      .then((res) => {
+        GI_CACHE.set(key, res);
+        if (GI_CACHE.size > 40) GI_CACHE.delete(GI_CACHE.keys().next().value);
+        apply(res);
       })
       .catch((err) => { if (err?.name !== "AbortError") { setGiStar({ zones: [] }); setGiPrevTotal(null); setGiMonthlyTotal(null); } })
       .finally(() => { if (!ctrl.signal.aborted) setGiLoading(false); });
@@ -713,9 +726,9 @@ export default function MapScreen() {
             background: "rgba(3, 5, 12, 0.6)",
             backdropFilter: "blur(4px)"
           }}>
-            <div style={{
-              width: "min(600px, calc(100vw - 32px))",
-              maxHeight: "80vh",
+            <div className="mx-dossier" style={{
+              width: "min(720px, calc(100vw - 32px))",
+              maxHeight: "calc(100vh - 130px)",
               overflowY: "auto",
               background: "rgba(11,18,32,0.95)",
               backdropFilter: "blur(16px)",
@@ -755,7 +768,7 @@ export default function MapScreen() {
               <div style={{ fontSize: "11px", color: "#FF8C42", fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
                 ⇄ {kn ? "ಸಕ್ರಿಯ ಸಾರಿಗೆ ಕಾರಿಡಾರ್‌ಗಳು" : "Active Transit Corridors"}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {(serverArcs.length > 0 ? serverArcs : flows).slice(0, 5).map((item, idx) => (
                   <div key={idx} onClick={() => handleViewDetail('corridor', item)} style={{ padding: "8px 10px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", flexDirection: "column", gap: "3px", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.06)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.02)"}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", fontWeight: 700, color: "#FFF" }}>
@@ -899,22 +912,8 @@ export default function MapScreen() {
 
           <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%", position: "relative" }}>
             {giLoading && (
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                background: "rgba(6, 11, 20, 0.4)",
-                backdropFilter: "blur(2px)",
-                zIndex: 1000,
-                pointerEvents: "none",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                transition: "opacity 0.3s ease"
-              }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(34, 230, 240, 0.9)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "pulse 1.5s infinite ease-in-out" }}>
-                  <path d="M7 16l-4-4 4-4" />
-                  <path d="M17 8l4 4-4 4" />
-                  <path d="M3 12h18" strokeDasharray="2 4" />
-                </svg>
+              <div className="mx-loading" role="status" aria-label={kn ? "ನಕ್ಷೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ" : "Reading the map"}>
+                <span aria-hidden="true" />
               </div>
             )}
             <MapContainer center={[15.317, 75.713]} zoom={7} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%", transition: "filter 0.4s ease", filter: giLoading ? "grayscale(0.5) brightness(0.8)" : "none" }}>
@@ -1347,44 +1346,80 @@ export default function MapScreen() {
                       : { normal: "POSTURE • NORMAL", elevated: "POSTURE • ELEVATED", high: "POSTURE • HIGH ALERT" }[viewInsight.level]}
                   </div>
 
-                  <div className="mx-vs-llm" style={{ fontSize: '13px', lineHeight: '1.6', color: 'rgba(226,232,240,0.88)', marginTop: '12px' }}>
-                    {llmLoading ? (
-                      <div style={{ opacity: 0.5, fontStyle: 'italic' }}>{kn ? "ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : "Working on it..."}</div>
-                    ) : (
-                      <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                        {llmSummary 
-                          ? llmSummary.replace(/^[\s\n]*[●*•]?\s*Analyzing(\.\.\.)?\s*\n*/i, '') 
-                          : (kn ? "ಸಾರಾಂಶ ಲಭ್ಯವಿಲ್ಲ." : "Summary unavailable.")}
-                      </p>
-                    )}
+                  {/* The reading, in rows an officer can take in at a glance. Every figure is one
+                      the map is already drawing; nothing here waits on a model. */}
+                  <dl className="mx-vs-rows">
+                    <div>
+                      <dt>{kn ? "ಪ್ರವೃತ್ತಿ" : "Trend"}</dt>
+                      <dd>
+                        <b>{totalObserved.toLocaleString()}</b> {kn ? "ಘಟನೆಗಳು" : (totalObserved === 1 ? "incident" : "incidents")}
+                        {deltaPct != null && <em className={deltaPct > 2 ? "up" : deltaPct < -2 ? "down" : ""}>
+                          {deltaPct > 0 ? "▲" : deltaPct < 0 ? "▼" : "•"} {Math.abs(deltaPct)}% {kn ? "ಹಿಂದಿನ ದಿನಕ್ಕೆ ಹೋಲಿಸಿದರೆ" : "on the day before"}</em>}
+                        {giMonthlyTotal != null && <small>{giMonthlyTotal.toLocaleString()} {kn ? "ಕಳೆದ 30 ದಿನಗಳಲ್ಲಿ" : "in the last 30 days"}</small>}
+                      </dd>
                     </div>
+                    {busiestZones[0] && (
+                      <div>
+                        <dt>{kn ? "ಹೆಚ್ಚು ಚಟುವಟಿಕೆ" : "Busiest"}</dt>
+                        <dd>
+                          <b>{busiestZones[0].zone}</b> · {busiestZones[0].observed.toLocaleString()}
+                          {totalObserved > 0 && ` (${Math.round((busiestZones[0].observed / totalObserved) * 100)}%)`}
+                          {busiestZones.length > 1 && <small>{kn ? "ನಂತರ" : "then"} {busiestZones.slice(1, 4).map((z) => `${z.zone} ${z.observed}`).join(" · ")}</small>}
+                        </dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt>{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್" : "Hotspots"}</dt>
+                      <dd>
+                        {(() => {
+                          const hot = topGiZones.filter((z) => z.is_hotspot);
+                          if (!hot.length) return <>{kn ? "ಯಾವುದೂ ಸಂಖ್ಯಾಶಾಸ್ತ್ರೀಯವಾಗಿ ದೃಢಪಟ್ಟಿಲ್ಲ" : "None statistically confirmed in this view"}</>;
+                          return <><b>{hot.length}</b> {kn ? "ದೃಢಪಟ್ಟಿದೆ" : "confirmed"}
+                            <small>{hot.slice(0, 3).map((z) => `${z.zone} (z ${Number(z.gi_stat).toFixed(1)})`).join(" · ")}</small></>;
+                        })()}
+                      </dd>
+                    </div>
+                    {topAlert && (
+                      <div>
+                        <dt>{kn ? "ಗಮನಿಸಿ" : "Watch"}</dt>
+                        <dd>
+                          <b>{topAlert.zone}</b> · {String(topAlert.crime_type || "").replace(/_/g, " ").toLowerCase()}
+                          <small>{topAlert.observed} {kn ? "ದಾಖಲಾಗಿದೆ" : "recorded"}{typeof topAlert.z_score === "number" ? ` · ${topAlert.z_score.toFixed(1)} ${kn ? "ವಿಚಲನ" : "deviations above usual"}` : ""}</small>
+                        </dd>
+                      </div>
+                    )}
+                    {viewInsight.outlook && (
+                      <div>
+                        <dt>{kn ? "ಮುಂದಿನ ನೋಟ" : "Outlook"}</dt>
+                        <dd>
+                          <b>{viewInsight.outlook.name}</b>{viewInsight.outlook.where ? `, ${viewInsight.outlook.where}` : ""}
+                          <small>{kn ? "ಸಾಧ್ಯತೆ" : "likely"} {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIRs {kn ? `ಮುಂದಿನ ${viewInsight.outlook.horizon} ದಿನಗಳಲ್ಲಿ` : `in the next ${viewInsight.outlook.horizon} days`} · {kn ? "ಅಂದಾಜು" : "an estimate"}</small>
+                        </dd>
+                      </div>
+                    )}
+                    {viewInsight.patrol.length > 0 && (
+                      <div>
+                        <dt>{kn ? "ಗಸ್ತು" : "Patrol"}</dt>
+                        <dd>{viewInsight.patrol.join(" · ")}
+                          <small>{viewInsight.patrolFromForecast ? (kn ? "ಮುನ್ಸೂಚನೆಯಿಂದ" : "from the forecast") : (kn ? "ಇಂದಿನ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳಿಂದ" : "from today's hotspots")} · {kn ? "ಸಲಹೆ ಮಾತ್ರ" : "a suggestion; the officer decides"}</small>
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
 
-                      {/* Integrated Geo-Intel Ticker */}
-                      <div 
-                        onClick={() => setShowDossier(true)}
-                        style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
-                        title={kn ? "ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ತೆರೆಯಿರಿ" : "Open Geo Intel Dashboard"}
-                      >
-                        <span style={{ color: "var(--cyan)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Geo Intel</span>
-                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "ಜಿಯೋ-ಇಂಟೆಲ್: ನೈಜ-ಸಮಯದ ಭೌಗೋಳಿಕ ಗುಪ್ತಚರ ಮಾಹಿತಿಯನ್ನು ಸಂಗ್ರಹಿಸಲಾಗುತ್ತಿದೆ..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
-                        </marquee>
-                      </div>
-                      {/* Integrated Prediction Ticker */}
-                      <div 
-                        onClick={() => setRightTab("where")}
-                        style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
-                        title={kn ? "ಮುಂದೆ ಎಲ್ಲಿ ಫಲಕ ತೆರೆಯಿರಿ" : "Open Where Next Panel"}
-                      >
-                        <span style={{ color: "var(--amber)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Prediction</span>
-                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (fc.hot?.items?.length ? `Predictive forecast indicates ${fc.hot.items.length} emerging hotspots across the state. Highest risk identified at ${fc.hot.items[0]?.name} (projecting up to ${fc.hot.items[0]?.band80?.hi} cases).` : "Gathering real-time predictive intelligence...")}
-                        </marquee>
-                      </div>
-                    
-                    
-                    
-                    
+                  {/* Antar's reading of the same figures, in a sentence or two. It arrives after
+                      the rows and never replaces them; if the model is slow or down, it is absent. */}
+                  {(llmLoading || llmSummary) && (
+                    <div className="mx-vs-ai">
+                      <span>{kn ? "ಅಂತರ್ ಓದು" : "Antar's reading"}{llmLoading && <i> · {kn ? "ಬರೆಯುತ್ತಿದೆ…" : "writing…"}</i>}</span>
+                      {!llmLoading && llmSummary && <p>{llmSummary.replace(/^[\s\n]*[●*•]?\s*Analyzing(\.\.\.)?\s*\n*/i, "")}</p>}
+                    </div>
+                  )}
+
+                  <div className="mx-vs-links">
+                    <button type="button" onClick={() => setShowDossier(true)}>{kn ? "ಕಾರಿಡಾರ್‌ಗಳು ಮತ್ತು ಕಾರ್ಯಕ್ಷೇತ್ರಗಳು" : "Corridors and operating zones"} →</button>
+                    <button type="button" onClick={() => setRightTab("where")}>{kn ? "ಮುಂದೆ ಎಲ್ಲಿ" : "Where next"}{fc.hot?.items?.length ? ` (${fc.hot.items.length})` : ""} →</button>
+                  </div>
                 </div>
               )}
             </aside>

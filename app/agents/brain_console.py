@@ -874,6 +874,9 @@ COMMANDS = [
     {"cmd": "identity", "does": "Who Antar is, its laws and how it thinks."},
     {"cmd": "evolution", "does": "How Antar has changed with use: ratings, graded forecasts, challenged hypotheses."},
     {"cmd": "learnings", "does": "What the records show today: FIRs dated today, movers, alerts, ratings."},
+    {"cmd": "think", "does": "Think: scan the records in the current view (the same as fastrun). /think also works."},
+    {"cmd": "connect [id]", "does": "Connect: run Network then Linkage on an accused id, or on the selected record."},
+    {"cmd": "anticipate [place]", "does": "Anticipate: Forecast for a station, Geo for a district. Places only, never a person."},
     {"cmd": "history", "does": "The commands typed this session."},
     {"cmd": "clear", "does": "Clear the terminal."},
 ]
