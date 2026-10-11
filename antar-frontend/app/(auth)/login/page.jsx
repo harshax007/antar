@@ -153,7 +153,7 @@ export default function LoginPage() {
             <div className="lg-input">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8"><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /></svg>
               <input id="pw" type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
-                     placeholder="••••••••" autoComplete="current-password" disabled={busy} />
+                     placeholder={kn ? "ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ" : "Type your password"} autoComplete="current-password" disabled={busy} />
               <button type="button" className="lg-eye" aria-label={showPw ? "Hide password" : "Show password"} aria-pressed={showPw}
                       onClick={() => setShowPw((v) => !v)} disabled={busy}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="2.6" /></svg>
