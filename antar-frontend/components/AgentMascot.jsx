@@ -24,7 +24,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Mascot } from "page-mascot";
 import { fetchAPI } from "@/lib/api";
-import { readSession } from "@/lib/auth";
 
 // Presentation only: what an agent IS comes from the backend identity pack. One colour for
 // all of them - an agent is told apart by its face, glyph and name, and state is shown by motion.
@@ -73,6 +72,8 @@ const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 const SPEED = 30, ACCEL = 40, APART = 76;       // px/s, px/s², px between two agents
 const FLY_MAX = 620, FLY_PULL = 5;              // Fast Run: top speed in px/s, and how hard an agent is drawn to its place
 const MEM_KEY = "antar_console_memory", MEM_MAX = 60;
+// The terminal's own login (see `auth` below), and where a passed login is remembered for the tab.
+const TERM_USER = "root", TERM_PASS = "root", TERM_KEY = "antar_term_root";
 
 const nodeLabel = (n) => (n.accused ? n.accused : `${n.crimeHead || n.crimeGroup || "FIR"} · ${n.zone || n.district || ""}`);
 // What a record carries. No id is sent: a node's number is only its place in the list the
@@ -127,11 +128,16 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   // The agent the terminal is "in", as a shell is in a directory: antar@brain@geo. With one
   // in use, a line that is not a command is taken as that agent's target.
   const [using, setUsing] = useState(null);
-  // The prompt's first word is the level signed in at: root for the Admin account, antar
-  // for any other. It is read from the session the server issued - the terminal has no
-  // password of its own, and what a command may do is still decided by the server.
-  const [who, setWho] = useState("antar");
-  useEffect(() => { setWho(readSession()?.role === "Admin" ? "root" : "antar"); }, []);
+  // The terminal asks for a login before it runs anything: user root, password root. It is
+  // a step in front of the console, kept for the length of the browser tab - NOT what
+  // protects the data. The check is made in the browser, so it stops a passer-by at an
+  // unlocked screen and nothing more; what a command may read is still decided by the
+  // server from the officer's own sign-in.
+  const [auth, setAuth] = useState("user");          // user | pass | ok
+  const loginName = useRef("");
+  useEffect(() => { try { if (sessionStorage.getItem(TERM_KEY) === "1") setAuth("ok"); } catch { /* asks again */ } }, []);
+  const unlocked = auth === "ok";
+  const who = unlocked ? "root" : "antar";
   const prompt = `${who}@brain${using ? `@${using}` : ""}`;
   const [talk, setTalk] = useState(null);          // { from, to, text, key } - the line on screen
   const [toasts, setToasts] = useState([]);        // notifications to the officer
@@ -461,7 +467,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
 
   // What the rest of the Brain screen may ask of the console: run a command as if typed.
   useEffect(() => {
-    if (apiRef) apiRef.current = { run: (cmd) => { setOpen(true); setSmall(false); exec(cmd); } };
+    if (apiRef) apiRef.current = { run: (cmd) => { setOpen(true); setSmall(false); if (unlocked) exec(cmd); else say({ kind: "sys", text: "Log in to the terminal to run that." }); } };
   });
 
   // What the terminal offers under the prompt. While the officer types: the commands and
@@ -500,6 +506,27 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
 
   function onKey(e) {
     const h = history.current;
+    if (!unlocked) {
+      if (e.key !== "Enter") return;
+      const typed = input;
+      setInput("");
+      if (auth === "user") {
+        loginName.current = typed.trim();
+        say({ kind: "sys", text: `login: ${typed.trim()}` });
+        setAuth("pass");
+        return;
+      }
+      say({ kind: "sys", text: "password: ••••" });
+      if (loginName.current === TERM_USER && typed === TERM_PASS) {
+        try { sessionStorage.setItem(TERM_KEY, "1"); } catch { /* holds until reload */ }
+        setAuth("ok");
+        say({ kind: "sys", text: "Access granted. Every agent is available: click one, drag it onto a record, or type help." });
+      } else {
+        setAuth("user");
+        say({ kind: "err", text: "Login incorrect." });
+      }
+      return;
+    }
     // The keys a terminal answers to: Ctrl+L clears the screen, Ctrl+C or Esc drops the line.
     if (e.ctrlKey && e.key.toLowerCase() === "l") { e.preventDefault(); setLines([]); return; }
     if ((e.ctrlKey && e.key.toLowerCase() === "c" && !window.getSelection()?.toString()) || e.key === "Escape") {
@@ -756,6 +783,12 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       const moved = S.moved;
       a.held = false; S.held = null; S.moved = false; setDragging(null);
       a.tx = a.x; a.ty = a.y; a.arrived = true; a.wait = performance.now() + 6000;
+      if (!unlocked) {
+        setOpen(true); setSmall(false);
+        say({ kind: "sys", text: `Log in to the terminal to run ${nameOf(id)}.` });
+        setTimeout(() => inRef.current?.focus(), 60);
+        return;
+      }
       if (!moved) {
         // A click: with a record selected the agent goes to work on it and answers in the
         // terminal; with nothing selected there is nothing to work on, so it shows its card.
@@ -793,6 +826,12 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   }
 
   const openTerminal = () => { setOpen(true); setSmall(false); };
+  // Each time it opens it is back in its place; a position it was dragged to lasts only
+  // while it stays open.
+  useEffect(() => {
+    const w = winRef.current;
+    if (open && w) ["left", "top", "right", "bottom", "width", "height"].forEach((k) => { w.style[k] = ""; });
+  }, [open]);
 
   return (
     <>
@@ -883,14 +922,15 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
               <div ref={outRef} className="bt-out" onClick={() => { if (!window.getSelection()?.toString()) inRef.current?.focus(); }}>
                 {pack?.error && <p className="bt-err">The console backend did not answer. Restart the backend to load it.</p>}
                 {!lines.length && (
-                  <p className="bt-sys">Antar brain terminal. Drag an agent onto a record, or type a command: the line under the prompt
-                    shows what fits right now. <u onClick={() => exec("help")}>help</u> lists everything, Tab completes, ↑ recalls.</p>
+                  <p className="bt-sys">{unlocked
+                    ? <>Antar brain terminal. Drag an agent onto a record, or type a command: the line under the prompt shows what fits right now. <u onClick={() => exec("help")}>help</u> lists everything, Tab completes, ↑ recalls.</>
+                    : "Antar brain terminal. Log in to operate the agents."}</p>
                 )}
                 {lines.map((l) => <Line key={l.id} l={l} onRun={exec} nameOf={nameOf} />)}
                 {busy.length > 0 && <p className="bt-sys bt-busy">{busy.map(nameOf).join(" and ")} {busy.length > 1 ? "are" : "is"} working…</p>}
               </div>
               {(() => {
-                const list = offers();
+                const list = unlocked ? offers() : [];
                 if (!list.length) return null;
                 return (
                   <div className="bt-offers" role="listbox" aria-label={input.trim() ? "Completions" : "Suggested commands"}>
@@ -905,9 +945,10 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                 );
               })()}
               <div className="bt-in">
-                <span className={who === "root" ? "root" : ""}>{prompt}{target ? <i> [{target.label}]</i> : null} {who === "root" ? "#" : "›"}</span>
+                <span className={unlocked ? "root" : ""}>{unlocked ? <>{prompt}{target ? <i> [{target.label}]</i> : null} #</> : (auth === "pass" ? "password:" : "brain login:")}</span>
                 <input ref={inRef} autoFocus value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey}
-                       placeholder={using ? `${card(using)?.needs || "target"} for ${using}, or exit` : target ? "run network" : "help"} spellCheck={false} autoComplete="off" autoCapitalize="off" aria-label="Command" />
+                       type={auth === "pass" ? "password" : "text"} name={unlocked ? undefined : "antar-terminal-login"}
+                       placeholder={!unlocked ? "" : using ? `${card(using)?.needs || "target"} for ${using}, or exit` : target ? "run network" : "help"} spellCheck={false} autoComplete="off" autoCapitalize="off" aria-label="Command" />
               </div>
             </>
           )}
@@ -996,6 +1037,10 @@ const CSS = `
   opacity: .82; transition: opacity .25s ease; }
 .bt-bug:hover, .bt-bug:focus-visible, .bt-bug.speaking, .bt-bug.hearing, .bt-bug.busy, .bt-bug.held { opacity: 1; }
 .bt-bug > i, .bt-bug > span { pointer-events: auto; cursor: grab; }
+/* The character is taller than its disc, so its head used to sit straight on the graph's
+   coloured dots. A soft dark field behind the whole figure gives it a clear edge. */
+.bt-bug::before { content: ""; position: absolute; left: 50%; top: 46%; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(3,6,12,.94) 0%, rgba(3,6,12,.86) 46%, rgba(3,6,12,0) 72%); }
 /* The body: a dark disc the character stands on, leaning into its direction of travel,
    inside a slow scan ring. The disc and the halo round it are near-black: the graph behind
    is a field of bright dots, and on a pale disc the agents were lost among them. */
@@ -1042,10 +1087,10 @@ const CSS = `
 @keyframes bt-rise { from { opacity: 0; transform: translateY(8px); } }
 
 /* Opens wide enough to read a result without resizing: about 980 by 410, centred. */
-.bt-win { position: fixed; left: max(8px, calc(50% - min(490px, 46vw))); bottom: 64px; z-index: 950; width: min(980px, 92vw); height: 410px; min-width: 300px; min-height: 200px; max-width: 92vw; max-height: 78vh;
+.bt-win { position: fixed; left: max(8px, 31vw); right: 64px; top: max(190px, 39vh); bottom: 108px; z-index: 950; width: auto; height: auto; min-width: 300px; min-height: 200px; max-width: 92vw; max-height: 78vh;
   display: flex; flex-direction: column; resize: both; overflow: hidden; border-radius: 10px; background: rgba(6,11,18,.96);
   border: 1px solid rgba(34,230,240,.28); box-shadow: 0 14px 44px rgba(0,0,0,.7); font-family: 'JetBrains Mono', monospace; color: #E2E8F0; }
-.bt-win.small { height: auto; min-height: 0; resize: none; }
+.bt-win.small { height: auto; min-height: 0; resize: none; bottom: auto; }
 .bt-win > header { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: rgba(34,230,240,.08); border-bottom: 1px solid rgba(34,230,240,.18); cursor: move; user-select: none; flex-shrink: 0; }
 .bt-win > header b { font-size: 10.5px; letter-spacing: .06em; color: #22E6F0; white-space: nowrap; }
 .bt-tgt { flex: 1; min-width: 0; font-size: 10px; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }

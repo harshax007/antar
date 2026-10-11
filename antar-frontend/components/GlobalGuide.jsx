@@ -74,12 +74,29 @@ const GUIDES = {
       { h: L("Move around", "ಸಂಚರಿಸಿ"), items: [
         [L("Rotate", "ತಿರುಗಿಸಿ"), L("Drag with the mouse or one finger.", "ಮೌಸ್ ಅಥವಾ ಒಂದು ಬೆರಳಿನಿಂದ ಎಳೆಯಿರಿ.")],
         [L("Zoom", "ಝೂಮ್"), L("Scroll, or pinch on a touch screen.", "ಸ್ಕ್ರಾಲ್ ಮಾಡಿ, ಅಥವಾ ಟಚ್ ಪರದೆಯಲ್ಲಿ ಪಿಂಚ್ ಮಾಡಿ.")],
-        [L("Focus", "ಕೇಂದ್ರೀಕರಿಸಿ"), L("Click a node to see its evidence trail and AI insight.", "ನೋಡ್ ಕ್ಲಿಕ್ ಮಾಡಿ ಅದರ ಸಾಕ್ಷ್ಯ ಹಾದಿ ಮತ್ತು AI ಒಳನೋಟ ನೋಡಿ.")],
+        [L("Focus", "ಕೇಂದ್ರೀಕರಿಸಿ"), L("Click a record to see what it is linked to, and to select it for the agents.", "ನೋಡ್ ಕ್ಲಿಕ್ ಮಾಡಿ ಅದರ ಸಾಕ್ಷ್ಯ ಹಾದಿ ಮತ್ತು AI ಒಳನೋಟ ನೋಡಿ.")],
       ] },
       { h: L("Narrow it down", "ಸೀಮಿತಗೊಳಿಸಿ"), items: [
         [L("Layers & Filters", "ಲೇಯರ್ ಮತ್ತು ಫಿಲ್ಟರ್"), L("Show only selected crime types or evidence.", "ಆಯ್ದ ಅಪರಾಧ ಪ್ರಕಾರ ಅಥವಾ ಸಾಕ್ಷ್ಯ ಮಾತ್ರ ತೋರಿಸಿ.")],
         [L("Case activity", "ಪ್ರಕರಣ ಚಟುವಟಿಕೆ"), L("Pick dates on the calendar (bottom left) to filter the graph.", "ಗ್ರಾಫ್ ಫಿಲ್ಟರ್ ಮಾಡಲು ಕೆಳ ಎಡದ ಕ್ಯಾಲೆಂಡರ್‌ನಲ್ಲಿ ದಿನಾಂಕ ಆರಿಸಿ.")],
         [L("Data overview", "ದತ್ತಾಂಶ ಅವಲೋಕನ"), L("Open the overview (bottom right) for statistics on what is shown.", "ತೋರಿಸಿದ ದಾಖಲೆಗಳ ಅಂಕಿಅಂಶಗಳಿಗೆ ಕೆಳ ಬಲದ ಅವಲೋಕನ ತೆರೆಯಿರಿ.")],
+      ] },
+      { h: L("The agents", "ಏಜೆಂಟ್‌ಗಳು"), items: [
+        [L("Nine agents on the graph", "ಗ್ರಾಫ್ ಮೇಲೆ ಒಂಬತ್ತು ಏಜೆಂಟ್‌ಗಳು"), L("Network, Profile, Research, Adversary, Recall, Linkage, Forecast, Geo and Pattern. Each does one kind of work.", "Network, Profile, Research, Adversary, Recall, Linkage, Forecast, Geo ಮತ್ತು Pattern. ಪ್ರತಿಯೊಂದೂ ಒಂದು ಬಗೆಯ ಕೆಲಸ ಮಾಡುತ್ತದೆ.")],
+        [L("Run one on a record", "ದಾಖಲೆಯ ಮೇಲೆ ನಡೆಸಿ"), L("Click a record, then click an agent. Or drag the agent onto the record.", "ದಾಖಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ, ನಂತರ ಏಜೆಂಟ್ ಕ್ಲಿಕ್ ಮಾಡಿ. ಅಥವಾ ಏಜೆಂಟ್ ಅನ್ನು ದಾಖಲೆಯ ಮೇಲೆ ಎಳೆಯಿರಿ.")],
+        [L("What they say to each other", "ಅವು ಪರಸ್ಪರ ಹೇಳುವುದು"), L("Lines marked Today are counts from today's records. Click one for the figures behind it.", "Today ಎಂದು ಗುರುತಿಸಿದ ಸಾಲುಗಳು ಇಂದಿನ ದಾಖಲೆಗಳ ಎಣಿಕೆಗಳು. ಹಿಂದಿನ ಅಂಕಿಗಳಿಗಾಗಿ ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+        [L("An agent can refuse", "ಏಜೆಂಟ್ ನಿರಾಕರಿಸಬಹುದು"), L("If a record has nothing the agent can work on, it says so instead of guessing.", "ದಾಖಲೆಯಲ್ಲಿ ಏಜೆಂಟ್ ಕೆಲಸ ಮಾಡಲು ಏನೂ ಇಲ್ಲದಿದ್ದರೆ, ಊಹಿಸುವ ಬದಲು ಹಾಗೆಂದು ಹೇಳುತ್ತದೆ.")],
+      ] },
+      { h: L("The terminal", "ಟರ್ಮಿನಲ್"), items: [
+        [L("Open and log in", "ತೆರೆಯಿರಿ ಮತ್ತು ಲಾಗಿನ್ ಆಗಿ"), L("Press Terminal (top left). It asks for a login before it runs anything; the agents line up while it is open.", "ಮೇಲಿನ ಎಡದ Terminal ಒತ್ತಿ. ಏನನ್ನಾದರೂ ನಡೆಸುವ ಮೊದಲು ಲಾಗಿನ್ ಕೇಳುತ್ತದೆ; ತೆರೆದಿರುವಾಗ ಏಜೆಂಟ್‌ಗಳು ಸಾಲಾಗಿ ನಿಲ್ಲುತ್ತವೆ.")],
+        [L("Suggestions", "ಸಲಹೆಗಳು"), L("The line above the prompt shows what fits right now. Tab completes what you are typing.", "ಪ್ರಾಂಪ್ಟ್ ಮೇಲಿನ ಸಾಲು ಈಗ ಸೂಕ್ತವಾದುದನ್ನು ತೋರಿಸುತ್ತದೆ. Tab ಟೈಪ್ ಮಾಡುತ್ತಿರುವುದನ್ನು ಪೂರ್ಣಗೊಳಿಸುತ್ತದೆ.")],
+        [L("Step into an agent", "ಏಜೆಂಟ್ ಒಳಗೆ ಹೋಗಿ"), L("use geo changes the prompt to root@brain@geo. Then type a district on its own. exit leaves.", "use geo ಪ್ರಾಂಪ್ಟ್ ಅನ್ನು root@brain@geo ಗೆ ಬದಲಿಸುತ್ತದೆ. ನಂತರ ಜಿಲ್ಲೆಯ ಹೆಸರು ಮಾತ್ರ ಟೈಪ್ ಮಾಡಿ. exit ಹೊರಬರುತ್ತದೆ.")],
+        [L("Three modes", "ಮೂರು ಮೋಡ್‌ಗಳು"), L("/think scans this view. /connect S0041 runs Network and Linkage. /anticipate with a station or district gives a forecast.", "/think ಈ ನೋಟವನ್ನು ಪರಿಶೀಲಿಸುತ್ತದೆ. /connect S0041 Network ಮತ್ತು Linkage ನಡೆಸುತ್ತದೆ. /anticipate ಠಾಣೆ ಅಥವಾ ಜಿಲ್ಲೆಯೊಂದಿಗೆ ಮುನ್ಸೂಚನೆ ನೀಡುತ್ತದೆ.")],
+        [L("Help", "ಸಹಾಯ"), L("help lists every command. help run shows examples for one.", "help ಎಲ್ಲಾ ಆದೇಶಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡುತ್ತದೆ. help run ಒಂದಕ್ಕೆ ಉದಾಹರಣೆಗಳನ್ನು ತೋರಿಸುತ್ತದೆ.")],
+      ] },
+      { h: L("Fast Run", "ಫಾಸ್ಟ್ ರನ್"), items: [
+        [L("Scan what is on screen", "ಪರದೆಯಲ್ಲಿರುವುದನ್ನು ಪರಿಶೀಲಿಸಿ"), L("Fast Run (top right) counts the records in the current view and lists what stands out, agent by agent.", "ಮೇಲಿನ ಬಲದ Fast Run ಪ್ರಸ್ತುತ ನೋಟದ ದಾಖಲೆಗಳನ್ನು ಎಣಿಸಿ, ಗಮನಾರ್ಹವಾದುದನ್ನು ಏಜೆಂಟ್‌ವಾರು ಪಟ್ಟಿ ಮಾಡುತ್ತದೆ.")],
+        [L("K, D, I, U", "K, D, I, U"), L("Known is read from a record. Derived is calculated. Inferred is a judgment. Unknown is a gap.", "Known ದಾಖಲೆಯಿಂದ ಓದಿದ್ದು. Derived ಲೆಕ್ಕ ಹಾಕಿದ್ದು. Inferred ಒಂದು ತೀರ್ಮಾನ. Unknown ಒಂದು ಕೊರತೆ.")],
       ] },
     ],
   },
