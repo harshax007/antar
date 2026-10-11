@@ -18,11 +18,19 @@
 //              differs from what was remembered, is raised to the officer.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Mascot } from "page-mascot";
 import { fetchAPI } from "@/lib/api";
 
 // Presentation only: what an agent IS comes from the backend identity pack. One colour for
-// all of them - an agent is told apart by its glyph and name, and state is shown by motion.
+// all of them - an agent is told apart by its face, glyph and name, and state is shown by motion.
 const ACCENT = "#22E6F0";
+// Each agent's character: two page-mascot sprite sheets in public/mascots (nine head
+// directions, nine expressions). The face watches the cursor and reacts when clicked.
+const FACE = {
+  network: "builder", profile: "glasses", research: "scientist", advocate: "beard", recall: "grandpa",
+  linkage: "sikh", forecast: "astronaut", geo: "cap", pattern: "hijabi",
+};
+const FACE_PX = 78;
 const ICON = {
   network: "M13 9a4 4 0 112 7l-4 4a4 4 0 11-6-6l2-2m13 0l2-2a4 4 0 00-6-6l-4 4a4 4 0 002 7",
   profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0",
@@ -39,7 +47,7 @@ const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble"
 const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 
 // Slow enough to follow with the eye and read a name tag on the move.
-const SPEED = 30, ACCEL = 40, APART = 72;       // px/s, px/s², px between two agents
+const SPEED = 30, ACCEL = 40, APART = 92;       // px/s, px/s², px between two agents
 const MEM_KEY = "antar_console_memory", MEM_MAX = 60;
 
 const nodeLabel = (n) => (n.accused ? n.accused : `${n.crimeHead || n.crimeGroup || "FIR"} · ${n.zone || n.district || ""}`);
@@ -347,7 +355,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     const blocked = (x, y) => walls.some((w) => x > w.l && x < w.r && y > w.t && y < w.b);
     const freeSpot = (W, H) => {
       for (let k = 0; k < 24; k++) {
-        const x = rnd(36, W - 36), y = rnd(60, H - 84);
+        const x = rnd(46, W - 46), y = rnd(60, H - 84);
         if (!blocked(x, y)) return [x, y];
       }
       return [W / 2, H / 2];
@@ -400,7 +408,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
           }
           const ax = wx - a.vx, ay = wy - a.vy, am = Math.hypot(ax, ay) || 1, cap = Math.min(am, ACCEL * dt);
           a.vx += (ax / am) * cap; a.vy += (ay / am) * cap;
-          a.x = Math.max(26, Math.min(W - 26, a.x + a.vx * dt));
+          a.x = Math.max(42, Math.min(W - 42, a.x + a.vx * dt));
           a.y = Math.max(50, Math.min(H - 72, a.y + a.vy * dt));
         }
         const hover = a.held ? 0 : Math.sin(now / 620 + i * 1.7) * 2.2;       // never perfectly still
@@ -538,7 +546,11 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                  onPointerDown={(e) => startCarry(e, id)} role="button" tabIndex={0} aria-label={a ? `${a.name} agent` : id}
                  onKeyDown={(e) => { if (e.key === "Enter") { openTerminal(); exec(target ? `run ${id}` : `about ${id}`); } }}
                  title={a ? `${a.name}: ${a.purpose} ${target ? `Click to run on ${target.label}.` : "Select a record and click, or drag onto one."}` : id}>
-              <i><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[id]} /></svg></i>
+              <i>
+                <Mascot className="bt-face" size={FACE_PX} label={a ? `${a.name} agent` : id}
+                        directions={`/mascots/${FACE[id]}-directions.webp`} reactions={`/mascots/${FACE[id]}-reactions.webp`} />
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[id]} /></svg>
+              </i>
               <span>{a?.name || id}</span>
             </div>
           );
@@ -658,19 +670,27 @@ const CSS = `
 .bt-wires line { stroke: var(--c); stroke-width: 1; stroke-dasharray: 2 6; opacity: .5; }
 .bt-wires circle { fill: #fff; filter: drop-shadow(0 0 5px var(--c)); }
 
-/* Faint until it matters: an agent is near-transparent while it only moves, and comes up to
-   full strength when it talks, is spoken to, is working, is carried, or is pointed at. */
+/* Present but quiet: an agent sits a little back while it only moves, and comes up to full
+   strength when it talks, is spoken to, is working, is carried, or is pointed at. */
 .bt-bug { position: absolute; left: 0; top: 0; width: 44px; height: 44px; pointer-events: none; will-change: transform, opacity; user-select: none; touch-action: none;
-  opacity: .26; transition: opacity .25s ease; }
+  opacity: .82; transition: opacity .25s ease; }
 .bt-bug:hover, .bt-bug:focus-visible, .bt-bug.speaking, .bt-bug.hearing, .bt-bug.busy, .bt-bug.held { opacity: 1; }
 .bt-bug > i, .bt-bug > span { pointer-events: auto; cursor: grab; }
-/* The body: a squared chip, leaning into its direction of travel, inside a slow scan ring. */
-.bt-bug > i { position: absolute; left: 9px; top: 9px; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; color: var(--c);
-  background: linear-gradient(145deg, rgba(34,230,240,.16), rgba(6,11,18,.92) 62%); border: 1.5px solid var(--c);
-  box-shadow: 0 0 12px rgba(34,230,240,.28), inset 0 0 8px rgba(34,230,240,.12); transform: rotate(var(--lean, 0deg)); transition: box-shadow .2s, scale .2s; }
+/* The body: a lit disc the character stands on, leaning into its direction of travel,
+   inside a slow scan ring. The disc is pale so the character's dark outline reads on the graph. */
+.bt-bug > i { position: absolute; left: -2px; top: -2px; width: 48px; height: 48px; border-radius: 50%; color: var(--c);
+  background: radial-gradient(circle at 50% 34%, #F4FDFF 0%, #BFEAF1 58%, #6FC9D6 100%); border: 1.5px solid var(--c);
+  box-shadow: 0 0 14px rgba(34,230,240,.34), 0 6px 14px rgba(0,0,0,.45); transform: rotate(var(--lean, 0deg)); transition: box-shadow .2s, scale .2s; }
 .bt-bug > i::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px dashed rgba(34,230,240,.4); border-left-color: transparent; border-right-color: transparent; animation: bt-spin 9s linear infinite; }
-.bt-bug > i::after { content: ""; position: absolute; right: -3px; top: -3px; width: 5px; height: 5px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); animation: bt-led 2.4s ease-in-out infinite; }
-.bt-bug > span { position: absolute; left: 50%; top: 43px; transform: translateX(-50%); font: 600 8px 'JetBrains Mono', monospace; letter-spacing: .04em; text-transform: uppercase; color: #CFFAFE;
+.bt-bug > i::after { content: ""; position: absolute; right: 1px; top: 1px; width: 6px; height: 6px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); animation: bt-led 2.4s ease-in-out infinite; }
+/* The character. page-mascot sets its own inline box, so the placement here has to win:
+   the head (centred at about 50% / 42% of a sprite cell) sits on the middle of the disc. */
+.bt-bug .bt-face { position: absolute !important; left: 50%; top: 50%; margin: ${-Math.round(FACE_PX * 0.44)}px 0 0 ${-FACE_PX / 2}px; cursor: grab !important; outline: none;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+.bt-bug.held .bt-face { cursor: grabbing !important; }
+/* What the agent does, as a badge on the disc. */
+.bt-bug > i > svg { position: absolute; right: -5px; bottom: -3px; box-sizing: content-box; padding: 3px; border-radius: 50%; background: rgba(6,11,18,.94); border: 1px solid var(--c); }
+.bt-bug > span { position: absolute; left: 50%; top: 52px; transform: translateX(-50%); font: 600 8.5px 'JetBrains Mono', monospace; letter-spacing: .04em; text-transform: uppercase; color: #CFFAFE;
   background: rgba(6,11,18,.78); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
 .bt-bug:hover > i, .bt-bug.speaking > i, .bt-bug.hearing > i { box-shadow: 0 0 0 3px rgba(34,230,240,.22), 0 0 18px var(--c); }
 .bt-bug.held > i { cursor: grabbing; scale: 1.14; box-shadow: 0 0 0 4px rgba(34,230,240,.28), 0 0 22px var(--c); }
