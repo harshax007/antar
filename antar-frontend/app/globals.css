@@ -4037,6 +4037,9 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
 
 /* ── The agents in a line above the chat box (components/AgentStrip.jsx) ── */
 .ags { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 4px; width: 100%; max-width: 860px; margin: 0 auto 10px; padding: 0 8px; box-sizing: border-box; }
+/* The label is a span and the agents are divs, so the nth-of-type rules below count agents only. */
+.ags { align-items: center; }
+.ags-l { margin-right: 8px; font: 600 11px 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.55); white-space: nowrap; }
 .ags-a { position: relative; width: 40px; height: 40px; outline: none; }
 /* page-mascot draws a button; in the strip it is the picture, not a control of its own. */
 .ags-f { cursor: default !important; outline: none; transform-origin: 50% 70%; transition: transform .18s ease, filter .18s ease; filter: saturate(.85) brightness(.92); }
@@ -4048,12 +4051,13 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
 .ags-t b { display: block; margin-bottom: 2px; font: 600 11px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: #EAF1F9; }
 .ags-a:hover .ags-t, .ags-a:focus-within .ags-t { opacity: 1; visibility: visible; transform: translateX(-50%); }
 /* Keep the card on screen for the agents at either end of the line. */
-.ags-a:nth-child(-n+3) .ags-t { left: 0; transform: translateY(-4px); }
-.ags-a:nth-child(-n+3):hover .ags-t, .ags-a:nth-child(-n+3):focus-within .ags-t { transform: none; }
-.ags-a:nth-last-child(-n+3) .ags-t { left: auto; right: 0; transform: translateY(-4px); }
-.ags-a:nth-last-child(-n+3):hover .ags-t, .ags-a:nth-last-child(-n+3):focus-within .ags-t { transform: none; }
+.ags-a:nth-of-type(-n+3) .ags-t { left: 0; transform: translateY(-4px); }
+.ags-a:nth-of-type(-n+3):hover .ags-t, .ags-a:nth-of-type(-n+3):focus-within .ags-t { transform: none; }
+.ags-a:nth-last-of-type(-n+3) .ags-t { left: auto; right: 0; transform: translateY(-4px); }
+.ags-a:nth-last-of-type(-n+3):hover .ags-t, .ags-a:nth-last-of-type(-n+3):focus-within .ags-t { transform: none; }
 @media (max-width: 640px) {
   .ags { gap: 0 2px; }
+  .ags-l { flex-basis: 100%; margin: 0 0 4px; text-align: center; }
   .ags-a { width: 34px; height: 34px; }
   .ags-f { width: 34px !important; height: 34px !important; }
   .ags-t { max-width: 190px; }

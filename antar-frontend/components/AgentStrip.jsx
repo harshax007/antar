@@ -34,6 +34,7 @@ const AGENTS = [
 export default function AgentStrip() {
   return (
     <div className="ags" role="list" aria-label="Antar's agents">
+      <span className="ags-l" aria-hidden="true">Antar Agents:</span>
       {AGENTS.map(([name, face, does]) => (
         <div key={name} className="ags-a" role="listitem" aria-label={`${name}: ${does}`}>
           <Mascot className="ags-f" size={40} label={`${name} agent`}
