@@ -153,3 +153,33 @@ def test_identity_and_evolution_are_claimed_as_usps():
     claims = [c for c, _ in identity.USPS]
     assert "One identity on every answer" in claims and "Its growth is on the record" in claims
     assert any(c["cmd"] == "evolution" for c in C.COMMANDS), "the claim has no command to check it with"
+
+
+# An accused id that is on FIRs but was never profiled: the agents answer from the FIRs
+# and say what they could not do, instead of refusing most of the ids an officer sees.
+ON_FIRS_ONLY = "ACC-KA-500777"
+
+
+def test_an_unprofiled_accused_is_answered_from_its_firs_without_a_score():
+    assert not C._in_registry(ON_FIRS_ONLY) and C._fir_rows(ON_FIRS_ONLY)
+    p = C.run("profile", ON_FIRS_ONLY)
+    assert p["status"] == "ok" and p["evidence_class"] == "D"
+    assert f"{len(C._fir_rows(ON_FIRS_ONLY))} FIRs" in p["bottom_line"]
+    assert any("No priority score" in x for x in p["limits"]), "a score must not be implied"
+    assert "scores" not in p["bottom_line"]
+
+
+def test_an_unprofiled_accused_gets_no_hypothesis_and_nothing_to_challenge():
+    d = C.run("research", ON_FIRS_ONLY)
+    assert d["status"] == "ok" and "0 inferred" in d["bottom_line"]
+    assert not any(e.startswith("[I]") for e in d["evidence"])
+    assert C.run("advocate", ON_FIRS_ONLY)["status"] == "empty"
+
+
+def test_an_unprofiled_accused_network_names_the_shared_key_or_says_there_is_none():
+    n = C.run("network", ON_FIRS_ONLY)
+    assert n["status"] in ("ok", "empty")
+    assert any("not in the suspect registry" in x for x in n["limits"])
+    if n["status"] == "ok":
+        assert all(" shares " in e for e in n["evidence"]), "every link must name its shared key"
+

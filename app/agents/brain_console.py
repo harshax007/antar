@@ -122,9 +122,150 @@ def _need_suspect(t: Target, agent: str) -> dict | None:
         return _refuse(f"I can't run {agent} here: this record names no accused, and I won't "
                        f"pick one for it.", nxt=["run geo", "run forecast", "run pattern"])
     if not _in_registry(t.accused):
-        return _refuse(f"I can't run {agent} on {t.accused}: it is not in the suspect registry.",
-                       nxt=["run linkage"])
+        return _refuse(f"I can't run {agent} on {t.accused}: it is not in the suspect registry "
+                       f"and is not named on any FIR in the Brain dataset.", nxt=["run linkage"])
     return None
+
+
+# ── an accused id that is on FIRs but not in the suspect registry ────────────────
+# The registry holds a few thousand profiled suspects (S0041). The FIRs name many more
+# accused ids (ACC-KA-500777) that were never profiled: there is no name, no associate list
+# and no priority factors for them. Refusing them left the agents silent about most of the
+# ids an officer actually sees on a record. So for such an id each suspect agent answers
+# from the FIRs that carry it - and says plainly what it could not do without a registry
+# entry. Nothing is inferred to make up the difference: no score, no hypothesis.
+
+_FIR_COLS = ("District_Name, UnitName, FIR_YEAR, FIR_MONTH, CrimeGroup_Name, CrimeHead_Name, "
+             "Place_of_Offence, Vehicle_Reg_No, UPI_ID, IP_Address, Accused_ID")
+_HARD_KEYS = (("Vehicle_Reg_No", "vehicle"), ("UPI_ID", "UPI"), ("IP_Address", "IP"))
+_NOT_PROFILED = "is named on FIRs but is not in the suspect registry"
+
+
+def _brain_con() -> sqlite3.Connection:
+    """The store the Brain screen draws from: intelligent.db when present, else the registry.
+    The same choice linkage_agent.brain_linkage makes, so the two cannot disagree."""
+    import os
+    intel = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "intelligent.db"))
+    con = sqlite3.connect(f"file:{intel}?immutable=1", uri=True) if os.path.exists(intel) else _ro()
+    con.row_factory = sqlite3.Row
+    return con
+
+
+def _fir_rows(accused: str) -> list[sqlite3.Row]:
+    """The FIRs that name this accused id, newest first. Exact match only."""
+    con = _brain_con()
+    try:
+        return con.execute(f"SELECT {_FIR_COLS} FROM FIRs WHERE Accused_ID = ? "
+                           "ORDER BY CAST(FIR_YEAR AS INT) DESC, CAST(FIR_MONTH AS INT) DESC LIMIT 500",
+                           (accused,)).fetchall()
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        con.close()
+
+
+def _on_firs_only(t: Target) -> list[sqlite3.Row]:
+    """Rows for an accused id the registry does not hold; [] when the registry has it (the
+    registry path then runs) or when no FIR names it (the agent then refuses)."""
+    if not t.accused or _in_registry(t.accused):
+        return []
+    return _fir_rows(t.accused)
+
+
+def _top(rows: list[sqlite3.Row], col: str, n: int = 3) -> str:
+    counts: dict[str, int] = {}
+    for r in rows:
+        v = str(r[col] or "").strip()
+        if v:
+            counts[v] = counts.get(v, 0) + 1
+    return ", ".join(f"{k} ({v})" for k, v in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:n])
+
+
+def _span(rows: list[sqlite3.Row]) -> str:
+    ym = sorted((int(r["FIR_YEAR"]), int(r["FIR_MONTH"] or 1)) for r in rows if str(r["FIR_YEAR"] or "").isdigit())
+    if not ym:
+        return "dates not recorded"
+    a, b = ym[0], ym[-1]
+    return f"{a[0]}-{a[1]:02d}" if a == b else f"{a[0]}-{a[1]:02d} to {b[0]}-{b[1]:02d}"
+
+
+def _network_from_firs(t: Target, rows: list[sqlite3.Row]) -> dict:
+    """Other accused ids whose FIRs carry a vehicle, UPI or IP that this id's FIRs carry."""
+    keys = {(c, str(r[c]).strip()) for r in rows for c, _ in _HARD_KEYS if str(r[c] or "").strip()}
+    labels = dict(_HARD_KEYS)
+    shared: dict[str, dict] = {}
+    if keys:
+        con = _brain_con()
+        try:
+            for col, val in sorted(keys):
+                for (other, n) in con.execute(
+                        f"SELECT Accused_ID, COUNT(*) FROM FIRs WHERE {col} = ? AND COALESCE(Accused_ID, '') "
+                        "NOT IN ('', ?) GROUP BY Accused_ID", (val, t.accused)):
+                    d = shared.setdefault(other, {"firs": 0, "keys": []})
+                    d["firs"] += n
+                    d["keys"].append(f"{labels[col]} {val}")
+        finally:
+            con.close()
+    note = f"{t.accused} {_NOT_PROFILED}, so there are no recorded associate relationships to add."
+    if not shared:
+        why = "Its FIRs carry no vehicle, UPI or IP to link on." if not keys else \
+              "No other accused id is on a FIR carrying the same vehicle, UPI or IP."
+        return _empty(f"No other accused id is linked to {t.accused} by a shared key. {why}",
+                      limits=[note, "No link on record is not the same as no connection."],
+                      nxt=[f"run profile {t.accused}", f"run linkage {t.accused}"])
+    ranked = sorted(shared.items(), key=lambda kv: (-kv[1]["firs"], kv[0]))
+    return _ok("K", f"{_plural(len(shared), 'other accused id')} "
+                    f"{'shares' if len(shared) == 1 else 'share'} a vehicle, UPI or IP with {t.accused}.",
+               context=f"Read from the {_plural(len(rows), 'FIR')} that name {t.accused}.",
+               evidence=[f"{o} · shares {', '.join(sorted(set(d['keys']))[:2])} · {_plural(d['firs'], 'FIR')}"
+                         for o, d in ranked[:8]],
+               limits=[note, "A shared key links cases; it does not by itself show an association."],
+               nxt=[f"run linkage {t.accused}", f"run profile {t.accused}"])
+
+
+def _profile_from_firs(t: Target, rows: list[sqlite3.Row]) -> dict:
+    districts = sorted({str(r["District_Name"] or "").strip() for r in rows} - {""})
+    return _ok("D", f"{t.accused} is named on {_plural(len(rows), 'FIR')} in "
+                    f"{_plural(len(districts), 'district')}, {_span(rows)}.",
+               evidence=[e for e in (f"Crime groups: {_top(rows, 'CrimeGroup_Name')}",
+                                     f"Districts: {_top(rows, 'District_Name')}",
+                                     f"Stations: {_top(rows, 'UnitName')}") if not e.endswith(": ")],
+               limits=[f"No priority score: the scoring model reads the suspect registry, and {t.accused} "
+                       "is not in it.", "A count of FIRs naming an accused is not a finding about the person."],
+               nxt=[f"run network {t.accused}", f"run linkage {t.accused}"])
+
+
+def _research_from_firs(t: Target, rows: list[sqlite3.Row]) -> dict:
+    districts = sorted({str(r["District_Name"] or "").strip() for r in rows} - {""})
+    keyed = sum(1 for r in rows if any(str(r[c] or "").strip() for c, _ in _HARD_KEYS))
+    ev = [f"[K] Named as accused on {_plural(len(rows), 'FIR')} ({_span(rows)}).",
+          f"[K] Crime groups on those FIRs: {_top(rows, 'CrimeGroup_Name')}.",
+          f"[D] {_plural(len(districts), 'district')}: {', '.join(districts[:5])}"
+          + (f" and {len(districts) - 5} more." if len(districts) > 5 else "."),
+          f"[D] {keyed} of {len(rows)} FIRs carry a vehicle, UPI or IP to link on.",
+          "[U] Name, age, address and known associates: no registry entry exists for this id."]
+    return _ok("D", f"Dossier on {t.accused}: 2 known, 2 derived, 0 inferred, 1 unknown.",
+               evidence=ev,
+               limits=[f"{t.accused} {_NOT_PROFILED}. No hypothesis is proposed about an id with no profile."],
+               nxt=[f"run network {t.accused}", "Collect: a registry entry for this accused id"])
+
+
+def _recall_from_firs(t: Target, rows: list[sqlite3.Row]) -> dict:
+    """Similar FIRs from the corpus, asked for with the newest FIR's own crime head and place."""
+    from app.second_brain.retrieval import corpus_recall
+    r = rows[0]
+    query = " ".join(str(r[c] or "").strip() for c in ("CrimeHead_Name", "Place_of_Offence", "UnitName")).strip()
+    hits = corpus_recall(query, k=5) if query else []
+    if not hits:
+        return _empty(f"No comparable record is recalled for the FIRs naming {t.accused}.",
+                      nxt=[f"run linkage {t.accused}"])
+    return _ok("D", f"{_plural(len(hits), 'similar FIR')} recalled for {t.accused}'s most recent case.",
+               context=f"Searched on: {query}.",
+               evidence=[f"FIR {h['meta'].get('fir_no')} · {h['meta'].get('district')} · "
+                         f"{h['meta'].get('date')} · similarity {h['score']:.2f}" for h in hits],
+               limits=["A similar FIR is a lead to check, not a finding, and not a link to this accused.",
+                       f"{t.accused} {_NOT_PROFILED}, so cross-case links between suspects are not searched."],
+               nxt=[f"run linkage {t.accused}"])
 
 
 def _plural(n: int, word: str) -> str:
@@ -136,6 +277,8 @@ def _plural(n: int, word: str) -> str:
 # ── the agents ───────────────────────────────────────────────────────────────────
 
 def _network(t: Target) -> dict:
+    if (rows := _on_firs_only(t)):
+        return _network_from_firs(t, rows)
     if (r := _need_suspect(t, "the network agent")):
         return r
     from app.agents.network_agent import build_network
@@ -169,6 +312,8 @@ def _network(t: Target) -> dict:
 
 
 def _profile(t: Target) -> dict:
+    if (rows := _on_firs_only(t)):
+        return _profile_from_firs(t, rows)
     if (r := _need_suspect(t, "the profiler")):
         return r
     from app.agents import profile_agent
@@ -205,6 +350,8 @@ def _tally_line(review: dict) -> str:
 
 
 def _research(t: Target) -> dict:
+    if (rows := _on_firs_only(t)):
+        return _research_from_firs(t, rows)
     if (r := _need_suspect(t, "the research agent")):
         return r
     from app.agents.advocate_agent import challenge_dossier
@@ -228,6 +375,11 @@ def _research(t: Target) -> dict:
 
 
 def _advocate(t: Target) -> dict:
+    if _on_firs_only(t):
+        # Research proposes no hypothesis about an unprofiled id, so there is nothing to price.
+        return _empty(f"There is no hypothesis about {t.accused} to challenge: it {_NOT_PROFILED}, "
+                      f"and none is proposed about an id with no profile.",
+                      nxt=[f"run research {t.accused}", f"run linkage {t.accused}"])
     if (r := _need_suspect(t, "the adversary")):
         return r
     from app.agents.advocate_agent import challenge_dossier
@@ -252,6 +404,8 @@ def _advocate(t: Target) -> dict:
 
 
 def _brain(t: Target) -> dict:
+    if (rows := _on_firs_only(t)):
+        return _recall_from_firs(t, rows)
     if (r := _need_suspect(t, "recall")):
         return r
     from app.second_brain.retrieval import find_cross_case_links
