@@ -35,9 +35,6 @@ export default function BrainLoader({ kn = false, fullscreen = false }) {
     return () => { lastSeen = Date.now(); clearInterval(t); };
   }, [steps.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return () => clearInterval(t);
-  }, [steps.length]);
-
   return (
     <div className={`brl ${fullscreen ? "brl-full" : ""}${handover ? " brl-on" : ""}`} role="status" aria-live="polite">
       <div className="brl-cap">
