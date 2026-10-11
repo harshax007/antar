@@ -699,6 +699,120 @@ def evolution() -> dict:
     return {"name": identity.NAME, "version": identity.VERSION, "since": identity.SINCE, "record": rows}
 
 
+_learn_cache: tuple[float, dict] | None = None
+
+
+def learnings() -> dict:
+    """What the records show today that an officer would want said - each line counted.
+
+    These are the lines the agents pass each other on the Brain screen. "Learning" here
+    means a count read from the registry for today's date, set against yesterday or the
+    week before it; nothing is trained and nothing is inferred. A line whose source cannot
+    be read is left out rather than shown as a zero, and each carries the rows behind it so
+    the terminal can show the working when an officer clicks it.
+
+    `from` and `to` name console agents: the one whose kind of work found the line, and the
+    one that would act on it.
+    """
+    global _learn_cache
+    if _learn_cache and time.time() - _learn_cache[0] < 60:
+        return _learn_cache[1]
+    from datetime import date, timedelta
+    today = date.today()
+    d0, d1 = today.isoformat(), (today - timedelta(days=1)).isoformat()
+    week_from = (today - timedelta(days=7)).isoformat()
+    out: list[dict] = []
+
+    def add(key: str, frm: str, to: str, cls: str, text: str, title: str, rows: list, source: str) -> None:
+        out.append({"id": f"{d0}:{key}", "from": frm, "to": to, "evidence_class": cls, "text": text,
+                    "title": title, "rows": [[str(a), str(b)] for a, b in rows], "source": source})
+
+    def registry(con: sqlite3.Connection) -> None:
+        by_day = dict(con.execute("SELECT date, COUNT(*) FROM FIRs WHERE date BETWEEN ? AND ? GROUP BY date",
+                                  (week_from, d0)))
+        n0, n1 = by_day.get(d0, 0), by_day.get(d1, 0)
+        prior = [by_day.get((today - timedelta(days=k)).isoformat(), 0) for k in range(1, 8)]
+        avg = sum(prior) / 7
+        add("volume", "pattern", "forecast", "K",
+            f"{_plural(n0, 'FIR')} {'is' if n0 == 1 else 'are'} dated today. Yesterday had {n1:,}; "
+            f"the seven days before today averaged {avg:.0f} a day.",
+            f"FIRs dated {d0}",
+            [(f"Today ({d0})", f"{n0:,}"), (f"Yesterday ({d1})", f"{n1:,}"), ("Seven-day average", f"{avg:.1f} a day")]
+            + [((today - timedelta(days=k)).isoformat(), f"{by_day.get((today - timedelta(days=k)).isoformat(), 0):,}")
+               for k in range(2, 8)],
+            "registry, by FIR date")
+        if not n0:
+            return                                  # nothing dated today: no shares or movers to state
+
+        dist = con.execute("SELECT District_Name, COUNT(*) FROM FIRs WHERE date = ? AND COALESCE(District_Name, '') <> '' "
+                           "GROUP BY District_Name ORDER BY 2 DESC, 1 LIMIT 5", (d0,)).fetchall()
+        if dist:
+            top, n = dist[0]
+            add("district", "geo", "forecast", "D",
+                f"{top} has {n:,} of today's {_plural(n0, 'FIR')} ({round(100 * n / n0)}%).",
+                f"Where today's FIRs were registered ({d0})",
+                [(d, f"{c:,} ({round(100 * c / n0)}%)") for d, c in dist], "registry, FIRs dated today by district")
+
+        today_g = dict(con.execute("SELECT CrimeGroup_Name, COUNT(*) FROM FIRs WHERE date = ? GROUP BY 1", (d0,)))
+        week_g = dict(con.execute("SELECT CrimeGroup_Name, COUNT(*) FROM FIRs WHERE date >= ? AND date < ? GROUP BY 1",
+                                  (week_from, d0)))
+        # A mover is a group with enough FIRs today to be worth saying (5), set against its
+        # own daily average over the seven days before. Small counts are left out: 1 to 3 is
+        # +200% and two cases.
+        movers = sorted(((g, c, week_g.get(g, 0) / 7) for g, c in today_g.items() if g and c >= 5),
+                        key=lambda m: (-(m[1] - m[2]), m[0]))
+        if movers and movers[0][1] > movers[0][2]:
+            g, c, a = movers[0]
+            add("mover", "pattern", "linkage", "D",
+                f"{str(g).title()}: {c:,} today against a seven-day average of {a:.1f} a day.",
+                f"Crime groups above their own week ({d0})",
+                [(str(m[0]).title(), f"{m[1]:,} today · {m[2]:.1f} a day last week") for m in movers[:5] if m[1] > m[2]],
+                "registry, today against the seven days before")
+
+    def alerts() -> None:
+        from app.services import alerts_store
+        top = alerts_store.list_recent(3)
+        if not top:
+            return
+        a = top[0]
+        z = a.get("z_score")
+        add("alert", "forecast", "geo", "D",
+            f"{a.get('zone')}: {str(a.get('crime_type') or '').replace('_', ' ').lower()} is above its usual level"
+            f" ({a.get('observed')} recorded" + (f", {z:.1f} deviations above" if isinstance(z, (int, float)) else "") + ").",
+            "Open anomaly alerts",
+            [(f"{x.get('zone')} · {str(x.get('crime_type') or '').replace('_', ' ').lower()}",
+              f"{x.get('observed')} recorded" + (f" · z {x.get('z_score'):.1f}" if isinstance(x.get("z_score"), (int, float)) else ""))
+             for x in top], "anomaly scan")
+
+    def ratings() -> None:
+        from app.api.feedback import _read, _tally
+        import datetime as _dt
+        start = _dt.datetime.combine(today, _dt.time.min).timestamp()
+        mine = [e for e in _read() if float(e.get("ts") or 0) >= start and e.get("rating") in ("up", "down")]
+        up = sum(1 for e in mine if e["rating"] == "up")
+        usable = sum(1 for q in _tally().values() if q["up"] > q["down"])
+        text = (f"Officers rated {_plural(len(mine), 'answer')} today: {up} useful, {len(mine) - up} not."
+                if mine else "No answer has been rated today.")
+        add("ratings", "recall", "research", "K",
+            f"{text} {_plural(usable, 'rated answer')} now {'shapes' if usable == 1 else 'shape'} similar answers.",
+            "What officers rated today",
+            [("Rated today", f"{len(mine)}"), ("Useful", f"{up}"), ("Not useful", f"{len(mine) - up}"),
+             ("Rated answers in use", f"{usable}")], "answer ratings")
+
+    con = _ro()
+    try:
+        for fn in (lambda: registry(con), alerts, ratings):
+            try:
+                fn()
+            except Exception:                        # a source that cannot be read is left out
+                continue
+    finally:
+        con.close()
+    res = {"date": d0, "learnings": out}
+    _learn_cache = (time.time(), res)
+    return res
+
+
 # The whole command set. The terminal accepts nothing else; an unknown word is answered
 # with the nearest of these, never passed to a model.
 COMMANDS = [
@@ -718,6 +832,7 @@ COMMANDS = [
     {"cmd": "why", "does": "The steps the last agent took."},
     {"cmd": "identity", "does": "Who Antar is, its laws and how it thinks."},
     {"cmd": "evolution", "does": "How Antar has changed with use: ratings, graded forecasts, challenged hypotheses."},
+    {"cmd": "learnings", "does": "What the records show today: FIRs dated today, movers, alerts, ratings."},
     {"cmd": "clear", "does": "Clear the terminal."},
 ]
 

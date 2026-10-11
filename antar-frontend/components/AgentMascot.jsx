@@ -16,6 +16,10 @@
 //              record, and the bottom line. A repeat run says whether the answer changed.
 //   Notifying  a result that lands while the terminal is closed, and any answer that
 //              differs from what was remembered, is raised to the officer.
+//   Learning   between jobs the agents pass each other what the records show today
+//              (GET /api/console/learnings): FIRs dated today, the district and crime group
+//              that lead, open alerts, what officers rated. Each line is a count; clicking
+//              it opens the terminal with the rows behind it.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Mascot } from "page-mascot";
@@ -43,7 +47,7 @@ const ICON = {
   pattern: "M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z",
 };
 const ORDER = ["network", "profile", "research", "advocate", "recall", "linkage", "forecast", "geo", "pattern"];
-const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "clear"];
+const WORDS = ["help", "agents", "about", "select", "run", "fastrun", "assemble", "roam", "memory", "forget", "log", "auto", "notify", "why", "identity", "evolution", "learnings", "clear"];
 const CLASS_NAME = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
 
 // Slow enough to follow with the eye and read a name tag on the move.
@@ -80,6 +84,18 @@ function nearest(word, pool) {
 export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, agentsOn = true, consoleOn = true, suggestions = [], flying = false, flyAgent = null }) {
   const tips = useRef({ list: [], at: 0 });
   useEffect(() => { tips.current = { list: suggestions, at: 0 }; }, [suggestions]);
+  // What the records show today. Read on arrival and again every five minutes, so a line
+  // said in the afternoon is the afternoon's count.
+  const learned = useRef({ date: "", list: [] });
+  useEffect(() => {
+    let alive = true;
+    const pull = () => fetchAPI("/api/console/learnings")
+      .then((r) => { if (alive) learned.current = { date: r.date || "", list: r.learnings || [] }; })
+      .catch(() => {});                              // older backend, or offline: the agents simply have less to say
+    pull();
+    const t = setInterval(pull, 300000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
   const [pack, setPack] = useState(null);          // identity pack, or { error }
   const [open, setOpen] = useState(false);
   const [small, setSmall] = useState(false);
@@ -99,6 +115,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   const prefs = useRef({ auto: true, system: false, roam: true, seen: true });
   const winRef = useRef(null), outRef = useRef(null), inRef = useRef(null);
   const layerRef = useRef(null), hintRef = useRef(null), sayRef = useRef(null), wireRef = useRef(null), packetRef = useRef(null);
+  const packet2Ref = useRef(null), packet3Ref = useRef(null);
   const orbitRef = useRef(null);
   const bugEls = useRef({});
   const sim = useRef({ a: {}, queue: [], talk: null, nextIdle: Date.now() + 9000, held: null, moved: false });
@@ -239,6 +256,13 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       ] });
       return;
     }
+    if (cmd === "learnings") {
+      const L = learned.current;
+      if (!L.list.length) { say({ kind: "sys", text: "Nothing has been read from today's records yet. Restart the backend if this stays empty." }); return; }
+      say({ kind: "list", title: `What the records show today (${L.date})`, lead: "Each line is a count. Click one on the Brain screen for the rows behind it.",
+            rows: L.list.map((l) => [`${nameOf(l.from)} → ${nameOf(l.to)}`, l.text]) });
+      return;
+    }
     if (cmd === "evolution") {
       // Read when asked, not with the identity pack: these are counts, and they move.
       fetchAPI("/api/console/evolution")
@@ -331,6 +355,17 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     const guess = nearest(cmd, WORDS);
     say({ kind: "err", text: `'${word}' is not a command.${guess ? ` Did you mean ${guess}?` : ""} Type help for the list.` });
   }, [agents, pack, target, controlRef, onThink, runAgent, say]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // One learning, with the working shown: the rows it was counted from, its evidence class
+  // and where it was read.
+  const showLearning = useCallback((l) => {
+    say({ kind: "list", title: l.title, lead: l.text, rows: [
+      ...l.rows,
+      ["Evidence class", `${l.evidence_class} · ${CLASS_NAME[l.evidence_class] || ""}`],
+      ["Read from", l.source],
+      ["Passed", `${nameOf(l.from)} → ${nameOf(l.to)}`],
+    ] });
+  }, [say, pack]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // What the rest of the Brain screen may ask of the console: run a command as if typed.
   useEffect(() => {
@@ -525,7 +560,14 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
         bubble.style.transform = `translate(${left.toFixed(0)}px, ${Math.max(8, p.y - 50).toFixed(0)}px)`;
         if (q && wire && packet) {                    // agent to agent; a line to the officer has no wire
           wire.setAttribute("x1", p.x); wire.setAttribute("y1", p.y); wire.setAttribute("x2", q.x); wire.setAttribute("y2", q.y);
-          packet.setAttribute("cx", p.x + (q.x - p.x) * k); packet.setAttribute("cy", p.y + (q.y - p.y) * k);
+          // Three packets a third of the way apart, each fading in as it leaves the sender
+          // and out as it reaches the listener, so the direction reads at a glance.
+          [packet, packet2Ref.current, packet3Ref.current].forEach((el, j) => {
+            if (!el) return;
+            const kj = (k + j / 3) % 1;
+            el.setAttribute("cx", p.x + (q.x - p.x) * kj); el.setAttribute("cy", p.y + (q.y - p.y) * kj);
+            el.setAttribute("opacity", Math.sin(Math.PI * kj).toFixed(2));
+          });
         }
       }
     };
@@ -544,17 +586,22 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       if (S.talk && now < S.talk.until) return;
       let line = S.queue.shift(), hold = 5200;
       const T = tips.current;
-      if (!line && prefs.current.drawn !== false && now > S.nextIdle && !document.hidden && T.list.length) {
-        const s = T.list[T.at % T.list.length];
+      // One round: what the records show today, agent to agent, then what this view offers
+      // the officer. Only agents that are drawn can speak.
+      const pool = [
+        ...learned.current.list.filter((l) => ICON[l.from] && ICON[l.to]).map((l) => ({ from: l.from, to: l.to, text: l.text, learn: l })),
+        ...T.list.map((s) => ({ from: s.agent, to: "you", text: `${s.text}. ${s.ask}?`, cmd: s.cmd })),
+      ];
+      if (!line && prefs.current.drawn !== false && now > S.nextIdle && !document.hidden && pool.length) {
+        line = pool[T.at % pool.length];
         T.at += 1;
-        line = { from: s.agent, to: "you", text: `${s.text}. ${s.ask}?`, cmd: s.cmd };
         hold = 9000;
-        // a full round said: stay quiet for a good while before offering them again
-        S.nextIdle = now + hold + (T.at % T.list.length === 0 ? 90000 : 16000);
+        // a full round said: stay quiet for a good while before saying them again
+        S.nextIdle = now + hold + (T.at % pool.length === 0 ? 90000 : 14000);
       }
       if (!line) { if (S.talk) { S.talk = null; setTalk(null); } return; }
       S.talk = { ...line, t0: performance.now(), until: now + hold };
-      if (!line.cmd) S.nextIdle = Math.max(S.nextIdle, now + hold + 12000);
+      if (!line.cmd && !line.learn) S.nextIdle = Math.max(S.nextIdle, now + hold + 12000);
       setTalk({ ...line, key: now, hold });
     }, 600);
     return () => clearInterval(tick);
@@ -626,7 +673,9 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
         <svg ref={orbitRef} className="bt-orbits" aria-hidden="true"><ellipse /><ellipse /></svg>
         <svg className="bt-wires" aria-hidden="true" style={{ opacity: talk && talk.to !== "you" ? 1 : 0 }}>
           <line ref={wireRef} />
-          <circle ref={packetRef} r="3.2" />
+          <circle ref={packetRef} r="3.4" />
+          <circle ref={packet2Ref} r="2.8" />
+          <circle ref={packet3Ref} r="2.2" />
         </svg>
         {ORDER.map((id) => {
           const a = card(id);
@@ -647,10 +696,15 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
         })}
         <b ref={hintRef} className="bt-hint" aria-hidden="true" />
         {talk && (
-          <p key={talk.key} ref={sayRef} className={`bt-say${talk.cmd ? " ask" : ""}`} aria-live="off"
+          <p key={talk.key} ref={sayRef} className={`bt-say${talk.cmd || talk.learn ? " ask" : ""}${talk.learn ? " learn" : ""}`} aria-live="off"
              style={{ animationDuration: `${talk.hold || 5200}ms` }}
-             title={talk.cmd ? `Click to ${talk.cmd}` : undefined}
-             onClick={talk.cmd ? () => { openTerminal(); exec(talk.cmd); sim.current.talk = null; setTalk(null); } : undefined}>
+             title={talk.cmd ? `Click to ${talk.cmd}` : talk.learn ? "Click for the rows behind this" : undefined}
+             onClick={talk.cmd || talk.learn ? () => {
+               openTerminal();
+               if (talk.learn) showLearning(talk.learn); else exec(talk.cmd);
+               sim.current.talk = null; setTalk(null);
+             } : undefined}>
+            {talk.learn && <i>{kn ? "ಇಂದು" : "Today"}</i>}
             <b>{nameOf(talk.from)} → {talk.to === "you" ? "You" : nameOf(talk.to)}</b>{talk.text}
           </p>
         )}
@@ -777,10 +831,17 @@ const CSS = `
 .bt-orbits ellipse + ellipse { animation-direction: reverse; opacity: .22; }
 @keyframes bt-dash { to { stroke-dashoffset: -48; } }
 .bt-layer.fly .bt-bug { opacity: 1; }
-.bt-layer.fly .bt-bug > i { box-shadow: 0 0 0 3px rgba(34,230,240,.18), 0 0 20px var(--c), 0 6px 14px rgba(0,0,0,.45); }
+.bt-layer.fly .bt-bug > i { box-shadow: 0 0 0 7px rgba(3,6,12,.78), 0 0 0 9px rgba(34,230,240,.2), 0 0 22px var(--c); }
 .bt-layer.fly .bt-bug > i::before { animation-duration: 1.6s; border-color: rgba(34,230,240,.7); border-left-color: transparent; border-right-color: transparent; }
-.bt-wires line { stroke: var(--c); stroke-width: 1; stroke-dasharray: 2 6; opacity: .5; }
-.bt-wires circle { fill: #fff; filter: drop-shadow(0 0 5px var(--c)); }
+/* A message in flight: the wire runs toward the listener, the packets travel along it. */
+.bt-wires line { stroke: var(--c); stroke-width: 1.4; stroke-dasharray: 3 7; opacity: .75; filter: drop-shadow(0 0 4px var(--c)); animation: bt-flow .7s linear infinite; }
+.bt-wires circle { fill: #fff; filter: drop-shadow(0 0 6px var(--c)); }
+@keyframes bt-flow { to { stroke-dashoffset: -20; } }
+/* The listener answers the packets with a ring that opens outward; the speaker's ring tightens. */
+.bt-bug.hearing > i { animation: bt-recv 1.1s ease-out infinite; }
+.bt-bug.speaking > i::before { animation-duration: 2.2s; border-color: rgba(34,230,240,.85); border-left-color: transparent; border-right-color: transparent; }
+@keyframes bt-recv { 0% { box-shadow: 0 0 0 7px rgba(3,6,12,.78), 0 0 0 7px rgba(34,230,240,.55), 0 0 16px rgba(34,230,240,.4); }
+  100% { box-shadow: 0 0 0 7px rgba(3,6,12,.78), 0 0 0 20px rgba(34,230,240,0), 0 0 16px rgba(34,230,240,.4); } }
 
 /* Present but quiet: an agent sits a little back while it only moves, and comes up to full
    strength when it talks, is spoken to, is working, is carried, or is pointed at. */
@@ -788,11 +849,12 @@ const CSS = `
   opacity: .82; transition: opacity .25s ease; }
 .bt-bug:hover, .bt-bug:focus-visible, .bt-bug.speaking, .bt-bug.hearing, .bt-bug.busy, .bt-bug.held { opacity: 1; }
 .bt-bug > i, .bt-bug > span { pointer-events: auto; cursor: grab; }
-/* The body: a lit disc the character stands on, leaning into its direction of travel,
-   inside a slow scan ring. The disc is pale so the character's dark outline reads on the graph. */
+/* The body: a dark disc the character stands on, leaning into its direction of travel,
+   inside a slow scan ring. The disc and the halo round it are near-black: the graph behind
+   is a field of bright dots, and on a pale disc the agents were lost among them. */
 .bt-bug > i { position: absolute; left: 4px; top: 4px; width: 36px; height: 36px; border-radius: 50%; color: var(--c);
-  background: radial-gradient(circle at 50% 34%, #F4FDFF 0%, #BFEAF1 58%, #6FC9D6 100%); border: 1.5px solid var(--c);
-  box-shadow: 0 0 14px rgba(34,230,240,.34), 0 6px 14px rgba(0,0,0,.45); transform: rotate(var(--lean, 0deg)); transition: box-shadow .2s, scale .2s; }
+  background: radial-gradient(circle at 50% 30%, #16233A 0%, #070C16 72%); border: 1.5px solid var(--c);
+  box-shadow: 0 0 0 7px rgba(3,6,12,.78), 0 0 16px rgba(34,230,240,.38), 0 6px 14px rgba(0,0,0,.6); transform: rotate(var(--lean, 0deg)); transition: box-shadow .2s, scale .2s; }
 .bt-bug > i::before { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1px dashed rgba(34,230,240,.4); border-left-color: transparent; border-right-color: transparent; animation: bt-spin 9s linear infinite; }
 .bt-bug > i::after { content: ""; position: absolute; right: 0; top: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); animation: bt-led 2.4s ease-in-out infinite; }
 /* The character. page-mascot sets its own inline box, so the placement here has to win:
@@ -803,9 +865,9 @@ const CSS = `
 /* What the agent does, as a badge on the disc. */
 .bt-bug > i > svg { position: absolute; right: -6px; bottom: -4px; box-sizing: content-box; padding: 2px; border-radius: 50%; background: rgba(6,11,18,.94); border: 1px solid var(--c); }
 .bt-bug > span { position: absolute; left: 50%; top: 45px; transform: translateX(-50%); font: 600 8.5px 'JetBrains Mono', monospace; letter-spacing: .04em; text-transform: uppercase; color: #CFFAFE;
-  background: rgba(6,11,18,.78); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
-.bt-bug:hover > i, .bt-bug.speaking > i, .bt-bug.hearing > i { box-shadow: 0 0 0 3px rgba(34,230,240,.22), 0 0 18px var(--c); }
-.bt-bug.held > i { cursor: grabbing; scale: 1.14; box-shadow: 0 0 0 4px rgba(34,230,240,.28), 0 0 22px var(--c); }
+  background: rgba(3,6,12,.94); border: 1px solid rgba(34,230,240,.22); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.bt-bug:hover > i, .bt-bug.speaking > i { box-shadow: 0 0 0 7px rgba(3,6,12,.78), 0 0 0 9px rgba(34,230,240,.3), 0 0 20px var(--c); }
+.bt-bug.held > i { cursor: grabbing; scale: 1.14; box-shadow: 0 0 0 7px rgba(3,6,12,.78), 0 0 0 10px rgba(34,230,240,.34), 0 0 24px var(--c); }
 .bt-bug.busy > i::before { border-style: solid; border-color: var(--c) transparent transparent transparent; animation-duration: .9s; }
 .bt-bug.speaking > i::after, .bt-bug.busy > i::after { animation-duration: .5s; }
 @keyframes bt-spin { to { transform: rotate(360deg); } }
@@ -818,6 +880,9 @@ const CSS = `
   font: 11px 'Inter', sans-serif; color: #E2E8F0; background: rgba(6,11,18,.94); border: 1px solid rgba(34,230,240,.45);
   border-radius: 999px; padding: 3px 10px; animation: bt-type 5.2s ease both; }
 .bt-say.ask { pointer-events: auto; cursor: pointer; }
+/* A line about today's records carries a small mark, so it is not read as an offer. */
+.bt-say i { font: 600 9px 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .08em; text-transform: uppercase; color: #06121B; background: var(--c); border-radius: 999px; padding: 1px 6px; margin-right: 7px; }
+.bt-say.learn { border-color: rgba(34,230,240,.7); box-shadow: 0 6px 22px rgba(0,0,0,.55); }
 .bt-say.ask:hover { border-color: #22E6F0; color: #fff; }
 .bt-say b { font: 600 9.5px 'JetBrains Mono', monospace; color: var(--c); margin-right: 7px; letter-spacing: .03em; }
 @keyframes bt-type { 0% { clip-path: inset(0 100% 0 0); opacity: 1; } 22% { clip-path: inset(0 0 0 0); } 88% { opacity: 1; } 100% { clip-path: inset(0 0 0 0); opacity: 0; } }
@@ -869,5 +934,5 @@ const CSS = `
 .bt-in { display: flex; align-items: center; gap: 7px; padding: 7px 11px; border-top: 1px solid rgba(255,255,255,.09); flex-shrink: 0; }
 .bt-in span { color: #22E6F0; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .bt-in input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #fff; font: 12px 'JetBrains Mono', monospace; }
-@media (prefers-reduced-motion: reduce) { .bt-say, .bt-bug > i::before, .bt-bug > i::after, .bt-orbits ellipse { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .bt-say, .bt-bug > i::before, .bt-bug > i::after, .bt-orbits ellipse, .bt-wires line, .bt-bug.hearing > i { animation: none; } }
 `;

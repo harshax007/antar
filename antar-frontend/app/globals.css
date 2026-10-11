@@ -4151,7 +4151,7 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
 /* ── Sizes that hold everywhere ── */
 @media (max-width: 820px) {
   html { -webkit-text-size-adjust: 100%; }
-  input, select, textarea { font-size: 16px !important; }      /* under 16px, iOS zooms the page on focus */
+  input, textarea { font-size: 16px !important; }              /* under 16px, iOS zooms the page on focus */
   .bsx-pill, .px-howbtn, .lg-eye { min-height: 40px; }
 }
 /* ── Large monitors: wider than a line is comfortable to read, so the content stops growing ── */
@@ -4198,4 +4198,15 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
 .wa-res ul { margin: 2px 0 4px; padding-left: 16px; font-size: 12px; line-height: 1.55; color: #B8C4D4; }
 .wa-lim { font-size: 11.5px; color: var(--muted-2, #7C8A9E); }
 @media (max-width: 820px) { .wa-row { grid-template-columns: 1fr; gap: 4px; } }
+
+/* ── Agents beside the Expert workspace title: a small moving row that opens the Brain screen ── */
+.c2-agents { display: inline-flex; align-items: center; gap: 2px; margin-left: 12px; padding: 3px 10px 3px 6px; border-radius: 999px;
+  border: 1px solid rgba(34,230,240,.22); background: rgba(3,6,12,.7); cursor: pointer; transition: border-color .15s, background .15s; }
+.c2-agents:hover, .c2-agents:focus-visible { border-color: #22E6F0; background: rgba(34,230,240,.08); outline: none; }
+.c2-agents .wa-face { width: 22px; height: 22px; animation: c2-walk 1.8s ease-in-out infinite; }
+.c2-agents em { margin-left: 6px; font: 600 10.5px 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .06em; text-transform: uppercase; color: #A5F3FC; }
+@keyframes c2-walk { 0%, 100% { transform: translate(0, 0) rotate(-3deg); } 25% { transform: translate(1.5px, -3px) rotate(2deg); }
+  50% { transform: translate(0, 0) rotate(3deg); } 75% { transform: translate(-1.5px, -2px) rotate(-2deg); } }
+@media (prefers-reduced-motion: reduce) { .c2-agents .wa-face { animation: none; } }
+@media (max-width: 820px) { .c2-agents em { display: none; } }
 

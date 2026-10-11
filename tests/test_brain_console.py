@@ -183,3 +183,17 @@ def test_an_unprofiled_accused_network_names_the_shared_key_or_says_there_is_non
     if n["status"] == "ok":
         assert all(" shares " in e for e in n["evidence"]), "every link must name its shared key"
 
+
+def test_todays_learnings_are_counts_between_two_real_agents():
+    """Every line names two console agents, carries the rows behind it, and is a count."""
+    C._learn_cache = None
+    res = C.learnings()
+    assert res["learnings"], "the registry line should always be present"
+    for l in res["learnings"]:
+        assert l["from"] in C.AGENTS and l["to"] in C.AGENTS and l["from"] != l["to"]
+        assert l["evidence_class"] in ("K", "D"), "a learning is read or calculated, never inferred"
+        assert l["text"] and l["title"] and l["rows"] and l["source"]
+    volume = res["learnings"][0]
+    assert volume["id"].endswith(":volume") and res["date"] in volume["title"]
+    assert any(c["cmd"] == "learnings" for c in C.COMMANDS)
+

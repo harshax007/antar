@@ -5,6 +5,7 @@ import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, Fil
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { openReport } from "@/lib/auth";
 import WorkspaceAgents from "@/components/WorkspaceAgents";
+import { useRouter } from "next/navigation";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -191,6 +192,7 @@ const JobResultViewer = ({ data, kn }) => {
 };
 
 export default function ExpertWorkspace({ answer, question, citations = [], suspects = [], sessionId, kn, onClose, meta, trace = [], claims = [], evidenceClass = null }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [showEditDisclaimer, setShowEditDisclaimer] = useState(false);
   const [draft, setDraft] = useState("");
@@ -467,6 +469,14 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             the most prominent line of a screen an officer reads for evidence. */}
         <div className="c2-callsign">
           <span>{kn ? "ತಜ್ಞ ಕಾರ್ಯಕ್ಷೇತ್ರ" : "Expert workspace"}</span>
+          {/* The agents, on the move beside the title: one click goes to where they work. */}
+          <button type="button" className="c2-agents" onClick={() => router.push("/antarBrain")}
+                  title={kn ? "ಏಜೆಂಟ್‌ಗಳ ಕಾರ್ಯಕ್ಷೇತ್ರ ತೆರೆಯಿರಿ" : "Open the agents' workspace"} aria-label="Open the agents' workspace">
+            {["gearbot", "postbot", "clockwork", "drone", "crt"].map((f, i) => (
+              <i key={f} className="wa-face" style={{ backgroundImage: `url(/mascots/sm/${f}-directions.webp)`, animationDelay: `${i * -0.45}s` }} />
+            ))}
+            <em>{kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"}</em>
+          </button>
         </div>
         <div className="c2-leds" role="status" aria-live="polite">
           <span className={`c2-led ${link}`} title={lastSync ? `Last sync ${Math.round((now - lastSync) / 1000)}s ago` : "Waiting for first sync"}>
@@ -611,7 +621,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
 
                 {/* The agents: which ones worked on this answer, and the ones that can be run
                     from here on a record it names. */}
-                {answer && <WorkspaceAgents answer={answer} question={question} suspects={suspects} usedAgents={meta?.agents || []} kn={kn} />}
+                {answer && <WorkspaceAgents answer={answer} question={question} suspects={suspects} usedAgents={meta?.agents || []} trace={trace} kn={kn} />}
 
                 {/* What the answer is made of - stated, not implied. Every value here is
                     reported by the pipeline for THIS answer; a missing one reads "—"

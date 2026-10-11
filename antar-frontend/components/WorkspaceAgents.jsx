@@ -53,7 +53,7 @@ function readTyped(text) {
   return { kind: "crime_group", value: t.toUpperCase() };
 }
 
-export default function WorkspaceAgents({ answer = "", question = "", suspects = [], usedAgents = [], kn }) {
+export default function WorkspaceAgents({ answer = "", question = "", suspects = [], usedAgents = [], trace = [], kn }) {
   const [cards, setCards] = useState(null);          // console agent cards, or { error }
   const [target, setTarget] = useState(null);        // { kind, value }
   const [typed, setTyped] = useState("");
@@ -93,7 +93,10 @@ export default function WorkspaceAgents({ answer = "", question = "", suspects =
     setResults((rs) => [{ ...r, on: target.value, key: `${agent.id}-${Date.now()}` }, ...rs].slice(0, 8));
   }
 
-  const used = [...new Set((usedAgents || []).map((a) => String(a).toLowerCase()))];
+  // The agents the pipeline names for this answer. When the final event carries no list,
+  // the steps it reported while answering do: each names the agent that took it.
+  const named = (usedAgents || []).length ? usedAgents : (trace || []).map((s) => s?.agent).filter((a) => a && FACE[String(a).toLowerCase()]);
+  const used = [...new Set(named.map((a) => String(a).toLowerCase()))];
   const list = Array.isArray(cards) ? cards : [];
 
   return (
