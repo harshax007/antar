@@ -182,8 +182,9 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setBadge(APPROVER_ID);
-              setPassword("");
-              document.getElementById("pw")?.focus();
+              // Filled only when this build was given a demo password (.env.local); otherwise the officer types it.
+              setPassword(process.env.NEXT_PUBLIC_DEMO_PW_APPROVER || "");
+              if (!process.env.NEXT_PUBLIC_DEMO_PW_APPROVER) document.getElementById("pw")?.focus();
               setError("");
             }}
             disabled={busy}
@@ -206,8 +207,9 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setBadge(ADMIN_ID);
-              setPassword("");
-              document.getElementById("pw")?.focus();
+              // Filled only when this build was given a demo password (.env.local); otherwise the officer types it.
+              setPassword(process.env.NEXT_PUBLIC_DEMO_PW_ADMIN || "");
+              if (!process.env.NEXT_PUBLIC_DEMO_PW_ADMIN) document.getElementById("pw")?.focus();
               setError("");
             }}
             disabled={busy}
