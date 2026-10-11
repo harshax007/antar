@@ -1855,3 +1855,18 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Build**: `.dockerignore` and `.appignore` now exclude the second database copy in `data/` (1.5 GB), `gstack/` (207 MB), the one-off patch scripts and the accounts file.
 * **Still open**: the live audit chain is broken at entry 499 from the 2026-10-11 test runs and has not been reset; Docker images run as root; `Dockerfile.onnx` is still unbuilt.
 
+
+## Agents across the product, Brain terminal, responsive pass - 2026-10-12
+
+* **Agents in chat**: the fifteen agents sit in a line above the chat box ("Antar Agents:"). Picking one asks the first question through that agent's mode (`/think`, `/connect`, `/anticipate`) and `/docs?agent=Name` shows that agent alone. The thought process shows the agents that ran.
+* **Agents in the Expert workspace**: an Agents block with targets, starting points, run-all and follow-ups; the title row lists only the agents used for that answer and jumps to the block.
+* **Agents answer for `ACC-KA` ids** that are on FIRs but have no profile (FIR-only path in `brain_console.py`).
+* **Daily learnings**: `GET /api/console/learnings` (today's FIR counts, top district, mover, alerts, ratings; 60 s cache). Agents pass these to each other on the Brain screen and a click opens the detail in the terminal.
+* **Brain terminal**: suggestions that fit the moment, `help <command>`, `history`, Tab completion, `/think /connect /anticipate`, `use <agent>` / `exit`. Opening it calls the agents into line. It always opens in the same place.
+* **Terminal login**: the Terminal button asks for a login (user `root`). It is checked in the browser and is a demo step, not a control: what a command may read is still decided by the server from the officer's sign-in. Clicking an agent skips it and opens that agent's own session (`antar@brain@geo`), where a typed line is the agent's target.
+* **Map**: summary tab open by default and written out, geo-intel cached, thin loading line, scrolling Geo Intel and Prediction lines restored.
+* **Speed**: chat answers waited 16-19 s on LLM query expansion inside `semantic_recall`; it is now opt-in (`expand_with_llm`). One curtain covers sign-in to first screen; screen switches wait 200 ms instead of 600.
+* **Responsive**: bottom tab bar at 820 px and below; Predict, Brain and Chat laid out for 375 and 768 px. Emojis removed from the UI.
+* **Demo sign-in**: access links fill the password from `antar-frontend/.env.local` (git-ignored; must not ship in a public build).
+* **Needs a backend restart to load**: learnings, `/api/console/targets`, `ACC-KA` support, the new console commands and the recall speed fix.
+* **Still open**: audit chain broken at entry 499 (not reset); Docker images run as root; `Dockerfile.onnx` unbuilt; no git remote, so the history exists only on this machine.
