@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLang, useTheme } from "@/components/Providers";
 import { asset } from "@/lib/assets";
 import { ADMIN_ID, APPROVER_ID, signIn, homeFor } from "@/lib/auth";
+import { raiseCurtain } from "@/lib/curtain";
 
 const COPY = {
   en: {
@@ -87,12 +88,14 @@ export default function LoginPage() {
       setError(err.status === 429 ? t.locked : err.status === 0 ? t.down : err.status === 503 ? t.off : t.bad);
       return;
     }
+    // "Access granted" shows for a moment, then one curtain covers the change of screen.
+    // It lives on <body>, so it is still there while this page is replaced, and the screen
+    // that arrives lowers it once it has drawn (lib/curtain.js). The two timed waits and
+    // the page's own overlay used to leave a flash of bare background between screens.
     setStatus("granted");
-    await new Promise((r) => setTimeout(r, 300));
-    
-    // Trigger the loading animation for the first chat screen
-    setStatus("loading_chat");
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 220));
+    raiseCurtain();
+    await new Promise((r) => setTimeout(r, 260));     // the curtain's own fade, before the page under it changes
 
     // User logs in -> directed to /antar
     try {
@@ -106,11 +109,7 @@ export default function LoginPage() {
       localStorage.setItem("antar_login_count", loginCount.toString());
     } catch {}
     
-    if (document.startViewTransition) {
-      document.startViewTransition(() => router.push(homeFor(acct.role)));
-    } else {
-      router.push(homeFor(acct.role));
-    }
+    router.push(homeFor(acct.role));
   }
 
   const busy = status !== "idle";

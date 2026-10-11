@@ -10,6 +10,7 @@ import PillNav from "@/components/PillNav";
 import GlobalGuide from "@/components/GlobalGuide";
 import { Menu, X, Sun, Moon, User } from "lucide-react";
 import { readSession, isValidSession, clearSession } from "@/lib/auth";
+import { lowerCurtain } from "@/lib/curtain";
 
 const NAV = [
   { href: "/antar",               en: "Chat",         kn: "ಪ್ರಶ್ನೆ" },
@@ -53,6 +54,9 @@ export default function AppShell({ children }) {
         return;
       }
       setSession(s);
+      // Arriving from sign-in: the screen is on its way in, so the curtain can go - after a
+      // beat, so what is under it has been painted first.
+      setTimeout(lowerCurtain, 120);
       try { setExpert(localStorage.getItem("antar_expert") === "1"); } catch {}
     }
     checkSession();
@@ -96,9 +100,10 @@ export default function AppShell({ children }) {
       const targetHref = e.detail;
       if (path === targetHref) return;
       setNavigatingTo(targetHref);
+      // The overlay takes 180 ms to cover the screen; waiting 600 made every switch feel slow.
       setTimeout(() => {
         router.push(targetHref);
-      }, 600);
+      }, 200);
     };
     window.addEventListener("screen-switch", fn);
     return () => window.removeEventListener("screen-switch", fn);
@@ -110,7 +115,7 @@ export default function AppShell({ children }) {
     setNavigatingTo(targetHref);
     setTimeout(() => {
       router.push(targetHref);
-    }, 600);
+    }, 200);
   }
 
   const isAdmin = session?.role === "Admin";
