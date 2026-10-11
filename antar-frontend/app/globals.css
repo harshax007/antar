@@ -2268,30 +2268,56 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
    than anything else — which is the opposite of what a severity scale is for. Now the card
    is neutral, severity is a single small dot, and CYAN is reserved for the one thing an
    officer needs to find: the finding's own title. */
-/* Fast Run results: a short list, one line per finding; the rest opens on click. */
-.bsx-fr { width: min(520px, 92vw); max-height: 78vh; overflow-y: auto; scrollbar-width: thin; padding: 14px 16px 12px; border-radius: 14px; background: rgba(8,13,22,.97); border: 1px solid var(--glass-border); box-shadow: 0 18px 60px rgba(0,0,0,.6); color: var(--text); }
-.bsx-fr > header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-.bsx-fr h2 { margin: 0; font: 600 15px 'Chakra Petch'; letter-spacing: .02em; }
-.bsx-fr > header span { flex: 1; font-size: 11px; color: var(--muted-2); }
-.bsx-fr > header button { background: none; border: 0; padding: 2px 4px; font: 500 11px 'Inter'; color: var(--muted); cursor: pointer; }
+/* Fast Run results: the takeaway, the counts, then every agent with what it checked and
+   what it found - each finding written out in full, with its evidence and its source. */
+/* Narrower than the screen by the width of the floating page-guide button on each side, so the header never sits under it. */
+.bsx-fr { width: min(960px, calc(100vw - 176px)); max-height: calc(100vh - 116px); overflow-y: auto; scrollbar-width: thin; padding: 16px 18px 12px; border-radius: 14px; background: rgba(8,13,22,.97); border: 1px solid var(--glass-border); box-shadow: 0 18px 60px rgba(0,0,0,.6); color: var(--text); }
+.bsx-fr > header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.bsx-fr h2 { margin: 0; font: 600 16px 'Chakra Petch'; letter-spacing: .02em; }
+.bsx-fr > header > span { flex: 1; min-width: 120px; font-size: 11.5px; color: var(--muted-2); }
+.bsx-fr > header button { background: none; border: 0; padding: 3px 6px; font: 500 11.5px 'Inter'; color: var(--muted); cursor: pointer; }
 .bsx-fr > header button:hover { color: var(--cyan); }
-.bsx-fr > header button:last-child { font-size: 17px; line-height: 1; }
+.bsx-fr > header .x { font-size: 18px; line-height: 1; }
+.bsx-fr .seg { display: flex; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; overflow: hidden; }
+.bsx-fr .seg button { padding: 4px 11px; }
+.bsx-fr .seg button.on { background: rgba(34,230,240,.12); color: var(--cyan); }
+.bsx-fr .dot { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #5C6A7C; }
+.bsx-fr .sev-high .dot, .bsx-fr .sev-high > .dot { background: #FF5A3C; }
+.bsx-fr .sev-med .dot, .bsx-fr .sev-med > .dot { background: var(--amber); }
+
+.bsx-fr .lead { padding: 11px 14px; border-radius: 10px; background: rgba(34,230,240,.05); border: 1px solid rgba(34,230,240,.22); }
+.bsx-fr .lead small { display: flex; align-items: center; gap: 7px; font: 600 9.5px 'JetBrains Mono'; letter-spacing: .08em; text-transform: uppercase; color: var(--cyan); }
+.bsx-fr .lead b { display: block; margin-top: 5px; font: 600 16px/1.35 'Inter'; color: #fff; }
+.bsx-fr .lead p { margin: 3px 0 0; font-size: 12.5px; line-height: 1.5; color: #B8C4D4; }
+
+.bsx-fr .sum { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 2px; font-size: 11.5px; color: var(--muted); }
+.bsx-fr .sum span { display: inline-flex; align-items: center; gap: 6px; }
+.bsx-fr .sum b { font: 600 13.5px 'JetBrains Mono'; color: #EAF1F9; }
+
+.bsx-fr .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.bsx-fr article { padding: 11px 13px 6px; border-radius: 10px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); }
+.bsx-fr article.quiet { opacity: .62; }
+.bsx-fr h3 { display: flex; align-items: center; gap: 8px; margin: 0; font: 600 11px 'JetBrains Mono'; letter-spacing: .08em; text-transform: uppercase; color: #EAF1F9; }
+.bsx-fr h3 em { font-style: normal; font-weight: 600; font-size: 10px; color: var(--muted-2); padding: 0 6px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); }
+.bsx-fr .how { margin: 4px 0 2px; font-size: 11px; line-height: 1.45; color: var(--muted-2); }
+.bsx-fr .how::first-letter { text-transform: uppercase; }
+
 .bsx-fr ol { list-style: none; margin: 0; padding: 0; }
-.bsx-fr ol > li { border-top: 1px solid rgba(255,255,255,.06); }
-.bsx-fr summary { list-style: none; display: grid; grid-template-columns: 8px 1fr auto; gap: 10px; align-items: center; padding: 9px 2px; cursor: pointer; }
-.bsx-fr summary::-webkit-details-marker { display: none; }
-.bsx-fr summary b { font: 500 13px/1.4 'Inter'; color: #EAF1F9; }
-.bsx-fr summary em { font: 500 9.5px 'JetBrains Mono'; font-style: normal; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); }
-.bsx-fr .dot { width: 8px; height: 8px; border-radius: 50%; background: #5C6A7C; }
-.bsx-fr .sev-high .dot { background: #FF5A3C; } .bsx-fr .sev-med .dot { background: var(--amber); }
-.bsx-fr details[open] summary b { color: #fff; }
-.bsx-fr details > p { margin: 0 0 6px 20px; font-size: 12px; line-height: 1.5; color: #B8C4D4; }
-.bsx-fr details > ul { margin: 0 0 8px 20px; padding-left: 14px; font-size: 11.5px; line-height: 1.55; color: #9FB0C4; }
-.bsx-fr .next { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px 20px; }
-.bsx-fr .next button { font: 500 10.5px 'JetBrains Mono'; color: var(--cyan); background: rgba(34,230,240,.07); border: 1px solid rgba(34,230,240,.3); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
-.bsx-fr .next button:hover { background: rgba(34,230,240,.16); }
-.bsx-fr .more { display: block; width: 100%; margin-top: 4px; padding: 7px; background: none; border: 0; border-top: 1px solid rgba(255,255,255,.06); font: 500 11px 'Inter'; color: var(--cyan); cursor: pointer; }
-.bsx-fr .none { margin: 8px 0; font-size: 12.5px; color: var(--muted); }
+.bsx-fr ol > li { padding: 9px 0; border-top: 1px solid rgba(255,255,255,.06); }
+.bsx-fr ol.flat > li:first-child { border-top: 0; }
+.bsx-fr .hd { display: grid; grid-template-columns: 8px 1fr auto; gap: 9px; align-items: baseline; }
+.bsx-fr .hd .dot { align-self: center; }
+.bsx-fr .hd b { font: 600 13px/1.4 'Inter'; color: #EAF1F9; }
+.bsx-fr .hd em { font: 500 9.5px 'JetBrains Mono'; font-style: normal; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); white-space: nowrap; }
+.bsx-fr ol > li > p { margin: 3px 0 0 17px; font-size: 12px; line-height: 1.5; color: #B8C4D4; }
+.bsx-fr ol > li > ul { margin: 4px 0 0 17px; padding-left: 14px; font-size: 11.5px; line-height: 1.55; color: #9FB0C4; }
+.bsx-fr .ft { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 6px 0 0 17px; }
+.bsx-fr .ft span { flex: 1; min-width: 150px; font-size: 10.5px; color: var(--muted-2); }
+.bsx-fr .ft button { font: 500 10.5px 'JetBrains Mono'; color: var(--cyan); background: rgba(34,230,240,.07); border: 1px solid rgba(34,230,240,.3); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.bsx-fr .ft button:hover { background: rgba(34,230,240,.16); }
+.bsx-fr .none { margin: 8px 0; font-size: 12px; color: var(--muted); }
+.bsx-fr > footer { margin-top: 12px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.06); font-size: 10.5px; line-height: 1.5; color: var(--muted-2); }
+@media (max-width: 820px) { .bsx-fr { width: 94vw; } .bsx-fr .grid { grid-template-columns: 1fr; } }
 /* The dot is the whole severity signal: colour where it means something, nowhere else. */
 .bsx-sev { flex: none; width: 7px; height: 7px; border-radius: 50%; align-self: center; }
 .bsx-sev.sev-high { background: #FF5A5A; box-shadow: 0 0 0 3px rgba(255,90,90,.14); }

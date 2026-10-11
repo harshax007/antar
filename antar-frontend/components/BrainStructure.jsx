@@ -137,7 +137,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   const [think, setThink] = useState(null);            // {phase, at, findings, total, lead, counts, n, scope}
   const [thinkOpen, setThinkOpen] = useState(false);
   const consoleRef = useRef(null);                     // { run(cmd) } - the Brain terminal
-  const [showAllFindings, setShowAllFindings] = useState(false);
+  const [frView, setFrView] = useState("agent");       // Fast Run results: by agent | by priority
   const [copied, setCopied] = useState(false);
   const closeRef = useRef(null);
 
@@ -443,11 +443,12 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     ];
     AGENTS.forEach((a) => {
       const f = think.findings[a.id] || [];
-      if (!f.length) return;
       lines.push(a.name);
+      if (!f.length) lines.push("  Nothing stands out in this view.");
       f.forEach((c) => {
-        lines.push(`  [${word[c.sev || "low"]}] ${c.title}${c.detail ? ` - ${c.detail}` : ""}`);
+        lines.push(`  [${word[c.sev || "low"]}]${c.cls ? ` [${c.cls}]` : ""} ${c.title}${c.detail ? ` - ${c.detail}` : ""}`);
         (c.evidence || []).forEach((e) => lines.push(`      ${e}`));
+        if (c.source) lines.push(`      Source: ${c.source}`);
       });
       lines.push("");
     });
@@ -516,7 +517,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   return (
     <div className="bsx-stage">
       <AgentMascot controlRef={controlRef} apiRef={consoleRef} focus={focus} onThink={runThink} kn={kn}
-                   agentsOn={!loading && view === "net"} consoleOn={view === "net"} suggestions={suggestions} />
+                   agentsOn={!loading && view === "net"} consoleOn={view === "net"} suggestions={suggestions}
+                   flying={think?.phase === "run"} flyAgent={think?.phase === "run" ? AGENTS[Math.min(think.at, AGENTS.length - 1)].id : null} />
       <div className="bsx-orbits" aria-hidden="true"><i /><i /></div>
       {filterNote && (
         <div className="bsx-filternote" role="status" aria-live="polite">
@@ -753,48 +755,82 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           all that shows; the records behind it and the next step open on demand. */}
       {think?.phase === "done" && thinkOpen && (() => {
         const rank = { high: 0, med: 1, low: 2 };
-        const rows = AGENTS.flatMap((a) => (think.findings[a.id] || []).map((c) => ({ ...c, agent: a.name })))
+        const sevName = kn ? { high: "ಹೆಚ್ಚು", med: "ಮಧ್ಯಮ", low: "ಕಡಿಮೆ" } : { high: "High", med: "Medium", low: "Low" };
+        const groups = AGENTS.map((a) => ({ ...a, items: think.findings[a.id] || [] }));
+        const rows = groups.flatMap((g) => g.items.map((c) => ({ ...c, agent: g.name })))
           .sort((x, y) => (rank[x.sev] ?? 3) - (rank[y.sev] ?? 3));
-        const shown = showAllFindings ? rows : rows.slice(0, 5);
+        const reported = groups.filter((g) => g.items.length).length;
+        const none = kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಗಮನಾರ್ಹ ಸಂಕೇತವಿಲ್ಲ." : "Nothing stands out in this view.";
+        // One finding, written out in full: nothing an officer needs is behind a click.
+        const finding = (c, key, withAgent) => (
+          <li key={key} className={`sev-${c.sev || "low"}`}>
+            <div className="hd">
+              <i className="dot" title={sevName[c.sev || "low"]} />
+              <b>{c.title}</b>
+              {c.cls && <em>{c.cls} · {EVIDENCE_CLASS[c.cls]}</em>}
+            </div>
+            {c.detail && <p>{c.detail}</p>}
+            {c.evidence?.length > 0 && <ul>{c.evidence.map((e, k) => <li key={k}>{e}</li>)}</ul>}
+            <div className="ft">
+              <span>{sevName[c.sev || "low"]}{withAgent ? ` · ${c.agent}` : ""}{c.source ? ` · ${kn ? "ಮೂಲ" : "Source"}: ${c.source}` : ""}</span>
+              {/* Hands the record to a console agent: the finding says what is there, the agent works it. */}
+              {(c.next || []).map((x) => (
+                <button key={x.cmd} onClick={() => { setThinkOpen(false); consoleRef.current?.run(x.cmd); }}>{x.label}</button>
+              ))}
+            </div>
+          </li>
+        );
         return (
           <div className="bsx-tm-overlay" onClick={() => setThinkOpen(false)}>
             <section className="bsx-fr" role="dialog" aria-modal="true" aria-labelledby="bsx-fr-title" onClick={(e) => e.stopPropagation()}>
               <header>
                 <h2 id="bsx-fr-title">{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"}</h2>
                 <span>{think.n.toLocaleString()} FIRs · {think.scope}</span>
+                <div className="seg" role="group" aria-label={kn ? "ವೀಕ್ಷಣೆ" : "View"}>
+                  <button className={frView === "agent" ? "on" : ""} aria-pressed={frView === "agent"} onClick={() => setFrView("agent")}>{kn ? "ಏಜೆಂಟ್‌ವಾರು" : "By agent"}</button>
+                  <button className={frView === "rank" ? "on" : ""} aria-pressed={frView === "rank"} onClick={() => setFrView("rank")}>{kn ? "ಆದ್ಯತೆವಾರು" : "By priority"}</button>
+                </div>
                 <button onClick={copyThink}>{copied ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ನಕಲಿಸಿ" : "Copy")}</button>
                 <button onClick={runThink}>{kn ? "ಮತ್ತೆ" : "Again"}</button>
-                <button ref={closeRef} onClick={() => setThinkOpen(false)} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close"}>×</button>
+                <button ref={closeRef} className="x" onClick={() => setThinkOpen(false)} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close"}>×</button>
               </header>
-              {!rows.length && <p className="none">{kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಗಮನಾರ್ಹ ಸಂಕೇತವಿಲ್ಲ." : "Nothing stands out in this view."}</p>}
-              <ol>
-                {shown.map((c, i) => (
-                  <li key={i} className={`sev-${c.sev || "low"}`}>
-                    <details>
-                      <summary>
-                        <i className="dot" title={{ high: "High", med: "Medium", low: "Low" }[c.sev || "low"]} />
-                        <b>{c.title}</b>
-                        <em title={c.cls ? EVIDENCE_CLASS[c.cls] : undefined}>{c.agent}{c.cls ? ` · ${c.cls}` : ""}</em>
-                      </summary>
-                      {c.detail && <p>{c.detail}</p>}
-                      {c.evidence?.length > 0 && <ul>{c.evidence.map((e, k) => <li key={k}>{e}</li>)}</ul>}
-                      {c.next?.length > 0 && (
-                        <div className="next">
-                          {/* Hands the record to a console agent: the finding says what is there, the agent works it. */}
-                          {c.next.map((x) => (
-                            <button key={x.cmd} onClick={() => { setThinkOpen(false); consoleRef.current?.run(x.cmd); }}>{x.label}</button>
-                          ))}
-                        </div>
-                      )}
-                    </details>
-                  </li>
-                ))}
-              </ol>
-              {rows.length > 5 && (
-                <button className="more" onClick={() => setShowAllFindings((v) => !v)}>
-                  {showAllFindings ? (kn ? "ಕಡಿಮೆ ತೋರಿಸಿ" : "Show fewer") : `${kn ? "ಇನ್ನೂ" : "Show"} ${rows.length - 5} ${kn ? "ತೋರಿಸಿ" : "more"}`}
-                </button>
+
+              {think.lead && (
+                <div className={`lead sev-${think.lead.sev || "low"}`}>
+                  <small><i className="dot" />{kn ? "ಪ್ರಮುಖ ಅಂಶ" : "Key takeaway"}</small>
+                  <b>{think.lead.title}</b>
+                  {think.lead.detail && <p>{think.lead.detail}</p>}
+                </div>
               )}
+
+              <div className="sum">
+                <span><b>{think.total}</b>{kn ? "ಸಂಕೇತಗಳು" : think.total === 1 ? "signal" : "signals"}</span>
+                {["high", "med", "low"].map((k) => (
+                  <span key={k} className={`sev-${k}`}><i className="dot" /><b>{think.counts?.[k] || 0}</b>{sevName[k]}</span>
+                ))}
+                <span><b>{reported}/{AGENTS.length}</b>{kn ? "ಏಜೆಂಟ್‌ಗಳು ವರದಿ ಮಾಡಿವೆ" : "agents reported"}</span>
+              </div>
+
+              {!rows.length && <p className="none">{none}</p>}
+              {frView === "agent" ? (
+                <div className="grid">
+                  {groups.map((g) => (
+                    <article key={g.id} className={g.items.length ? "" : "quiet"}>
+                      <h3>{g.name}<em>{g.items.length}</em></h3>
+                      <p className="how">{g.how}</p>
+                      {g.items.length ? <ol>{g.items.map((c, i) => finding(c, i, false))}</ol> : <p className="none">{none}</p>}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <ol className="flat">{rows.map((c, i) => finding(c, i, true))}</ol>
+              )}
+
+              <footer>
+                {kn
+                  ? "K ತಿಳಿದಿರುವುದು: ದಾಖಲೆಗಳಿಂದ ಓದಿದ್ದು · D ಪಡೆದದ್ದು: ಅವುಗಳಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ್ದು · U ತಿಳಿಯದ್ದು: ಈ ವೀಕ್ಷಣೆ ತೋರಿಸಲಾಗದ್ದು. ಎಲ್ಲವೂ ಈ ವೀಕ್ಷಣೆಯ FIR ಗಳಿಂದ ಎಣಿಸಲಾಗಿದೆ."
+                  : "K Known: read from the records · D Derived: calculated from them · U Unknown: what this view cannot show. Everything is counted from the FIRs in this view; the Forecast line comes from the live anomaly scan."}
+              </footer>
             </section>
           </div>
         );
