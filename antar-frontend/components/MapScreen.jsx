@@ -202,6 +202,26 @@ function FitToKarnataka({ geo, selectedDistrict }) {
 // Hotspot readings already fetched this session, by crime type and date.
 const GI_CACHE = new Map();
 
+// Cases per zone in the `days`+1 days ending on a date, from the map's Gi* window. Kept by
+// date and crime type, so a second district on the same date is answered from memory.
+const WINDOW_CACHE = new Map();
+function windowCounts(days, endDate, crimeType, signal) {
+  const key = `${crimeType}|${endDate}|${days}`;
+  if (WINDOW_CACHE.has(key)) return Promise.resolve(WINDOW_CACHE.get(key));
+  const q = new URLSearchParams({ days: String(days), end_date: endDate });
+  if (crimeType) q.set("crime_type", crimeType);
+  return fetch(`${API}/api/map/gi_star?${q}`, { signal })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      if (!d?.zones) return null;
+      const w = { end: d.end_date, by: Object.fromEntries(d.zones.map((z) => [z.zone, z.observed || 0])) };
+      WINDOW_CACHE.set(key, w);
+      if (WINDOW_CACHE.size > 80) WINDOW_CACHE.delete(WINDOW_CACHE.keys().next().value);
+      return w;
+    })
+    .catch(() => null);
+}
+
 export default function MapScreen() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -438,7 +458,23 @@ export default function MapScreen() {
     setDcardBusy(true);
     fetch(`${API}/api/map/district/${encodeURIComponent(districtZone)}?${q}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("district"))))
-      .then(setDistrictDetail)
+      .then((d) => {
+        if (d.as_of) { setDistrictDetail(d); return; }
+        // A server from before the dated card answers with today's figures whatever the
+        // date. The same counts are then read from the map's own date window (gi_star),
+        // which every version of the server anchors on a date: that day, the 7 and 30
+        // days ending on it, and 60 to get the 30 before. Each figure is filled in as it
+        // arrives; one not yet in shows as "…".
+        const k = `${districtZone}|${endDate}|${crimeType}`;
+        setDistrictDetail({ ...d, _k: k, as_of: endDate, from_windows: true, top_all: d.top_crimes,
+                            day_count: null, last_7: null, last_30: null, sum_60: null });
+        [[0, "day_count"], [6, "last_7"], [29, "last_30"], [59, "sum_60"]].forEach(([days, field]) => {
+          windowCounts(days, endDate, crimeType, ctrl.signal).then((w) => {
+            if (!w || ctrl.signal.aborted) return;
+            setDistrictDetail((prev) => (prev?._k === k ? { ...prev, as_of: w.end || prev.as_of, [field]: w.by[districtZone] || 0 } : prev));
+          });
+        });
+      })
       .catch((e) => { if (e?.name !== "AbortError") setDistrictDetail({ zone: districtZone, empty: true }); })
       .finally(() => { if (!ctrl.signal.aborted) setDcardBusy(false); });
     return () => ctrl.abort();
@@ -672,7 +708,7 @@ export default function MapScreen() {
   // Antar Intelligence - date & place synthesis (shown inside the report window)
   const intel = useMemo(() => {
     const items = [];
-    if (selectedDistrict && districtDetail && !districtDetail.empty) items.push({
+    if (selectedDistrict && districtDetail && !districtDetail.empty && !districtDetail.from_windows) items.push({
       dot: "var(--green)",
       text: `Hyper-local analysis for ${districtDetail.zone}: ${districtDetail.fir_count} recent FIRs. Risk level classified as ${districtDetail.risk_level}, with a ${districtDetail.trend} trend.`,
       src: "district cache (live)",
@@ -1307,7 +1343,18 @@ export default function MapScreen() {
           {/* The selected district, first in the column so a click on the map is answered
               where the eye already is. It used to sit under the summary, out of view. */}
           {districtDetail && (() => {
-            const d = districtDetail, dated = !!d.as_of;
+            const raw = districtDetail, dated = !!raw.as_of;
+            // counted from the date windows: the 30 before is 60 less 30, and the trend and
+            // risk use the server's own rule (district_cache._risk_level / _trend_str)
+            const d = !raw.from_windows ? raw : (() => {
+              const cur = raw.last_30, prior = raw.sum_60 == null || cur == null ? null : Math.max(0, raw.sum_60 - cur);
+              if (prior == null) return { ...raw, prior_30: null, trend: null, risk_level: null, top_crimes: null };
+              const ratio = cur / Math.max(1, prior), pct = prior ? Math.round(((cur - prior) / prior) * 100) : null;
+              return { ...raw, prior_30: prior, top_crimes: null,
+                trend: pct == null ? (cur > 0 ? "+100%" : "—") : `${pct >= 0 ? "+" : ""}${pct}%`,
+                risk_level: cur >= 80 || ratio >= 1.5 ? "High" : cur >= 30 || ratio >= 1.1 ? "Medium" : "Low" };
+            })();
+            const n = (v) => (v == null ? "…" : v);
             const nice = (iso) => { const x = new Date(`${iso}T00:00:00`); return Number.isNaN(x.getTime()) ? iso : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); };
             const lower = (t) => { const w = String(t || "").replace(/_/g, " ").toLowerCase(); return w.charAt(0).toUpperCase() + w.slice(1); };
             return (
@@ -1321,17 +1368,17 @@ export default function MapScreen() {
                   {!d.empty && dated && (
                     <>
                       <div className="mx-dcard-nums">
-                        <div><b>{d.day_count}</b><span>{kn ? "ಈ ದಿನ" : "On this day"}</span></div>
-                        <div><b>{d.last_7}</b><span>{kn ? "ಕಳೆದ 7 ದಿನ" : "Last 7 days"}</span></div>
-                        <div><b>{d.last_30}</b><span>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</span></div>
+                        <div><b>{n(d.day_count)}</b><span>{kn ? "ಈ ದಿನ" : "On this day"}</span></div>
+                        <div><b>{n(d.last_7)}</b><span>{kn ? "ಕಳೆದ 7 ದಿನ" : "Last 7 days"}</span></div>
+                        <div><b>{n(d.last_30)}</b><span>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</span></div>
                       </div>
-                      <div className="mx-dcard-bar"><div className="fill" style={{ width: `${Math.min(100, (d.last_30 / Math.max(d.last_30, d.prior_30, 1)) * 100)}%` }} /></div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಹಿಂದಿನ 30 ದಿನ" : "30 days before that"}</span><span className="v">{d.prior_30} · {d.trend}</span></div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಅಪಾಯದ ಮಟ್ಟ" : "Risk level"}</span><span className={`mx-dcard-badge ${riskClass(d.risk_level)}`}>{d.risk_level}</span></div>
+                      <div className="mx-dcard-bar"><div className="fill" style={{ width: `${Math.min(100, ((d.last_30 || 0) / Math.max(d.last_30 || 0, d.prior_30 || 0, 1)) * 100)}%` }} /></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಹಿಂದಿನ 30 ದಿನ" : "30 days before that"}</span><span className="v">{d.prior_30 == null ? "…" : `${d.prior_30} · ${d.trend}`}</span></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಅಪಾಯದ ಮಟ್ಟ" : "Risk level"}</span>{d.risk_level ? <span className={`mx-dcard-badge ${riskClass(d.risk_level)}`}>{d.risk_level}</span> : <span className="v">…</span>}</div>
                       <div className="mx-dcard-row"><span className="k">{kn ? "ಪರಿಹರಿಸಲಾಗದ (ಒಟ್ಟು)" : "Unsolved, all time"}</span><span className="v critical">{d.open_unsubs_count?.toLocaleString("en-IN") ?? "--"}</span></div>
                       <div className="mx-dcard-top">
-                        <span className="k">{kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (30 ದಿನ)" : "Most recorded, last 30 days"}</span>
-                        <span>{d.top_crimes?.length ? d.top_crimes.map(lower).join(", ") : (kn ? "ಯಾವುದೂ ಇಲ್ಲ" : "Nothing recorded in this window")}</span>
+                        <span className="k">{d.from_windows ? (kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (ಒಟ್ಟು)" : "Most recorded, all time") : (kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (30 ದಿನ)" : "Most recorded, last 30 days")}</span>
+                        <span>{(d.from_windows ? d.top_all : d.top_crimes)?.length ? (d.from_windows ? d.top_all.slice(0, 3) : d.top_crimes).map(lower).join(", ") : (kn ? "ಯಾವುದೂ ಇಲ್ಲ" : "Nothing recorded in this window")}</span>
                       </div>
                     </>
                   )}
