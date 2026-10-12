@@ -349,8 +349,11 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
     # the calibration set: "attempt to murder in Kodagu in 2018" answered 197 (all years)
     # against a true 25. A wider pattern lower in this same file already disagreed with
     # this one about what a year looks like.
+    # No upper bound either: a year past the register ("the split for 2028") used to fail
+    # the range test here, lose its filter the same way, and be answered with all years.
+    # A year the register does not hold is refused by query_agent.outside_record().
     year_match = re.search(r"\b(20[0-3]\d)\b", low)
-    if year_match and 2000 <= int(year_match.group(1)) <= _dt.date.today().year + 1:
+    if year_match:
         yr = year_match.group(1)
         date_from = f"{yr}-01-01"
         date_to = f"{yr}-12-31"

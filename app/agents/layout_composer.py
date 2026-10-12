@@ -143,8 +143,24 @@ def build_custody(query: dict, mode: str = "offline") -> dict | None:
         if tmpl and getattr(tmpl, "description", None):
             method = f"{method} · {tmpl.description}"
 
+        # A grouped answer returns one row per group, each carrying its count in `n`. The
+        # strip says how many RECORDS stand behind the answer, not how many groups came
+        # back: the IPC/SLL split read "400 records" (its group limit) under a headline
+        # about 996,000 FIRs. The groups are capped, so their sum understates it too; the
+        # figure is the count over the template's own filters, as the answer's headline is.
+        counts = [r.get("n") for r in rows if isinstance(r, dict)]
+        grouped = len(counts) == len(rows) and all(isinstance(n, int) and not isinstance(n, bool) for n in counts)
+        behind = len(rows)
+        if grouped:
+            behind = sum(counts)
+            try:
+                from app.agents.answer_writer import _total_like
+                behind = max(behind, _total_like(tid, query.get("params") or {}) or 0)
+            except Exception:
+                pass
         return {
-            "record_count": len(rows),
+            "record_count": behind,
+            "groups": len(rows) if grouped else None,
             "source": _TEMPLATE_SOURCE.get(tid, "crimes"),
             "as_of": data_today().isoformat(),
             "range": _date_range(rows),

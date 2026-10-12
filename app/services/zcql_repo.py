@@ -486,17 +486,40 @@ def period_is_known(period: Optional[str]) -> bool:
     return not period or resolve_period(period) != (None, None)
 
 
+@lru_cache(maxsize=1)
+def data_first_year() -> int:
+    """The year of the earliest FIR on the register. With data_today() it bounds what a
+    question about "the year N" can be answered from."""
+    try:
+        import sqlite3
+        from app.core.db_path import DB_PATH
+        con = sqlite3.connect(str(DB_PATH))
+        try:
+            low = con.execute("SELECT MIN(date) FROM FIRs WHERE date >= '1990'").fetchone()[0]
+        finally:
+            con.close()
+        if low:
+            return int(str(low)[:4])
+    except Exception:
+        pass
+    return 2016
+
+
 def _date_range(date_from: Any, date_to: Any, period: Any) -> tuple[Optional[str], Optional[str]]:
     """Prefer valid explicit ISO dates; otherwise resolve the period keyword.
     Guards the LLM's bad dates: a window starting after the dataset's last record (e.g. a
     wall-clock 'this month' computed past the world's end) is dropped in favour of the
     period keyword — which itself re-anchors to the data; an end date past the data is
-    clamped so "…to today" windows stay non-empty."""
+    clamped so "…to today" windows stay non-empty.
+
+    With NO period keyword to fall back on, a window that starts after the last record is
+    kept as it is and matches nothing. It used to be dropped altogether, which removed the
+    date filter: "the split for 2028" was answered with every year on record."""
     df, dt = _valid_iso_date(date_from), _valid_iso_date(date_to)
     if df and dt:
         anchor = data_today().isoformat()
         if df > anchor:
-            return resolve_period(period)
+            return resolve_period(period) if period else (df, dt)
         return df, min(dt, anchor)
     return resolve_period(period)
 

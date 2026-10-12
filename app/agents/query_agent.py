@@ -263,6 +263,53 @@ _RANK_RE = re.compile(r"\b(most|highest|top|rank\w*|which (district|zone|city|st
                       r"least|lowest|fewest|compare|hotspots?)\b", re.I)
 
 
+# A year standing on its own in the question: not part of an FIR number (104/2028), a
+# plate (KA-02-M-2028) or a time ("2030 hrs").
+_YEAR_ASKED_RE = re.compile(r"(?<![\w/.-])(20\d\d)(?![\w/-])(?!\s*(?:hrs?|hours)\b)", re.I)
+_ACT_YEAR_RE = re.compile(r"\bact,?\s*(?:of\s*)?$", re.I)
+
+
+def outside_record(user_text: str, lang: str = "en") -> tuple[str, list[str]] | None:
+    """The answer to a question about a year the register does not hold: that it does not.
+
+    Returns (message, follow-up questions), or None when every year named is on record.
+
+    This is checked before any template runs, because a date window that matches nothing
+    is exactly the kind of filter that gets relaxed on the way to an answer: "IPC/BNS vs
+    SLL split for 2028?" came back as the split for all years, headed as a finding and
+    tagged Derived. An officer who asks about a year must get that year or be told there
+    is nothing for it. Questions about what is expected ahead never reach this point - the
+    forecast branch above takes them.
+    """
+    from app.services.zcql_repo import data_first_year, data_today
+    text = user_text or ""
+    last, first = data_today(), data_first_year()
+    for m in _YEAR_ASKED_RE.finditer(text):
+        year = int(m.group(1))
+        if year > last.year:
+            side = "after"
+        elif year < first and not _ACT_YEAR_RE.search(text[:m.start()]):
+            side = "before"            # "Information Technology Act 2000" names a law, not a period
+        else:
+            continue
+        through = f"{last.day} {last.strftime('%b %Y')}"
+        if lang == "kn":
+            msg = (f"{year} ಕ್ಕೆ ಯಾವುದೇ ದಾಖಲೆಗಳಿಲ್ಲ. ದಾಖಲಾತಿಯಲ್ಲಿ {first} ರಿಂದ {through} "
+                   f"ರವರೆಗಿನ FIR ಗಳು ಮಾತ್ರ ಇವೆ, ಆದ್ದರಿಂದ ಆ ವರ್ಷಕ್ಕೆ ಎಣಿಸಲು ಏನೂ ಇಲ್ಲ.")
+        elif side == "after":
+            msg = (f"There are no records for {year}. The register holds FIRs from {first} "
+                   f"to {through}, so there is nothing to count for that year yet. "
+                   f"I can answer this for any year from {first} to {last.year}, or give a forecast "
+                   f"for the days ahead.")
+        else:
+            msg = (f"There are no records for {year}. The register starts in {first} "
+                   f"and runs to {through}. I can answer this for any year in that range.")
+        swap = lambda y: text[:m.start(1)] + str(y) + text[m.end(1):]
+        nearest = [last.year, last.year - 1] if side == "after" else [first, first + 1]
+        return msg, [swap(y) for y in nearest]
+    return None
+
+
 def wants_absconding(text: str) -> bool:
     t = text or ""
     return bool(_ABSCOND_RE.search(t)) or any(k in t for k in _ABSCOND_KN)
@@ -787,6 +834,19 @@ async def query_agent_run(
             if res["template_id"] == "FORECAST":
                 _set_cached_query(cache_key, res)
             return res
+
+    # A year the register does not hold: say so, before any template can widen the question.
+    beyond = outside_record(user_text, lang or "en")
+    if beyond:
+        msg, again = beyond
+        log_step(session_id, "query", "outside_record", user_text[:80], msg[:80],
+                 int((time.time() - t0) * 1000))
+        return {"answer": msg, "rows": [], "citations": [], "template_id": "UNRESOLVED",
+                "params": {}, "agent": "query", "suggested_followups": again,
+                "reasoning": [{"step": "filters",
+                               "detail": "Refused: the year asked about is outside the register. "
+                                         "Answering for other years would change the question."}],
+                "llm_answer": False}
 
     if selector is not None:
         choice = await selector(user_text, lang, entities, history=history)
