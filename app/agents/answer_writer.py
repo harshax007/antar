@@ -144,6 +144,9 @@ def _scope(params: dict, kn: bool) -> str:
     df = None if _blank(df) else df
     dt = None if _blank(dt) else dt
     per = None if _blank(per) else per
+    label = params.get("period_label")
+    if label and df and dt and not kn:
+        return str(label)              # "in March 2023", "since 2020", "in the last 2 years"
     if df and dt:
         df, dt = str(df), str(dt)
         if df[:4] == dt[:4] and df[5:10] == "01-01" and dt[5:10] == "12-31":
@@ -376,7 +379,8 @@ def _w_rank(rows, kn, params, template_id):
             what = ("crimes against women" if women else
                     (" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "cases") + _absq(params, False)
         amount = ("the least" if what == "crime" else "the fewest") if asc else "the most"
-        share_s = f", {share}% of the Karnataka total" if share is not None else ""
+        _in = ", ".join(params.get("zones") or [])
+        share_s = (f", {share}% of the total in {_in}" if _in else f", {share}% of the Karnataka total") if share is not None else ""
         runners = _runners_up(rows, dim, False)
         # "(640) (across all years …)" read as a stutter; after the runners-up the scope
         # follows as a clause instead.
@@ -634,11 +638,32 @@ def _w_linked(rows, kn, params, template_id):
     return lines
 
 
+def _statq(params: dict, kn: bool) -> str:
+    """The status filter, said in the headline. A list run with status=Undetected used to be
+    headed "445 burglary cases in Tumakuru", with nothing to say they were the undetected ones."""
+    st = [s for s in (params.get("status") or []) if s]
+    if not st:
+        return ""
+    try:
+        from app.agents.system_catalog import STATUS_CLOSED, STATUS_OPEN
+        if set(st) == set(STATUS_OPEN):
+            return " (ಇನ್ನೂ ತೆರೆದಿರುವ)" if kn else " that are still open"
+        if set(st) == set(STATUS_CLOSED):
+            return " (ಮುಕ್ತಾಯಗೊಂಡ)" if kn else " that are closed"
+    except Exception:
+        pass
+    names = list(dict.fromkeys(_status(s, kn) for s in st))
+    shown = ", ".join(names[:3]) + ("…" if len(names) > 3 else "")
+    return f" ({shown})" if kn else f" with status {shown}"
+
+
 def _w_list(rows, kn, params, template_id):
     """T1 / T12 — case lists ("theft cases in Rajajinagar", "recent crimes")."""
     cts = params.get("crime_types") or []
     zones = params.get("zones") or []
-    total = _total_like(template_id, params)
+    # Rows that came back only after filters were dropped are "the closest records", not a
+    # count of anything: with no filters left, the total would be the whole register.
+    total = None if params.get("related_only") else _total_like(template_id, params)
     r0 = rows[0]
     latest, zone0 = _date(r0.get("occurred_at")), r0.get("zone") or "—"
     scoped = bool(params.get("date_from") or params.get("period"))
@@ -649,7 +674,7 @@ def _w_list(rows, kn, params, template_id):
         count = f"ಒಟ್ಟು **{_fmt(total)}** {what} ದಾಖಲಾಗಿವೆ{scope}; " if total else ""
         lead = f"[VERIFIED] {where}{count}ಇತ್ತೀಚಿನ {len(rows)} ಕೆಳಗಿವೆ — ಕೊನೆಯದು **{latest}** ({zone0})."
     else:
-        what = ((" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "cases") + _absq(params, False)
+        what = ((" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "cases") + _absq(params, False) + _statq(params, False)
         where = f" in {', '.join(zones)}" if zones else ""
         scope = f" {_scope(params, False)}" if scoped else ""
         if total:
@@ -791,7 +816,7 @@ def _w_count(rows, kn, params, template_id):
         lead = f"[VERIFIED] {_in_loc(where, True)} ಒಟ್ಟು **{_fmt(total)}** {what} ದಾಖಲಾಗಿವೆ ({scope})."
     else:
         what = ("crimes against women" if women else
-                (" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "FIRs") + _absq(params, False)
+                (" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "FIRs") + _absq(params, False) + _statq(params, False)
         lead = f"[VERIFIED] **{_fmt(total)}** {what} are on record {_in_loc(where, False)} ({scope})."
     lines = [lead]
     if not params.get("date_from") and not _absc(params):
@@ -1404,8 +1429,18 @@ def write_answer(rows: list[dict], template_id: str, lang: str = "en",
     if not lines:
         return None
     up = p.get("unknown_place")
-    if up:
+    if up and not p.get("unapplied"):          # otherwise it is said in the lead, below
         lines = list(lines)
         lines.insert(1, f"• ಗಮನಿಸಿ: “{up}” ಎಂಬ ಜಿಲ್ಲೆ/ಠಾಣೆ ದಾಖಲೆಯಲ್ಲಿಲ್ಲ — ಕರ್ನಾಟಕದಾದ್ಯಂತದ ಫಲಿತಾಂಶ ತೋರಿಸಲಾಗಿದೆ." if kn else
                         f"• Note: “{up}” isn't a district or police station on record — showing all of Karnataka instead.")
+    # What the officer named and the query could not apply goes FIRST, inside the lead
+    # sentence: an answer that is broader than the question must say so before it gives a
+    # number, not in a trail nobody opens.
+    notes = [n for n in (p.get("unapplied") or []) if n]
+    if notes and lines:
+        lines = list(lines)
+        said = ("ಕೇಳಿದ್ದಕ್ಕಿಂತ ವಿಶಾಲವಾದ ಉತ್ತರ: " if kn else "This answers a broader question than you asked: ") \
+            + "; ".join(notes) + "."
+        tag = re.match(r"^\s*(\[[A-Z ]+\]\s*)?", lines[0])
+        lines[0] = f"{tag.group(0)}{said} {lines[0][tag.end():]}"
     return "\n".join(line for line in lines if line)

@@ -512,14 +512,14 @@ def _date_range(date_from: Any, date_to: Any, period: Any) -> tuple[Optional[str
     period keyword — which itself re-anchors to the data; an end date past the data is
     clamped so "…to today" windows stay non-empty.
 
-    With NO period keyword to fall back on, a window that starts after the last record is
-    kept as it is and matches nothing. It used to be dropped altogether, which removed the
-    date filter: "the split for 2028" was answered with every year on record."""
+    Dropping a future window removes the date filter, so it must only ever happen to a date
+    the model invented. A period the OFFICER named that lies after the last record ("the
+    split for 2028") never reaches here: query_agent.outside_record() refuses it first."""
     df, dt = _valid_iso_date(date_from), _valid_iso_date(date_to)
     if df and dt:
         anchor = data_today().isoformat()
         if df > anchor:
-            return resolve_period(period) if period else (df, dt)
+            return resolve_period(period)
         return df, min(dt, anchor)
     return resolve_period(period)
 
@@ -975,6 +975,7 @@ Order = Annotated[Literal["desc", "asc"], BeforeValidator(_as_order)]
 
 class ZoneHotspots(BaseModel):
     crime_types: CrimeTypeList = Field(default_factory=list)
+    zones: StrList = Field(default_factory=list)      # rank the stations inside these districts
     date_from: Optional[str] = None
     date_to: Optional[str] = None
     period: Optional[str] = None
@@ -993,6 +994,9 @@ def _t11(p: ZoneHotspots) -> QuerySpec:
     filters = []
     if p.crime_types:
         filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    zones = resolve_zones(p.zones)
+    if zones:
+        filters.append(Filter("zone", "in", zones))
     df, dt = _date_range(p.date_from, p.date_to, p.period)
     if df and dt:
         filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))

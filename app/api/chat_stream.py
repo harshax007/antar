@@ -646,7 +646,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     # dropped — the blind spot that let "how many riots cases" return the whole registry.
     try:
         from app.agents.query_agent import resolution_fidelity
-        _fid, _gaps = resolution_fidelity(query_text, query.get("params") or {})
+        _fid, _gaps = resolution_fidelity(query_text, query.get("params") or {}, template_id)
     except Exception:                       # noqa: BLE001 — never fail an answer on this
         _fid, _gaps = 1.0, []
     conf = _answer_confidence(routing_conf, rows, citations, lang, _fid, _gaps)

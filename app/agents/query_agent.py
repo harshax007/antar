@@ -160,7 +160,7 @@ def _named_crime_phrase(user_text: str) -> str | None:
     return phrase
 
 
-def resolution_fidelity(user_text: str, params: dict | None) -> tuple[float, list[str]]:
+def resolution_fidelity(user_text: str, params: dict | None, template_id: str | None = None) -> tuple[float, list[str]]:
     """(fidelity 0..1, human-readable gaps) — how much of the question actually ran.
 
     1.0 means everything the officer named reached the query. Each gap is something the
@@ -205,6 +205,13 @@ def resolution_fidelity(user_text: str, params: dict | None) -> tuple[float, lis
     if p.get("unknown_place"):
         gaps.append(f'place "{p["unknown_place"]}" is not a district or station on record')
         score -= 0.35
+
+    # What the answer itself says it did not apply (unapplied(), set on the params by
+    # query_agent_run) counts against the score too.
+    for note in p.get("unapplied") or []:
+        if not any(note[:24] in g or g[:24] in note for g in gaps):
+            gaps.append(note)
+            score -= 0.25
 
     return max(0.0, round(score, 3)), gaps
 
@@ -282,8 +289,46 @@ def outside_record(user_text: str, lang: str = "en") -> tuple[str, list[str]] | 
     forecast branch above takes them.
     """
     from app.services.zcql_repo import data_first_year, data_today
+    from app.agents.timespan import FUTURE_RE, find_span
     text = user_text or ""
     last, first = data_today(), data_first_year()
+    through = f"{last.day} {last.strftime('%b %Y')}"
+    kn = lang == "kn"
+
+    # A place in another state. The register is Karnataka's; the count for all of Karnataka
+    # is not an answer about Chennai.
+    low = " ".join(text.lower().split())
+    for place in _ELSEWHERE:
+        if re.search(rf"(?<![a-z]){re.escape(place)}(?![a-z])", low):
+            name = place.title()
+            if kn:
+                return (f"{name} ಕರ್ನಾಟಕದ ಹೊರಗಿದೆ. ಈ ದಾಖಲಾತಿಯಲ್ಲಿ ಕರ್ನಾಟಕದ ಜಿಲ್ಲೆ ಮತ್ತು ಠಾಣೆಗಳ FIR ಗಳು ಮಾತ್ರ ಇವೆ."), []
+            return (f"{name} is outside Karnataka. This register holds FIRs from Karnataka's districts and "
+                    f"police stations only, so there is nothing to count there. Name a Karnataka district, "
+                    f"for example Bengaluru City or Mysuru City."), []
+
+    # A month, quarter or day that has not happened yet, or that is before the first FIR.
+    span = find_span(text, last, first)
+    if span and span.kind not in ("year", "years"):
+        what = re.sub(r"^(?:in|on)\s+", "", span.label).split(",")[0]
+        if span.date_from > last.isoformat():
+            if kn:
+                return (f"{what} ಕ್ಕೆ ಇನ್ನೂ ದಾಖಲೆಗಳಿಲ್ಲ. ದಾಖಲಾತಿಯಲ್ಲಿ {first} ರಿಂದ {through} ರವರೆಗಿನ FIR ಗಳು ಮಾತ್ರ ಇವೆ."), []
+            return (f"There are no records for {what} yet. The register holds FIRs from {first} to {through}, "
+                    f"so there is nothing to count for that period."), []
+        if span.date_to < f"{first}-01-01":
+            return (f"There are no records for {what}. The register starts in {first} and runs to {through}."), []
+
+    # Time that has not happened, said without a date ("next year", "tomorrow"). A request
+    # for a forecast was already answered above; what reaches here asks for a count.
+    fut = FUTURE_RE.search(text)
+    if fut:
+        if kn:
+            return (f"“{fut.group(0)}” ಇನ್ನೂ ಬಂದಿಲ್ಲ: ದಾಖಲಾತಿಯಲ್ಲಿ {through} ರವರೆಗಿನ FIR ಗಳು ಮಾತ್ರ ಇವೆ."), []
+        return (f"“{fut.group(0)}” has not happened yet: the register holds FIRs up to {through}, so there is "
+                f"nothing to count. For what is expected, ask for a forecast, for example "
+                f"“what is expected next week in Mysuru City”."), ["What is expected next week in Bengaluru City?"]
+
     for m in _YEAR_ASKED_RE.finditer(text):
         year = int(m.group(1))
         if year > last.year:
@@ -292,7 +337,6 @@ def outside_record(user_text: str, lang: str = "en") -> tuple[str, list[str]] | 
             side = "before"            # "Information Technology Act 2000" names a law, not a period
         else:
             continue
-        through = f"{last.day} {last.strftime('%b %Y')}"
         if lang == "kn":
             msg = (f"{year} ಕ್ಕೆ ಯಾವುದೇ ದಾಖಲೆಗಳಿಲ್ಲ. ದಾಖಲಾತಿಯಲ್ಲಿ {first} ರಿಂದ {through} "
                    f"ರವರೆಗಿನ FIR ಗಳು ಮಾತ್ರ ಇವೆ, ಆದ್ದರಿಂದ ಆ ವರ್ಷಕ್ಕೆ ಎಣಿಸಲು ಏನೂ ಇಲ್ಲ.")
@@ -308,6 +352,171 @@ def outside_record(user_text: str, lang: str = "en") -> tuple[str, list[str]] | 
         nearest = [last.year, last.year - 1] if side == "after" else [first, first + 1]
         return msg, [swap(y) for y in nearest]
     return None
+
+
+# Places an officer may name that are not in Karnataka. Matched as whole words.
+_ELSEWHERE = (
+    "new delhi", "delhi", "mumbai", "bombay", "chennai", "madras", "hyderabad", "pune", "kolkata", "calcutta",
+    "ahmedabad", "jaipur", "lucknow", "kochi", "cochin", "thiruvananthapuram", "trivandrum", "coimbatore",
+    "panaji", "visakhapatnam", "vizag", "nagpur", "surat", "bhopal", "patna", "chandigarh", "noida",
+    "gurgaon", "gurugram", "hosur", "kasaragod", "goa", "kerala", "tamil nadu", "tamilnadu",
+    "andhra pradesh", "telangana", "maharashtra", "gujarat", "rajasthan", "uttar pradesh", "bihar",
+    "punjab", "west bengal", "odisha", "madhya pradesh", "haryana", "assam",
+)
+
+# Things a question can ask for that no template can filter on. Each is reported with the
+# reason, because "the register has no time of day" is itself useful to an officer.
+_CANNOT_FILTER = (
+    (re.compile(r"\b(?:at night|by night|night[- ]?time|during the (?:day|night)|day[- ]?time|in the (?:morning|"
+                r"evening|afternoon)|after dark|around midnight|early hours|between \d{1,2}\s*(?:am|pm)[^.?!]{0,20})", re.I),
+     "the register records the date of a case and not the time of day, so {q} was not applied"),
+    (re.compile(r"\b(?:on |during |over )?(?:the )?(?:weekends?|weekdays?|(?:mon|tues|wednes|thurs|fri|satur|sun)days?)\b", re.I),
+     "cases cannot be filtered by day of the week, so {q} was not applied"),
+    (re.compile(r"\b(?:with|using|by)\s+(?:an?\s+|the\s+)?(?:knife|knives|guns?|firearms?|pistols?|revolvers?|"
+                r"weapons?|acid|swords?|machetes?|axes?|iron rods?|sticks?)\b", re.I),
+     "cases cannot be filtered by weapon or method, so {q} was not applied"),
+    (re.compile(r"(?:\b(?:worth|valued? at|value of|above|over|more than|exceeding|below|under|less than)\b[^.?!]{0,24})?"
+                r"(?:₹\s*[\d,.]+\s*(?:lakhs?|crores?)?|\b[\d,.]+\s*(?:lakhs?|crores?)\b|\brs\.?\s*[\d,.]+|\b[\d,.]+\s*rupees\b)", re.I),
+     "the register does not hold the value of property, so {q} was not applied"),
+)
+_WHO_RE = re.compile(r"\b(?:juveniles?|minors?|by (?:a |the )?(?:wom[ae]n|m[ae]n|females?|males?|girls?|boys?)|"
+                     r"(?:wom[ae]n|m[ae]n) (?:who |that )?(?:were |was |are |is |got |have been )?(?:arrested|accused|caught|convicted|charged|booked|involved)|"
+                     r"(?:female|male|wom[ae]n) (?:accused|offenders?|suspects?)|"
+                     r"(?:female|male|wom[ae]n|child|minor|elderly|senior citizen) victims?|"
+                     r"aged? (?:above|below|over|under|between) \d+|(?:above|below|over|under) \d+ years?(?: old)?|"
+                     r"senior citizens?)\b", re.I)
+_THRESHOLD_RE = re.compile(r"\b(?:more than|over|at least|fewer than|less than|under|above|below|exceeding)\s+\d[\d,]*\s+"
+                           r"(?:\w+\s+)?(?:cases|firs|crimes|incidents|offences|thefts|murders|robberies|burglaries|complaints)\b", re.I)
+_STATUS_WORD_RE = re.compile(r"\b(?:acquitt\w+|convicted|pending trial|undetected|un ?traced|charge[- ]?sheeted|"
+                             r"false cases?|compounded|abated|bound over)\b", re.I)
+# Words that sit where a crime name would ("show me all cases in ...") and are not one.
+_NOT_A_CRIME_WORD = {"show", "me", "list", "give", "get", "find", "display", "tell", "about", "see", "view",
+                     "what", "which", "where", "when", "number", "count", "latest", "last", "first", "top",
+                     "trial", "investigation", "under", "status", "district", "station", "zone", "city",
+                     "police", "karnataka", "state", "year", "month", "week", "day", "today", "yesterday",
+                     "this", "that", "per", "each", "every", "ipc", "bns", "sll", "please", "can", "you", "us"}
+# Lookups by an identifier: a period named beside them is not a filter they take.
+_NO_PERIOD_CHECK = {"T2", "T9", "T18", "T19", "T20", "T21", "RESEARCH", "FORECAST", "CLARIFY", "NONE", "UNRESOLVED"}
+
+
+def unapplied(user_text: str, template_id: str, params: dict | None) -> list[str]:
+    """What the officer named that the query about to run does not apply.
+
+    Each entry is a clause that finishes the sentence "This answers a broader question than
+    you asked: ...". The answer writer puts that sentence in front of the lead, so a number
+    that is not the number asked for is never the first thing read.
+
+    This reports; it does not refuse. A period, a place or a crime type that cannot exist
+    is refused earlier (outside_record, unresolved_filters). What is left here are filters
+    the chosen template has no room for ("top suspects in 2023") and things the register
+    does not record at all ("at night", "with a knife").
+    """
+    from app.agents.timespan import mentions_time
+    from app.services.zcql_repo import data_first_year, data_today
+    p = params if isinstance(params, dict) else {}
+    text = user_text or ""
+    low = " ".join(text.lower().split())
+    q = lambda s: f"“{' '.join(str(s).split())}”"
+    out: list[str] = []
+
+    try:
+        from app.agents.heuristics import _match_crime_terms, _norm, extract_entities
+        ent = extract_entities(text)
+        named = _match_crime_terms(_norm(text))
+    except Exception:
+        ent, named = {}, []
+
+    # the period
+    if template_id not in _NO_PERIOD_CHECK:
+        timed = any(p.get(k) for k in ("date_from", "date_to", "period", "year", "year_from"))
+        phrase = mentions_time(text, data_today(), data_first_year())
+        if phrase and not timed and not (template_id == "T3" and re.search(r"\d+\s*months?", low)):
+            out.append(f"the period {q(phrase)} was not applied, so this covers every year on record")
+
+    # a crime type or a place, on a template that takes neither
+    if named and template_id in ("T16", "T7", "T4", "T5", "T17") and not p.get("crime_types"):
+        out.append(f"{q(', '.join(str(n).replace('_', ' ').lower() for n in named[:2]))} was not applied, "
+                   f"so this counts every crime type")
+    if ent.get("zones") and template_id in ("T16", "T7", "T11") and not p.get("zones"):
+        out.append(f"{q(', '.join(ent['zones'][:2]))} was not applied, so this covers all of Karnataka")
+    if p.get("unknown_place"):
+        out.append(f"{q(p['unknown_place'])} is not a district or police station on the register, "
+                   f"so this covers all of Karnataka")
+
+    # a crime word the register does not have at all
+    phrase = _named_crime_phrase(text)
+    if phrase and not named and not p.get("crime_types") and template_id in ("T1", "T3", "T8", "T11", "T12", "T13", "T22", "T23"):
+        words = [w for w in re.split(r"[\s\-/&]+", phrase) if w]
+        zone_words = {w.lower() for z in (ent.get("zones") or []) for w in str(z).split()}
+        if (len(words) <= 3 and all(w.isalpha() for w in words) and not _STATUS_WORD_RE.search(phrase)
+                and not any(w in _NOT_A_CRIME_WORD or w in _NOT_A_CRIME or w in zone_words for w in words)):
+            out.append(f"no crime type on the register matches {q(phrase)}, so this counts every crime type")
+
+    # a case status
+    sm = _STATUS_WORD_RE.search(low)
+    if sm and template_id not in ("T8", "T22") and not p.get("status") and not p.get("arrest_status"):
+        out.append(f"the case status {q(sm.group(0))} was not applied")
+
+    # things no template can filter on
+    by_time_of_day = any(" - NIGHT" in str(c).upper() or " - DAY" in str(c).upper() for c in (p.get("crime_types") or []))
+    for rx, why in _CANNOT_FILTER:
+        m = rx.search(low)
+        if not m or (("day of the week" in why) and p.get("dimension") == "weekday"):
+            continue
+        if "time of day" in why and by_time_of_day:
+            continue                    # burglary is filed by day and by night, and that was applied
+        out.append(why.format(q=q(m.group(0))))
+    wm = _WHO_RE.search(low)
+    if wm and template_id != "T7":
+        out.append(f"cases cannot be filtered by the age or gender of the people involved, so {q(wm.group(0))} was not applied")
+    tm = _THRESHOLD_RE.search(low)
+    if tm and template_id not in ("T5", "T19"):
+        out.append(f"the threshold {q(tm.group(0))} was not applied"
+                   + ("; the count beside each name shows which ones pass it" if template_id in ("T11", "T13", "T23") else ""))
+    return list(dict.fromkeys(out))
+
+
+def _after_heal(user_text: str, template_id: str, params: dict, heal, asked: dict) -> dict:
+    """Make a healed answer describe what was actually fetched.
+
+    Self-heal runs when the routed query found nothing, and returns rows from a different
+    query. Two things then went wrong in the answer:
+
+      * rows from the SQL miner were described with empty params, so the headline counted
+        the whole register - "vehicle theft in Udupi" was headed "996,282 cases are on
+        record" above 25 Udupi thefts;
+      * a reroute to another template could drop what the officer named - "vehicle thefts
+        in Udupi in 2023" became the statewide FIR total for 2023.
+
+    The params are rebuilt from what the heal really used, a relaxed result gives no total,
+    and anything named that the new query does not apply is reported like any other gap.
+    """
+    p = dict(params or {})
+    if getattr(heal, "template_id", "") == "MINER":
+        hp = heal.params or {}
+        if getattr(heal, "related_only", False):
+            p = {"related_only": True}          # filters were dropped one by one: no honest total
+        else:
+            p = {k: v for k, v in (("crime_types", hp.get("crime_types")), ("zones", hp.get("zones")),
+                                   ("status", hp.get("statuses"))) if v}
+            if hp.get("year"):
+                p["date_from"], p["date_to"] = f"{hp['year']}-01-01", f"{hp['year']}-12-31"
+            elif hp.get("period"):
+                p["period"] = hp["period"]
+    notes: list[str] = []
+    want = [str(c) for c in (asked or {}).get("crime_types") or []]
+    got = [str(c) for c in p.get("crime_types") or []]
+    extra = [c for c in got if c not in want]
+    if want and extra and template_id in ("T1", "T12"):
+        names = lambda cs: " / ".join(c.replace("_", " ").lower() for c in cs[:3])
+        notes.append(f"nothing is filed as “{names(want)}” with these filters, so this also counts {names(extra)}")
+    try:
+        notes += unapplied(user_text, template_id, p)
+    except Exception:
+        pass
+    if notes:
+        p["unapplied"] = list(dict.fromkeys(notes))
+    return p
 
 
 def wants_absconding(text: str) -> bool:
@@ -905,6 +1114,16 @@ async def query_agent_run(
     # Resolve-or-refuse, BEFORE the template runs: an unresolvable filter must not reach
     # the query, where it would vanish and silently widen the answer. See the note above
     # unresolved_filters().
+    # What the officer named that this template has no room for, or that the register does
+    # not record: carried on the params so the answer says it before it says anything else.
+    if isinstance(params, dict) and template_id in TEMPLATES:
+        try:
+            _notes = unapplied(user_text, template_id, params)
+        except Exception:
+            _notes = []
+        if _notes:
+            params = {**params, "unapplied": _notes}
+
     bad_filters = unresolved_filters(params) if isinstance(params, dict) else {}
     if bad_filters:
         ms = int((time.time() - t0) * 1000)
@@ -942,6 +1161,14 @@ async def query_agent_run(
                 heal = await _self_heal(user_text, answer_lang, template_id, params, [],
                                         history=history, select_llm=select_llm)
             except Exception:
+                heal = None
+        # The miner relaxes filters until something comes back. With nothing parsed from the
+        # question to begin with, what comes back is the whole register, presented as "the
+        # closest related records": 996,282 cases for "suspects with more than 3 cases".
+        if heal and heal.rows and getattr(heal, "template_id", "") == "MINER":
+            _hp = heal.params or {}
+            if not any(_hp.get(k) for k in ("crime_types", "zones", "statuses", "suspect_id",
+                                            "fir_number", "period", "year")):
                 heal = None
         if heal and heal.rows:
             rows = heal.rows
@@ -1000,7 +1227,9 @@ async def query_agent_run(
             if heal and heal.rows:
                 rows = heal.rows
                 citations = heal.citations or extract_citations(rows)
+                _asked = dict(params or {})
                 template_id, params = _adopt_heal_template(heal, template_id, params, rows)
+                params = _after_heal(user_text, template_id, params, heal, _asked)
 
     answer, used_llm, violations = await compose_answer(user_text, rows, answer_lang, template_id,
                                                         compose_llm, params=params)

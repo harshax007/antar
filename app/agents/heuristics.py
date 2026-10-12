@@ -308,9 +308,23 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
     crime_types = _match_crime_terms(low)
     if "snatch" in low and "chain_snatching" not in crime_types:
         crime_types.append("chain_snatching")
-    if "vehicle" in low and "vehicle_theft" not in crime_types:
+    # The word "vehicle" used to add vehicle theft to every question that contained it:
+    # "motor vehicle accidents fatal in Mysuru City" was answered as accidents PLUS thefts.
+    if "vehicle" in low and "vehicle_theft" not in crime_types \
+            and not any("VEHICLE" in str(c).upper() for c in crime_types) and "accident" not in low:
         crime_types.append("vehicle_theft")
-    if re.search(r"\b(women|woman)\b", low) or "ಮಹಿಳೆ" in low:
+    # The register files burglary by day and by night; a question that says which one gets it.
+    if any(str(c).upper() == "BURGLARY" for c in crime_types):
+        _when = ("NIGHT" if re.search(r"\b(at night|by night|night[- ]?time|night)\b", low)
+                 else "DAY" if re.search(r"\b(by day|day[- ]?time|during the day|in the day)\b", low) else None)
+        if _when:
+            crime_types = [f"BURGLARY - {_when}" if str(c).upper() == "BURGLARY" else c for c in crime_types]
+    # "crimes against women" names a category; "chain snatching by women" names who did it,
+    # which is not a crime type (and not something the templates can filter on).
+    if (re.search(r"\b(women|woman)\b", low) and not re.search(
+            r"\bby (?:a |the )?wom[ae]n\b|\bwom[ae]n (?:accused|offenders?|suspects?)\b|"
+            r"\bwom[ae]n (?:who |that )?(?:were |was |are |is |got |have been )?(?:arrested|accused|caught|convicted|charged|booked|involved)\b", low)) \
+            or "ಮಹಿಳೆ" in low:
         crime_types += WOMEN_CRIMES
     crime_types = normalize_crime_types(crime_types)          # canonicalize + de-dup
     zones = _match_places(low)
@@ -329,7 +343,7 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
 
     # Extract limit (e.g. top 10, top 5)
     limit_val = 10
-    top_match = re.search(r"\b(?:top|first|first\s+top|last)\s+(\d+)\b", low)
+    top_match = re.search(r"\b(?:top|first|first\s+top|last)\s+(\d+)\b(?!\s*(?:hours?|days?|weeks?|months?|years?)\b)", low)
     if top_match:
         try:
             limit_val = max(1, min(int(top_match.group(1)), 100))
@@ -352,11 +366,18 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
     # No upper bound either: a year past the register ("the split for 2028") used to fail
     # the range test here, lose its filter the same way, and be answered with all years.
     # A year the register does not hold is refused by query_agent.outside_record().
-    year_match = re.search(r"\b(20[0-3]\d)\b", low)
-    if year_match:
-        yr = year_match.group(1)
-        date_from = f"{yr}-01-01"
-        date_to = f"{yr}-12-31"
+    #
+    # And a year is not the only way to name a period. "March 2023", "Q1 2023", "from
+    # January to March 2023", "15 August 2023", "since 2020", "before 2019", "the last 2
+    # years" were all reduced to a calendar year or lost. app/agents/timespan.py reads the
+    # window that was asked for; `period_label` carries its wording to the answer.
+    period_label, span_kind = None, None
+    from app.agents.timespan import find_span
+    from app.services.zcql_repo import data_first_year, data_today
+    span = find_span(low, data_today(), data_first_year())
+    if span:
+        date_from, date_to = span.date_from, span.date_to
+        period_label, span_kind = span.label, span.kind
     elif "this year" in low or "ಈ ವರ್ಷ" in low:
         period = "this_year"
     elif "last year" in low or "ಹಿಂದಿನ ವರ್ಷ" in low:
@@ -380,12 +401,15 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
         kl = _norm(k)
         if (kl.isascii() and re.search(r"\b" + re.escape(kl) + r"\b", low)) or (not kl.isascii() and kl in low):
             statuses.append(k)
+    if "pending trial" in statuses:
+        statuses = [s for s in statuses if s != "pending"]     # the longer phrase is the one meant
     statuses = normalize_statuses(statuses)
 
     return {
         "crime_types": crime_types, "zones": zones, "months": months,
         "limit": limit_val, "dimension": geo_dim, "statuses": statuses,
         "date_from": date_from, "date_to": date_to, "period": period,
+        "period_label": period_label, "span_kind": span_kind,
         "unknown_place": unknown_place,
     }
 
@@ -410,10 +434,17 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     answer_lang = lang or ("kn" if is_kannada(user_text) else "en")
 
     unknown_place = ent.get("unknown_place")
+    period_label, span_kind = ent.get("period_label"), ent.get("span_kind")
 
     def choice(tid, params):
         if unknown_place and tid not in ("T2", "T5", "T7", "T9", "T18", "T19", "T20", "T21", "RESEARCH"):
             params = {**params, "unknown_place": unknown_place}   # the writer flags it
+        if period_label and params.get("date_from") and span_kind != "year":
+            params = {**params, "period_label": period_label}     # how the answer names the window
+        # "which station in Bengaluru City has the most thefts" ranks stations INSIDE the
+        # district. The ranking had no place filter, so it ranked every station in the state.
+        if tid == "T11" and zones and params.get("dimension") == "station_code":
+            params = {**params, "zones": zones}
         return {"template_id": tid, "params": params, "answer_lang": answer_lang}
 
     # suspect linkage: "what crimes is S0005 linked to" → T9 (deterministic reroute, WI-4)
@@ -473,6 +504,13 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         anchor_val = _extract_name(user_text) or (zones[0] if zones else user_text.replace("deep research", "").replace("research", "").replace("investigate", "").replace("on", "").strip())
         return choice("RESEARCH", {"anchor": anchor_val or user_text})
 
+    # "suspects with more than 3 cases" is the repeat-offender list with its own bar. It
+    # used to match nothing, and self-heal answered with every FIR on record.
+    _many = re.search(r"\b(?:suspects?|offenders?|accused|criminals?|persons?|people)\s+(?:with|having|who have)\s+"
+                      r"(more than|over|at least|above)\s+(\d{1,3})\s+(?:prior\s+|previous\s+)?(?:cases|firs|priors|offences|crimes)\b", low)
+    if _many:
+        n = int(_many.group(2)) + (0 if _many.group(1) == "at least" else 1)
+        return choice("T5", {"min_priors": max(1, n), "limit": limit_val, "zones": zones})
     # repeat offenders
     if any(w in low for w in ["repeat offender", "habitual", "repeat criminal",
                               "ಪುನರಾವರ್ತಿತ", "ಪದೇಪದೇ", "ಅಭ್ಯಾಸ ಅಪರಾಧಿ"]):
@@ -522,10 +560,23 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     if re.search(r"\b(ipc|bns|sll)\b", low) or "special and local" in low or "special & local" in low:
         return choice("T17", {"zones": zones, **dates})
     # Year vs year — "compare crime 2022 vs 2023", "fastest-growing crime groups 2022 to 2023"
-    if len(years) >= 2 or (years and re.search(r"\b(compare|comparison|vs|versus|growth|growing|grew|change)\b", low)):
+    # "stations with fewer than 10 FIRs in 2023" asks which places sit past a bar. No
+    # template filters on a count, but the ranking from that end shows it, count by count;
+    # it used to be answered with the statewide total for the year.
+    _bar = re.search(r"\b(districts?|stations?|zones?|cities|areas?)\s+(?:with|having|that have|which have)\s+"
+                     r"(more than|over|at least|above|fewer than|less than|under|below)\s+\d", low)
+    if _bar:
+        return choice("T11", {"crime_types": ct, "limit": limit_val, "dimension": geo_dim,
+                              "order": "asc" if _bar.group(2) in ("fewer than", "less than", "under", "below") else "desc",
+                              **dates})
+    # "robbery cases between 2021 and 2023" names a span, not a comparison: it used to come
+    # back as the statewide FIR totals of 2023 against 2021, with robbery nowhere in it.
+    _compare = bool(re.search(r"\b(compare|comparison|vs|versus|growth|growing|grew|change)\b", low))
+    if years and (_compare or (len(years) >= 2 and span_kind != "years")):
         return choice("T16", {"year": int(years[-1])})
-    # A year's total — "Cognizable FIRs registered in Karnataka in 2023?"
-    if years and not ct and not zones and not rank_q and not status_q \
+    # A year's total — "Cognizable FIRs registered in Karnataka in 2023?" A month or a
+    # quarter of that year is not the year: it goes on to the count below, with its dates.
+    if years and span_kind in (None, "year") and not ct and not zones and not rank_q and not status_q \
             and re.search(r"\b(firs?|registered|cogni[sz]able|summary|what happened|overall|total|how many)\b", low):
         return choice("T16", {"year": int(years[0])})
     # Fewest — "least crime district", "safest district"

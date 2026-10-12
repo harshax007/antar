@@ -38,12 +38,21 @@ STATUS_CLOSED = ["Convicted", "ChargeSheeted", "charge_sheeted", "Traced",
 
 STATUS_SYNONYMS: dict[str, list[str]] = {
     "unsolved": STATUS_OPEN, "open": STATUS_OPEN, "pending": STATUS_OPEN,
-    "under investigation": STATUS_OPEN, "active": STATUS_OPEN, "ongoing": STATUS_OPEN,
+    # "under investigation" is one status, not every open one: it used to bring in pending
+    # trial and undetected cases as well.
+    "under investigation": ["Under Investigation", "under_investigation", "Transferred - Under Investigation"],
+    "active": STATUS_OPEN, "ongoing": STATUS_OPEN,
     "undetected": ["Undetected"],
     "solved": STATUS_CLOSED, "closed": STATUS_CLOSED, "resolved": STATUS_CLOSED,
     "disposed": ["disposed", "Disposed"], "convicted": ["Convicted"], "traced": ["Traced"],
     "charged": ["ChargeSheeted", "charge_sheeted"],
     "chargesheeted": ["ChargeSheeted", "charge_sheeted"],
+    "charge sheeted": ["ChargeSheeted", "charge_sheeted"],
+    # Named statuses that had no entry, so "acquitted cases in Kodagu" listed every case there.
+    "acquitted": ["Dis/Acq"], "acquittal": ["Dis/Acq"], "acquittals": ["Dis/Acq"],
+    "pending trial": ["Pending Trial"], "false case": ["False Case"], "false cases": ["False Case"],
+    "compounded": ["Compounded"], "abated": ["Abated"], "bound over": ["BoundOver"],
+    "untraced": ["Un Traced"], "un traced": ["Un Traced"],
     # Kannada
     "ಬಗೆಹರಿಯದ": STATUS_OPEN, "ಬಾಕಿ": STATUS_OPEN, "ತನಿಖೆ": STATUS_OPEN,
     "ಬಗೆಹರಿದ": STATUS_CLOSED, "ಮುಗಿದ": STATUS_CLOSED,

@@ -57,8 +57,11 @@ def test_one_year_out_of_two_is_enough_to_refuse():
     assert again[0] == "compare crime 2022 vs 2026"
 
 
-def test_a_window_past_the_last_record_is_kept_not_dropped():
-    # no period keyword to fall back on: the window stays and matches nothing
-    assert Z._date_range("2028-01-01", "2028-12-31", None) == ("2028-01-01", "2028-12-31")
+def test_the_refusal_comes_before_the_date_guard_can_widen():
+    # The date guard drops a window that starts after the last record (it exists for dates
+    # a model invents). So a future year the officer named must be refused BEFORE any
+    # template runs - which is what outside_record() is for.
+    assert Z._date_range("2028-01-01", "2028-12-31", None) == (None, None)
+    assert QA.outside_record("IPC/BNS vs SLL split for 2028?") is not None
     # a window inside the register still has its end clamped to the last record
     assert Z._date_range("2026-01-01", "2026-12-31", None) == ("2026-01-01", "2026-10-13")
