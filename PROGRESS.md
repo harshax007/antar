@@ -1882,3 +1882,16 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **No future date leaves the backend**: an event is "under way, 8 days left", never a calendar date (`date_guard`).
 * `tests/test_events.py` rewritten (10 tests, no database, no network); run with `pytest --noconftest tests/test_events.py` while the backend is serving.
 * **Still open**: the Hypotheses Engine panel on this page is canned text on a timer and should be wired to the real hypothesis API or removed.
+
+## Chat: what a question names is applied, or said first - 2026-10-13
+
+* **Trigger**: "IPC/BNS vs SLL split for 2028?" was answered with the split for every year. A year the register does not hold is now refused up front (`query_agent.outside_record`), with the same question offered for the nearest years it can answer.
+* **Sweep**: 48 questions that each name a constraint were run through the query agent; about half had answered a different question. Fixed in three groups:
+  * **Periods** (`app/agents/timespan.py`): day, month, run of months, quarter, half-year, run of years, since / before / after, N days-weeks-months-years back, a bare month (the latest one), a festival of a year ("during Dasara 2023", from the event calendar). The router used to read a four-digit year and nothing else.
+  * **Dropped constraints** (`query_agent.unapplied`): a filter the chosen template has no room for, or something the register does not record (time of day, weapon, property value, day of week, age or gender of those involved, a count threshold). The answer's lead now opens with "This answers a broader question than you asked: ..." and the fidelity score counts each one.
+  * **Added or widened constraints**: "vehicle" no longer adds vehicle theft to motor accidents; "women were arrested" no longer adds crimes against women; "under investigation" is that status only; a self-healed answer is headed by what was actually fetched, not by the size of the register.
+* **Refused before any template runs**: a month, quarter or day that has not happened; "next year" / "tomorrow"; a place in another state.
+* **Also**: T11 takes `zones` (stations ranked inside a district); "suspects with more than N cases" routes to the repeat-offender list; more statuses resolve (acquitted, pending trial, false case, compounded, abated, untraced); a status filter is named in the headline; "burglary at night" uses the register's own night-burglary group.
+* **Evidence strip**: showed the number of groups returned ("400 records") under a headline about 996,000 FIRs; it now shows the count over the template's own filters.
+* **Checked**: the 35 golden questions give identical answers before and after; 297 tests pass across the 16 test files covering this code (`tests/test_timespan.py` and `tests/test_outside_record.py` are new).
+* **Left as it was**: `_date_range` still drops a future window that has no period keyword. That guard is for dates a model invents; an officer's future period is refused before it gets there.
