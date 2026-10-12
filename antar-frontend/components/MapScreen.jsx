@@ -1163,6 +1163,8 @@ export default function MapScreen() {
           {kn ? "‹ ಕರ್ನಾಟಕ" : "‹ Karnataka"} &middot; {selectedDistrict}
         </button>
       )}
+        <MapAgentsMenu kn={kn} district={selectedDistrict} dragging={!!dragAgent} onDrag={setDragAgent}
+                       onRun={(id) => runMapAgent(id, selectedDistrict)} />
         {dragAgent && (
           <p className="mxa-drop" aria-hidden="true">
             {dropOver
@@ -1191,8 +1193,6 @@ export default function MapScreen() {
           {MORE_TYPES.map((m) => <option key={m.key} value={m.key}>{kn ? m.kn : m.en}</option>)}
         </select>
         <span className="mx-pills-gap" aria-hidden="true" />
-        <MapAgentsMenu kn={kn} district={selectedDistrict} dragging={!!dragAgent} onDrag={setDragAgent}
-                       onRun={(id) => runMapAgent(id, selectedDistrict)} />
       </div>
 
       {/* Left column: the calendar and the crime report. */}

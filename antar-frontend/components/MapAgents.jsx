@@ -3,15 +3,15 @@
 // Agents on the Map.
 //
 // Three of Antar's agents work on a place rather than a person, so they are the three
-// offered here: Geo, Forecast and Pattern. An officer opens the menu and drags one onto a
-// district; it runs on that district for the date selected in the calendar. A click does
-// the same for the district already selected, which is also the path on a touch screen,
-// where a drag does not exist.
+// offered here: Geo, Forecast and Pattern. They sit in a dock on the map and an officer
+// drags one onto a district; it runs on that district for the date selected in the
+// calendar. A click does the same for the district already selected, which is also the
+// path on a touch screen, where a drag does not exist.
 //
 // Nothing is computed in this file. The agents are the console agents
 // (POST /api/console/run, app/agents/brain_console.py) and answer exactly as they do in
 // the Brain terminal; the dated figures above their answer come from the map's own date
-// window. MapScreen owns the run; this file is the menu, the drop target and the card.
+// window. MapScreen owns the run; this file is the dock, the drop target and the card.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GeoJSON, useMap } from "react-leaflet";
@@ -30,63 +30,74 @@ const Face = ({ agent, size }) => (
   <Mascot size={size} label={`${agent.name} agent`} directions={`/mascots/sm/${agent.face}-directions.webp`} reactions={`/mascots/sm/${agent.face}-reactions.webp`} />
 );
 
-// ── the menu ────────────────────────────────────────────────────────────────────
-// `district`: the district already selected, if any (a click runs there).
+// ── the dock ────────────────────────────────────────────────────────────────────
+// Sits on the map itself, in the corner east of the state where there is nothing to
+// cover. The agents are always in view there, so a drag starts from the map and ends on
+// it. `district`: the district already selected, if any (a click runs there).
 // `onRun(id)`: run on the selected district. `onDrag(id | null)`: a drag began / ended.
-export function MapAgentsMenu({ kn, district, dragging, onRun, onDrag }) {
-  const [open, setOpen] = useState(false);
-  const [nudge, setNudge] = useState(false);     // clicked with no district selected
-  const ref = useRef(null);
+const DOCK_KEY = "antar_map_agents_closed";
 
+export function MapAgentsMenu({ kn, district, dragging, onRun, onDrag }) {
+  const [open, setOpen] = useState(true);
+  const [hot, setHot] = useState(null);          // the agent under the pointer
+  const [nudge, setNudge] = useState(false);     // clicked with no district selected
+  // On a narrow map the state fills the frame and there is no empty corner: the dock
+  // then shrinks to the three faces so it covers as little of the districts as it can.
+  const ref = useRef(null);
+  const [tight, setTight] = useState(false);
   useEffect(() => {
-    if (!open) return;
-    const away = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
-    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("pointerdown", away);
-    document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); };
-  }, [open]);
-  useEffect(() => { if (!open) setNudge(false); }, [open]);
+    const frame = ref.current?.parentElement;
+    if (!frame || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => setTight(e.contentRect.width < 640));
+    ro.observe(frame);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => { try { if (localStorage.getItem(DOCK_KEY) === "1") setOpen(false); } catch { /* opens */ } }, []);
+  const toggle = () => setOpen((v) => { try { localStorage.setItem(DOCK_KEY, v ? "1" : "0"); } catch { /* not kept */ } return !v; });
+  useEffect(() => { if (district) setNudge(false); }, [district]);
 
   const pick = (id) => {
     if (!district) { setNudge(true); return; }
-    setOpen(false);
     onRun(id);
   };
+  const says = hot ? BY_ID[hot].does
+    : nudge ? "Click a district first, or drag the agent onto one."
+    : district ? `Drag onto a district, or click to run on ${district}.`
+    : "Drag an agent onto a district.";
 
   return (
-    <div className={`mxa${dragging ? " is-drag" : ""}`} ref={ref}>
-      <button type="button" className={`mx-pill mxa-btn${open ? " on" : ""}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        {kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"} <span aria-hidden="true">▾</span>
+    <aside ref={ref} className={`mxa${open ? " open" : ""}${tight ? " tight" : ""}${dragging ? " is-drag" : ""}`} aria-label={kn ? "ನಕ್ಷೆ ಏಜೆಂಟ್‌ಗಳು" : "Map agents"}>
+      <button type="button" className="mxa-btn" aria-expanded={open} onClick={toggle}>
+        {kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"} <span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
-        <div className="mxa-menu" role="menu" aria-label={kn ? "ನಕ್ಷೆ ಏಜೆಂಟ್‌ಗಳು" : "Map agents"}>
-          <p className={`mxa-hint${nudge ? " nudge" : ""}`}>
-            {district
-              ? <>Drag one onto a district, or click to run it on <b>{district}</b>.</>
-              : nudge ? "Click a district on the map first, or drag the agent onto one." : "Drag an agent onto a district."}
-          </p>
-          {MAP_AGENTS.map((a) => (
-            <div key={a.id} role="menuitem" tabIndex={0} draggable className="mxa-row"
-                 onClick={() => pick(a.id)}
-                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(a.id); } }}
-                 onDragStart={(e) => {
-                   e.dataTransfer.setData(DRAG_TYPE, a.id);
-                   e.dataTransfer.setData("text/plain", a.name);
-                   e.dataTransfer.effectAllowed = "copy";
-                   const face = e.currentTarget.querySelector(".mxa-face");
-                   if (face) e.dataTransfer.setDragImage(face, 24, 24);
-                   // after the browser has taken its picture of the row: the menu steps aside
-                   setTimeout(() => onDrag(a.id), 0);
-                 }}
-                 onDragEnd={() => { onDrag(null); setOpen(false); }}>
-              <span className="mxa-face"><Face agent={a} size={48} /></span>
-              <span className="mxa-txt"><b>{a.name}</b><em>{a.does}</em></span>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="mxa-row" role="menu">
+            {MAP_AGENTS.map((a) => (
+              <div key={a.id} role="menuitem" tabIndex={0} draggable className="mxa-a" title={a.does}
+                   onMouseEnter={() => setHot(a.id)} onMouseLeave={() => setHot(null)}
+                   onFocus={() => setHot(a.id)} onBlur={() => setHot(null)}
+                   onClick={() => pick(a.id)}
+                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(a.id); } }}
+                   onDragStart={(e) => {
+                     e.dataTransfer.setData(DRAG_TYPE, a.id);
+                     e.dataTransfer.setData("text/plain", a.name);
+                     e.dataTransfer.effectAllowed = "copy";
+                     const face = e.currentTarget.querySelector(".mxa-face");
+                     if (face) e.dataTransfer.setDragImage(face, 26, 26);
+                     // after the browser has taken its picture of the agent: the dock fades back
+                     setTimeout(() => onDrag(a.id), 0);
+                   }}
+                   onDragEnd={() => onDrag(null)}>
+                <span className="mxa-face"><Face agent={a} size={tight ? 38 : 52} /></span>
+                <b>{a.name}</b>
+              </div>
+            ))}
+          </div>
+          <p className={`mxa-hint${nudge && !hot ? " nudge" : ""}`}>{says}</p>
+        </>
       )}
-    </div>
+    </aside>
   );
 }
 
