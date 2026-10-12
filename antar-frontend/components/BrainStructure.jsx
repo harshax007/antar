@@ -548,7 +548,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          transition: "opacity 0.4s ease",
+          transition: "opacity 1.2s ease",
           opacity: isReady ? 0 : 1,
           pointerEvents: isReady ? "none" : "auto",
         }}

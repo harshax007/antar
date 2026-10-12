@@ -36,6 +36,7 @@ function bubbleRadius(ms, cx, cy) {
 export default function Constellation({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
   const containerRef = useRef(null);
   const fgRef = useRef(null);
+  const introUntil = useRef(0);      // until when the opening zoom-in owns the view
   const focusRef = useRef(null);     // Set of node ids in the focused group
   const latchRef = useRef(false);    // one zoom-trigger per zoom-in
   const activeRef = useRef(active);
@@ -394,8 +395,11 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
       fg.graphData(dataRef.current);
       buildMeta(constel);
       onReady?.();
-      // 130px padding keeps the category labels on the rim clear of the tool column.
-      setTimeout(() => fg.zoomToFit(600, 130), 900);
+      // Arrive from far out and settle slowly. 130px padding keeps the category labels on
+      // the rim clear of the tool column. The data effect below holds off until it lands.
+      introUntil.current = Date.now() + 4600;
+      fg.zoom(0.12, 0);
+      setTimeout(() => fg.zoomToFit(3800, 130), 500);
     });
     return () => {
       destroyed = true;
@@ -425,6 +429,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
     fg.graphData(dataRef.current);
     buildMeta(constel);
     onReady?.();
+    if (Date.now() < introUntil.current) return;
     setTimeout(() => fg.zoomToFit(600, 130), 900);
   }, [constel]); // eslint-disable-line
 

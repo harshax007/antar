@@ -106,9 +106,12 @@ function makeLabelSprite(THREE, text, sub, color) {
   return sprite;
 }
 
+const INTRO_MS = 4600;      // length of the opening zoom-in
+
 export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
   const containerRef = useRef(null);
   const fgRef = useRef(null);
+  const introUntil = useRef(0);      // until when the arrival owns the camera
   const threeRef = useRef(null);
   const focusRef = useRef(null);
   const activeRef = useRef(active);
@@ -227,6 +230,8 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
   useEffect(() => {
     if (!constel || !containerRef.current || fgRef.current) return;
     let destroyed = false;
+    let zoomTimer = null;
+    let rotateTimer = null;
     Promise.all([import("3d-force-graph"), import("three")]).then(([{ default: ForceGraph3D }, THREE]) => {
       if (destroyed || !containerRef.current || fgRef.current) return;
       threeRef.current = THREE;
@@ -310,26 +315,30 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       fgRef.current = fg;
       onReady?.();
       
-      // Automatic smooth zoom-in animation:
-      // Starts automatically by itself from entry distance (z: 1800) into optimal framing (z: 820)
-      fg.cameraPosition({ x: 0, y: 0, z: 1800 }, { x: 0, y: 0, z: 0 }, 0);
-      
-      const zoomTimer = setTimeout(() => {
-        fg.cameraPosition({ x: 0, y: 0, z: 820 }, { x: 0, y: 0, z: 0 }, 1400);
-      }, 100);
+      // The brain arrives from a distance: one slow, unbroken move from far out (z 2600)
+      // to its working distance (z 820). Nothing else may move the camera until it lands -
+      // the data effect below would otherwise cut it short with its own reframe.
+      introUntil.current = Date.now() + INTRO_MS + 400;
+      fg.cameraPosition({ x: 0, y: 0, z: 2600 }, { x: 0, y: 0, z: 0 }, 0);
 
-      const rotateTimer = setTimeout(() => {
+      zoomTimer = setTimeout(() => {
+        if (destroyed || !fg) return;
+        fg.cameraPosition({ x: 0, y: 0, z: 820 }, { x: 0, y: 0, z: 0 }, INTRO_MS);
+      }, 300);
+
+      rotateTimer = setTimeout(() => {
+        if (destroyed || !fg) return;
         if (fg.controls) {
           const controls = fg.controls();
           controls.autoRotate = true;
           controls.autoRotateSpeed = 0.45;
         }
-      }, 1600);
+      }, INTRO_MS + 400);
     });
     return () => {
       destroyed = true;
-      clearTimeout(zoomTimer);
-      clearTimeout(rotateTimer);
+      if (zoomTimer) clearTimeout(zoomTimer);
+      if (rotateTimer) clearTimeout(rotateTimer);
       if (flightRef.current) cancelAnimationFrame(flightRef.current);
       try { fgRef.current?._destructor?.(); } catch {}
       fgRef.current = null;
@@ -350,6 +359,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     fg.graphData(dataRef.current);
     refreshVisuals();
     onReady?.();
+    if (Date.now() < introUntil.current) return;      // the arrival is still under way
     if (groupByRef.current === "type") {
       fg.cameraPosition({ x: 0, y: 0, z: 820 }, { x: 0, y: 0, z: 0 }, 900);
     } else {
