@@ -109,6 +109,7 @@ const GUIDES = {
       { h: L("Use the map", "ನಕ್ಷೆ ಬಳಸಿ"), items: [
         [L("Select a district", "ಜಿಲ್ಲೆ ಆರಿಸಿ"), L("Click a district to focus the side panel on it.", "ಬದಿಯ ಪ್ಯಾನೆಲ್ ಅನ್ನು ಆ ಜಿಲ್ಲೆಗೆ ಸೀಮಿತಗೊಳಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ.")],
         [L("Shading", "ಬಣ್ಣ"), L("A stronger colour means more FIRs in that district.", "ಗಾಢ ಬಣ್ಣ ಎಂದರೆ ಆ ಜಿಲ್ಲೆಯಲ್ಲಿ ಹೆಚ್ಚು FIR.")],
+        [L("Agents", "ಏಜೆಂಟ್‌ಗಳು"), L("Open Agents and drag one onto a district. It runs there for the date selected in the calendar.", "Agents ತೆರೆದು, ಒಂದನ್ನು ಜಿಲ್ಲೆಯ ಮೇಲೆ ಎಳೆದು ಬಿಡಿ. ಕ್ಯಾಲೆಂಡರ್‌ನಲ್ಲಿ ಆಯ್ದ ದಿನಾಂಕಕ್ಕೆ ಅದು ಅಲ್ಲಿ ಕೆಲಸ ಮಾಡುತ್ತದೆ.")],
       ] },
       { h: L("Read the hotspots", "ಹಾಟ್‌ಸ್ಪಾಟ್ ಓದಿ"), items: [
         [L("Red zones", "ಕೆಂಪು ವಲಯ"), L("Dense clusters that need attention now.", "ತಕ್ಷಣ ಗಮನ ಬೇಕಾದ ದಟ್ಟ ಕ್ಲಸ್ಟರ್‌ಗಳು.")],

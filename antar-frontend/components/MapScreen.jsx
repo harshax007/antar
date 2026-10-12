@@ -14,6 +14,7 @@ import ProposeAction from "@/components/ProposeAction";
 import { useForecast, ForecastLayer, ForecastPanel, ForecastCard, ModelCardModal, AsOfChip } from "@/components/ForecastPanel";
 import { makeContains } from "@/lib/forecast";
 import { readSession } from "@/lib/auth";
+import { MAP_AGENTS, MapAgentsMenu, AgentDropLayer, MapAgentResult } from "@/components/MapAgents";
 import { FESTIVALS } from "@/lib/festivals";
 import "leaflet/dist/leaflet.css";
 import { asset } from "@/lib/assets";
@@ -214,7 +215,8 @@ function windowCounts(days, endDate, crimeType, signal) {
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => {
       if (!d?.zones) return null;
-      const w = { end: d.end_date, by: Object.fromEntries(d.zones.map((z) => [z.zone, z.observed || 0])) };
+      const w = { end: d.end_date, by: Object.fromEntries(d.zones.map((z) => [z.zone, z.observed || 0])),
+                  hot: Object.fromEntries(d.zones.map((z) => [z.zone, !!z.is_hotspot])) };
       WINDOW_CACHE.set(key, w);
       if (WINDOW_CACHE.size > 80) WINDOW_CACHE.delete(WINDOW_CACHE.keys().next().value);
       return w;
@@ -617,6 +619,55 @@ export default function MapScreen() {
     .finally(() => { if (!ctrl.signal.aborted) setLlmLoading(false); });
     return () => ctrl.abort();
   }, [rightTab, viewInsight, giLoading, crimeType, selectedDistrict, endDate]);
+
+  // ── Agents on the map: drag one onto a district, it runs there for the selected date ──
+  const [dragAgent, setDragAgent] = useState(null);     // id of the agent being dragged
+  const [dropOver, setDropOver] = useState(null);       // district under it
+  const [agentRun, setAgentRun] = useState(null);       // the run shown on the map
+  const agentSeq = useRef(0);
+  async function runMapAgent(agentId, gadmName, station) {
+    const id = ++agentSeq.current;
+    const zone = primaryZoneFor(gadmName)?.zone || null;
+    const label = crimeType ? (PILLS.concat(MORE_TYPES).find((x) => x.key === crimeType)?.en || crimeType) : null;
+    setAgentRun({ id, agent: agentId, district: gadmName, zone, date: endDate, crime: crimeType, crimeLabel: label,
+                  station: station || null, status: "running", body: null, dated: zone ? "pending" : null });
+    if (selectedDistrict !== gadmName) openDistrict(gadmName, null);
+    const put = (patch) => setAgentRun((prev) => (prev?.id === id ? { ...prev, ...patch } : prev));
+    const refused = (text) => ({ status: "refused", bottom_line: text, context: "", evidence: [], limits: [], next: [] });
+    if (!zone) { put({ status: "done", body: refused(`No records are held for ${gadmName}.`) }); return; }
+
+    // what the record held on that date: the 30 days ending on it, and where that ranks
+    windowCounts(29, endDate, crimeType).then((w) => {
+      if (!w) { put({ dated: null }); return; }
+      const n = w.by[zone] || 0, all = Object.values(w.by);
+      put({ dated: { observed: n, rank: all.filter((v) => v > n).length + 1, of: all.length, hot: !!w.hot?.[zone], end: w.end } });
+    });
+
+    const call = (agent, target) => fetch(`${API}/api/console/run`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ agent, target }),
+    }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
+    try {
+      let body = null, via = station || null;
+      if (agentId === "pattern") {
+        body = crimeType
+          ? await call("pattern", { crime_group: crimeType, district: zone })
+          : refused("Pick a crime type in the top row first. Pattern looks for clusters of one kind of crime.");
+      } else if (agentId === "forecast") {
+        // a forecast is made for a station: Geo names the district's busiest one first
+        if (!via) {
+          const g = await call("geo", zone);
+          via = (g.next || []).map((t) => /^run forecast (.+)$/.exec(t)?.[1]).find(Boolean) || null;
+          if (!via) body = g.status === "ok" ? refused(`No station in ${zone} has enough history for a forecast.`) : g;
+        }
+        if (via) body = await call("forecast", via);
+      } else {
+        body = await call("geo", zone);
+      }
+      put({ status: "done", body, station: agentId === "forecast" ? via : null });
+    } catch {
+      put({ status: "done", body: { status: "error", bottom_line: "The agent could not be reached. Check that the server is running.", context: "", evidence: [], limits: [], next: [] } });
+    }
+  }
 
   const [patrolRequest, setPatrolRequest] = useState(false);   // HITL: request a deployment
   const [sessionRole, setSessionRole] = useState(null);
@@ -1099,6 +1150,7 @@ export default function MapScreen() {
           <AutoResize />
           <MouseCoords onMove={setCoords} />
           <FlyTo bounds={flyBounds} />
+          <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} />
           <ZoomButtons geo={geo} onReset={() => { setSelectedDistrict(null); setDistrictDetail(null); }} />
         
@@ -1111,6 +1163,18 @@ export default function MapScreen() {
           {kn ? "‹ ಕರ್ನಾಟಕ" : "‹ Karnataka"} &middot; {selectedDistrict}
         </button>
       )}
+        {dragAgent && (
+          <p className="mxa-drop" aria-hidden="true">
+            {dropOver
+              ? <>Run <b>{MAP_AGENTS.find((a) => a.id === dragAgent)?.name}</b> on <b>{dropOver}</b> · {new Date(`${endDate}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</>
+              : "Drop on a district"}
+          </p>
+        )}
+        <MapAgentResult run={agentRun} todayIso={todayIso}
+                        stale={!!agentRun && agentRun.status === "done" && (agentRun.date !== endDate || agentRun.crime !== crimeType)}
+                        onClose={() => setAgentRun(null)}
+                        onRun={(id, arg) => runMapAgent(id, agentRun.district, id === "forecast" ? arg : undefined)}
+                        onRerun={() => runMapAgent(agentRun.agent, agentRun.district, agentRun.station || undefined)} />
         {/* the forecast's as-of stays in view on the map, whichever tab is open */}
         {fc.on && <div className="fx-chip-map"><AsOfChip fc={fc} kn={kn} /></div>}
       </div>
@@ -1127,6 +1191,8 @@ export default function MapScreen() {
           {MORE_TYPES.map((m) => <option key={m.key} value={m.key}>{kn ? m.kn : m.en}</option>)}
         </select>
         <span className="mx-pills-gap" aria-hidden="true" />
+        <MapAgentsMenu kn={kn} district={selectedDistrict} dragging={!!dragAgent} onDrag={setDragAgent}
+                       onRun={(id) => runMapAgent(id, selectedDistrict)} />
       </div>
 
       {/* Left column: the calendar and the crime report. */}
