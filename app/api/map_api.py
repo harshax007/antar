@@ -122,9 +122,23 @@ async def districts_rich() -> dict:
 
 
 @router.get("/district/{zone}")
-async def district_detail(zone: str) -> dict:
-    """Single-district drill-down card (O(1) cache lookup, < 1 ms)."""
-    data = dc_get(zone)
+async def district_detail(zone: str, end_date: Optional[str] = None, crime_type: Optional[str] = None) -> dict:
+    """Single-district drill-down card.
+
+    Without end_date: the startup cache (O(1)). With it: the card recounted for that day
+    and the windows ending on it, optionally for one crime type - what the Map's calendar
+    asks for.
+    """
+    if end_date:
+        from datetime import date as _date
+        from app.services.district_cache import dated as dc_dated
+        try:
+            anchor = _date.fromisoformat(end_date[:10])
+        except ValueError:
+            raise HTTPException(status_code=422, detail="end_date must be an ISO date (YYYY-MM-DD)")
+        data = dc_dated(zone, anchor, crime_type or None)
+    else:
+        data = dc_get(zone)
     if data is None:
         raise HTTPException(status_code=404, detail=f"Zone '{zone}' not found in cache")
     return data

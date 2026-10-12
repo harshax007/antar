@@ -419,16 +419,30 @@ export default function MapScreen() {
     return best;
   }
 
-  async function openDistrict(gadmName, bounds) {
+  function openDistrict(gadmName, bounds) {
     setSelectedDistrict(gadmName);
     setFlyBounds(bounds);
-    const primary = primaryZoneFor(gadmName);
-    if (!primary) { setDistrictDetail(null); return; }
-    try {
-      const d = await (await fetch(`${API}/api/map/district/${encodeURIComponent(primary.zone)}`)).json();
-      setDistrictDetail(d);
-    } catch { setDistrictDetail(null); }
   }
+
+  // The district card follows the calendar and the crime filter: it is read again for the
+  // selected date each time either changes, and an older answer that lands late is dropped.
+  // The card it replaces stays on screen, dimmed, until the new one arrives.
+  const [dcardBusy, setDcardBusy] = useState(false);
+  const districtZone = selectedDistrict ? (primaryZoneFor(selectedDistrict)?.zone || null) : null;
+  useEffect(() => {
+    if (!selectedDistrict) { setDistrictDetail(null); return; }
+    if (!districtZone) { if (districtsRich.length) setDistrictDetail({ zone: selectedDistrict, empty: true }); return; }
+    const ctrl = new AbortController();
+    const q = new URLSearchParams({ end_date: endDate });
+    if (crimeType) q.set("crime_type", crimeType);
+    setDcardBusy(true);
+    fetch(`${API}/api/map/district/${encodeURIComponent(districtZone)}?${q}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("district"))))
+      .then(setDistrictDetail)
+      .catch((e) => { if (e?.name !== "AbortError") setDistrictDetail({ zone: districtZone, empty: true }); })
+      .finally(() => { if (!ctrl.signal.aborted) setDcardBusy(false); });
+    return () => ctrl.abort();
+  }, [selectedDistrict, districtZone, endDate, crimeType, districtsRich.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const geoStyle = (feature) => {
     const name = feature.properties?.district || feature.properties?.NAME_2;
@@ -658,7 +672,7 @@ export default function MapScreen() {
   // Antar Intelligence - date & place synthesis (shown inside the report window)
   const intel = useMemo(() => {
     const items = [];
-    if (selectedDistrict && districtDetail) items.push({
+    if (selectedDistrict && districtDetail && !districtDetail.empty) items.push({
       dot: "var(--green)",
       text: `Hyper-local analysis for ${districtDetail.zone}: ${districtDetail.fir_count} recent FIRs. Risk level classified as ${districtDetail.risk_level}, with a ${districtDetail.trend} trend.`,
       src: "district cache (live)",
@@ -1290,6 +1304,57 @@ export default function MapScreen() {
             </button>
           </div>
           
+          {/* The selected district, first in the column so a click on the map is answered
+              where the eye already is. It used to sit under the summary, out of view. */}
+          {districtDetail && (() => {
+            const d = districtDetail, dated = !!d.as_of;
+            const nice = (iso) => { const x = new Date(`${iso}T00:00:00`); return Number.isNaN(x.getTime()) ? iso : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); };
+            const lower = (t) => { const w = String(t || "").replace(/_/g, " ").toLowerCase(); return w.charAt(0).toUpperCase() + w.slice(1); };
+            return (
+              <div inert={reportOpen || showDossier ? "" : undefined} className={`mx-dcard mx-panel mx-dcard-enhanced${dcardBusy ? " is-busy" : ""}`} aria-busy={dcardBusy}>
+                <div className="mx-dcard-head">
+                  <span>{d.zone}<em>{dated ? nice(d.as_of) : nice(endDate)}{crimeType ? ` · ${crimeLabel}` : ""}</em></span>
+                  <button onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }} title={kn ? "ಮುಚ್ಚಿ" : "Close"} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close district card"}>&times;</button>
+                </div>
+                <div className="mx-dcard-body">
+                  {d.empty && <p className="mx-dcard-none">{kn ? "ಈ ಜಿಲ್ಲೆಗೆ ದಾಖಲೆಗಳಿಲ್ಲ" : "No records are held for this district."}</p>}
+                  {!d.empty && dated && (
+                    <>
+                      <div className="mx-dcard-nums">
+                        <div><b>{d.day_count}</b><span>{kn ? "ಈ ದಿನ" : "On this day"}</span></div>
+                        <div><b>{d.last_7}</b><span>{kn ? "ಕಳೆದ 7 ದಿನ" : "Last 7 days"}</span></div>
+                        <div><b>{d.last_30}</b><span>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</span></div>
+                      </div>
+                      <div className="mx-dcard-bar"><div className="fill" style={{ width: `${Math.min(100, (d.last_30 / Math.max(d.last_30, d.prior_30, 1)) * 100)}%` }} /></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಹಿಂದಿನ 30 ದಿನ" : "30 days before that"}</span><span className="v">{d.prior_30} · {d.trend}</span></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಅಪಾಯದ ಮಟ್ಟ" : "Risk level"}</span><span className={`mx-dcard-badge ${riskClass(d.risk_level)}`}>{d.risk_level}</span></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಪರಿಹರಿಸಲಾಗದ (ಒಟ್ಟು)" : "Unsolved, all time"}</span><span className="v critical">{d.open_unsubs_count?.toLocaleString("en-IN") ?? "--"}</span></div>
+                      <div className="mx-dcard-top">
+                        <span className="k">{kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (30 ದಿನ)" : "Most recorded, last 30 days"}</span>
+                        <span>{d.top_crimes?.length ? d.top_crimes.map(lower).join(", ") : (kn ? "ಯಾವುದೂ ಇಲ್ಲ" : "Nothing recorded in this window")}</span>
+                      </div>
+                    </>
+                  )}
+                  {!d.empty && !dated && (
+                    <>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "FIR (ಒಟ್ಟು)" : "FIRs, all time"}</span><span className="v" style={{ color: "var(--cyan)" }}>{d.fir_count?.toLocaleString("en-IN")}</span></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಈ ತಿಂಗಳು / ಹಿಂದಿನ" : "This month / last month"}</span><span className="v">{d.this_month} / {d.prior_month} · {d.trend}</span></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಅಪಾಯದ ಮಟ್ಟ" : "Risk level"}</span><span className={`mx-dcard-badge ${riskClass(d.risk_level)}`}>{d.risk_level}</span></div>
+                      <div className="mx-dcard-row"><span className="k">{kn ? "ಪರಿಹರಿಸಲಾಗದ (ಒಟ್ಟು)" : "Unsolved, all time"}</span><span className="v critical">{d.open_unsubs_count?.toLocaleString("en-IN") ?? "--"}</span></div>
+                      {d.top_crimes?.length > 0 && <div className="mx-dcard-top"><span className="k">{kn ? "ಟಾಪ್ ಅಪರಾಧಗಳು" : "Most recorded"}</span><span>{d.top_crimes.slice(0, 3).map(lower).join(", ")}</span></div>}
+                      <p className="mx-dcard-none">{kn ? "ಇಂದಿನ ಅಂಕಿಅಂಶಗಳು" : "These are current figures. The server has not been restarted, so it cannot yet answer for the chosen date."}</p>
+                    </>
+                  )}
+                  {!d.empty && sessionRole && sessionRole !== "Approver" && (
+                    <button type="button" className="mx-hitl-btn" onClick={() => setPatrolRequest(true)} title={kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಅಗತ್ಯವಿದೆ" : "Requires supervising officer approval"}>
+                      <ShieldCheck size={14} className="fx-i" /> {kn ? "ಗಸ್ತು ನಿಯೋಜನೆಯನ್ನು ಪ್ರಸ್ತಾಪಿಸಿ" : "Propose patrol deployment"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {rightTab === "where" && (
             <>
             <button
@@ -1443,35 +1508,6 @@ export default function MapScreen() {
             </aside>
           )}
 
-          {districtDetail && (
-            <div inert={reportOpen || showDossier ? "" : undefined} className="mx-dcard mx-panel mx-dcard-enhanced">
-              <div className="mx-dcard-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>{districtDetail.zone}</span>
-                <button onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }} style={{ background: 'none', border: 'none', color: 'rgba(34, 230, 240, 0.8)', cursor: 'pointer', fontSize: '20px', padding: '0 4px', lineHeight: 1 }} title="Close">&times;</button>
-              </div>
-              <div className="mx-dcard-body">
-                <div className="mx-dcard-row"><span className="k">{kn ? "FIR (30ದಿನ)" : "FIRs (30d)"}</span><span className="v" style={{ color: "var(--cyan)" }}>{districtDetail.fir_count}</span></div>
-                <div className="mx-dcard-bar"><div className="fill" style={{ width: `${Math.min(100, (districtDetail.fir_count / maxFir) * 100)}%` }} /></div>
-                <div className="mx-dcard-row"><span className="k">{kn ? "ಈ ತಿಂಗಳು / ಹಿಂದಿನ" : "This Month / Prior"}</span><span className="v">{districtDetail.this_month} / {districtDetail.prior_month}</span></div>
-                <div className="mx-dcard-row"><span className="k">{kn ? "ಊಹಿಸಲಾಗಿದೆ (ಮುಂದಿನ 7ದಿನ)" : "Predicted (Next 7d)"}</span><span className="v warning">{districtDetail.predicted || "--"}</span></div>
-                <div className="mx-dcard-row"><span className="k">{kn ? "ಪರಿಹರಿಸಲಾಗದ / ತೆರೆದ" : "Unsolved / Open"}</span><span className="v critical">{districtDetail.open_unsubs_count?.toLocaleString() || "--"}</span></div>
-                <div className="mx-dcard-row mt-2"><span className="k">{kn ? "ಅಪಾಯದ ಸೂಚ್ಯಂಕ" : "Risk index"}</span><span className={`mx-dcard-badge ${riskClass(districtDetail.risk_level)}`}>{districtDetail.risk_level}</span></div>
-                <div className="mx-dcard-row"><span className="k">{kn ? "ಡಾರ್ಕ್ ವೆಬ್ ಸೂಚ್ಯಂಕ" : "Dark Web index"}</span><span className={`mx-dcard-badge mx-risk-h`}>{districtDetail.dark_level || "Critical"}</span></div>
-                <div className="mx-dcard-row"><span className="k">{kn ? "ಪ್ರವೃತ್ತಿ" : "Trend"}</span><span className="v">{districtDetail.trend}</span></div>
-                {districtDetail.top_crimes?.length > 0 && (
-                  <div className="mx-dcard-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 3, marginTop: 8 }}>
-                    <span className="k">{kn ? "ಟಾಪ್ ಅಪರಾಧಗಳು" : "Top crimes"}</span>
-                    <span className="v" style={{ color: "var(--text)", whiteSpace: "normal", lineHeight: 1.3 }}>{districtDetail.top_crimes.slice(0, 3).join(", ")}</span>
-                  </div>
-                )}
-                {sessionRole && sessionRole !== "Approver" && (
-                  <button type="button" className="mx-hitl-btn" onClick={() => setPatrolRequest(true)} title={kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಅಗತ್ಯವಿದೆ" : "Requires supervising officer approval"}>
-                    <ShieldCheck size={14} className="fx-i" /> {kn ? "ಗಸ್ತು ನಿಯೋಜನೆಯನ್ನು ಪ್ರಸ್ತಾಪಿಸಿ" : "Propose patrol deployment"}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Keyboard-reachable district list - fallback for non-pointer users */}

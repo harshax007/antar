@@ -152,3 +152,57 @@ def get_district(zone: str) -> dict | None:
     if _cache is None:
         refresh()
     return _cache.get(zone)  # type: ignore[union-attr]
+
+
+def dated(zone: str, end_date: date, crime_type: str | None = None) -> dict | None:
+    """The district card anchored on a chosen date.
+
+    The startup cache is a picture of today; the Map's calendar asks about another day.
+    This counts the day, the 7 and 30 days ending on it and the 30 before that, from the
+    same crime rows the map's own date window is drawn from - so the card and the map
+    cannot disagree about the same date. Fields it does not recount (open cases, centroid)
+    come from the cache and are all-time figures. No forecast is made here: a projection
+    from two monthly totals was once shown as "predicted", and it is left out rather than
+    re-labelled.
+    """
+    base = get_district(zone)
+    if base is None:
+        return None
+    from collections import Counter
+    from app.services.anomaly import _as_date, _as_of_date
+    from app.services.zcql_repo import build_spec
+    from app.services.zcql_local import run_query
+
+    anchor = min(end_date, _as_of_date())
+    d7, d30, p30 = anchor - timedelta(days=6), anchor - timedelta(days=29), anchor - timedelta(days=59)
+    day = last7 = last30 = prior30 = 0
+    crimes: Counter = Counter()
+    for r in run_query(build_spec("T14", {})):
+        if r.get("zone") != zone or (crime_type and r.get("crime_type") != crime_type):
+            continue
+        d = _as_date(r.get("occurred_at"))
+        if not d or d > anchor or d < p30:
+            continue
+        if d < d30:
+            prior30 += 1
+            continue
+        last30 += 1
+        if r.get("crime_type"):
+            crimes[r["crime_type"]] += 1
+        if d >= d7:
+            last7 += 1
+        if d == anchor:
+            day += 1
+    return {
+        **base,
+        "as_of": anchor.isoformat(),
+        "crime_type": crime_type,
+        "day_count": day,
+        "last_7": last7,
+        "last_30": last30,
+        "prior_30": prior30,
+        "top_crimes": [c for c, _ in crimes.most_common(3)],
+        "risk_level": _risk_level(last30, prior30),
+        "trend": _trend_str(last30, prior30),
+        "predicted": None,
+    }

@@ -4298,3 +4298,22 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
 .adoc-dim { margin-top: 18px; font-size: 13px !important; color: #7C8A9E; }
 @media (max-width: 640px) { .adoc header { flex-direction: column; align-items: flex-start; gap: 8px; } .adoc h1 { font-size: 28px; } }
 
+/* ── District card: first in the right column, dated, compact ── */
+.mx-dcard-enhanced { transition: opacity .2s ease; animation: mxDcardIn .28s ease both; }
+.mx-dcard-enhanced.is-busy { opacity: .55; }
+.mx-dcard-enhanced .mx-dcard-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; text-transform: none; letter-spacing: .01em; text-shadow: none; }
+.mx-dcard-head em { display: block; margin-top: 2px; font: 500 11px 'Inter', sans-serif; font-style: normal; color: var(--muted); }
+.mx-dcard-head button { background: none; border: 0; color: rgba(34,230,240,.8); cursor: pointer; font-size: 20px; line-height: 1; padding: 0 4px; }
+.mx-dcard-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.mx-dcard-nums b { display: block; font: 700 22px 'Chakra Petch', sans-serif; color: var(--text); font-variant-numeric: tabular-nums; }
+.mx-dcard-nums div:first-child b { color: var(--cyan); }
+.mx-dcard-nums span { font-size: 11px; color: var(--muted); }
+.mx-dcard-enhanced .mx-dcard-row { font-size: 12px; margin: 5px 0; align-items: center; }
+.mx-dcard-enhanced .mx-dcard-row .v { font-size: 12px; }
+.mx-dcard-top { margin-top: 8px; display: grid; gap: 2px; font-size: 12px; line-height: 1.4; color: var(--text); }
+.mx-dcard-top .k { font-size: 11px; color: var(--muted); }
+.mx-dcard-none { margin: 6px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+@keyframes mxDcardIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+/* the summary scrolls inside the column, so nothing under or over it is pushed out of view */
+@media (min-width: 901px) { .fx-rail > .mx-vs { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; } }
+@media (prefers-reduced-motion: reduce) { .mx-dcard-enhanced { animation: none; } }
