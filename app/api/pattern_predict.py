@@ -514,13 +514,16 @@ def board_facts(board: dict) -> dict:
         "events": [{"name": e.get("name"), "when": e.get("when"), "measured_in": e.get("measured_in"),
                     "all_crime_percent": (e.get("overall") or {}).get("percent"),
                     "past_years": e.get("occurrences_measured"),
-                    "rises": [{"crime": _plain_crime(r["crime"]), "percent": r["percent"]}
-                              for r in (e.get("rises") or []) + (e.get("watch") or [])]}
+                    "rises": ([{"crime": _plain_crime(r["crime"]), "percent": r["percent"], "certain": True}
+                               for r in (e.get("rises") or [])]
+                              + [{"crime": _plain_crime(r["crime"]), "percent": r["percent"], "certain": False}
+                                 for r in (e.get("watch") or [])])}
                    for e in (board.get("events") or []) if e.get("in_forecast_window")],
     }
 
 
 _BRIEFING: dict = {}      # as_of -> reading; one model call a day, not one per page view
+_BRIEFING_RETRY_AT: dict = {}
 
 
 @router.get("/predict/briefing")
@@ -535,10 +538,15 @@ async def predict_briefing() -> dict:
     import re
     from app.core.date_guard import redact_future_dates
 
+    import time as _time
     facts = board_facts(compile_board(0))
     key = facts.get("as_of")
     if key in _BRIEFING:
         return {"facts": facts, "reading": _BRIEFING[key]}
+    # The model takes the better part of a minute. After a failure it is not asked again
+    # for ten minutes, so a page that is opened repeatedly does not queue up calls.
+    if _time.time() < _BRIEFING_RETRY_AT.get("t", 0):
+        return {"facts": facts, "reading": None}
     reading = None
     try:
         from app.services.quickml import quickml_generate
@@ -547,10 +555,11 @@ async def predict_briefing() -> dict:
                     "sentences, no jargon, no statistics terms, no markdown. Two or three sentences. "
                     "Use only the facts given: never add a number, a place or a cause that is not in "
                     "them. If an event is listed, say what the past years show for it (percent is "
-                    "the change in registered cases during the event; negative means fewer). Say "
+                    "the change in registered cases during the event; negative means fewer; a rise "
+                    "marked certain=false is 'possibly', never stated as fact). Say "
                     "what deserves attention first and what an officer could check. This is "
                     "decision support, not an instruction."),
-            user=json.dumps(facts, ensure_ascii=False), temperature=0.2, max_tokens=220, budget_s=12.0)
+            user=json.dumps(facts, ensure_ascii=False), temperature=0.2, max_tokens=400, budget_s=60.0)
         text = re.sub(r"\s+", " ", (text or "")).strip()
         allowed = set(re.findall(r"\d+(?:\.\d+)?", json.dumps(facts))) | {"7"}
         if text and all(n in allowed for n in re.findall(r"\d+(?:\.\d+)?", text)):
@@ -560,6 +569,8 @@ async def predict_briefing() -> dict:
     if reading:
         _BRIEFING.clear()
         _BRIEFING[key] = reading
+    else:
+        _BRIEFING_RETRY_AT["t"] = _time.time() + 600
     return {"facts": facts, "reading": reading}
 
 
