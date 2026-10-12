@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
-import { Mascot } from "page-mascot";
 import {
   ReactFlow,
   Background,
@@ -30,10 +29,10 @@ const DEMO_PREDICTIONS = [
 const DEMO_NODES = [
   { id: "data", kind: "data", label: "FIR Data", sublabel: "2024-01 → 2025-06", x: 50, y: 200 },
   { id: "seasonal", kind: "signal", label: "Seasonal Signal", sublabel: "Dasara +34%", x: 50, y: 340 },
-  { id: "pattern", kind: "agent", label: "pattern_agent", sublabel: "Cluster: chain-snatching", x: 280, y: 130 },
-  { id: "forecast", kind: "agent", label: "forecast_agent", sublabel: "Band: 8-11 @ 91% conf", x: 280, y: 270 },
-  { id: "network", kind: "agent", label: "network_agent", sublabel: "Local hub / Rajajinagar", x: 280, y: 400 },
-  { id: "supervisor", kind: "llm", label: "Supervisor", sublabel: "drivers weighed", x: 520, y: 270 },
+  { id: "pattern", kind: "agent", label: "Pattern scan", sublabel: "Cluster: chain-snatching", x: 280, y: 130 },
+  { id: "forecast", kind: "agent", label: "Forecast model", sublabel: "Band: 8-11 @ 91% conf", x: 280, y: 270 },
+  { id: "network", kind: "agent", label: "Network check", sublabel: "Local hub / Rajajinagar", x: 280, y: 400 },
+  { id: "supervisor", kind: "llm", label: "Weighing", sublabel: "drivers weighed", x: 520, y: 270 },
   { id: "out", kind: "out", label: "Prediction", sublabel: "HIGH · z=3.48 · Rajajinagar", x: 750, y: 270 },
 ];
 const DEMO_EDGES = [
@@ -48,8 +47,8 @@ const DEMO_EDGES = [
 ];
 const DEMO_TRACE = [
   "data ▸ Loaded 14,320 FIRs · 2024-01 → 2025-06",
-  "forecast_agent ▸ Split-conformal band 8-11 incidents · z=3.48",
-  "supervisor ▸ seasonal + pattern + forecast converge → HIGH",
+  "Forecast model ▸ Range 8-11 incidents · z=3.48",
+  "Weighing ▸ seasonal + pattern + forecast converge → HIGH",
   "output ▸ HIGH · 91% confidence · Rajajinagar · chain_snatching",
 ];
 
@@ -62,13 +61,21 @@ const NODE_KIND_STYLE = {
   out:     { bg: "rgba(225,64,56,0.10)", border: "rgba(225,64,56,0.55)" },
 };
 
+// The server names its reasoning steps after the code that runs them ("forecast_agent").
+// On this page they are shown as what they are: steps of one engine.
+const STEP_KIND = { data: "records", signal: "signal", agent: "step", llm: "weighing", out: "result" };
+const stepName = (t) => {
+  const w = String(t || "").replace(/_agent$/i, "").replace(/_/g, " ").trim();
+  return /^supervisor$/i.test(w) ? "Weighing" : w.charAt(0).toUpperCase() + w.slice(1);
+};
+
 function DagNode({ data }) {
   const s = NODE_KIND_STYLE[data.kind] || NODE_KIND_STYLE.data;
   return (
     <div className="dag-node" style={{ background: s.bg, borderColor: s.border }}>
       <Handle type="target" position={Position.Left} style={{ background: s.border }} />
-      <div className="dag-kind">{data.kind}</div>
-      <div className="dag-label">{data.label}</div>
+      <div className="dag-kind">{STEP_KIND[data.kind] || data.kind}</div>
+      <div className="dag-label">{stepName(data.label)}</div>
       {data.sublabel && <div className="dag-sub">{data.sublabel}</div>}
       <Handle type="source" position={Position.Right} style={{ background: s.border }} />
     </div>
@@ -162,9 +169,6 @@ function Count({ n, suffix = "" }) {
   }, [n]);
   return n == null ? "—" : `${v}${suffix}`;
 }
-const Agent = ({ face, name, size = 36 }) => (
-  <Mascot className="px-agent" size={size} label={`${name} agent`} directions={`/mascots/sm/${face}-directions.webp`} reactions={`/mascots/sm/${face}-reactions.webp`} />
-);
 const pct = (c) => Math.round((c || 0) * 100);
 const keyOf = (it) => (it ? `${it.zone}|${it.crime_type}` : "");
 
@@ -192,6 +196,124 @@ function alertToPrediction(a) {
     festival_driver,
     why: why || null,
   };
+}
+
+const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? iso : `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })}`; };
+const monthOf = (iso) => { const d = new Date(`${iso}T00:00:00`); return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-IN", { month: "short", year: "numeric" }); };
+const LEVELS = ["Limited", "Moderate", "High"];
+const LEVEL_SAYS = {
+  High: "The ranges have held against the real register and the data is current.",
+  Moderate: "The method is graded; one limit on the data is stated below. Read the ranges as a guide.",
+  Limited: "Treat this week's figures as indicative only.",
+};
+
+// ── The engine: what the forecast rests on today ──────────────────────────────────
+// Three columns an officer can check: how far to trust it and why, the records it read
+// with its track record against the real register, and the internet calendar it took the
+// event dates from. Every figure comes from GET /api/predict/engine; nothing is drawn
+// for effect.
+function EnginePanel({ eng }) {
+  if (eng === null) return <section className="px-eng is-wait"><p>Reading the engine status…</p></section>;
+  if (eng === "missing") {
+    return (
+      <section className="px-eng is-wait">
+        <p><b>Engine status is not loaded.</b> This server was started before the engine status and the event calendar were added. Restart it to see how far the forecast can be trusted, and the events ahead.</p>
+      </section>
+    );
+  }
+  const c = eng.confidence || {}, r = eng.records || {}, t = eng.track_record, cal = eng.calendar || {};
+  const at = Math.max(0, LEVELS.indexOf(c.level));
+  return (
+    <section className="px-eng" aria-label="Forecast engine">
+      <div className="px-eng-col">
+        <h3>Engine confidence</h3>
+        <div className={`px-eng-level l-${c.level}`}>{c.level || "—"}</div>
+        <div className="px-eng-meter" role="img" aria-label={`Confidence ${c.level}, step ${at + 1} of 3`}>
+          {LEVELS.map((l, i) => <i key={l} className={i <= at ? `on l-${c.level}` : ""} />)}
+        </div>
+        <p className="px-eng-says">{LEVEL_SAYS[c.level] || ""}</p>
+        <ul className="px-eng-why">
+          {(c.reasons || []).map((x, i) => <li key={i} className={x.ok ? "ok" : "no"}>{x.text}</li>)}
+        </ul>
+      </div>
+
+      <div className="px-eng-col">
+        <h3>Known data <em>FIR records</em></h3>
+        <dl>
+          <div><dt>Cases read</dt><dd><b>{num(r.cases_13w)}</b> in the last 13 weeks</dd></div>
+          <div><dt>Areas</dt><dd><b>{num(r.areas)}</b> with enough records</dd></div>
+          <div><dt>Read through</dt><dd><b>{r.through ? dayOf(r.through) : "—"}</b></dd></div>
+          {t ? (
+            <>
+              <div><dt>Track record</dt><dd><b>{(t.coverage80 * 100).toFixed(1)}%</b> of the 80% ranges held<span>{t.weeks} weeks of the real register, {monthOf(t.from)} to {monthOf(t.to)}; station forecasts</span></dd></div>
+              <div><dt>Against a plain average</dt><dd><b>{t.weeks_better} of {t.weeks_ranked}</b> weeks better<span>than ranking stations by their last 4 weeks</span></dd></div>
+            </>
+          ) : <div><dt>Track record</dt><dd>Not graded yet</dd></div>}
+        </dl>
+      </div>
+
+      <div className="px-eng-col">
+        <h3>Internet data <em>event calendar</em></h3>
+        <dl>
+          <div><dt>Source</dt><dd><b>{cal.name || "—"}</b><span>{cal.note}</span></dd></div>
+          <div><dt>Last checked</dt><dd><b>{cal.checked_at ? when(cal.checked_at) : "Not reached"}</b></dd></div>
+          <div><dt>Events ahead</dt><dd><b>{(eng.events || []).length}</b> under way or within 3 weeks</dd></div>
+          <div><dt>What is taken</dt><dd>Only the date of a listed festival.<span>What an event does is measured from past FIRs, never taken from the internet.</span></dd></div>
+        </dl>
+      </div>
+    </section>
+  );
+}
+
+// One measured line: a bar that runs left of the centre for "lower", right for "higher".
+function EffectRow({ label, ef, soft }) {
+  if (!ef) return null;
+  const w = Math.min(50, Math.abs(ef.percent) / 2);          // 100% = half the track
+  return (
+    <div className={`px-ef${soft ? " soft" : ""}`}>
+      <span className="px-ef-l">{label}{soft ? <i>less certain</i> : null}</span>
+      <span className="px-ef-bar" aria-hidden="true">
+        <i className={ef.percent >= 0 ? "up" : "dn"} style={ef.percent >= 0 ? { left: "50%", width: `${w}%` } : { right: "50%", width: `${w}%` }} />
+      </span>
+      <span className="px-ef-v"><b className={ef.percent >= 0 ? "up" : "dn"}>{Math.abs(ef.percent)}% {ef.percent >= 0 ? "higher" : "lower"}</b>
+        <em>{num(ef.seen)} cases against {num(ef.expected >= 20 ? Math.round(ef.expected) : ef.expected)} expected; higher in {ef.years_higher} of {ef.years} years</em></span>
+    </div>
+  );
+}
+
+function EventCard({ ev, areas, onOpen }) {
+  const o = ev.overall, n = ev.occurrences_measured || 0;
+  const ups = [...(ev.rises || []), ...(ev.watch || [])];
+  const reading = !o ? "The record has too few past years to measure this event here."
+    : o.clear && o.percent < 0 ? "Fewer cases are registered while this is on than in the weeks around it. The record does not say why: it can be less crime, or slower reporting and registration during the event."
+    : o.clear && o.percent > 0 ? "More cases are registered while this is on than in the weeks around it."
+    : "Registered cases overall do not move clearly with this event.";
+  return (
+    <article className="px-ev">
+      <header>
+        <div>
+          <h4>{ev.name}</h4>
+          <p>{ev.what}</p>
+        </div>
+        <span className={`px-ev-when ${ev.phase === "under way" ? "now" : ""}`}>{ev.when}</span>
+      </header>
+      {n >= 4 ? (
+        <>
+          <h5>What {n} past years show in {ev.measured_in}{o ? ` (${o.from_year} to ${o.to_year})` : ""}</h5>
+          <EffectRow label="All registered cases" ef={o} />
+          {(ev.rises || []).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} />)}
+          {(ev.watch || []).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} soft />)}
+          {(ev.falls || []).slice(0, 2).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} />)}
+        </>
+      ) : null}
+      <p className="px-ev-read">{reading}{ups.length ? ` What goes up: ${ups.map((x) => cap(x.crime).toLowerCase()).join(", ")}.` : ""}</p>
+      <footer>
+        <span>Date: {ev.date_source === "internet" ? "internet calendar" : ev.date_source === "fixed date" ? "fixed each year" : "built-in calendar"}</span>
+        <span>Effect: measured from FIRs, compared with the 4 weeks either side</span>
+        {areas.map((a) => <button type="button" key={a.zone} onClick={() => onOpen(a)}>Open {a.zone}</button>)}
+      </footer>
+    </article>
+  );
 }
 
 // ── Card 2: Prediction Volume Trend - month/year toggle, clickable points ──
@@ -392,12 +514,8 @@ const PREDICT_MODERN_STYLES = `
 .px-sub { font-family: 'Inter', sans-serif; font-size: 14px; color: #a3adb8; letter-spacing: 0; }
 .px-chip { font-family: 'Inter', sans-serif; font-size: 12px; }
 .px-panel-hd, .px-suggest-hd, .pxd-stats i, .px-crime, .px-know { text-transform: none; letter-spacing: 0; }
-.px-agent { flex: none; }
 
 .px-brief { display: flex; gap: 22px; align-items: center; margin-top: 14px; padding: 18px 22px; border: 1px solid #1a1a1a; border-radius: 12px; background: linear-gradient(100deg, rgba(34,211,238,0.06), rgba(5,5,5,0.9) 42%); }
-.px-brief-who { flex: none; display: flex; flex-direction: column; align-items: center; gap: 0; width: 116px; }
-.px-brief-who .px-agent { animation: pxBob 3.6s ease-in-out infinite; }
-.px-brief-who span { font-size: 11px; color: #8b949e; }
 .px-brief-body { flex: 1; min-width: 0; }
 .px-brief-body h2 { font-family: 'Chakra Petch', sans-serif; font-size: 16px; font-weight: 700; color: #e6edf3; margin: 0 0 8px; }
 .px-brief-body ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -467,8 +585,87 @@ const PREDICT_MODERN_STYLES = `
 .px-more .px-prov { margin-top: 14px; }
 .px-method { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: #8b949e; }
 .px-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.px-loading .px-agent { animation: pxBob 1.8s ease-in-out infinite; }
 .px-footer { font-family: 'Inter', sans-serif; font-size: 12px; }
+
+/* ── The engine panel ── */
+.px-eng { display: grid; grid-template-columns: 1.15fr 1fr 1fr; margin-top: 14px; border: 1px solid #1a1a1a; border-radius: 12px; background: #050505; animation: pxRise .4s ease both; }
+.px-eng.is-wait { display: block; padding: 18px 22px; }
+.px-eng.is-wait p { margin: 0; font-size: 14px; line-height: 1.6; color: #a3adb8; max-width: 78ch; }
+.px-eng.is-wait b { color: #e6edf3; }
+.px-eng-col { padding: 18px 22px; min-width: 0; }
+.px-eng-col + .px-eng-col { border-left: 1px solid #161b22; }
+.px-eng h3 { margin: 0 0 10px; font: 600 12.5px 'Inter', sans-serif; color: #a3adb8; }
+.px-eng h3 em { font-style: normal; font-weight: 500; color: #6b7684; margin-left: 6px; }
+.px-eng-level { font: 700 34px/1 'Chakra Petch', sans-serif; color: #e6edf3; }
+.px-eng-level.l-High, .px-lvl.l-High, .px-big .n.l-High { color: #3fb950; }
+.px-eng-level.l-Moderate, .px-lvl.l-Medium, .px-big .n.l-Medium { color: #e0a458; }
+.px-eng-level.l-Limited, .px-lvl.l-Low, .px-big .n.l-Low { color: #9aa5b1; }
+.px-eng-meter { display: flex; gap: 4px; margin: 10px 0 8px; max-width: 220px; }
+.px-eng-meter i { flex: 1; height: 5px; border-radius: 3px; background: #1c2128; }
+.px-eng-meter i.on.l-High { background: #3fb950; } .px-eng-meter i.on.l-Moderate { background: #e0a458; } .px-eng-meter i.on.l-Limited { background: #9aa5b1; }
+.px-eng-says { margin: 0 0 12px; font-size: 13.5px; line-height: 1.5; color: #c9d1d9; }
+.px-eng-why { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.px-eng-why li { position: relative; padding-left: 18px; font-size: 13px; line-height: 1.5; color: #a3adb8; }
+.px-eng-why li::before { content: ""; position: absolute; left: 2px; top: .55em; width: 7px; height: 7px; border-radius: 50%; }
+.px-eng-why li.ok::before { background: #3fb950; } .px-eng-why li.no::before { background: #e0a458; }
+.px-eng dl { margin: 0; display: grid; gap: 10px; }
+.px-eng dl > div { display: grid; grid-template-columns: 108px 1fr; gap: 10px; align-items: baseline; }
+.px-eng dt { font-size: 12px; color: #6b7684; }
+.px-eng dd { margin: 0; font-size: 13.5px; line-height: 1.45; color: #c9d1d9; }
+.px-eng dd b { color: #e6edf3; font-weight: 600; }
+.px-eng dd span { display: block; margin-top: 2px; font-size: 12px; color: #7d8794; }
+
+/* ── Events ahead ── */
+.px-evs { margin-bottom: 28px; scroll-margin-top: 90px; }
+.px-evs-hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 12px; }
+.px-evs-hd h2 { margin: 0; font: 700 16px 'Chakra Petch', sans-serif; color: #e6edf3; }
+.px-evs-hd span, .px-evs-none { font-size: 13px; color: #8b949e; }
+.px-evs-none { margin: 0; padding: 16px 20px; border: 1px dashed #1f242b; border-radius: 12px; }
+.px-ev { border: 1px solid #1a1a1a; border-radius: 12px; background: #050505; padding: 18px 22px; animation: pxRise .4s ease both; }
+.px-ev + .px-ev { margin-top: 12px; }
+.px-ev header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.px-ev h4 { margin: 0; font: 700 18px 'Chakra Petch', sans-serif; color: #e6edf3; }
+.px-ev header p { margin: 4px 0 0; font-size: 13.5px; color: #a3adb8; }
+.px-ev-when { flex: none; font-size: 12.5px; font-weight: 600; color: #c9d1d9; border: 1px solid #262b31; border-radius: 999px; padding: 4px 12px; }
+.px-ev-when.now { color: #e0a458; border-color: rgba(224,164,88,.45); background: rgba(224,164,88,.07); }
+.px-ev h5 { margin: 16px 0 8px; font: 600 12.5px 'Inter', sans-serif; color: #a3adb8; }
+.px-ef { display: grid; grid-template-columns: minmax(150px, 1.1fr) minmax(120px, 1fr) minmax(220px, 1.6fr); gap: 14px; align-items: center; padding: 7px 0; border-top: 1px solid #12161b; }
+.px-ef-l { font-size: 13.5px; color: #d5dce4; }
+.px-ef-l i { font-style: normal; font-size: 11px; color: #8b949e; border: 1px solid #262b31; border-radius: 999px; padding: 0 7px; margin-left: 8px; white-space: nowrap; }
+.px-ef-bar { position: relative; height: 8px; border-radius: 4px; background: #12161b; }
+.px-ef-bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: #39424d; }
+.px-ef-bar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; transform-origin: left; animation: pxGrow .7s ease-out both; }
+.px-ef-bar i.up { background: #e0a458; } .px-ef-bar i.dn { background: #58a6ff; transform-origin: right; }
+.px-ef.soft .px-ef-bar i { opacity: .55; }
+.px-ef-v b { font-size: 13.5px; font-weight: 600; } .px-ef-v b.up { color: #e0a458; } .px-ef-v b.dn { color: #79b8ff; }
+.px-ef-v em { display: block; font-style: normal; font-size: 12px; color: #7d8794; }
+.px-ev-read { margin: 12px 0 0; font-size: 13.5px; line-height: 1.55; color: #c9d1d9; max-width: 92ch; }
+.px-ev footer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 12px; font-size: 12px; color: #6b7684; }
+.px-ev footer button { font: 600 12px 'Inter', sans-serif; color: #58a6ff; background: rgba(88,166,255,.08); border: 1px solid rgba(88,166,255,.3); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+.px-ev footer button:hover { background: rgba(88,166,255,.16); }
+
+/* confidence in words on a card, a scenario range, an event inside the explanation */
+.px-conf2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 12px; color: #8b949e; }
+.px-lvl { font-weight: 600; }
+.px-scn2 { margin-bottom: 8px; font-size: 12.5px; color: #a3adb8; }
+.px-scn2 b { color: #e6edf3; font-weight: 600; }
+.px-scn2 i, .px-evin i { font-style: normal; font-size: 11px; color: #d2a8ff; border: 1px solid rgba(210,168,255,.35); border-radius: 999px; padding: 0 7px; margin-left: 4px; white-space: nowrap; }
+.px-tag.ev { color: #e0a458; border-color: rgba(224,164,88,.35); background: rgba(224,164,88,.07); margin-top: 8px; }
+.px-big .n.lv { font-size: 38px; }
+.px-evin { margin-bottom: 24px; padding: 14px 16px; border: 1px solid rgba(224,164,88,.25); border-left: 3px solid #e0a458; border-radius: 8px; background: rgba(224,164,88,.04); }
+.px-evin h4 { margin: 0 0 6px; font: 600 14px 'Inter', sans-serif; color: #e6edf3; }
+.px-evin h4 span { font-weight: 500; font-size: 12px; color: #e0a458; margin-left: 8px; }
+.px-evin p { margin: 0; font-size: 13.5px; line-height: 1.55; color: #c9d1d9; }
+.px-evin p + p { margin-top: 6px; }
+.px-evin p.dim { color: #8b949e; font-size: 12.5px; }
+.px-evin p b { color: #e6edf3; }
+.px-brief-body li.k-ev::before { background: #e0a458; }
+.px-brief { display: block; }
+@media (max-width: 1100px) {
+  .px-eng { grid-template-columns: 1fr 1fr; }
+  .px-eng-col:first-child { grid-column: 1 / -1; border-bottom: 1px solid #161b22; }
+  .px-eng-col:nth-child(2) { border-left: 0; }
+}
 
 @keyframes pxRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes pxGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -477,12 +674,17 @@ const PREDICT_MODERN_STYLES = `
 @media (max-width: 820px) {
   .px-statrow { grid-template-columns: repeat(2, 1fr) !important; }
   .px-statbox:last-child { grid-column: 1 / -1; }
-  .px-brief-who .px-agent { width: 72px !important; height: 72px !important; }
+  .px-eng { grid-template-columns: 1fr; gap: 0; padding: 4px 16px; }
+  .px-eng-col { padding: 14px 0; border-left: 0 !important; border-top: 1px solid #161b22; }
+  .px-eng-col:first-child { border-top: 0; }
+  .px-ev header { flex-direction: column; gap: 8px; }
+  .px-ef { grid-template-columns: 1fr; gap: 4px; }
+  .px-ef-bar { order: 3; }
   .px-brief { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
   .px-brief-who { flex-direction: row; width: auto; gap: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .px-brief-who .px-agent, .px-loading .px-agent, .px-statbox, .px-card, .px-fade, .px-brief-ai, .px-conffill { animation: none !important; }
+  .px-statbox, .px-card, .px-fade, .px-brief-ai, .px-conffill, .px-eng, .px-ev, .px-ef-bar i { animation: none !important; }
   .px-brief-body li { animation: none !important; opacity: 1; }
   .pxd-liner { animation: none !important; stroke-dashoffset: 0; }
 }
@@ -531,6 +733,8 @@ function PredictScreen() {
   const [runningHypotheses, setRunningHypotheses] = useState(false);
   const [hypothesesList, setHypothesesList] = useState([]);
   const [reading, setReading] = useState(null);      // Antar's worded reading of the board
+  const [eng, setEng] = useState(null);              // engine status | "missing" (older server) | null while loading
+  const eventsRef = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(toRfNodes(DEMO_NODES));
   const [edges, setEdges, onEdgesChange] = useEdgesState(toRfEdges(DEMO_EDGES));
   const consoleRef = useRef(null);
@@ -560,6 +764,7 @@ function PredictScreen() {
 
     // Worded by the model from counted facts; absent if the model is slow, down, or adds a number.
     fetch(`${API}/api/predict/briefing`).then((r) => (r.ok ? r.json() : null)).then((d) => setReading(d?.reading || null)).catch(() => {});
+    fetch(`${API}/api/predict/engine`).then((r) => (r.ok ? r.json() : "missing")).then(setEng).catch(() => setEng("missing"));
     fetch(`${API}/api/predict/model-card`).then((r) => r.json()).then(setModelCard).catch(() => {});
     fetch(`${API}/api/predict/dashboard`).then((r) => r.json()).then(setDash).catch(() => setDash("offline"));
 
@@ -763,12 +968,14 @@ function PredictScreen() {
     }
     return `${ctype} cases in ${name} are ${levelOf(item).toLowerCase().replace(/^at its/, "at their")} for this area.`
       + (range ? ` The model expects ${range} in the next 7 days.` : "")
-      + ` It rates this ${(RISK_WORD[item.risk] || "risk").toLowerCase()} and is ${pct(item.confidence)}% confident.`
+      + ` It rates this ${(RISK_WORD[item.risk] || "risk").toLowerCase()}`
+      + (item.confidence_level ? `, with ${item.confidence_level.toLowerCase()} confidence.` : ` and is ${pct(item.confidence)}% confident.`)
       + (item.festival_driver ? ` Season: ${item.festival_driver.replace(/^Seasonal\s*/i, "").trim()} at this time of year.` : "");
   };
 
   // The week in a few counted sentences. Each one opens the area it is about.
   const P = predictions || [];
+  const evsAhead = (eng && eng !== "missing" && eng.events) || [];
   const highs = P.filter((x) => x.risk === "HIGH");
   const aboves = P.filter((x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2).sort((a, b) => (b.z_score || 0) - (a.z_score || 0));
   const drops = P.filter((x) => x.direction === "silence");
@@ -786,6 +993,12 @@ function PredictScreen() {
       ? { k: "dn", go: drops[0], t: `${drops.length} ${drops.length === 1 ? "area has" : "areas have"} unusually few reports (${names(drops)}). That can mean under-reporting and is worth a check.` }
       : null,
     usual ? { k: "eq", t: `${usual} ${are(usual)} at the usual level.` } : null,
+    ...evsAhead.filter((e) => e.in_forecast_window).map((e) => {
+      const o = e.overall, up = (e.rises || [])[0] || (e.watch || [])[0];
+      return { k: "ev", toEvents: true, t: `${e.name}: ${e.when.charAt(0).toLowerCase()}${e.when.slice(1)}.`
+        + (o ? ` In ${o.years} past years ${e.measured_in} registered ${Math.abs(o.percent)}% ${o.percent < 0 ? "fewer" : "more"} cases in this window` : "")
+        + (o && up ? `, while ${cap(up.crime).toLowerCase()} ran ${up.percent}% higher${(e.rises || []).length ? "" : " (less certain)"}.` : o ? "." : "") };
+    }),
   ].filter(Boolean);
   const openItem = (it) => {
     const i = P.indexOf(it);
@@ -794,6 +1007,7 @@ function PredictScreen() {
     setTimeout(() => reasonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   };
 
+  const toEvents = () => eventsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 const avgConf = predictions?.length
     ? Math.round(predictions.reduce((s, p) => s + (p.confidence || 0), 0) / predictions.length * 100)
     : null;
@@ -827,21 +1041,19 @@ const avgConf = predictions?.length
       </div>
 
       {/* The week in brief: counted sentences first, Antar's wording of them after */}
+      <EnginePanel eng={eng} />
+
       <div className="px-brief">
-        <div className="px-brief-who">
-          <Agent face="clockwork" name="Forecast" size={112} />
-          <span>{kn ? "ಮುನ್ಸೂಚನೆ ಏಜೆಂಟ್" : "Forecast agent"}</span>
-        </div>
         <div className="px-brief-body">
           <h2>{kn ? "ಈ ವಾರ ಸಂಕ್ಷಿಪ್ತವಾಗಿ" : "This week in brief"}</h2>
           {predictions === null && <p className="px-brief-wait">{kn ? "ದಾಖಲೆಗಳನ್ನು ಓದುತ್ತಿದೆ…" : "Reading the records…"}</p>}
           {predictions?.length === 0 && <p className="px-brief-wait">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "There is nothing to forecast yet."}</p>}
           <ul>
             {brief.map((b, i) => (
-              <li key={i} className={`k-${b.k}${b.go ? " go" : ""}`} style={{ animationDelay: `${i * 90}ms` }}
-                  onClick={b.go ? () => openItem(b.go) : undefined} role={b.go ? "button" : undefined} tabIndex={b.go ? 0 : undefined}
-                  onKeyDown={b.go ? (e) => { if (e.key === "Enter") openItem(b.go); } : undefined}>
-                {b.t}{b.go ? <em>{kn ? "ತೆರೆಯಿರಿ" : "Open"}</em> : null}
+              <li key={i} className={`k-${b.k}${b.go || b.toEvents ? " go" : ""}`} style={{ animationDelay: `${i * 90}ms` }}
+                  onClick={b.go ? () => openItem(b.go) : b.toEvents ? toEvents : undefined} role={b.go || b.toEvents ? "button" : undefined} tabIndex={b.go || b.toEvents ? 0 : undefined}
+                  onKeyDown={(e) => { if (e.key === "Enter") { if (b.go) openItem(b.go); else if (b.toEvents) toEvents(); } }}>
+                {b.t}{b.go ? <em>{kn ? "ತೆರೆಯಿರಿ" : "Open"}</em> : b.toEvents ? <em>See what past years show</em> : null}
               </li>
             ))}
           </ul>
@@ -876,12 +1088,34 @@ const avgConf = predictions?.length
           <div className="v"><Count n={predictions ? drops.length : null} /></div>
           <div className="d">{kn ? "ಕಡಿಮೆ ವರದಿ ಸಾಧ್ಯತೆ" : "Unusually few reports"}</div>
         </div>
-        <div className="px-statbox">
-          <div className="l">{kn ? "ಸರಾಸರಿ ವಿಶ್ವಾಸ" : "Average confidence"}</div>
-          <div className="v cyan"><Count n={avgConf} suffix="%" /></div>
-          <div className="d">{kn ? "ಮಾದರಿಯ ಖಚಿತತೆ" : "How sure the model is"}</div>
-        </div>
+        {eng && eng !== "missing" ? (
+          <div className="px-statbox">
+            <div className="l">Events ahead</div>
+            <div className="v cyan"><Count n={evsAhead.length} /></div>
+            <div className="d">Under way or within 3 weeks</div>
+          </div>
+        ) : (
+          <div className="px-statbox">
+            <div className="l">{kn ? "ಸರಾಸರಿ ವಿಶ್ವಾಸ" : "Average confidence"}</div>
+            <div className="v cyan"><Count n={avgConf} suffix="%" /></div>
+            <div className="d">{kn ? "ಮಾದರಿಯ ಖಚಿತತೆ" : "How sure the model is"}</div>
+          </div>
+        )}
       </div>
+
+      {/* Events ahead: when each falls, and what the real register shows it did before */}
+      {eng && eng !== "missing" && (
+        <section className="px-evs" ref={eventsRef} aria-label="Events ahead">
+          <div className="px-evs-hd">
+            <h2>Events ahead</h2>
+            <span>Dates from the event calendar. What each one does is measured from past FIRs, not assumed.</span>
+          </div>
+          {evsAhead.length === 0 && <p className="px-evs-none">No listed event falls in the next 3 weeks.</p>}
+          {evsAhead.map((e) => (
+            <EventCard key={e.key} ev={e} areas={P.filter((x) => (e.places || []).includes(x.zone)).slice(0, 4)} onOpen={openItem} />
+          ))}
+        </section>
+      )}
 
       {/* Hero row: Predict next 7 days · Volume trend · Antar Alert */}
       <div className="px-dash">
@@ -893,7 +1127,7 @@ const avgConf = predictions?.length
           </div>
           <div className="pxd-scroll" role="group" aria-label={kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್ ಪ್ರಾಧಾನ್ಯ" : "Hotspot rankings"}>
             {predictions === null && (
-              <div className="px-loading"><Agent face="clockwork" name="Forecast" size={56} /><div>{kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Working out the week…"}</div></div>
+              <div className="px-loading"><div className="signal-pulse" /><div>{kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Working out the week…"}</div></div>
             )}
             {predictions?.length === 0 && (
               <div className="px-loading">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "No forecasts right now."}</div>
@@ -927,10 +1161,21 @@ const avgConf = predictions?.length
                   <b className={p.direction === "silence" ? "dn" : (Number(p.z_score) || 0) >= 2 ? "up" : ""}>{levelOf(p)}</b>
                   {rangeOf(p) ? <span>{kn ? "ನಿರೀಕ್ಷಿತ" : "Expected"} {rangeOf(p)}</span> : null}
                 </div>
-                <div className="px-confbar">
-                  <div className="px-conftrack"><div className="px-conffill" style={{ width: `${pct(p.confidence)}%` }} /></div>
-                  <span className="px-confpct">{pct(p.confidence)}% {kn ? "ವಿಶ್ವಾಸ" : "confident"}</span>
-                </div>
+                {p.scenario && (
+                  <div className="px-scn2">With {p.scenario.event}: <b>{num(p.scenario.lo)} to {num(p.scenario.hi)} cases</b> <i>inferred</i></div>
+                )}
+                {p.confidence_level ? (
+                  <div className="px-conf2">
+                    <span className={`px-lvl l-${p.confidence_level}`}>{p.confidence_level} confidence</span>
+                    <span>{num(p.basis?.cases_52w)} cases in 52 weeks</span>
+                  </div>
+                ) : (
+                  <div className="px-confbar">
+                    <div className="px-conftrack"><div className="px-conffill" style={{ width: `${pct(p.confidence)}%` }} /></div>
+                    <span className="px-confpct">{pct(p.confidence)}% {kn ? "ವಿಶ್ವಾಸ" : "confident"}</span>
+                  </div>
+                )}
+                {(p.events || []).map((e) => <span key={e.key} className="px-tag ev">{e.name}: {e.phase}</span>)}
                 {p.festival_driver && <span className="px-tag">{p.festival_driver}</span>}
                 {acked.has(keyOf(p)) && <span className="px-tag ok">{kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Reviewed"}</span>}
               </div>
@@ -941,7 +1186,6 @@ const avgConf = predictions?.length
         {/* 2 · Cases recorded per month */}
         <div className="pxd-card">
           <div className="pxd-hd pxd-hd2">
-            <Agent face="radio" name="Pattern" />
             <div>
               <span className="pxd-ttl">{kn ? "ತಿಂಗಳಿಗೆ ದಾಖಲಾದ ಪ್ರಕರಣಗಳು" : "Cases recorded per month"}</span>
               <span className="pxd-note">{kn ? "ಪ್ರತಿ ತಿಂಗಳು ದಾಖಲಾದ FIR ಗಳು" : "FIRs registered each month. This is the history the forecast is measured against."}</span>
@@ -955,7 +1199,6 @@ const avgConf = predictions?.length
         {/* 3 · Active alerts (all, scrollable, clickable) */}
         <div className="pxd-card">
           <div className="pxd-hd pxd-hd2">
-            <Agent face="lantern" name="Alerts" />
             <div>
               <span className="pxd-ttl">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts"} <i>{alertList.length}</i></span>
               <span className="pxd-note">{kn ? "ಸಾಮಾನ್ಯ ಮಾದರಿಯಿಂದ ಭಿನ್ನವಾದ ವಲಯಗಳು" : "Areas where recent cases departed from the usual pattern. Click one to see why."}</span>
@@ -1021,8 +1264,9 @@ const avgConf = predictions?.length
                   <div className="px-insp-why">{generateNarrative(focusItem)}</div>
 
                   <div className="px-big">
-                    <span className="n">{pct(focusItem.confidence)}%</span>
-                    <span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confident"}</span>
+                    {focusItem.confidence_level
+                      ? <><span className={`n lv l-${focusItem.confidence_level}`}>{focusItem.confidence_level}</span><span className="nl">confidence</span></>
+                      : <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confident"}</span></>}
                     <span className={`px-risk ${RISK_BADGE[focusItem.risk] || ""}`}>{kn ? focusItem.risk?.toLowerCase() : (RISK_WORD[focusItem.risk] || focusItem.risk)}</span>
                     {Number(focusItem.z_score) > 0 && (
                       <span className="z" title="How far recent cases sit from this area's usual level. 2 is unusual, 4 is rare.">{kn ? "ಅಸಂಗತಿ" : "Anomaly score"} {focusItem.z_score}</span>
@@ -1035,6 +1279,30 @@ const avgConf = predictions?.length
                       {coverOf(focusItem.coverage) ? <span>{kn ? `${coverOf(focusItem.coverage)} ವ್ಯಾಪ್ತಿ` : `A range like this holds about ${coverOf(focusItem.coverage)} of the time.`}</span> : null}
                     </div>
                   )}
+
+                  {focusItem.confidence_reasons?.length > 0 && (
+                    <div className="px-saw">
+                      <h4>Why this confidence</h4>
+                      <ul>{focusItem.confidence_reasons.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                    </div>
+                  )}
+
+                  {(focusItem.events || []).map((e) => (
+                    <div className="px-evin" key={e.key}>
+                      <h4>{e.name} <span>{e.when}</span></h4>
+                      {e.effect ? (
+                        <p>
+                          In {e.effect.years} past years, {cap(focusItem.crime_type).toLowerCase()} cases in {e.measured_in} were <b>{Math.abs(e.effect.percent)}% {e.effect.direction}</b> during the event
+                          ({num(e.effect.seen)} against {num(e.effect.expected >= 20 ? Math.round(e.effect.expected) : e.effect.expected)} expected).
+                          {e.effect.clear ? "" : " That is within ordinary week-to-week variation, so the range is not moved."}
+                        </p>
+                      ) : <p>Too few past cases of this type are on record to measure what the event does to it here.</p>}
+                      {e.overall && <p className="dim">All registered cases in this window: {Math.abs(e.overall.percent)}% {e.overall.direction} than the weeks around it.</p>}
+                      {focusItem.scenario && focusItem.scenario.event === e.name && (
+                        <p className="scn">Baseline <b>{rangeOf(focusItem)}</b>. With the event <b>{num(focusItem.scenario.lo)} to {num(focusItem.scenario.hi)} cases</b> <i>inferred from {focusItem.scenario.years} past years</i></p>
+                      )}
+                    </div>
+                  ))}
 
                   {sawOf(focusItem).length > 0 && (
                     <div className="px-saw">
@@ -1076,7 +1344,7 @@ const avgConf = predictions?.length
 
                   <div className="px-acts">
                     <button className={`px-actbtn cy ${showReasoning ? "on" : ""}`} onClick={() => setShowReasoning((v) => !v)}>
-                      {kn ? "ತರ್ಕ" : "How the agents reasoned"} {showReasoning ? "▾" : "▸"}
+                      {kn ? "ತರ್ಕ" : "How this was worked out"} {showReasoning ? "▾" : "▸"}
                     </button>
                     <button className={`px-actbtn ${showScenario ? "on" : ""}`} onClick={() => setShowScenario((v) => !v)}>
                       {kn ? "ಸನ್ನಿವೇಶ" : "What if"} {showScenario ? "▾" : "▸"}
@@ -1116,7 +1384,7 @@ const avgConf = predictions?.length
               {showReasoning && (
                 <div className="px-reason">
                   <div className="px-drawer-hd">
-                    <span className="px-dagttl">{kn ? "ಏಜೆಂಟ್ ತರ್ಕ ಗ್ರಾಫ್" : "How the agents reasoned"} · <span className="px-dagzone">{focusItem.zone}</span></span>
+                    <span className="px-dagttl">{kn ? "ತರ್ಕ ಗ್ರಾಫ್" : "How this was worked out"} · <span className="px-dagzone">{focusItem.zone}</span></span>
                     {streaming && <span className="px-live"><span className="d" />{kn ? "ಲೈವ್" : "Live"}</span>}
                     <button className="px-drawer-x" onClick={() => setShowReasoning(false)} aria-label="Close reasoning"></button>
                   </div>
@@ -1142,7 +1410,7 @@ const avgConf = predictions?.length
                           const [agent, ...rest] = line.split(" ▸ ");
                           return (
                             <div key={i} className="px-traceline">
-                              <span className="px-tagent">{agent}</span>
+                              <span className="px-tagent">{stepName(agent)}</span>
                               <span className="px-tmsg">{rest.join(" ▸ ")}</span>
                             </div>
                           );

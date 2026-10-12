@@ -137,9 +137,11 @@ def compile_board(limit: int = 0, force: bool = False) -> dict:
 
     order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
     predictions.sort(key=lambda c: (order.get(c["risk"], 9), -(c["z_score"] or 0)))
+    upcoming_events = _annotate(predictions, rows, date.today())
 
     # Store full un-truncated board in cache
     full_payload = redact_future_dates({
+        "events": upcoming_events,
         "predictions": predictions,
         "count": len(predictions),
         "zones_covered": len({c["zone"] for c in predictions}),
@@ -156,6 +158,199 @@ def compile_board(limit: int = 0, force: bool = False) -> dict:
     out_payload["predictions"] = out_preds
     out_payload["count"] = len(out_preds)
     return out_payload
+
+
+def _annotate(predictions: list[dict], rows: list[dict], today) -> list[dict]:
+    """Say what each card rests on, and attach the events that fall in its 7 days.
+
+    Three things are added to every card, none of which changes its range or its risk:
+
+      basis        how many cases of this type the area has on record in the last 52
+                   weeks - the plain answer to "how much is this built on?"
+      confidence   High / Medium / Low, from that history and from whether a range could
+                   be drawn at all, with the reasons in words. It replaces reading the
+                   rule-table number (`confidence`) as if it were a measured probability.
+      events       an event under way or starting within the week, with what the real
+                   record shows it did to THIS crime type in past years. Where that effect
+                   is clear, a scenario range is given beside the baseline range - never in
+                   place of it, and labelled Inferred.
+
+    Returns the events described for the whole state. A failure here leaves the board as
+    it was: the calendar is context, and the board must not go down with it.
+    """
+    from datetime import timedelta
+    from app.services.anomaly import _as_date
+    try:
+        from app.services import events as EV
+        EV.refresh_feed()
+        ups = [e for e in EV.upcoming(today, horizon_days=21)]
+    except Exception:
+        EV, ups = None, []
+
+    # Counted from the rows the anomaly scan and the Map read (T14), not from `rows`:
+    # scan_rows() is a capped sample across every year and holds only a few hundred recent cases.
+    from app.services.zcql_repo import build_spec
+    from app.services.zcql_local import run_query
+    start = today - timedelta(days=364)
+    n52: Counter = Counter()
+    for r in run_query(build_spec("T14", {})):
+        d = _as_date(r.get("occurred_at"))
+        if d and start <= d <= today:
+            n52[(r.get("zone"), r.get("crime_type"))] += 1
+
+    for c in predictions:
+        n = n52.get((c["zone"], c["crime_type"]), 0)
+        history = "strong" if n >= 104 else "fair" if n >= 26 else "thin"
+        has_band = c.get("conformal_lo") is not None
+        level = "High" if has_band and history == "strong" else "Low" if history == "thin" else "Medium"
+        reasons = [f"{n} cases of this type are on record here in the last 52 weeks.",
+                   ("A range could be drawn from how past weeks varied." if has_band
+                    else "Nothing unusual was measured, so no range is drawn: this is the area's usual level.")]
+        evs, scenario = [], None
+        for e in ups if EV else []:
+            if not e["in_forecast_window"]:
+                continue
+            local = c["zone"] in e["places"]
+            if e["places"] and not local:
+                continue                      # centred somewhere else
+            area = tuple(e["places"]) or None
+            try:
+                own = EV.effect(e["key"], c["zone"], c["crime_type"])
+                wide = EV.effect(e["key"], area, c["crime_type"])
+                overall = EV.effect(e["key"], c["zone"]) or EV.effect(e["key"], area)
+            except Exception:
+                continue
+            ef = own if own and own["clear"] else wide
+            where = c["zone"] if own and own["clear"] else e["measured_in"]
+            if not local and not (ef and ef["clear"]):
+                continue                      # a statewide event with nothing clear for this crime type
+            evs.append({"key": e["key"], "name": e["name"], "when": e["when"], "phase": e["phase"],
+                        "date_source": e["date_source"], "measured_in": where,
+                        "effect": ef, "overall": overall})
+            if ef and ef["clear"]:
+                reasons.append(f"{e['name']}: in {ef['years']} past years this type was "
+                               f"{abs(ef['percent'])}% {ef['direction']} in {where} during the event.")
+                if has_band and scenario is None:
+                    scenario = {"lo": round(c["conformal_lo"] * ef["ratio"], 1),
+                                "hi": round(c["conformal_hi"] * ef["ratio"], 1),
+                                "ratio": ef["ratio"], "percent": ef["percent"], "event": e["name"],
+                                "measured_in": where, "years": ef["years"], "evidence_class": "I"}
+        c["basis"] = {"cases_52w": n, "history": history}
+        c["confidence_level"] = level
+        c["confidence_reasons"] = reasons
+        c["events"] = evs
+        c["scenario"] = scenario
+
+    out = []
+    for e in ups if EV else []:
+        try:
+            out.append(EV.describe(e))
+        except Exception:
+            out.append({**e, "overall": None, "rises": [], "falls": [], "watch": [], "occurrences_measured": 0})
+    return out
+
+
+@router.get("/predict/engine")
+async def predict_engine() -> dict:
+    """What the forecast rests on today, for the officer reading it.
+
+    Three parts, each a count or a measurement and none of them a slogan: the records it
+    read, the track record of the weekly forecast model against the real register, and the
+    event calendar. The confidence level is a stated rule over those three, returned with
+    its reasons - so "Moderate" can be argued with.
+    """
+    import asyncio
+    return await asyncio.to_thread(_engine)
+
+
+def _engine() -> dict:
+    from datetime import date, datetime, timedelta
+    from app.core.date_guard import redact_future_dates
+    from app.services.anomaly import _as_date
+
+    today = date.today()
+    from app.services.zcql_repo import build_spec
+    from app.services.zcql_local import run_query
+    board = compile_board(0)
+    rows = run_query(build_spec("T14", {}))      # the rows the anomaly scan and the Map read
+    c13 = c52 = 0
+    for r in rows:
+        d = _as_date(r.get("occurred_at"))
+        if d and d <= today:
+            if d >= today - timedelta(days=364):
+                c52 += 1
+            if d >= today - timedelta(days=90):
+                c13 += 1
+    records = {"through": board.get("as_of"), "areas": board.get("zones_covered"),
+               "cases_13w": c13, "cases_52w": c52, "real_record_ends": None, "recent_real_share": None}
+
+    track = None
+    try:
+        from app.forecast import service as S
+        from app.agents.brain_console import _ro
+        con = _ro()
+        try:
+            st = S.status(con)
+            records["real_record_ends"] = (st.get("as_of") or {}).get("real_record_ends")
+            runs = st.get("runs") or []
+            records["recent_real_share"] = runs[-1].get("real_share") if runs else None
+            sc = S.scorecard(con, unit_type="station")
+            sm = sc["summary"]
+            track = {"unit": "station", "weeks": sc["window"]["weeks"], "from": sc["window"]["from"],
+                     "to": sc["window"]["to"], "coverage80": sm["coverage80"], "coverage90": sm["coverage90"],
+                     "weeks_ranked": sm["weeks_ranked"], "weeks_better": sm["weeks_better_than_last4"],
+                     "forecast_total": sm["forecast_total"], "actual_total": sm["actual_total"]}
+        finally:
+            con.close()
+    except Exception:
+        track = None
+
+    try:
+        from app.services import events as EV
+        cal = EV.feed_status()
+    except Exception:
+        cal = {"source": "built-in", "name": "Built-in festival calendar", "checked_at": None, "stale": True,
+               "note": "The event calendar could not be read."}
+    evs = board.get("events") or []
+    measured = max((e.get("occurrences_measured") or 0 for e in evs), default=0)
+
+    # ── the rule ──
+    order = ["Limited", "Moderate", "High"]
+    level, reasons = "High", []
+    cap = lambda lv, to: to if order.index(to) < order.index(lv) else lv
+    if track:
+        held = round(100 * track["coverage80"], 1)
+        reasons.append({"ok": track["coverage80"] >= 0.75,
+                        "text": f"Graded on {track['weeks']} past weeks of the real register: the 80% ranges held {held}% of the time."})
+        if track["coverage80"] < 0.75:
+            level = cap(level, "Moderate")
+    else:
+        level = cap(level, "Limited")
+        reasons.append({"ok": False, "text": "The forecast has not been graded against past weeks yet."})
+    share = records["recent_real_share"]
+    if share is not None and share < 0.5:
+        level = cap(level, "Moderate")
+        reasons.append({"ok": False, "text": "The most recent weeks in this build are demonstration records, so this week's figures show the method at work, not live crime."})
+    if c13 < 200:
+        level = cap(level, "Limited")
+        reasons.append({"ok": False, "text": f"Only {c13} cases are on record for the last 13 weeks."})
+    else:
+        reasons.append({"ok": True, "text": f"{c13:,} cases in the last 13 weeks across {records['areas']} areas."})
+    if cal["source"] == "internet" and not cal["stale"]:
+        reasons.append({"ok": True, "text": "Festival dates were read from the internet calendar within the last two days."})
+    else:
+        reasons.append({"ok": False, "text": cal["note"]})
+    if evs:
+        reasons.append({"ok": measured >= 4,
+                        "text": (f"Event effects are measured from {measured} past years of FIRs, not assumed."
+                                 if measured >= 4 else "Too few past years on record to measure this event's effect.")})
+
+    return redact_future_dates({
+        "as_of": board.get("as_of"), "generated_at": datetime.now().isoformat(timespec="minutes"),
+        "confidence": {"level": level, "reasons": reasons},
+        "records": records, "track_record": track, "calendar": cal,
+        "events": evs, "method": board.get("engine"),
+    })
 
 
 @router.get("/predict/board")
@@ -316,6 +511,12 @@ def board_facts(board: dict) -> dict:
         "above_normal": [_row(c) for c in above[:5]], "above_normal_count": len(above),
         "reporting_drop": [_row(c) for c in quiet[:5]], "reporting_drop_count": len(quiet),
         "usual_count": max(0, usual),
+        "events": [{"name": e.get("name"), "when": e.get("when"), "measured_in": e.get("measured_in"),
+                    "all_crime_percent": (e.get("overall") or {}).get("percent"),
+                    "past_years": e.get("occurrences_measured"),
+                    "rises": [{"crime": _plain_crime(r["crime"]), "percent": r["percent"]}
+                              for r in (e.get("rises") or []) + (e.get("watch") or [])]}
+                   for e in (board.get("events") or []) if e.get("in_forecast_window")],
     }
 
 
@@ -345,7 +546,9 @@ async def predict_briefing() -> dict:
             system=("You brief a police station officer on the next 7 days. Plain English, short "
                     "sentences, no jargon, no statistics terms, no markdown. Two or three sentences. "
                     "Use only the facts given: never add a number, a place or a cause that is not in "
-                    "them. Say what deserves attention first and what an officer could check. This is "
+                    "them. If an event is listed, say what the past years show for it (percent is "
+                    "the change in registered cases during the event; negative means fewer). Say "
+                    "what deserves attention first and what an officer could check. This is "
                     "decision support, not an instruction."),
             user=json.dumps(facts, ensure_ascii=False), temperature=0.2, max_tokens=220, budget_s=12.0)
         text = re.sub(r"\s+", " ", (text or "")).strip()

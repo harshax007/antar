@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     QUICKML_CLIENT_SECRET: str = ""
     QUICKML_LLM_MODEL: str = "Qwen-3.6-Instruct"              # Default base model
     QUICKML_CHAT_MODEL: str = "GLM-4.7-Flash"                 # Dedicated fast model for /ask & chat interface
+    # Public calendar the forecast reads festival DATES from (iCalendar). Only the date of
+    # a festival on a fixed list is taken from it. Empty = built-in dates only.
+    ANTAR_EVENT_FEED_URL: str = ("https://calendar.google.com/calendar/ical/"
+                                 "en.indian%23holiday%40group.v.calendar.google.com/public/basic.ics")
     QUICKML_DEFAULT_MODEL: str = "Qwen-3.6-35B"               # Analytical model for non-chat screens & agents
     QUICKML_VISION_MODEL: str = "VL-Qwen3.6-35B-A3B"          # Vision-Language model for scanned evidence
     QUICKML_LLM_MAX_TOKENS: int = 4096   # NOTE: QuickML treats this as TOTAL context (input+output)
