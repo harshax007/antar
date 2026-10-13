@@ -1916,3 +1916,9 @@ was checked by executing the old and new forms side by side and comparing rows e
 
 * **Cause of the mixed fonts**: the four local `jetbrains-mono-*.woff2` files were one identical 11 KB subset with no Latin letters or digits, declared as weights 400 to 700. Bold monospace numbers therefore fell back to Times. The files and their `@font-face` rules are removed; JetBrains Mono now loads all four weights from the Google Fonts link in `app/layout.jsx` (offline it falls back to the system monospace, not a serif).
 * **Overview restyle** (`components/DataOverview.jsx`, `.ov-*` in `globals.css`): figures in Inter with tabular digits, labels in sentence case ("Total FIRs", "Charge-sheeted"), a labelled year and FIR range row, larger stage and table text, chart axes in Inter. No figure or panel was removed.
+
+## Map: agents on click, a Research agent, a plainer View summary - 2026-10-13
+
+* **Agents** (`components/MapAgents.jsx`): no box on the map; one button opens the list, and each agent says what it does. Drag one onto a district to run it for the selected date.
+* **Research** added to the map agents: on a district it lists the accused named most often there (`brain_console._research_place`). Needs a backend restart to load.
+* **View summary** (`components/MapScreen.jsx`): one figure first, plain rows, a short "In short" line.
