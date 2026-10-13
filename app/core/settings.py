@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     # Stratus
     STRATUS_BUCKET_NAME: str = "antar-files"
 
+    # Which language model, if any (app/services/llm.py). Unset = QuickML when its
+    # credentials are present, otherwise none. "openai_compatible" is any server that speaks
+    # /chat/completions, including a local one (Ollama: http://localhost:11434/v1).
+    ANTAR_LLM_PROVIDER: str = ""        # quickml | openai_compatible | none
+    ANTAR_LLM_BASE_URL: str = ""
+    ANTAR_LLM_API_KEY: str = ""
+    ANTAR_LLM_MODEL: str = ""
+
     # QuickML LLM
     QUICKML_CLIENT_ID: str = ""
     QUICKML_CLIENT_SECRET: str = ""

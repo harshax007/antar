@@ -1969,3 +1969,10 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * The Hypotheses panel showed two prepared paragraphs ("HYP-001-COLD", a "Highway Robbery Syndicate") whatever district was selected. They are gone.
 * `GET /api/predict/hypotheses?zone=` (`pattern_predict.hypotheses_for`): the research agent proposes links between accused in the district from shared signals; the advocate agent checks each against its base rate with no model. The panel shows what they share, the verdict in words, the chance the link is real after the check, and what would settle it. On the real data most proposals do not stand up (Raichur: 22.2 expected false matches across 59,125 compared pairs), and the panel says so.
 * A district with no proposal says "No link ... scores high enough to propose." Needs a backend restart.
+
+## Any language model, or none (USP plan S8) - 2026-10-14
+
+* `app/services/llm.py`: the provider is a setting. `ANTAR_LLM_PROVIDER` = `quickml` (default when its credentials are set), `openai_compatible` (any `/chat/completions` server, hosted or local such as Ollama at `http://localhost:11434/v1`), or `none`. An unknown value or a missing address is treated as `none`.
+* Every provider goes through the one choke point (`quickml_generate`): policy and canary added, PII redacted, reply checked, call traced, time budget. `tests/test_llm_provider.py` proves a local model gets the hardened prompt and that a leaked marker from it is blocked.
+* Availability checks in chat, streaming chat, translate and start-up now ask `llm.available()` instead of looking for QuickML credentials. Scans go to the vision model only under `quickml`.
+* `.env.example` documents the four settings. Needs a backend restart.

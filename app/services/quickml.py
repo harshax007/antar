@@ -191,9 +191,21 @@ async def quickml_generate(
     json_mode=True: adds explicit "respond only with JSON" suffix to prevent prose.
     retries: number of additional attempts on failure.
     """
+    # Which model, if any, is a setting (app/services/llm.py). Everything below - redaction,
+    # the policy and canary, the output check, tracing, the budget - is the same for every
+    # provider; only the address and the body differ.
+    from app.services import llm as _llm
+    _prov = _llm.provider()
+    if _prov == "none":
+        raise RuntimeError("No language model is configured; the answer uses the records only.")
+    _compat = _prov == "openai_compatible"
     target_model = model or settings.QUICKML_DEFAULT_MODEL
-    url = (settings.QUICKML_CHAT_ENDPOINT_URL if (target_model == settings.QUICKML_CHAT_MODEL and settings.QUICKML_CHAT_ENDPOINT_URL)
-           else settings.QUICKML_LLM_ENDPOINT_URL)
+    if _compat:
+        target_model = settings.ANTAR_LLM_MODEL or "openai-compatible"
+        url, _compat_headers, _ = _llm.compatible_request("", "", None, 0.0)
+    else:
+        url = (settings.QUICKML_CHAT_ENDPOINT_URL if (target_model == settings.QUICKML_CHAT_MODEL and settings.QUICKML_CHAT_ENDPOINT_URL)
+               else settings.QUICKML_LLM_ENDPOINT_URL)
     if not url:
         raise RuntimeError("QUICKML_LLM_ENDPOINT_URL not set in .env — paste the console endpoint URL.")
     bkey = f"{url}|{target_model}"
@@ -201,7 +213,7 @@ async def quickml_generate(
         until, why = _breaker.get(bkey, (0.0, ""))
         if time.time() < until:
             raise RuntimeError(f"QuickML LLM skipped (circuit open {int(until - time.time())}s): {why}")
-    headers = await _auth_headers()
+    headers = _compat_headers if _compat else await _auth_headers()
 
     user_prompt = user
     if json_mode:
@@ -223,14 +235,11 @@ async def quickml_generate(
         import logging as _lg
         _lg.getLogger("antar.rag_security").warning("rag_injection_in_prompt flags=%s", _flags)
     
-    payload = _build_payload(
-        safe_system,
-        user_prompt,
-        effective_max,
-        temperature if temperature is not None else settings.QUICKML_LLM_TEMPERATURE,
-        target_model,
-        url,
-    )
+    _temp = temperature if temperature is not None else settings.QUICKML_LLM_TEMPERATURE
+    if _compat:
+        _, _, payload = _llm.compatible_request(safe_system, user_prompt, max_tokens, _temp)
+    else:
+        payload = _build_payload(safe_system, user_prompt, effective_max, _temp, target_model, url)
 
     # Hard wall-clock budget across ALL attempts. Without it, `retries=3` over a 90 s HTTP
     # timeout plus 1.0+2.5+4.0 s of backoff could hold a single question for minutes — and
@@ -251,7 +260,7 @@ async def quickml_generate(
         try:
             resp = await asyncio.wait_for(
                 _get_client().post(url, json=payload, headers=headers), timeout=_left)
-            if resp.status_code == 401 and attempt == 0:
+            if resp.status_code == 401 and attempt == 0 and not _compat:
                 # Token revoked/expired early: drop the cache, mint a new one, retry once.
                 _token_cache["access_token"], _token_cache["expires_at"] = None, 0
                 headers = await _auth_headers()
@@ -460,6 +469,10 @@ async def quickml_vision_generate(
     Used for multimodal crime evidence analysis: scanned FIR pages, CCTV stills, vehicle plates,
     suspect photographs, and station diary OCR.
     """
+    from app.services import llm as _llm
+    if _llm.provider() != "quickml":
+        # a scan is the most sensitive thing sent to a model: it goes only where it was set up to go
+        raise RuntimeError("No vision model is configured for this provider.")
     url = settings.QUICKML_VISION_ENDPOINT_URL or settings.QUICKML_LLM_ENDPOINT_URL
     if not url:
         raise RuntimeError("QUICKML_VISION_ENDPOINT_URL not set in .env")

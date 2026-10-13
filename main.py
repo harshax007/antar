@@ -273,10 +273,12 @@ async def background_warmup():
     except Exception as e:
         print(f"  ⚠️  query warm-up skipped: {e}")
 
-    _llm_on = bool(settings.QUICKML_CLIENT_ID and settings.QUICKML_CLIENT_SECRET) and not settings.DEMO_MODE
-    print(f"🧭 Chat mode: {'Catalyst LLM (live)' if _llm_on else 'OFFLINE (no creds or DEMO_MODE=true)'}")
+    from app.services import llm as _llm
+    _llm_on = _llm.available()
+    _d = _llm.describe()
+    print(f"🧭 Language model: {_d['provider']}" + (f" · {_d.get('model')} · {_d['where']}" if _llm_on else " · answers come from the records only"))
 
-    if _llm_on and (settings.QUICKML_CHAT_ENDPOINT_URL or settings.QUICKML_LLM_ENDPOINT_URL):
+    if _llm_on and (_llm.provider() == "openai_compatible" or settings.QUICKML_CHAT_ENDPOINT_URL or settings.QUICKML_LLM_ENDPOINT_URL):
         # Deliberately generous: a cold QuickML endpoint takes ~75s on its first call
         # (OAuth mint + serving cold start), far past the 20s budget a live question gets.
         # Paying it here means the first officer question does not. Runs in the background

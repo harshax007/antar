@@ -52,8 +52,8 @@ async def translate(req: TranslateRequest) -> dict:
     if source == req.target_lang or _looks_target(text, req.target_lang):
         return {"translated": text, "engine": "passthrough", "target_lang": req.target_lang}
 
-    use_llm = bool(settings.QUICKML_CLIENT_ID and settings.QUICKML_CLIENT_SECRET
-                   and not settings.DEMO_MODE)
+    from app.services.llm import available as _llm_available
+    use_llm = _llm_available()
     if use_llm:
         try:
             import asyncio

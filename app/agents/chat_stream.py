@@ -52,6 +52,7 @@ from app.agents.heuristics import is_kannada, is_explain_request
 from app.core import orchestrator, sessions
 from app.core.rate_limiter import rate_limit
 from app.core.settings import settings
+from app.services.llm import available as _llm_available
 from app.core.security import public_message as _public_message
 from app.core.sse import SSEQueue, token_stream
 from app.services import audit_store
@@ -145,8 +146,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     session_id  = req.session_id or f"ses-{uuid.uuid4().hex[:12]}"
     lang        = req.lang or ("kn" if is_kannada(req.text) else "en")
     reasoning_id = f"rsn-{uuid.uuid4().hex[:12]}"
-    use_llm     = bool(settings.QUICKML_CLIENT_ID and settings.QUICKML_CLIENT_SECRET
-                       and not settings.DEMO_MODE)
+    use_llm     = _llm_available()
 
     sessions.append_user_turn(session_id, req.text, lang)
 

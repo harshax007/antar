@@ -38,7 +38,8 @@ class ChatRequest(BaseModel):
 
 
 def _llm_available() -> bool:
-    return bool(settings.QUICKML_CLIENT_ID and settings.QUICKML_CLIENT_SECRET)
+    from app.services import llm
+    return llm.provider() != "none"
 
 
 def _explain_reply(session_id: str, lang: str) -> str:
