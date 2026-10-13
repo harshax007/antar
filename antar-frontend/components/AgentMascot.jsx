@@ -22,7 +22,6 @@
 //              it opens the terminal with the rows behind it.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Mascot } from "page-mascot";
 import { fetchAPI } from "@/lib/api";
 
 // Presentation only: what an agent IS comes from the backend identity pack. One colour for
@@ -83,6 +82,60 @@ const nodeTarget = (n) => ({
   accused: n.accused || "", vehicle: n.vehicle || "", upi: n.upi || "", ip: n.ip || "",
   station: n.zone || "", district: n.district || "", crime_group: n.crimeGroup || "",
 });
+// ── A face that looks around on its own ─────────────────────────────────────────
+// The stock mascot turns its head to follow the pointer. Nine of them tracking the cursor
+// across the brain read as being watched, and pulled the eye off the graph. Here each agent
+// glances somewhere new every couple of seconds, at its own pace, and blinks now and then;
+// while it is working it faces front. The sheets are the same 3 x 3 ones the mascot uses
+// (directions: up-left .. down-right; reactions: blink first).
+const cellOf = (i) => ({ backgroundPosition: `${(i % 3) * 50}% ${Math.floor(i / 3) * 50}%` });
+function RoamingFace({ face, size, label, busy = false }) {
+  const [dir, setDir] = useState(4);                 // 4 = centre
+  const [blink, setBlink] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    let alive = true, t1, t2;
+    const look = () => {
+      if (!alive) return;
+      // half the time straight ahead, otherwise any of the eight directions
+      setDir(Math.random() < 0.45 ? 4 : [0, 1, 2, 3, 5, 6, 7, 8][Math.floor(Math.random() * 8)]);
+      t1 = setTimeout(look, 1400 + Math.random() * 2600);
+    };
+    const wink = () => {
+      if (!alive) return;
+      setBlink(true);
+      setTimeout(() => alive && setBlink(false), 150);
+      t2 = setTimeout(wink, 2600 + Math.random() * 4200);
+    };
+    t1 = setTimeout(look, Math.random() * 1500);
+    t2 = setTimeout(wink, 1200 + Math.random() * 3000);
+    return () => { alive = false; clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  const layer = { position: "absolute", inset: 0, backgroundSize: "300% 300%", backgroundRepeat: "no-repeat" };
+  return (
+    <span className="bt-face" role="img" aria-label={label} style={{ position: "relative", display: "block", width: size, height: size }}>
+      <span style={{ ...layer, backgroundImage: `url(/mascots/${face}-directions.webp)`, ...cellOf(busy ? 4 : dir), opacity: blink ? 0 : 1 }} />
+      <span style={{ ...layer, backgroundImage: `url(/mascots/${face}-reactions.webp)`, ...cellOf(0), opacity: blink ? 1 : 0 }} />
+    </span>
+  );
+}
+
+// A notice, in full, as text: what Save writes to a file and Copy puts on the clipboard.
+function noticeText(n) {
+  const r = n.r || {};
+  const out = [`ANTAR - ${n.title}`, `Received ${new Date(n.at).toLocaleString("en-IN")}`, ""];
+  if (r.status) out.push(`Status: ${r.status}${r.evidence_class ? ` | Evidence class: ${r.evidence_class} (${CLASS_NAME[r.evidence_class] || ""})` : ""}`);
+  out.push("", "FINDING", r.bottom_line || n.text || "");
+  if (n.was) out.push("", `PREVIOUS ANSWER (${n.wasAt})`, n.was);
+  if (r.context) out.push("", "SCOPE", r.context);
+  if (r.evidence?.length) out.push("", "EVIDENCE", ...r.evidence.map((e, i) => `${i + 1}. ${e}`));
+  if (r.limits?.length) out.push("", "LIMITS", ...r.limits.map((e) => `- ${e}`));
+  if (r.method?.length) out.push("", "HOW IT WAS WORKED OUT", ...r.method.map((e, i) => `${i + 1}. ${e}`));
+  if (r.next?.length) out.push("", "SUGGESTED NEXT", ...r.next.map((e) => `- ${e}`));
+  out.push("", "Decision support only. Not a verdict. The officer decides.");
+  return out.join("\n");
+}
+
 const clock = (ts) => new Date(ts).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 const short = (text, n = 96) => (String(text || "").length <= n ? String(text || "") : null);
 const memKey = (payload) => (typeof payload === "string" ? payload.trim().toLowerCase() : JSON.stringify(payload));
@@ -142,6 +195,8 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   const prompt = `${who}@brain${using ? `@${using}` : ""}`;
   const [talk, setTalk] = useState(null);          // { from, to, text, key } - the line on screen
   const [toasts, setToasts] = useState([]);        // notifications to the officer
+  const [notice, setNotice] = useState(null);      // the one opened as a window
+  const [savedNote, setSavedNote] = useState("");  // "Saved" / "Copied", shown briefly in that window
   const [unread, setUnread] = useState(0);
   const lastRun = useRef(null);
   const history = useRef({ items: [], at: 0 });
@@ -203,10 +258,10 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   const nameOf = (id) => card(id)?.name || id;
 
   // ── notifying the officer ────────────────────────────────────────────────────
-  const notify = useCallback((title, text) => {
+  const notify = useCallback((title, text, detail = {}) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setToasts((ts) => [...ts.slice(-2), { id, title, text }]);
-    setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 8000);
+    setToasts((ts) => [...ts.slice(-2), { id, title, text, at: Date.now(), ...detail }]);
+    setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 12000);
     if (!prefs.current.seen) setUnread((n) => n + 1);
     // Off by default: the browser prompt is the officer's to trigger (`notify on`).
     if (prefs.current.system && document.hidden && typeof Notification !== "undefined" && Notification.permission === "granted") {
@@ -257,8 +312,9 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
     const seen = prev ? { at: prev.ts, same: prev.bottom === r.bottom_line } : null;
     say({ kind: "result", r, label: label || r.target, via, seen });
 
-    if (seen && !seen.same) notify(`${r.name} on ${label}: answer changed`, `${r.bottom_line} (was, at ${clock(seen.at)}: ${prev.bottom})`);
-    else if (!prefs.current.seen) notify(`${r.name || id} on ${label}`, r.bottom_line);
+    if (seen && !seen.same) notify(`${r.name} on ${label}: answer changed`, `${r.bottom_line} (was, at ${clock(seen.at)}: ${prev.bottom})`,
+                                   { r, agent: id, label, was: prev.bottom, wasAt: clock(seen.at) });
+    else if (!prefs.current.seen) notify(`${r.name || id} on ${label}`, r.bottom_line, { r, agent: id, label });
 
     if (via) {                                      // this run WAS the reply to another agent
       post({ from: id, to: via, text: short(r.bottom_line) || `${label}: done, the answer is in the terminal.` });
@@ -874,8 +930,7 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                  onKeyDown={(e) => { if (e.key === "Enter") { openTerminal(); exec(target ? `run ${id}` : `about ${id}`); } }}
                  title={a ? `${a.name}: ${a.purpose} ${target ? `Click to run on ${target.label}.` : "Select a record and click, or drag onto one."}` : id}>
               <i>
-                <Mascot className="bt-face" size={FACE_PX} label={a ? `${a.name} agent` : id}
-                        directions={`/mascots/${FACE[id]}-directions.webp`} reactions={`/mascots/${FACE[id]}-reactions.webp`} />
+                <RoamingFace face={FACE[id]} size={FACE_PX} label={a ? `${a.name} agent` : id} busy={busy.includes(id) || flyAgent === id} />
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[id]} /></svg>
               </i>
               <span>{a?.name || id}</span>
@@ -920,12 +975,70 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
       {showConsole && (
         <div className="bt-toasts" role="status" aria-live="polite">
           {toasts.map((t) => (
-            <button key={t.id} onClick={() => { openTerminal(); setToasts((ts) => ts.filter((x) => x.id !== t.id)); }}>
-              <b>{t.title}</b><span>{t.text}</span>
+            <button key={t.id} title="Open this notice" onClick={() => { setNotice(t); setSavedNote(""); setToasts((ts) => ts.filter((x) => x.id !== t.id)); }}>
+              <b>{t.title}</b><span>{t.text}</span><em>Open</em>
             </button>
           ))}
         </div>
       )}
+
+      {/* A notice opened: the whole finding in its own window, to read, save or close. */}
+      {notice && showConsole && (() => {
+        const r = notice.r || {};
+        const file = `antar-${String(notice.agent || "notice")}-${String(notice.label || "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "finding"}-${new Date(notice.at).toISOString().slice(0, 10)}.txt`;
+        const flash = (word) => { setSavedNote(word); setTimeout(() => setSavedNote(""), 2200); };
+        const saveFile = () => {
+          try {
+            const url = URL.createObjectURL(new Blob([noticeText(notice)], { type: "text/plain;charset=utf-8" }));
+            const a = document.createElement("a");
+            a.href = url; a.download = file; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            flash(`Saved as ${file}`);
+          } catch { flash("This browser could not save the file."); }
+        };
+        const copy = async () => { try { await navigator.clipboard.writeText(noticeText(notice)); flash("Copied"); } catch { flash("Copy is not available here."); } };
+        const close = () => setNotice(null);
+        return (
+          <div className="nw-back" onClick={close}>
+            <section className="nw" role="dialog" aria-modal="true" aria-label={notice.title} onClick={(e) => e.stopPropagation()}
+                     onKeyDown={(e) => { if (e.key === "Escape") close(); }} tabIndex={-1} ref={(el) => el?.focus()}>
+              <header>
+                {notice.agent && FACE[notice.agent] && <RoamingFace face={FACE[notice.agent]} size={46} label={`${nameOf(notice.agent)} agent`} busy />}
+                <div>
+                  <h3>{notice.title}</h3>
+                  <p>{new Date(notice.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {r.status ? ` · ${r.status === "ok" ? "answered" : r.status === "empty" ? "nothing on record" : r.status === "refused" ? "not run" : r.status}` : ""}
+                    {r.ms != null ? ` · ${r.ms} ms` : ""}</p>
+                </div>
+                {r.evidence_class && <i className={`nw-cls c-${r.evidence_class}`} title={CLASS_NAME[r.evidence_class]}>{CLASS_NAME[r.evidence_class] || r.evidence_class}</i>}
+                <button className="nw-x" onClick={close} aria-label="Close this window" title="Close">&times;</button>
+              </header>
+              <div className="nw-body">
+                <p className="nw-line">{r.bottom_line || notice.text}</p>
+                {notice.was && <div className="nw-was"><h4>Previous answer, at {notice.wasAt}</h4><p>{notice.was}</p></div>}
+                {r.context && <><h4>Scope</h4><p>{r.context}</p></>}
+                {r.evidence?.length > 0 && <><h4>Evidence</h4><ol>{r.evidence.map((e, i) => <li key={i}>{e}</li>)}</ol></>}
+                {r.limits?.length > 0 && <><h4>Limits</h4><ul>{r.limits.map((e, i) => <li key={i}>{e}</li>)}</ul></>}
+                {r.method?.length > 0 && <><h4>How it was worked out</h4><ol className="nw-steps">{r.method.map((e, i) => <li key={i}>{e}</li>)}</ol></>}
+                {r.next?.length > 0 && (
+                  <><h4>Suggested next</h4>
+                    <div className="nw-next">{r.next.map((e, i) => (/^run\s/i.test(e)
+                      ? <button key={i} onClick={() => { close(); openTerminal(); exec(e); }} title="Run this in the terminal">{e}</button>
+                      : <span key={i}>{e}</span>))}</div></>
+                )}
+                {!r.bottom_line && !notice.text && <p className="nw-dim">This notice carries no further detail.</p>}
+              </div>
+              <footer>
+                <span className="nw-flash" role="status">{savedNote}</span>
+                <button onClick={() => { close(); openTerminal(); }}>Open in terminal</button>
+                <button onClick={copy}>Copy</button>
+                <button className="go" onClick={saveFile}>Save</button>
+                <button onClick={close}>Close</button>
+              </footer>
+            </section>
+          </div>
+        );
+      })()}
 
       {open && showConsole && (
         <section ref={winRef} className={`bt-win${small ? " small" : ""}`} aria-label="Brain terminal">

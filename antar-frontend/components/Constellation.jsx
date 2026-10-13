@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { buildConstellation, aliasFor, CATEGORIES , soften } from "@/lib/crimeGraph";
+import { buildConstellation, aliasFor, CATEGORIES , soften, groupProfile } from "@/lib/crimeGraph";
 
 // Every drawn edge exists because two FIRs share a real key - name it.
 function linkWhy(l) {
@@ -106,7 +106,8 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
     onFocus?.({
       node: n,
       whys: whys.slice(0, 4),
-      comp: { size: members.length, cats, people, rows, districts: [...districts], years: yMin <= yMax ? [yMin, yMax] : null },
+      comp: { size: members.length, cats, people, rows, districts: [...districts], years: yMin <= yMax ? [yMin, yMax] : null,
+              ...groupProfile(members) },
     });
     fg.centerAt(n.x, n.y, 700);
     fg.zoom(Math.max(fg.zoom(), 3), 700);

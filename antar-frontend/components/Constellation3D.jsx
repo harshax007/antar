@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { buildConstellation, aliasFor, CATEGORIES } from "@/lib/crimeGraph";
+import { buildConstellation, aliasFor, CATEGORIES, groupProfile } from "@/lib/crimeGraph";
 
 // 3D evidence globe — same data, order, grouping, colors and interactions as
 // the 2D Constellation, rendered on 3d-force-graph (drag-rotate / zoom / click
@@ -179,7 +179,8 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     onFocus?.({
       node: n,
       whys: whys.slice(0, 4),
-      comp: { size: members.length, cats, people, rows, districts: [...districts], years: yMin <= yMax ? [yMin, yMax] : null },
+      comp: { size: members.length, cats, people, rows, districts: [...districts], years: yMin <= yMax ? [yMin, yMax] : null,
+              ...groupProfile(members) },
     });
 
     // Camera fly to the group centroid (3D)

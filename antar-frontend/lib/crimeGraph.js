@@ -585,3 +585,38 @@ export function soften(hex, sat = 0.7, light = 0.92) {
   _soft.set(key, out);
   return out;
 }
+
+/** What a linked group is made of, for the Brain's focus panel: where its FIRs were
+ *  registered, when, who is named on them, and which identifiers they share. Every figure
+ *  is a count over the group's own FIR nodes. */
+export function groupProfile(members) {
+  const firs = members.filter((m) => m.kind === "fir" || m.crimeGroup || m.crimeHead);
+  const tally = (pick) => {
+    const m = new Map();
+    firs.forEach((f) => { const k = pick(f); if (k) m.set(k, (m.get(k) || 0) + 1); });
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([name, n]) => ({ name, n }));
+  };
+  const byYear = tally((f) => parseInt(f.year, 10) || null).sort((a, b) => a.name - b.name);
+  const shared = (pick, kind) => tally(pick).filter((x) => x.n >= 2).slice(0, 3).map((x) => ({ ...x, kind }));
+  // the same offence at the same station in the same year is one line with a count
+  const lines = new Map();
+  firs.forEach((f) => {
+    // the crime group is the offence; the head under it ("Others", "Hotel") only qualifies it
+    const crime = f.crimeGroup || f.crimeHead || "FIR";
+    const head = f.crimeHead && f.crimeHead !== f.crimeGroup ? f.crimeHead : null;
+    const k = `${crime}|${head || ""}|${f.zone || ""}|${f.year || ""}`;
+    const cur = lines.get(k) || { crime, head, zone: f.zone, year: f.year, n: 0 };
+    cur.n += 1;
+    lines.set(k, cur);
+  });
+  return {
+    byDistrict: tally((f) => f.district),
+    byStation: tally((f) => f.zone),
+    byYear,
+    crimeHeads: tally((f) => f.crimeHead || f.crimeGroup).slice(0, 4),
+    accused: tally((f) => f.accused).map((x) => ({ id: x.name, name: aliasFor(x.name), n: x.n })),
+    noAccused: firs.filter((f) => !f.accused).length,
+    sharedKeys: [...shared((f) => f.vehicle, "vehicle"), ...shared((f) => f.upi, "UPI ID"), ...shared((f) => f.ip, "IP address")],
+    lines: [...lines.values()].sort((a, b) => b.n - a.n || String(b.year).localeCompare(String(a.year))),
+  };
+}
