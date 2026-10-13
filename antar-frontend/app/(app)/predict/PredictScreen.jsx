@@ -13,6 +13,7 @@ import {
   useEdgesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import ForecastWhy from "@/components/ForecastWhy";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -858,6 +859,7 @@ function PredictScreen() {
   const confRef = useRef(null);
   const [flt, setFlt] = useState("all");             // which forecasts are listed
   const [findArea, setFindArea] = useState("");
+  const [whyUnit, setWhyUnit] = useState(null);       // the station whose forecast is taken apart
   const [stations, setStations] = useState(null);    // station forecasts for the area being explained
   const [copied, setCopied] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState(toRfNodes(DEMO_NODES));
@@ -920,7 +922,7 @@ function PredictScreen() {
   // The stations to watch inside the area being explained: the back-tested station forecast
   // (the one the Map draws). An area that is not a police district has none, and shows none.
   useEffect(() => {
-    setStations(null);
+    setStations(null); setWhyUnit(null);
     if (!fZone) return;
     const ctrl = new AbortController();
     fetch(`${API}/api/forecast/hotspots?horizon=7&category=ALL&unit=station&limit=3&district=${encodeURIComponent(fZone)}`, { signal: ctrl.signal })
@@ -1437,9 +1439,16 @@ const avgConf = predictions?.length
                       <div className="px-stn-hd">Stations to watch in {stations.scope || focusItem.zone}<i>inferred</i></div>
                       <ol>
                         {stations.items.map((it) => (
-                          <li key={it.unit_id || it.name}>
+                          <li key={it.unit || it.name}>
                             <b>{it.name}</b>
                             <span>{it.summary}</span>
+                            {it.unit && it.history !== "thin" && (
+                              <button type="button" className="px-linkbtn px-why" aria-expanded={whyUnit === it.unit}
+                                      onClick={() => setWhyUnit(whyUnit === it.unit ? null : it.unit)}>
+                                {whyUnit === it.unit ? "Hide the reasons" : "Why this forecast"}
+                              </button>
+                            )}
+                            {whyUnit === it.unit && <ForecastWhy unit={it.unit} />}
                           </li>
                         ))}
                       </ol>

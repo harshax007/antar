@@ -4891,3 +4891,26 @@ body:has(.bsx-focus) .bt-toasts { right: 440px; }
 .px-hyp-list ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
 .px-hyp-foot { margin: 14px 0 0; font-size: 12.5px; line-height: 1.5; color: #7C8A9E; }
 @media (max-width: 640px) { .px-hyp { padding: 16px 14px; } .px-hyp-list dl > div { grid-template-columns: 1fr; gap: 2px; } }
+
+/* ── Predict · why this forecast: a usual week times named reasons ── */
+.px-why { display: block; margin-top: 6px; }
+.fw { margin: 10px 0 4px; padding: 14px 14px 12px; border-radius: 10px; background: #0A111F; border: 1px solid rgba(148,163,184,.16); font-family: 'Inter', sans-serif; }
+.fw-steps { list-style: none; margin: 0; padding: 0; display: grid; }
+.px-stn .fw-steps { padding-left: 0; gap: 0; }
+.fw-steps li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; border-top: 1px solid rgba(148,163,184,.1); }
+.fw-steps li:first-child { border-top: 0; padding-top: 0; }
+.fw-steps li span { display: block; font-size: 13px; line-height: 1.4; color: #8E9BB0; }
+.fw-steps li.on span, .fw-steps li.base span, .fw-steps li.total span { color: #E2E8F0; }
+.fw-steps li small { display: block; margin-top: 1px; font-size: 12px; color: #7C8A9E; }
+.fw-steps li b { display: inline; flex: none; font: 600 13.5px 'Inter', sans-serif; color: #8E9BB0; font-variant-numeric: tabular-nums; }
+.fw-steps li.on b, .fw-steps li.base b { color: #fff; }
+.fw-steps li.total { border-top: 1px solid rgba(148,163,184,.34); margin-top: 2px; }
+.fw-steps li.total b { font-size: 18px; font-weight: 700; color: #fff; }
+.fw-note, .fw-cf, .fw-acc, .fw-limit { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: #A9B6C8; }
+.fw-cf b, .fw-acc b { color: #fff; font-weight: 600; display: inline; font-size: inherit; }
+.fw-limit { color: #7C8A9E; }
+.fw-weeks { margin: 12px 0 0; }
+.fw-weeks svg { display: block; width: 100%; height: 70px; }
+.fw-weeks .past { fill: rgba(148,163,184,.45); } .fw-weeks .band90 { fill: rgba(34,230,240,.18); } .fw-weeks .band80 { fill: rgba(34,230,240,.42); }
+.fw-weeks .mid { stroke: #fff; stroke-width: 2; }
+.fw-weeks figcaption { margin-top: 4px; font-size: 12px; color: #7C8A9E; }

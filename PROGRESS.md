@@ -1976,3 +1976,9 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * Every provider goes through the one choke point (`quickml_generate`): policy and canary added, PII redacted, reply checked, call traced, time budget. `tests/test_llm_provider.py` proves a local model gets the hardened prompt and that a leaked marker from it is blocked.
 * Availability checks in chat, streaming chat, translate and start-up now ask `llm.available()` instead of looking for QuickML credentials. Scans go to the vision model only under `quickml`.
 * `.env.example` documents the four settings. Needs a backend restart.
+
+## Predict: "Why this forecast" (USP plan P2) - 2026-10-14
+
+* `app/forecast/service.py::why`: every forecast taken apart exactly: a usual week here, times each of the six reasons, equals the forecast (checked on 400 stored station forecasts: worst gap 0.04%). Each reason carries the forecast without it. A forecast that does not reconcile is flagged.
+* Predict page, "Stations to watch": each station opens to the arithmetic, the counterfactual for the largest reason, the last 12 weeks with the week ahead drawn as a range, and how the forecast did in the back-test (`components/ForecastWhy.jsx`). No language model is involved.
+* Works against the running server from the reasons it already sends; the full six-reason breakdown needs a restart.

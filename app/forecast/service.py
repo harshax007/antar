@@ -231,6 +231,47 @@ def drivers(row: dict, unit_type: str, horizon: int) -> list[dict]:
     return out
 
 
+_WHY_KEYS = ("recent", "last_year", "neighbours", "area", "season", "level")
+
+
+def why(row: dict, unit_type: str, horizon: int) -> dict | None:
+    """The forecast taken apart, exactly: a usual period here, times each reason.
+
+    `drivers()` lists the reasons worth a sentence (10% or more). This lists all six, so
+    the arithmetic can be shown and checked: usual x every factor = the forecast. For each
+    reason it also gives the forecast WITHOUT it (the forecast divided by that factor) -
+    "had the last four weeks been usual, this would be 5, not 7". That is the model's own
+    counterfactual, not an approximation of one: the model is multiplicative.
+    """
+    usual, expected = row.get("usual_level") or 0, row.get("expected") or 0
+    if usual <= 0 or expected <= 0:
+        return None
+    parent = "station" if unit_type == "beat" else "district"
+    peers = "beats" if unit_type == "beat" else "stations"
+    label = {"recent": "The last 4 weeks", "last_year": "The same weeks last year",
+             "neighbours": f"Neighbouring {peers}", "area": f"The {parent} as a whole",
+             "season": "The time of year", "level": f"Pull toward the {parent}'s level"}
+    said = {d["key"]: d["text"] for d in drivers(row, unit_type, horizon)}
+    steps, product = [], 1.0
+    for key in _WHY_KEYS:
+        x = row.get(f"x_{key}") or 1.0
+        if x <= 0:
+            x = 1.0
+        product *= x
+        steps.append({"key": key, "label": label[key], "factor": round(x, 3), "effect": _pct(x - 1),
+                      "notable": key in said, "text": said.get(key),
+                      "without": round(expected / x, 2)})
+    steps.sort(key=lambda d: -abs(math.log(d["factor"])))
+    return {
+        "usual": round(usual, 2), "expected": round(expected, 2), "horizon_days": horizon,
+        "steps": steps, "product": round(product, 4),
+        # the identity the page relies on; a model change that breaks it should be seen
+        "reconciles": abs(usual * product / expected - 1) < 0.01,
+        "plain": ("Close to a usual period here: no single reason moves it by 10% or more."
+                  if not said else None),
+    }
+
+
 def summary_sentence(row: dict, cat: str, horizon: int) -> str:
     lo8, hi8, lo9, hi9 = (_int(row[k]) for k in ("lo80", "hi80", "lo90", "hi90"))
     rng = (lambda a, b: f"{a}" if a == b else f"{a}–{b}")
@@ -427,6 +468,7 @@ def _item(row: dict, g: dict | None, unit_type: str, cat: str, horizon: int, ran
                     else summary_sentence(row, cat, horizon)),
         "history": "thin" if thin else "ok", "fir_last_52w": int(row["n52"] or 0),
         "drivers": drivers(row, unit_type, horizon)[:3],
+        "why": why(row, unit_type, horizon),
         "district_cluster": (gi or {}).get(district) if gi is not None else None,
         "evidence_class": "I",
     }
