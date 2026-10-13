@@ -163,11 +163,6 @@ function AutoResize() {
   return null;
 }
 
-function MouseCoords({ onMove }) {
-  useMapEvents({ mousemove: (e) => onMove(e.latlng) });
-  return null;
-}
-
 function FlyTo({ bounds }) {
   const map = useMap();
   useEffect(() => { if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.5 }); }, [bounds, map]);
@@ -266,7 +261,6 @@ export default function MapScreen() {
   const [darkOn, setDarkOn] = useState(false);
   const [anchorAreas, setAnchorAreas] = useState([]);
   const [darkZones, setDarkZones] = useState([]);
-  const [coords, setCoords] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [flyBounds, setFlyBounds] = useState(null);
   const [districtDetail, setDistrictDetail] = useState(null);
@@ -537,6 +531,9 @@ export default function MapScreen() {
 
   const shownTotal = useAnimatedNumber(totalObserved);
   const deltaPct = giPrevTotal ? Math.round(((totalObserved - giPrevTotal) / giPrevTotal) * 100) : null;
+  const dayChange = deltaPct == null ? null
+    : Math.abs(deltaPct) < 1 ? "The same as the day before"
+    : `${Math.abs(deltaPct)}% ${deltaPct > 0 ? "more" : "fewer"} than the day before`;
   const busiestZones = useMemo(
     () => [...(giStar.zones || [])].filter((z) => z.observed > 0).sort((a, b) => b.observed - a.observed).slice(0, 4),
     [giStar]
@@ -1152,7 +1149,6 @@ export default function MapScreen() {
           ))}
 
           <AutoResize />
-          <MouseCoords onMove={setCoords} />
           <FlyTo bounds={flyBounds} />
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} />
@@ -1265,10 +1261,6 @@ export default function MapScreen() {
             })()}
           </tbody>
         </table>
-        <div className="mx-cal-foot" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <div>{selDay} {kn ? MONTHS_KN[calMonth] : MONTHS_EN[calMonth]} {calYear} · {kn ? "ನಕ್ಷೆ ನವೀಕರಿಸಲಾಗಿದೆ" : "map updated"}</div>
-        
-        </div>
       </div>
 
 
@@ -1279,45 +1271,33 @@ export default function MapScreen() {
         <div className="t">{kn ? "ಕರ್ನಾಟಕ ಅಪರಾಧ ವರದಿ" : "Karnataka Crime Report"}<span className="open">{kn ? "ತೆರೆಯಿರಿ ↗" : "open ↗"}</span></div>
         {/* keyed on the selection so the block re-animates on every date / crime change */}
         <div key={`${endDate}|${crimeType}`} className="mx-swap">
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
-              <div className="big" style={{ margin: 0, lineHeight: 1 }}>{shownTotal.toLocaleString("en-IN")}</div>
-              <div style={{ fontSize: '11px', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{kn ? "ದೈನಂದಿನ ಪ್ರಕರಣಗಳು" : "Daily Incidents"}</div>
+            <div className="mx-day-top">
+              <b>{giLoading && !totalObserved ? "–" : shownTotal.toLocaleString("en-IN")}</b>
+              <span>{kn ? "ಪ್ರಕರಣಗಳು" : (totalObserved === 1 ? "case" : "cases")}<small>{prettyDate(endDate, kn)}</small></span>
             </div>
-            
-            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", marginBottom: "14px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
-              <span>{prettyDate(endDate, kn)}</span>
-              <span style={{ color: "var(--cyan)", fontWeight: 600 }}>&bull; {shownTotal.toLocaleString("en-IN")} generated FIRs</span>
-              {deltaPct !== null && !giLoading && (
-                <span className={`mx-delta ${deltaPct > 0 ? "up" : deltaPct < 0 ? "down" : ""}`} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
-                  {deltaPct > 0 ? `▲ ${Math.abs(deltaPct).toFixed(0)}%` : deltaPct < 0 ? `▼ ${Math.abs(deltaPct).toFixed(0)}%` : "—"}
-                </span>
-              )}
-            </div>
-            
-            {giMonthlyTotal !== null && !giLoading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'rgba(6,11,20,0.4)', border: '1px solid var(--glass-border)', borderRadius: '6px', marginBottom: '14px' }}>
-                <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--muted)', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>30D</span>
-                <span style={{ fontSize: '13px', color: '#fff' }}>{giMonthlyTotal.toLocaleString("en-IN")} <span style={{ color: 'var(--muted)', fontSize: '11px', marginLeft: '4px' }}>TOTAL</span></span>
-              </div>
-            )}
-            
-            {leadZone && (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', paddingLeft: '10px', borderLeft: `2px solid ${leadZone.is_hotspot ? 'var(--red)' : 'var(--cyan)'}` }}>
-                <div style={{ marginBottom: '4px' }}>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{leadZone.zone}</span> 
-                  {leadZone.is_hotspot && <span style={{ color: 'var(--red)', marginLeft: '8px', fontSize: '9px', border: '1px solid rgba(248,113,113,0.3)', padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.05em' }}>HOTSPOT</span>}
+            <dl className="mx-day-rows">
+              {dayChange && !giLoading && (
+                <div>
+                  <dt>{kn ? "ಹಿಂದಿನ ದಿನಕ್ಕೆ ಹೋಲಿಸಿದರೆ" : "Against the day before"}</dt>
+                  <dd className={deltaPct > 2 ? "up" : deltaPct < -2 ? "down" : ""}>
+                    {deltaPct >= 1 ? `${deltaPct}% more` : deltaPct <= -1 ? `${Math.abs(deltaPct)}% fewer` : "The same"}
+                  </dd>
                 </div>
-                <div style={{ color: 'var(--muted)' }}>{leadZone.observed} cases <span style={{ margin: '0 4px' }}>•</span> z={leadZone.gi_stat.toFixed(2)}</div>
-              </div>
-            )}
+              )}
+              {giMonthlyTotal !== null && !giLoading && (
+                <div>
+                  <dt>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</dt>
+                  <dd>{giMonthlyTotal.toLocaleString("en-IN")} {kn ? "ಪ್ರಕರಣಗಳು" : "cases"}</dd>
+                </div>
+              )}
+            </dl>
           </div>
-          {coords && <div className="coords">{coords.lat.toFixed(4)}&deg;N {coords.lng.toFixed(4)}&deg;E · <span className="live">LIVE</span></div>}
       </button>
       
         {/* Simple Bar Chart Legend */}
         {Object.keys(districtFirTotals).length > 0 && (
           <div inert={reportOpen || showDossier ? "" : undefined} className="mx-panel" style={{ marginTop: "12px", padding: "16px", background: "rgba(6,11,20,0.85)", border: "1px solid var(--glass-border)", borderRadius: "12px", pointerEvents: "auto", backdropFilter: "blur(10px)", zIndex: 10 }}>
-            <div style={{ fontSize: "11px", color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px", fontWeight: 600 }}>{kn ? "ಅಗ್ರ ಜಿಲ್ಲೆಗಳು (ದೈನಂದಿನ)" : "Top Districts (Daily)"}</div>
+            <div className="mx-bars-h">{kn ? "ಅಗ್ರ ಜಿಲ್ಲೆಗಳು (ದೈನಂದಿನ)" : "Districts with most cases"}<small>{kn ? "" : "this day"}</small></div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {Object.entries(districtFirTotals)
                 .sort((a, b) => b[1] - a[1])
@@ -1526,20 +1506,10 @@ export default function MapScreen() {
                 };
                 const hot = topGiZones.filter((z) => z.is_hotspot);
                 const how = (z) => (z >= 4 ? "far above" : z >= 2.5 ? "well above" : "above");
-                const change = deltaPct == null ? null
-                  : Math.abs(deltaPct) < 1 ? "the same as the day before"
-                  : `${Math.abs(deltaPct)}% ${deltaPct > 0 ? "more" : "fewer"} than the day before`;
                 return (
                 <div key={`${endDate}|${crimeType}|${selectedDistrict || ""}`} className="mx-swap">
-                  {/* The one figure the view is about, then how to read it. Every number here
-                      is one the map is already drawing; nothing waits on a model. */}
-                  <div className="mx-sum-top">
-                    <b>{totalObserved.toLocaleString("en-IN")}</b>
-                    <div>
-                      <span>{kn ? "ಈ ದಿನದ ಘಟನೆಗಳು" : (totalObserved === 1 ? "case on this day" : "cases on this day")}</span>
-                      {change && <em className={deltaPct > 2 ? "up" : deltaPct < -2 ? "down" : ""}>{change}</em>}
-                    </div>
-                  </div>
+                  {/* How to read the view, then what stands out in it. The day's count, its change,
+                      the 30-day total and the district ranking are in the left column, once. */}
                   <p className={`mx-sum-state lvl-${viewInsight.level}`}>
                     <i aria-hidden="true" />
                     {kn
@@ -1550,22 +1520,6 @@ export default function MapScreen() {
                   </p>
 
                   <dl className="mx-sum-rows">
-                    {giMonthlyTotal != null && (
-                      <div>
-                        <dt>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</dt>
-                        <dd><b>{giMonthlyTotal.toLocaleString("en-IN")}</b> {kn ? "ಘಟನೆಗಳು" : "cases"}</dd>
-                      </div>
-                    )}
-                    {busiestZones[0] && (
-                      <div>
-                        <dt>{kn ? "ಹೆಚ್ಚು ಚಟುವಟಿಕೆ" : "Busiest area"}</dt>
-                        <dd>
-                          <b>{busiestZones[0].zone}</b>, {busiestZones[0].observed.toLocaleString("en-IN")} {busiestZones[0].observed === 1 ? "case" : "cases"}
-                          {totalObserved > 0 && ` (${Math.round((busiestZones[0].observed / totalObserved) * 100)}% of the day)`}
-                          {busiestZones.length > 1 && <small>{kn ? "ನಂತರ" : "Then"} {busiestZones.slice(1, 4).map((z) => `${z.zone} ${z.observed}`).join(", ")}</small>}
-                        </dd>
-                      </div>
-                    )}
                     <div>
                       <dt>{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್" : "Confirmed hotspots"}</dt>
                       <dd>

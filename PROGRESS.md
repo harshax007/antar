@@ -1922,3 +1922,9 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Agents** (`components/MapAgents.jsx`): no box on the map; one button opens the list, and each agent says what it does. Drag one onto a district to run it for the selected date.
 * **Research** added to the map agents: on a district it lists the accused named most often there (`brain_console._research_place`). Needs a backend restart to load.
 * **View summary** (`components/MapScreen.jsx`): one figure first, plain rows, a short "In short" line.
+
+## Map: each figure shown once - 2026-10-13
+
+* **Left card** holds the day's figures and nothing else: the count with its date, the change against the day before, the last 30 days. Gone from it: the second copy of the count ("generated FIRs"), the hotspot line with its z value (the summary and the map already show it), and the cursor coordinates marked "LIVE" (they also re-rendered the whole screen on every mouse move).
+* **View summary** no longer repeats the count, the change, the 30-day total or a ranking of areas; it starts with how to read the view and keeps hotspots, what is above its usual level, the next 7 days and patrol.
+* **District bars** are titled "Districts with most cases, this day". The calendar's "map updated" line is removed; the selected day is already marked.
