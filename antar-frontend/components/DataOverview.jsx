@@ -15,7 +15,7 @@ const PAGE = 8;
 const CYAN = "#22E6F0";
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
-const AXIS = { fontSize: 10, fill: "#7c8aa0", fontFamily: "JetBrains Mono" };
+const AXIS = { fontSize: 11, fill: "#8492A6", fontFamily: "Inter, system-ui, sans-serif" };
 const TIP = {
   contentStyle: { background: "#0B1220", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, fontSize: 12 },
   labelStyle: { color: "#F2F5FA" }, itemStyle: { color: CYAN }, cursor: { fill: "rgba(34,230,240,.06)" },
@@ -206,11 +206,11 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
   const loadingFull = isFull && !full && !fullErr;
 
   const kpis = [
-    { v: nf(view.total), l: isFull ? (kn ? "ಒಟ್ಟು FIR" : "FIRs total") : (kn ? "FIR ಗಳು" : "FIRs in view"), accent: true },
+    { v: nf(view.total), l: isFull ? (kn ? "ಒಟ್ಟು FIR" : "Total FIRs") : (kn ? "FIR ಗಳು" : "FIRs in view"), accent: true },
     { v: nf(view.victims), l: kn ? "ಸಂತ್ರಸ್ತರು" : "Victims" },
     { v: nf(view.accused), l: kn ? "ಆರೋಪಿಗಳು" : "Accused" },
     { v: nf(view.arrested), l: kn ? "ಬಂಧಿತರು" : "Arrested" },
-    { v: nf(view.chargesheeted), l: kn ? "ದೋಷಾರೋಪ" : "Chargesheeted" },
+    { v: nf(view.chargesheeted), l: kn ? "ದೋಷಾರೋಪ" : "Charge-sheeted" },
     { v: nf(view.convictions), l: kn ? "ಶಿಕ್ಷೆಗಳು" : "Convictions" },
     { v: `${view.arrestRate}%`, l: kn ? "ಬಂಧನ ದರ" : "Arrest rate", accent: true },
   ];
@@ -275,7 +275,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
     <section className="ov-page" id="data-overview" style={{ scrollMarginTop: "20px" }}>
       <div className="ov-head">
         <div>
-          <div className="ov-eyebrow">{kn ? "02: FIR ದತ್ತಾಂಶ ಅವಲೋಕನ" : "02: FIR DATA OVERVIEW"}</div>
+          <div className="ov-eyebrow">{kn ? "02 · FIR ದತ್ತಾಂಶ ಅವಲೋಕನ" : "02 · FIR data overview"}</div>
           <h2 className="ov-title">
             {isFull 
               ? (kn ? "ಸಂಪೂರ್ಣ ದತ್ತಾಂಶದ ಒಳನೋಟ" : "The full dataset, in focus")
@@ -299,26 +299,24 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
                     ? (kn ? "ಬ್ಯಾಕೆಂಡ್ ತಲುಪಿಲ್ಲ - ಆಂತರ API ಪ್ರಾರಂಭಿಸಿ" : "Backend unreachable - start the Antar API")
                     : full
                       ? (
-                          <span style={{ display: "block", lineHeight: 1.5, paddingTop: "4px" }}>
-                            <span style={{ color: "var(--text)", fontWeight: 500 }}>
+                          <span>
+                            <b>
                               {kn ? "ಸಂಪೂರ್ಣ ದತ್ತಾಂಶ ಮೂಲದಿಂದ ನೇರವಾಗಿ ಎಳೆಯಲಾಗಿದೆ" : "Direct connection to the raw dataset."}
-                            </span>
-                            <br />
-                            <span style={{ fontSize: "10px", color: "var(--muted-2)" }}>
+                            </b>
+                            <small>
                               {kn ? "ಫಿಲ್ಟರ್ ಮಾಡದ, ಸಂಪೂರ್ಣ ಡೇಟಾಬೇಸ್‌ಗೆ ಪ್ರವೇಶ. ಎಲ್ಲಾ ಐತಿಹಾಸಿಕ ದಾಖಲೆಗಳನ್ನು ಯಾವುದೇ ಮಾದರಿಯಿಲ್ಲದೆ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಿದೆ." : "Unfiltered access to the complete database. Historical records are processed entirely without sampling."}
-                            </span>
+                            </small>
                           </span>
                         )
                       : (kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Loading full dataset…"))
                 : (
-                  <span style={{ display: "block", lineHeight: 1.5, paddingTop: "4px" }}>
-                    <span style={{ color: "var(--text)", fontWeight: 500 }}>
+                  <span>
+                    <b>
                       {kn ? "ಸ್ಮಾರ್ಟ್ ನೋಡ್ ಎಕ್ಸ್‌ಟ್ರಾಕ್ಷನ್ ಮತ್ತು ಡೇಟಾ ಪಾರ್ಸಿಂಗ್ ಮೂಲಕ ರಚಿಸಲಾಗಿದೆ" : "Intelligent nodes extracted through structural parsing."}
-                    </span>
-                    <br />
-                    <span style={{ fontSize: "10px", color: "var(--muted-2)" }}>
+                    </b>
+                    <small>
                       {kn ? "ಬ್ಯಾಕೆಂಡ್ ಸೇವೆಗಳು ಕಚ್ಚಾ ದಾಖಲೆಗಳನ್ನು ಓದಿ, ಸಂಬಂಧಗಳನ್ನು ಗುರುತಿಸಿ, ರಚನಾತ್ಮಕ ಜ್ಞಾನದ ಗ್ರಾಫ್‌ಗಳನ್ನು ನಿರ್ಮಿಸುತ್ತವೆ." : "Extraction services parse the raw records, identify entity relationships, and construct a structured knowledge graph."}
-                    </span>
+                    </small>
                   </span>
                 )}
             </span>
@@ -326,34 +324,24 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
 
           {/* Full-dataset range filters: year span + FIR id window (server-side). */}
           {isFull && (
-            <div className="ov-rangefilters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginTop: "10px" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", color: "var(--muted)", fontFamily: "'Chakra Petch', sans-serif" }}>
-                {kn ? "ವರ್ಷ ವ್ಯಾಪ್ತಿ" : "YEAR RANGE"}
-              </span>
-              <select className="ov-rf-sel" value={yFrom} onChange={(e) => setYFrom(e.target.value)} aria-label={kn ? "ಇಂದ ವರ್ಷ" : "From year"}
-                      style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px 8px", color: "#F8FAFC", fontSize: "11px" }}>
+            <div className="ov-rangefilters ov-range">
+              <label htmlFor="ov-yfrom">{kn ? "ವರ್ಷ ವ್ಯಾಪ್ತಿ" : "Year range"}</label>
+              <select id="ov-yfrom" className="ov-rf-sel" value={yFrom} onChange={(e) => setYFrom(e.target.value)} aria-label={kn ? "ಇಂದ ವರ್ಷ" : "From year"}>
                 <option value="">{kn ? "ಇಂದ" : "From"}</option>
                 {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
-              <span style={{ color: "var(--muted)" }}>→</span>
-              <select className="ov-rf-sel" value={yTo} onChange={(e) => setYTo(e.target.value)} aria-label={kn ? "ವರೆಗೆ ವರ್ಷ" : "To year"}
-                      style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px 8px", color: "#F8FAFC", fontSize: "11px" }}>
+              <span className="sep" aria-hidden="true">to</span>
+              <select className="ov-rf-sel" value={yTo} onChange={(e) => setYTo(e.target.value)} aria-label={kn ? "ವರೆಗೆ ವರ್ಷ" : "To year"}>
                 <option value="">{kn ? "ವರೆಗೆ" : "To"}</option>
                 {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
-
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", color: "var(--muted)", fontFamily: "'Chakra Petch', sans-serif", marginLeft: "6px" }}>
-                {kn ? "FIR ವ್ಯಾಪ್ತಿ" : "FIR RANGE"}
-              </span>
-              <input type="number" min={1} value={idFrom} onChange={(e) => setIdFrom(e.target.value)} placeholder={kn ? "ಇಂದ" : "from"} aria-label="FIR id from"
-                     style={{ width: "84px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px 8px", color: "#F8FAFC", fontSize: "11px" }} />
-              <span style={{ color: "var(--muted)" }}>–</span>
-              <input type="number" min={1} value={idTo} onChange={(e) => setIdTo(e.target.value)} placeholder={kn ? "ವರೆಗೆ" : "to"} aria-label="FIR id to"
-                     style={{ width: "84px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px 8px", color: "#F8FAFC", fontSize: "11px" }} />
-
+              <span className="gap" aria-hidden="true" />
+              <label htmlFor="ov-idfrom">{kn ? "FIR ವ್ಯಾಪ್ತಿ" : "FIR range"}</label>
+              <input id="ov-idfrom" type="number" min={1} value={idFrom} onChange={(e) => setIdFrom(e.target.value)} placeholder={kn ? "ಇಂದ" : "From"} aria-label="FIR id from" />
+              <span className="sep" aria-hidden="true">to</span>
+              <input type="number" min={1} value={idTo} onChange={(e) => setIdTo(e.target.value)} placeholder={kn ? "ವರೆಗೆ" : "To"} aria-label="FIR id to" />
               {(yFrom || yTo || idFrom || idTo) && (
-                <button onClick={() => { setYFrom(""); setYTo(""); setIdFrom(""); setIdTo(""); }}
-                        style={{ background: "rgba(34,230,240,0.1)", border: "1px solid rgba(34,230,240,0.3)", color: "#22E6F0", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif" }}>
+                <button onClick={() => { setYFrom(""); setYTo(""); setIdFrom(""); setIdTo(""); }}>
                   {kn ? "ವ್ಯಾಪ್ತಿ ತೆರವು" : "Clear range"}
                 </button>
               )}

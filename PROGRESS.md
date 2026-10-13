@@ -1911,3 +1911,8 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Agents on the Brain screen** look around on their own instead of following the pointer.
 * **Focus panel**: FIRs by year, where registered, every named accused with FIR counts, identifiers shared by two or more FIRs, and the FIR list grouped with counts.
 * Needs a backend restart for the saved-findings endpoints; until then the page says so.
+
+## FIR data overview: numbers in one readable face - 2026-10-13
+
+* **Cause of the mixed fonts**: the four local `jetbrains-mono-*.woff2` files were one identical 11 KB subset with no Latin letters or digits, declared as weights 400 to 700. Bold monospace numbers therefore fell back to Times. The files and their `@font-face` rules are removed; JetBrains Mono now loads all four weights from the Google Fonts link in `app/layout.jsx` (offline it falls back to the system monospace, not a serif).
+* **Overview restyle** (`components/DataOverview.jsx`, `.ov-*` in `globals.css`): figures in Inter with tabular digits, labels in sentence case ("Total FIRs", "Charge-sheeted"), a labelled year and FIR range row, larger stage and table text, chart axes in Inter. No figure or panel was removed.

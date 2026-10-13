@@ -78,34 +78,9 @@
   src: url('/fonts/chakra-petch-700.woff2') format('woff2');
 }
 
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono-400.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono-500.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono-600.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/jetbrains-mono-700.woff2') format('woff2');
-}
+/* JetBrains Mono comes from the font link in app/layout.jsx (400-700). The four local files
+   that used to be declared here were one identical subset with no Latin letters or digits:
+   as the 600 and 700 faces they sent every bold number to the browser's default serif. */
 
 @font-face {
   font-family: 'Silkscreen';
@@ -4565,3 +4540,70 @@ body:has(.bsx-focus) .bt-toasts { right: 440px; }
 .mx-sum-note small { display: block; margin-top: 6px; font-size: 11.5px; }
 [data-theme="light"] .mx-sum { background: #fff; color: #334155; }
 [data-theme="light"] .mx-sum header h3, [data-theme="light"] .mx-sum-top > b, [data-theme="light"] .mx-sum-rows dd b { color: #0f172a; }
+
+/* ── FIR data overview: one number face, sentence-case labels, readable sizes ── */
+.ov-page { font-family: 'Inter', system-ui, sans-serif; }
+.ov-eyebrow { font: 600 12px 'Inter', system-ui, sans-serif; letter-spacing: .06em; text-transform: none; color: var(--cyan); }
+.ov-title { font: 600 28px/1.2 'Chakra Petch', 'Inter', sans-serif; letter-spacing: -.005em; margin-top: 6px; }
+.ov-src { gap: 14px; margin-top: 16px; align-items: flex-start; }
+.ov-srcseg { border-radius: 10px; flex: none; }
+.ov-srcseg button { font: 600 13px 'Inter', system-ui, sans-serif; padding: 8px 16px; }
+.ov-srcnote { font: 400 13px/1.5 'Inter', system-ui, sans-serif; color: var(--muted); max-width: 72ch; }
+.ov-srcnote b { display: block; font-weight: 600; color: var(--text); }
+.ov-srcnote small { display: block; font-size: 12.5px; color: var(--muted); }
+.ov-range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 14px; }
+.ov-range label { font: 500 12.5px 'Inter', system-ui, sans-serif; color: var(--muted); }
+.ov-range label + * { margin-left: -2px; }
+.ov-range select, .ov-range input { height: 32px; padding: 0 10px; border-radius: 8px; font: 500 13px 'Inter', system-ui, sans-serif; color: #F1F5F9;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.14); outline: none; font-variant-numeric: tabular-nums; }
+.ov-range input { width: 96px; }
+.ov-range select:focus, .ov-range input:focus { border-color: rgba(34,230,240,.6); }
+.ov-range .sep { color: var(--muted); }
+.ov-range .gap { width: 10px; }
+.ov-range button { height: 32px; padding: 0 12px; border-radius: 8px; font: 600 12.5px 'Inter', system-ui, sans-serif; color: var(--cyan); background: rgba(34,230,240,.08); border: 1px solid rgba(34,230,240,.3); cursor: pointer; }
+
+.ov-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.ov-kpi { padding: 18px 20px 16px; gap: 8px; border-radius: 14px; background: rgba(13,19,31,.72); border: 1px solid rgba(148,163,184,.14); box-shadow: none; backdrop-filter: none; }
+.ov-kpi::before { display: none; }
+.ov-kpi:hover { transform: none; border-color: rgba(34,230,240,.35); box-shadow: none; }
+.ov-kpi b { font: 700 30px/1.1 'Inter', system-ui, sans-serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: #fff; }
+.ov-kpi b.on { color: var(--cyan); text-shadow: none; }
+.ov-kpi span { font: 500 13px 'Inter', system-ui, sans-serif; text-transform: none; letter-spacing: 0; color: #94A3B8; }
+
+.ov-stages { padding: 22px 24px; border-radius: 14px; background: rgba(13,19,31,.72); border: 1px solid rgba(148,163,184,.14); box-shadow: none; backdrop-filter: none; margin-bottom: 22px; }
+.ov-stagerow { gap: 22px 28px; margin-top: 16px; }
+.ov-stage-top { font: 500 13px 'Inter', system-ui, sans-serif; letter-spacing: 0; color: #A9B6C8; }
+.ov-stage-top b { font: 600 15px 'Inter', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff; }
+.ov-stage-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.06); box-shadow: none; }
+.ov-stage-fill { border-radius: 3px; background: var(--cyan); box-shadow: none; }
+.ov-stage-fill::after { display: none; }
+
+.ov-panel { padding: 16px 18px; border-radius: 14px; }
+.ov-ptitle { font: 600 14.5px 'Inter', system-ui, sans-serif; letter-spacing: 0; color: var(--text); gap: 10px; flex-wrap: wrap; }
+.ov-ptitle span { font: 400 12.5px 'Inter', system-ui, sans-serif; color: #8492A6; }
+.ov-toggle i { font: 500 16px 'Inter', system-ui, sans-serif; }
+.ov-note { font-size: 12.5px; }
+.ov-clock-head b, .ov-out-row b { font: 700 26px/1.1 'Inter', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.ov-clock-head span { font-size: 12.5px; }
+.ov-clock-lh { font: 500 12.5px 'Inter', system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: #8492A6; }
+.ov-clock-row { font-size: 13px; }
+.ov-clock-row b, .ov-out-acc b { font-family: 'Inter', system-ui, sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ov-out-row span, .ov-out-acc span, .ov-clock-key { font-size: 12.5px; }
+
+.ov-summary { padding: 10px 14px; border-radius: 12px; }
+.ov-summary .bsx-summary-h { font: 600 13px 'Inter', system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--text); }
+.ov-chip, .ov-sync { font: 500 12.5px 'Inter', system-ui, sans-serif; }
+
+.ov-search { font-size: 13.5px; padding: 9px 12px; }
+.ov-pager { font: 500 12.5px 'Inter', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.ov-table { font-size: 13.5px; }
+.ov-table th { font: 600 12.5px 'Inter', system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: #8492A6; padding: 11px 14px; }
+.ov-table td { padding: 10px 14px; }
+.ov-table .mono { font: 500 12.5px 'Inter', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #A9B6C8; }
+.ov-table .stage { font-size: 12.5px; }
+.ov-fir-eyebrow, .ov-fir-lbl, .ov-fir-cell span { font: 500 12px 'Inter', system-ui, sans-serif; letter-spacing: 0; text-transform: none; }
+.ov-fir-cell b { font-size: 13.5px; }
+.ov-fir-count b { font: 700 18px 'Inter', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.ov-fir-count span { font-size: 11.5px; }
+.ov-fir-key { font: 500 12.5px 'Inter', system-ui, sans-serif; }
+@media (max-width: 640px) { .ov-title { font-size: 22px; } .ov-kpi b { font-size: 24px; } .ov-kpis { grid-template-columns: repeat(2, 1fr); } }
