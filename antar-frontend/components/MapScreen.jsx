@@ -660,10 +660,14 @@ export default function MapScreen() {
           if (!via) body = g.status === "ok" ? refused(`No station in ${zone} has enough history for a forecast.`) : g;
         }
         if (via) body = await call("forecast", via);
+      } else if (agentId === "research") {
+        // on the place: who the record names most there. With an id (the officer chose one
+        // from that list): that person's dossier.
+        body = via ? await call("research", via) : await call("research", { district: zone });
       } else {
         body = await call("geo", zone);
       }
-      put({ status: "done", body, station: agentId === "forecast" ? via : null });
+      put({ status: "done", body, station: agentId === "forecast" || agentId === "research" ? via : null });
     } catch {
       put({ status: "done", body: { status: "error", bottom_line: "The agent could not be reached. Check that the server is running.", context: "", evidence: [], limits: [], next: [] } });
     }
@@ -1175,7 +1179,7 @@ export default function MapScreen() {
         <MapAgentResult run={agentRun} todayIso={todayIso}
                         stale={!!agentRun && agentRun.status === "done" && (agentRun.date !== endDate || agentRun.crime !== crimeType)}
                         onClose={() => setAgentRun(null)}
-                        onRun={(id, arg) => runMapAgent(id, agentRun.district, id === "forecast" ? arg : undefined)}
+                        onRun={(id, arg) => runMapAgent(id, agentRun.district, id === "forecast" || id === "research" ? (arg || undefined) : undefined)}
                         onRerun={() => runMapAgent(agentRun.agent, agentRun.district, agentRun.station || undefined)} />
         {/* the forecast's as-of stays in view on the map, whichever tab is open */}
         {fc.on && <div className="fx-chip-map"><AsOfChip fc={fc} kn={kn} /></div>}
@@ -1501,96 +1505,114 @@ export default function MapScreen() {
         )}
 {rightTab === "summary" && (
             <aside inert={reportOpen || showDossier ? "" : undefined}
-                   className={`mx-vs mx-panel lvl-${viewInsight?.level || "normal"} ${giLoading ? "is-loading" : ""}`}
+                   className={`mx-sum mx-panel ${giLoading ? "is-loading" : ""}`}
                    aria-label={kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"} aria-busy={giLoading}>
-              <span className="mx-sweep" aria-hidden="true" />
               <header>
-                <span className="mx-vs-pulse" aria-hidden="true" />
-                <div className="ttl">
-                  <b>{kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "VIEW SUMMARY"}</b>
-                  <span>{crimeLabel} • {selectedDistrict || (kn ? "ಕರ್ನಾಟಕ" : "Karnataka")}</span>
+                <div>
+                  <h3>{kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"}</h3>
+                  <p>{crimeLabel} · {selectedDistrict || (kn ? "ಕರ್ನಾಟಕ" : "Karnataka")} · {new Date(`${endDate}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
                 </div>
-                <button type="button" onClick={() => setRightTab(null)} style={{ background: "transparent", border: "none", color: "var(--muted)", cursor: "pointer", padding: "4px" }}><X size={16} /></button>
+                <button type="button" onClick={() => setRightTab(null)} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close the summary"} title={kn ? "ಮುಚ್ಚಿ" : "Close"}><X size={16} /></button>
               </header>
 
               {!viewInsight ? (
-                <p className="mx-vs-empty">{giLoading ? (kn ? "ವೀಕ್ಷಣೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ..." : "Reading the current view...") : (kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಯಾವುದೇ ಚಟುವಟಿಕೆ ದಾಖಲಾಗಿಲ್ಲ." : "No recorded activity in this view.")}</p>
-              ) : (
+                <p className="mx-sum-empty">{giLoading ? (kn ? "ವೀಕ್ಷಣೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ..." : "Reading the current view…") : (kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಯಾವುದೇ ಚಟುವಟಿಕೆ ದಾಖಲಾಗಿಲ್ಲ." : "No recorded activity in this view.")}</p>
+              ) : (() => {
+                // The register writes crime types in capitals ("KARNATAKA POLICE ACT 1963").
+                const crime = (t) => {
+                  const w = String(t || "").replace(/_/g, " ").trim().split(/\s+/).filter(Boolean);
+                  const act = w.some((x) => /^act$/i.test(x));
+                  return w.map((x, i) => (i === 0 || act ? x.charAt(0).toUpperCase() + x.slice(1).toLowerCase() : x.toLowerCase())).join(" ");
+                };
+                const hot = topGiZones.filter((z) => z.is_hotspot);
+                const how = (z) => (z >= 4 ? "far above" : z >= 2.5 ? "well above" : "above");
+                const change = deltaPct == null ? null
+                  : Math.abs(deltaPct) < 1 ? "the same as the day before"
+                  : `${Math.abs(deltaPct)}% ${deltaPct > 0 ? "more" : "fewer"} than the day before`;
+                return (
                 <div key={`${endDate}|${crimeType}|${selectedDistrict || ""}`} className="mx-swap">
-                  <div className={`mx-vs-status lvl-${viewInsight.level}`}>
+                  {/* The one figure the view is about, then how to read it. Every number here
+                      is one the map is already drawing; nothing waits on a model. */}
+                  <div className="mx-sum-top">
+                    <b>{totalObserved.toLocaleString("en-IN")}</b>
+                    <div>
+                      <span>{kn ? "ಈ ದಿನದ ಘಟನೆಗಳು" : (totalObserved === 1 ? "case on this day" : "cases on this day")}</span>
+                      {change && <em className={deltaPct > 2 ? "up" : deltaPct < -2 ? "down" : ""}>{change}</em>}
+                    </div>
+                  </div>
+                  <p className={`mx-sum-state lvl-${viewInsight.level}`}>
                     <i aria-hidden="true" />
                     {kn
-                      ? { normal: "ಸ್ಥಿತಿ • ಸಾಮಾನ್ಯ", elevated: "ಸ್ಥಿತಿ • ಎತ್ತರಿಸಿದ", high: "ಸ್ಥಿತಿ • ಹೈ ಅಲರ್ಟ್" }[viewInsight.level]
-                      : { normal: "POSTURE • NORMAL", elevated: "POSTURE • ELEVATED", high: "POSTURE • HIGH ALERT" }[viewInsight.level]}
-                  </div>
+                      ? { normal: "ಸ್ಥಿತಿ ಸಾಮಾನ್ಯ", elevated: "ಸ್ಥಿತಿ ಎತ್ತರಿಸಿದ", high: "ಹೈ ಅಲರ್ಟ್" }[viewInsight.level]
+                      : { normal: "Nothing unusual in this view.",
+                          elevated: "Raised: cases are rising, or more than one hotspot is confirmed.",
+                          high: "High: a sharp rise, or five or more confirmed hotspots." }[viewInsight.level]}
+                  </p>
 
-                  {/* The reading, in rows an officer can take in at a glance. Every figure is one
-                      the map is already drawing; nothing here waits on a model. */}
-                  <dl className="mx-vs-rows">
-                    <div>
-                      <dt>{kn ? "ಪ್ರವೃತ್ತಿ" : "Trend"}</dt>
-                      <dd>
-                        <b>{totalObserved.toLocaleString()}</b> {kn ? "ಘಟನೆಗಳು" : (totalObserved === 1 ? "incident" : "incidents")}
-                        {deltaPct != null && <em className={deltaPct > 2 ? "up" : deltaPct < -2 ? "down" : ""}>
-                          {deltaPct > 0 ? "▲" : deltaPct < 0 ? "▼" : "•"} {Math.abs(deltaPct)}% {kn ? "ಹಿಂದಿನ ದಿನಕ್ಕೆ ಹೋಲಿಸಿದರೆ" : "on the day before"}</em>}
-                        {giMonthlyTotal != null && <small>{giMonthlyTotal.toLocaleString()} {kn ? "ಕಳೆದ 30 ದಿನಗಳಲ್ಲಿ" : "in the last 30 days"}</small>}
-                      </dd>
-                    </div>
+                  <dl className="mx-sum-rows">
+                    {giMonthlyTotal != null && (
+                      <div>
+                        <dt>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</dt>
+                        <dd><b>{giMonthlyTotal.toLocaleString("en-IN")}</b> {kn ? "ಘಟನೆಗಳು" : "cases"}</dd>
+                      </div>
+                    )}
                     {busiestZones[0] && (
                       <div>
-                        <dt>{kn ? "ಹೆಚ್ಚು ಚಟುವಟಿಕೆ" : "Busiest"}</dt>
+                        <dt>{kn ? "ಹೆಚ್ಚು ಚಟುವಟಿಕೆ" : "Busiest area"}</dt>
                         <dd>
-                          <b>{busiestZones[0].zone}</b> · {busiestZones[0].observed.toLocaleString()}
-                          {totalObserved > 0 && ` (${Math.round((busiestZones[0].observed / totalObserved) * 100)}%)`}
-                          {busiestZones.length > 1 && <small>{kn ? "ನಂತರ" : "then"} {busiestZones.slice(1, 4).map((z) => `${z.zone} ${z.observed}`).join(" · ")}</small>}
+                          <b>{busiestZones[0].zone}</b>, {busiestZones[0].observed.toLocaleString("en-IN")} {busiestZones[0].observed === 1 ? "case" : "cases"}
+                          {totalObserved > 0 && ` (${Math.round((busiestZones[0].observed / totalObserved) * 100)}% of the day)`}
+                          {busiestZones.length > 1 && <small>{kn ? "ನಂತರ" : "Then"} {busiestZones.slice(1, 4).map((z) => `${z.zone} ${z.observed}`).join(", ")}</small>}
                         </dd>
                       </div>
                     )}
                     <div>
-                      <dt>{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್" : "Hotspots"}</dt>
+                      <dt>{kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್" : "Confirmed hotspots"}</dt>
                       <dd>
-                        {(() => {
-                          const hot = topGiZones.filter((z) => z.is_hotspot);
-                          if (!hot.length) return <>{kn ? "ಯಾವುದೂ ಸಂಖ್ಯಾಶಾಸ್ತ್ರೀಯವಾಗಿ ದೃಢಪಟ್ಟಿಲ್ಲ" : "None statistically confirmed in this view"}</>;
-                          return <><b>{hot.length}</b> {kn ? "ದೃಢಪಟ್ಟಿದೆ" : "confirmed"}
-                            <small>{hot.slice(0, 3).map((z) => `${z.zone} (z ${Number(z.gi_stat).toFixed(1)})`).join(" · ")}</small></>;
-                        })()}
+                        {!hot.length
+                          ? (kn ? "ಯಾವುದೂ ಸಂಖ್ಯಾಶಾಸ್ತ್ರೀಯವಾಗಿ ದೃಢಪಟ್ಟಿಲ್ಲ" : "None")
+                          : <><b>{hot.slice(0, 3).map((z) => z.zone).join(", ")}</b>{hot.length > 3 ? ` and ${hot.length - 3} more` : ""}
+                              <small title={hot.slice(0, 3).map((z) => `${z.zone}: Gi* z ${Number(z.gi_stat).toFixed(1)}`).join(" · ")}>
+                                {kn ? "ದೃಢಪಟ್ಟಿದೆ" : "A cluster with its neighbours that is unlikely to be chance"}</small></>}
                       </dd>
                     </div>
                     {topAlert && (
                       <div>
-                        <dt>{kn ? "ಗಮನಿಸಿ" : "Watch"}</dt>
+                        <dt>{kn ? "ಗಮನಿಸಿ" : "Above its usual level"}</dt>
                         <dd>
-                          <b>{topAlert.zone}</b> · {String(topAlert.crime_type || "").replace(/_/g, " ").toLowerCase()}
-                          <small>{topAlert.observed} {kn ? "ದಾಖಲಾಗಿದೆ" : "recorded"}{typeof topAlert.z_score === "number" ? ` · ${topAlert.z_score.toFixed(1)} ${kn ? "ವಿಚಲನ" : "deviations above usual"}` : ""}</small>
+                          <b>{topAlert.zone}</b>: {crime(topAlert.crime_type)}
+                          <small title={typeof topAlert.z_score === "number" ? `Anomaly score ${topAlert.z_score.toFixed(1)}` : undefined}>
+                            {topAlert.observed} {kn ? "ದಾಖಲಾಗಿದೆ" : "recorded"}{typeof topAlert.z_score === "number" && topAlert.z_score >= 2 ? `, ${how(topAlert.z_score)} what is usual there` : ""}</small>
                         </dd>
                       </div>
                     )}
                     {viewInsight.outlook && (
                       <div>
-                        <dt>{kn ? "ಮುಂದಿನ ನೋಟ" : "Outlook"}</dt>
+                        <dt>{kn ? "ಮುಂದಿನ ನೋಟ" : `Next ${viewInsight.outlook.horizon} days`}</dt>
                         <dd>
                           <b>{viewInsight.outlook.name}</b>{viewInsight.outlook.where ? `, ${viewInsight.outlook.where}` : ""}
-                          <small>{kn ? "ಸಾಧ್ಯತೆ" : "likely"} {viewInsight.outlook.lo}–{viewInsight.outlook.hi} FIRs {kn ? `ಮುಂದಿನ ${viewInsight.outlook.horizon} ದಿನಗಳಲ್ಲಿ` : `in the next ${viewInsight.outlook.horizon} days`} · {kn ? "ಅಂದಾಜು" : "an estimate"}</small>
+                          <small>{kn ? "ಸಾಧ್ಯತೆ" : "Likely"} {viewInsight.outlook.lo} {kn ? "–" : "to"} {viewInsight.outlook.hi} FIRs. {kn ? "ಅಂದಾಜು" : "An estimate, the highest in this view."}</small>
                         </dd>
                       </div>
                     )}
                     {viewInsight.patrol.length > 0 && (
                       <div>
-                        <dt>{kn ? "ಗಸ್ತು" : "Patrol"}</dt>
-                        <dd>{viewInsight.patrol.join(" · ")}
-                          <small>{viewInsight.patrolFromForecast ? (kn ? "ಮುನ್ಸೂಚನೆಯಿಂದ" : "from the forecast") : (kn ? "ಇಂದಿನ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳಿಂದ" : "from today's hotspots")} · {kn ? "ಸಲಹೆ ಮಾತ್ರ" : "a suggestion; the officer decides"}</small>
+                        <dt>{kn ? "ಗಸ್ತು" : "Patrol to consider"}</dt>
+                        <dd>{viewInsight.patrol.join(", ")}
+                          <small>{viewInsight.patrolFromForecast ? (kn ? "ಮುನ್ಸೂಚನೆಯಿಂದ" : "From the forecast.") : (kn ? "ಇಂದಿನ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳಿಂದ" : "From today's hotspots.")} {kn ? "ಸಲಹೆ ಮಾತ್ರ" : "A suggestion; the officer decides."}</small>
                         </dd>
                       </div>
                     )}
                   </dl>
 
-                  {/* Antar's reading of the same figures, in a sentence or two. It arrives after
-                      the rows and never replaces them; if the model is slow or down, it is absent. */}
+                  {/* The same figures in a sentence or two. It arrives after the rows and never
+                      replaces them; if the model is slow or down, it is simply absent. */}
                   {(llmLoading || llmSummary) && (
-                    <div className="mx-vs-ai">
-                      <span>{kn ? "ಅಂತರ್ ಓದು" : "Antar's reading"}{llmLoading && <i> · {kn ? "ಬರೆಯುತ್ತಿದೆ…" : "writing…"}</i>}</span>
+                    <div className="mx-sum-note">
+                      <h4>{kn ? "ಸಂಕ್ಷಿಪ್ತವಾಗಿ" : "In short"}</h4>
+                      {llmLoading && <p className="dim">{kn ? "ಬರೆಯುತ್ತಿದೆ…" : "Writing…"}</p>}
                       {!llmLoading && llmSummary && <p>{llmSummary.replace(/^[\s\n]*[●*•]?\s*Analyzing(\.\.\.)?\s*\n*/i, "")}</p>}
+                      {!llmLoading && llmSummary && <small>{kn ? "ಮೇಲಿನ ಅಂಕಿಅಂಶಗಳಿಂದ ಬರೆಯಲಾಗಿದೆ" : "Written by Antar from the figures above."}</small>}
                     </div>
                   )}
 
@@ -1617,7 +1639,8 @@ export default function MapScreen() {
                         </marquee>
                       </div>
                 </div>
-              )}
+                );
+              })()}
             </aside>
           )}
 

@@ -349,7 +349,57 @@ def _tally_line(review: dict) -> str:
             f"{ta.get('SURVIVES', 0)} survive")
 
 
+def _named_most(place: str, limit: int = 3) -> tuple[str, list[sqlite3.Row]]:
+    """The accused ids named on the most FIRs in a district (or, failing that, a station).
+    Returns (the column that matched, rows). Counted from the store the Brain draws from."""
+    con = _brain_con()
+    try:
+        for col in ("District_Name", "UnitName"):
+            try:
+                rows = con.execute(
+                    f"SELECT Accused_ID AS id, COUNT(*) AS n, MIN(CAST(FIR_YEAR AS INT)) AS y0, MAX(CAST(FIR_YEAR AS INT)) AS y1, "
+                    f"GROUP_CONCAT(DISTINCT CrimeGroup_Name) AS groups FROM FIRs "
+                    f"WHERE {col} = ? COLLATE NOCASE AND COALESCE(Accused_ID, '') <> '' "
+                    f"GROUP BY 1 ORDER BY n DESC, 1 LIMIT ?", (place, limit)).fetchall()
+            except sqlite3.OperationalError:
+                rows = []
+            if rows:
+                return col, rows
+        return "", []
+    finally:
+        con.close()
+
+
+def _research_place(place: str) -> dict:
+    """Research works on a named person and will not pick one. Pointed at a place, it says
+    who the record names most there - a count, not a judgment - and leaves the choice of
+    whose dossier to open to the officer."""
+    col, rows = _named_most(place)
+    if not rows:
+        return _empty(f"No FIR in {place} names an accused in the Brain dataset, so there is nobody to open a dossier on.",
+                      nxt=["run geo", "run forecast", "run pattern"])
+    ev = []
+    for r in rows:
+        groups = [g.strip().lower() for g in str(r["groups"] or "").split(",") if g.strip()][:2]
+        span = str(r["y0"]) if r["y0"] == r["y1"] else f"{r['y0']} to {r['y1']}"
+        ev.append(f"[K] {r['id']}: named on {_plural(r['n'], 'FIR')} ({span})" + (f"; {', '.join(groups)}" if groups else "") + ".")
+    lead = (f"In {place}, {rows[0]['id']} is named on the most FIRs ({rows[0]['n']})." if rows[0]["n"] > 1
+            else f"In {place}, no accused is named on more than one FIR; these are {len(rows)} who are named.")
+    return _ok("K", f"{lead} I research a named person, so choose whose dossier to open.",
+               context=f"{place} · accused ids by number of FIRs naming them · Brain dataset",
+               evidence=ev,
+               limits=["Being named on many FIRs is a count. It is not a finding about the person.",
+                       "I do not choose a subject: the dossier opens only for the id you pick."],
+               nxt=[f"run research {r['id']}" for r in rows])
+
+
 def _research(t: Target) -> dict:
+    # A place and nothing else (the Map, or a place typed in the terminal). A FIR dropped
+    # from the graph carries a station AND a district AND a crime group, and is not this.
+    place_only = not t.accused and not t.crime_group and not (t.vehicle or t.upi or t.ip or t.fir_ref) \
+        and bool(t.district) != bool(t.station)
+    if place_only:
+        return _research_place(t.district or t.station)
     if (rows := _on_firs_only(t)):
         return _research_from_firs(t, rows)
     if (r := _need_suspect(t, "the research agent")):

@@ -18,9 +18,10 @@ import { GeoJSON, useMap } from "react-leaflet";
 import { Mascot } from "page-mascot";
 
 export const MAP_AGENTS = [
-  { id: "geo", face: "drone", name: "Geo", does: "Where in the area to look next" },
-  { id: "forecast", face: "clockwork", name: "Forecast", does: "What to expect at its busiest station" },
-  { id: "pattern", face: "radio", name: "Pattern", does: "Is the selected crime clustering here" },
+  { id: "geo", face: "drone", name: "Geo", does: "Ranks the beats in the district by cases expected in the next 7 days." },
+  { id: "forecast", face: "clockwork", name: "Forecast", does: "Gives the likely range of cases at the district's busiest station." },
+  { id: "pattern", face: "radio", name: "Pattern", does: "Finds clusters of the selected crime type, close in place and time." },
+  { id: "research", face: "postbot", name: "Research", does: "Lists who is named on the most FIRs there, and opens a dossier on the one you pick." },
 ];
 const BY_ID = Object.fromEntries(MAP_AGENTS.map((a) => [a.id, a]));
 const DRAG_TYPE = "application/x-antar-agent";
@@ -31,18 +32,15 @@ const Face = ({ agent, size }) => (
 );
 
 // ── the dock ────────────────────────────────────────────────────────────────────
-// Sits on the map itself, in the corner east of the state where there is nothing to
-// cover. The agents are always in view there, so a drag starts from the map and ends on
-// it. `district`: the district already selected, if any (a click runs there).
-// `onRun(id)`: run on the selected district. `onDrag(id | null)`: a drag began / ended.
-const DOCK_KEY = "antar_map_agents_closed";
-
+// A button on the map, and nothing else until it is pressed. Open, the agents stand on the
+// map itself - no panel behind them - each with a line saying what it does, so a drag starts
+// from the map and ends on it. `district`: the district already selected, if any (a click
+// runs there). `onRun(id)`: run on the selected district. `onDrag(id | null)`: a drag
+// began / ended.
 export function MapAgentsMenu({ kn, district, dragging, onRun, onDrag }) {
-  const [open, setOpen] = useState(true);
-  const [hot, setHot] = useState(null);          // the agent under the pointer
+  const [open, setOpen] = useState(false);
   const [nudge, setNudge] = useState(false);     // clicked with no district selected
-  // On a narrow map the state fills the frame and there is no empty corner: the dock
-  // then shrinks to the three faces so it covers as little of the districts as it can.
+  // On a narrow map there is no empty corner: the agents then take less room.
   const ref = useRef(null);
   const [tight, setTight] = useState(false);
   useEffect(() => {
@@ -52,31 +50,28 @@ export function MapAgentsMenu({ kn, district, dragging, onRun, onDrag }) {
     ro.observe(frame);
     return () => ro.disconnect();
   }, []);
-  useEffect(() => { try { if (localStorage.getItem(DOCK_KEY) === "1") setOpen(false); } catch { /* opens */ } }, []);
-  const toggle = () => setOpen((v) => { try { localStorage.setItem(DOCK_KEY, v ? "1" : "0"); } catch { /* not kept */ } return !v; });
   useEffect(() => { if (district) setNudge(false); }, [district]);
 
   const pick = (id) => {
     if (!district) { setNudge(true); return; }
     onRun(id);
   };
-  const says = hot ? BY_ID[hot].does
-    : nudge ? "Click a district first, or drag the agent onto one."
-    : district ? `Drag onto a district, or click to run on ${district}.`
-    : "Drag an agent onto a district.";
 
   return (
     <aside ref={ref} className={`mxa${open ? " open" : ""}${tight ? " tight" : ""}${dragging ? " is-drag" : ""}`} aria-label={kn ? "ನಕ್ಷೆ ಏಜೆಂಟ್‌ಗಳು" : "Map agents"}>
-      <button type="button" className="mxa-btn" aria-expanded={open} onClick={toggle}>
+      <button type="button" className="mxa-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         {kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"} <span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
         <>
-          <div className="mxa-row" role="menu">
-            {MAP_AGENTS.map((a) => (
-              <div key={a.id} role="menuitem" tabIndex={0} draggable className="mxa-a" title={a.does}
-                   onMouseEnter={() => setHot(a.id)} onMouseLeave={() => setHot(null)}
-                   onFocus={() => setHot(a.id)} onBlur={() => setHot(null)}
+          <p className={`mxa-hint${nudge ? " nudge" : ""}`}>
+            {nudge ? "Click a district first, or drag the agent onto one."
+              : district ? `Drag one onto a district, or click to run it on ${district}.`
+              : "Drag one onto a district."}
+          </p>
+          <div className="mxa-list" role="menu">
+            {MAP_AGENTS.map((a, i) => (
+              <div key={a.id} role="menuitem" tabIndex={0} draggable className="mxa-a" style={{ animationDelay: `${i * 45}ms` }}
                    onClick={() => pick(a.id)}
                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(a.id); } }}
                    onDragStart={(e) => {
@@ -84,17 +79,16 @@ export function MapAgentsMenu({ kn, district, dragging, onRun, onDrag }) {
                      e.dataTransfer.setData("text/plain", a.name);
                      e.dataTransfer.effectAllowed = "copy";
                      const face = e.currentTarget.querySelector(".mxa-face");
-                     if (face) e.dataTransfer.setDragImage(face, 26, 26);
-                     // after the browser has taken its picture of the agent: the dock fades back
+                     if (face) e.dataTransfer.setDragImage(face, 24, 24);
+                     // after the browser has taken its picture of the agent: the others fade back
                      setTimeout(() => onDrag(a.id), 0);
                    }}
                    onDragEnd={() => onDrag(null)}>
-                <span className="mxa-face"><Face agent={a} size={tight ? 38 : 52} /></span>
-                <b>{a.name}</b>
+                <span className="mxa-face"><Face agent={a} size={tight ? 38 : 48} /></span>
+                <span className="mxa-txt"><b>{a.name}</b><em>{a.does}</em></span>
               </div>
             ))}
           </div>
-          <p className={`mxa-hint${nudge && !hot ? " nudge" : ""}`}>{says}</p>
         </>
       )}
     </aside>
@@ -188,9 +182,9 @@ export function MapAgentResult({ run, stale, todayIso, onClose, onRun, onRerun }
   const b = run.body, d = run.dated;
   const working = run.status === "running";
   // "run forecast Chitradurga Central PS" -> a button; an agent the map does not carry is left out
-  const next = (b?.next || []).map((t) => /^run (geo|forecast|pattern)\b\s*(.*)$/i.exec(t)).filter(Boolean)
+  const next = (b?.next || []).map((t) => /^run (geo|forecast|pattern|research)\b\s*(.*)$/i.exec(t)).filter(Boolean)
     .map((m) => ({ id: m[1].toLowerCase(), arg: m[2].trim() })).filter((n) => n.id !== run.agent || n.arg);
-  const looksAhead = run.agent !== "pattern" && b?.status === "ok" && run.date !== todayIso;
+  const looksAhead = (run.agent === "geo" || run.agent === "forecast") && b?.status === "ok" && run.date !== todayIso;
 
   return (
     <section className={`mxr${working ? " is-working" : ""}`} aria-live="polite" aria-busy={working}>

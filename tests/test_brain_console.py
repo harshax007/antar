@@ -31,7 +31,8 @@ def test_identity_pack_is_built_from_the_constitution():
     assert [s["step"] for s in p["thinking"]] == [n for n, _ in identity.THINKING]
     assert {a["id"] for a in p["agents"]} == set(C.AGENTS)
     assert all(a["role"] for a in p["agents"])            # read from the manifest, never blank
-    assert {"help", "agents", "clear"} <= {c["cmd"] for c in p["commands"]}
+    # by first word: "help" is listed as "help [command]" since it takes an optional argument
+    assert {"help", "agents", "clear"} <= {c["cmd"].split()[0] for c in p["commands"]}
 
 
 def test_the_prompt_carries_how_antar_thinks():
@@ -197,3 +198,29 @@ def test_todays_learnings_are_counts_between_two_real_agents():
     assert volume["id"].endswith(":volume") and res["date"] in volume["title"]
     assert any(c["cmd"] == "learnings" for c in C.COMMANDS)
 
+
+def test_research_on_a_place_lists_who_is_named_and_leaves_the_choice_to_the_officer(monkeypatch):
+    """The Map drops Research on a district. It works on a named person and will not pick
+    one, so it says who the record names most there and offers each dossier."""
+    rows = [{"id": "ACC-KA-200359", "n": 3, "y0": 2025, "y1": 2025, "groups": "THEFT"},
+            {"id": "ACC-KA-300606", "n": 2, "y0": 2024, "y1": 2025, "groups": "THEFT,BURGLARY"}]
+    monkeypatch.setattr(C, "_named_most", lambda place, limit=3: ("District_Name", rows))
+    r = C.run("research", {"district": "Chitradurga"})
+    assert r["status"] == "ok" and r["evidence_class"] == "K"
+    assert "ACC-KA-200359 is named on the most FIRs (3)" in r["bottom_line"]
+    assert "choose whose dossier to open" in r["bottom_line"]
+    assert r["next"] == ["run research ACC-KA-200359", "run research ACC-KA-300606"]
+    assert any("not a finding about the person" in x for x in r["limits"])
+
+
+def test_research_on_a_place_with_nobody_named_says_so(monkeypatch):
+    monkeypatch.setattr(C, "_named_most", lambda place, limit=3: ("", []))
+    r = C.run("research", {"district": "Nowhere"})
+    assert r["status"] == "empty" and "nobody to open a dossier on" in r["bottom_line"]
+
+
+def test_a_fir_with_no_accused_is_still_refused_not_filled_in():
+    """A FIR dropped from the graph carries a station, a district and a crime group. It names
+    no accused, and Research does not go looking for one in the district."""
+    r = C.run("research", {"accused": "", "station": "Mysuru City PS", "district": "Mysuru City", "crime_group": "THEFT"})
+    assert r["status"] == "refused" and "names no accused" in r["bottom_line"]
