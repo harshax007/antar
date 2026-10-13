@@ -120,7 +120,7 @@ function RoamingFace({ face, size, label, busy = false }) {
   );
 }
 
-// A notice, in full, as text: what Save writes to a file and Copy puts on the clipboard.
+// A notice, in full, as text: what Copy puts on the clipboard.
 function noticeText(n) {
   const r = n.r || {};
   const out = [`ANTAR - ${n.title}`, `Received ${new Date(n.at).toLocaleString("en-IN")}`, ""];
@@ -197,6 +197,18 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
   const [toasts, setToasts] = useState([]);        // notifications to the officer
   const [notice, setNotice] = useState(null);      // the one opened as a window
   const [savedNote, setSavedNote] = useState("");  // "Saved" / "Copied", shown briefly in that window
+  // Findings the officer kept for a later investigation. They live on the server, under the
+  // signed-in officer (GET/POST/DELETE /api/console/saved) - never in a file on this machine.
+  const [saved, setSaved] = useState(null);        // list | "missing" (server predates it) | null while loading
+  const [savedOpen, setSavedOpen] = useState(false);
+  const loadSaved = useCallback(() => {
+    fetchAPI("/api/console/saved?limit=200").then((d) => setSaved(d.items || [])).catch((e) => setSaved(e?.status === 404 ? "missing" : []));
+  }, []);
+  useEffect(() => { loadSaved(); }, [loadSaved]);
+  const savedList = Array.isArray(saved) ? saved : [];
+  // a stored finding, in the shape the notice window reads
+  const asNotice = (it) => ({ id: `saved-${it.id}`, savedId: it.id, savedAt: it.saved_at * 1000, title: it.title, text: it.result?.bottom_line,
+                              at: (it.received_at || it.saved_at) * 1000, r: it.result || {}, agent: it.agent, label: it.label, was: it.was, wasAt: it.was_at });
   const [unread, setUnread] = useState(0);
   const lastRun = useRef(null);
   const history = useRef({ items: [], at: 0 });
@@ -961,6 +973,12 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
             {kn ? "ಟರ್ಮಿನಲ್" : "Terminal"}
             {unread > 0 && <em aria-label={`${unread} new`}>{unread}</em>}
           </button>
+          <button className={`bsx-pill bt-pill${savedOpen ? " on" : ""}`} onClick={() => { setSavedOpen((v) => !v); loadSaved(); }}
+                  title="Findings you saved for a later investigation" aria-label="Saved findings" aria-pressed={savedOpen}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h12v16l-6-4-6 4z" /></svg>
+            Saved
+            {savedList.length > 0 && <em className="q" aria-label={`${savedList.length} saved`}>{savedList.length}</em>}
+          </button>
           {/* The same switch as the terminal's assemble / roam: one press lines the agents up, the next lets them go. */}
           {showAgents && (
             <button className={`bsx-pill bt-pill bt-asm${roam ? "" : " on"}`} onClick={() => setRoam((v) => !v)} aria-pressed={!roam}
@@ -982,19 +1000,66 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
         </div>
       )}
 
+      {/* Saved findings: what this officer kept, newest first. Each opens in the same window. */}
+      {savedOpen && showConsole && !notice && (
+        <div className="nw-back" onClick={() => setSavedOpen(false)}>
+          <section className="nw nw-list" role="dialog" aria-modal="true" aria-label="Saved findings" onClick={(e) => e.stopPropagation()}
+                   onKeyDown={(e) => { if (e.key === "Escape") setSavedOpen(false); }} tabIndex={-1} ref={(el) => el?.focus()}>
+            <header>
+              <div>
+                <h3>Saved findings</h3>
+                <p>{saved === null ? "Reading…" : saved === "missing" ? "Not available until the server is restarted."
+                  : `${savedList.length} kept for a later investigation. Stored under your account, not on this computer.`}</p>
+              </div>
+              <button className="nw-x" onClick={() => setSavedOpen(false)} aria-label="Close this window" title="Close">&times;</button>
+            </header>
+            <div className="nw-body">
+              {Array.isArray(saved) && savedList.length === 0 && (
+                <p className="nw-dim">Nothing saved yet. Open a notice from an agent and press Save to keep it here.</p>
+              )}
+              <ul className="nw-saved">
+                {savedList.map((it) => (
+                  <li key={it.id}>
+                    <button className="row" onClick={() => { setNotice(asNotice(it)); setSavedNote(""); }}>
+                      <b>{it.title || `${it.agent} on ${it.label}`}</b>
+                      <span>{it.result?.bottom_line}</span>
+                      <em>Saved {new Date(it.saved_at * 1000).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        {it.result?.evidence_class ? ` · ${CLASS_NAME[it.result.evidence_class] || it.result.evidence_class}` : ""}</em>
+                    </button>
+                    <button className="del" aria-label={`Remove ${it.title}`} title="Remove from saved"
+                            onClick={() => fetchAPI(`/api/console/saved/${it.id}`, { method: "DELETE" }).then(loadSaved).catch(() => {})}>&times;</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <footer>
+              <button onClick={() => setSavedOpen(false)}>Close</button>
+            </footer>
+          </section>
+        </div>
+      )}
+
       {/* A notice opened: the whole finding in its own window, to read, save or close. */}
       {notice && showConsole && (() => {
         const r = notice.r || {};
-        const file = `antar-${String(notice.agent || "notice")}-${String(notice.label || "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "finding"}-${new Date(notice.at).toISOString().slice(0, 10)}.txt`;
-        const flash = (word) => { setSavedNote(word); setTimeout(() => setSavedNote(""), 2200); };
-        const saveFile = () => {
+        const flash = (word) => { setSavedNote(word); setTimeout(() => setSavedNote(""), 2600); };
+        const held = notice.savedId || savedList.find((x) => x.agent === String(notice.agent || "").toLowerCase() && x.label === notice.label && x.result?.bottom_line === r.bottom_line)?.id || null;
+        const keep = async () => {
           try {
-            const url = URL.createObjectURL(new Blob([noticeText(notice)], { type: "text/plain;charset=utf-8" }));
-            const a = document.createElement("a");
-            a.href = url; a.download = file; document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            flash(`Saved as ${file}`);
-          } catch { flash("This browser could not save the file."); }
+            const d = await fetchAPI("/api/console/saved", { method: "POST", body: JSON.stringify({
+              title: notice.title, agent: notice.agent || "", label: notice.label || "",
+              result: { status: r.status, evidence_class: r.evidence_class, bottom_line: r.bottom_line || notice.text, context: r.context,
+                        evidence: r.evidence, limits: r.limits, method: r.method, next: r.next },
+              was: notice.was || null, was_at: notice.wasAt || null, received_at: Math.round(notice.at / 1000) }) });
+            flash(d.already ? "Already in your saved findings" : "Saved to your findings");
+            loadSaved();
+          } catch (e) {
+            flash(e?.status === 404 ? "Saving needs the server restarted to load it." : "It could not be saved. Try again.");
+          }
+        };
+        const drop = async () => {
+          try { await fetchAPI(`/api/console/saved/${held}`, { method: "DELETE" }); loadSaved(); flash("Removed from your saved findings"); if (notice.savedId) setNotice(null); }
+          catch { flash("It could not be removed. Try again."); }
         };
         const copy = async () => { try { await navigator.clipboard.writeText(noticeText(notice)); flash("Copied"); } catch { flash("Copy is not available here."); } };
         const close = () => setNotice(null);
@@ -1006,7 +1071,8 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                 {notice.agent && FACE[notice.agent] && <RoamingFace face={FACE[notice.agent]} size={46} label={`${nameOf(notice.agent)} agent`} busy />}
                 <div>
                   <h3>{notice.title}</h3>
-                  <p>{new Date(notice.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  <p>{notice.savedAt ? `Saved ${new Date(notice.savedAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} · received ` : ""}
+                    {new Date(notice.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     {r.status ? ` · ${r.status === "ok" ? "answered" : r.status === "empty" ? "nothing on record" : r.status === "refused" ? "not run" : r.status}` : ""}
                     {r.ms != null ? ` · ${r.ms} ms` : ""}</p>
                 </div>
@@ -1032,7 +1098,9 @@ export default function AgentMascot({ controlRef, apiRef, focus, onThink, kn, ag
                 <span className="nw-flash" role="status">{savedNote}</span>
                 <button onClick={() => { close(); openTerminal(); }}>Open in terminal</button>
                 <button onClick={copy}>Copy</button>
-                <button className="go" onClick={saveFile}>Save</button>
+                {held
+                  ? <button onClick={drop} title="Take this out of your saved findings">Remove from saved</button>
+                  : <button className="go" onClick={keep} title="Keep this in your saved findings, for a later investigation">Save</button>}
                 <button onClick={close}>Close</button>
               </footer>
             </section>

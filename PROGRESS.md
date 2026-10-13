@@ -1902,3 +1902,12 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Engine confidence** is one line (level, meaning, number of reasons) that opens on click; the rule that sets the level is shown beside its reasons.
 * **Added**: filters and a search on the forecast list; the three stations to watch in the selected district (from `/api/forecast/hotspots`, hidden for areas that are not police districts); "Copy for a briefing note"; 90% range coverage, forecast-against-recorded total and where the real register ends.
 * Nothing was removed from the page.
+
+## Brain: saved findings, agents that look around, a fuller focus panel - 2026-10-13
+
+* **Saved findings** (`app/services/saved_findings.py`, `GET/POST/DELETE /api/console/saved`): Save on a Brain notice keeps the whole finding in the database under the signed-in officer, for a later investigation. It is never written to the officer's disk: a finding names accused ids and FIR details, and a file in a downloads folder is outside sign-in, roles and the audit ledger. The officer comes from the token, not the request body; one officer cannot list or remove another's. 200 per officer, oldest first out; saving the same finding twice keeps one copy.
+* **Saved** pill beside Terminal lists them, newest first; each reopens in the notice window, where it can be removed.
+* **Notice window**: clicking a notice opens the whole finding (bottom line, scope, evidence, limits, method, suggested next) with Save, Copy, Open in terminal and Close.
+* **Agents on the Brain screen** look around on their own instead of following the pointer.
+* **Focus panel**: FIRs by year, where registered, every named accused with FIR counts, identifiers shared by two or more FIRs, and the FIR list grouped with counts.
+* Needs a backend restart for the saved-findings endpoints; until then the page says so.

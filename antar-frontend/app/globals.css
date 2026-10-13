@@ -4495,3 +4495,16 @@ body:has(.bsx-focus) .bt-toasts { right: 440px; }
 @keyframes nwFade { from { opacity: 0; } }
 @keyframes nwRise { from { opacity: 0; transform: translateY(10px) scale(.985); } }
 @media (prefers-reduced-motion: reduce) { .nw, .nw-back, .bsx-focus { animation: none; } }
+
+/* ── Brain · saved findings ── */
+.bsx-pill.bt-pill em.q { background: rgba(255,255,255,.12); color: #E2E8F0; }
+.nw-saved { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.nw-saved li { display: grid; grid-template-columns: 1fr 30px; align-items: stretch; gap: 6px; }
+.nw-saved button.row { display: grid; gap: 3px; text-align: left; padding: 10px 12px; border-radius: 10px; cursor: pointer; font-family: 'Inter', sans-serif;
+  background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); transition: border-color .14s, background .14s; }
+.nw-saved button.row:hover { background: rgba(34,230,240,.06); border-color: rgba(34,230,240,.35); }
+.nw-saved button.row b { font-size: 13.5px; font-weight: 600; color: #fff; overflow-wrap: anywhere; }
+.nw-saved button.row span { font-size: 12.5px; line-height: 1.45; color: #A9B6C8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nw-saved button.row em { font-style: normal; font-size: 11.5px; color: #7C8CA3; }
+.nw-saved button.del { border: 0; border-radius: 8px; background: none; color: #7C8CA3; font-size: 20px; line-height: 1; cursor: pointer; }
+.nw-saved button.del:hover { background: rgba(255,123,114,.1); color: #FF7B72; }
