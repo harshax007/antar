@@ -313,6 +313,13 @@ def _case_outcomes(spec: QuerySpec) -> list[dict]:
     return [r for r in rows if r.get("grp") is not None]
 
 
+def _connect_ro() -> sqlite3.Connection:
+    try:
+        return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    except sqlite3.OperationalError:
+        return sqlite3.connect(DB_PATH)      # a path a URI cannot express (tests, odd mounts)
+
+
 def run_local(spec: QuerySpec) -> list[dict]:
     # Every query path goes through here, so this is where the index set is guaranteed to
     # exist. It used to be reachable only via load_world(), which meant a freshly staged
@@ -364,7 +371,9 @@ def run_local(spec: QuerySpec) -> list[dict]:
     hit = _RESULT_CACHE.get(sql)
     if hit is not None:
         return [dict(r) for r in hit]
-    conn = sqlite3.connect(DB_PATH)
+    # Read-only: a template only ever reads. If a value ever got past the escaping, the
+    # connection itself could still not change a row.
+    conn = _connect_ro()
     conn.row_factory = _dict_factory
     ok = True
     try:

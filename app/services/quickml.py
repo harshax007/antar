@@ -230,7 +230,8 @@ async def quickml_generate(
     # policy + canary (app/core/rag_security.py). Every agent's prompt passes through here,
     # so no call site can forget it.
     safe_system = harden_system(redact_pii(system))
-    _flags = detect_injection(user)
+    # our own fences carry the delimiter tag, so that one pattern is not evidence here
+    _flags = [f for f in detect_injection(user) if f != "delimiter_spoof"]
     if _flags:
         import logging as _lg
         _lg.getLogger("antar.rag_security").warning("rag_injection_in_prompt flags=%s", _flags)

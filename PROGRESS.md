@@ -1989,3 +1989,10 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * No language model writes any of it: fixed sentences filled with the counts (a test fails if a model is called). The register holds an FIR's date, not its hour, so the plan names days and never a time; the page says so.
 * Predict page: each station under "Stations to watch" has a "Shift plan" button. The window has Copy for a briefing note, Print, and Propose patrol deployment, which files a proposal for a supervising officer (`components/ShiftPlan.jsx`).
 * Needs a backend restart. The filled window was checked in the browser with a plan produced by the new code; the live call was not, because the running server predates it.
+
+## Security: model assumed compromised, and a scorecard (USP plan S5) - 2026-10-14
+
+* `tests/test_assume_compromise.py` (50 cases): the model is not called; its worst-case output is fed into each consumer. `scripts/security_scorecard.py` runs the four pure security suites and writes `docs/SECURITY_SCORECARD.md`: 161 of 161 cases stopped, listed per control.
+* Writing it found three real holes, fixed here: the model could select internal templates, including a free-form one that can read `audit_log` (`query_agent.model_choice`); an invented FIR number of the register's own shape passed the identifier check; an answer in which every sentence was unsupported was passed through unchanged (now rejected and written from the rows).
+* The query connection is read-only. A false "delimiter spoof" log line on every fenced prompt is gone.
+* Details in `docs/SECURITY.md` section 3.7. Needs a backend restart.

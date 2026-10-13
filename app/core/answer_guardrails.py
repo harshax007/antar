@@ -41,7 +41,9 @@ _SLOP_RE = re.compile("|".join(re.escape(s) for s in _SLOP), re.IGNORECASE)
 # integers with optional thousands separators, not part of a longer token
 _NUM_RE = re.compile(r"(?<![\w.-])(\d{1,3}(?:,\d{3})+|\d+)(?![\w.-])")
 # identifier shapes used across the dataset (FIR numbers, ACC ids, vehicle regs)
-_ID_RE = re.compile(r"\b(?:\d{4}-[A-Z]{2,4}-[A-Z0-9]{1,4}-\d{2,6}|ACC-\d+|S\d{4,}|[A-Z]{2}\d{2}[A-Z]{1,2}\d{3,4})\b")
+# The second shape is the register's own FIR number (SYN-2026-908137, BG-2026-913354,
+# FWD-2026-947135). It was missing, so an invented FIR of the commonest shape passed G3.
+_ID_RE = re.compile(r"\b(?:\d{4}-[A-Z]{2,4}-[A-Z0-9]{1,4}-\d{2,6}|[A-Z]{2,4}-\d{4}-\d{3,}|ACC-\d+|S\d{4,}|[A-Z]{2}\d{2}[A-Z]{1,2}\d{3,4})\b")
 
 _SENT_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
@@ -184,6 +186,7 @@ def apply_guardrails(
     original = answer or ""
     violations: list[str] = []
     out = original
+    rejected = False
     try:
         out, forced = enforce_no_result(out, rows, question, lang)
         if forced:
@@ -194,13 +197,22 @@ def apply_guardrails(
         if n_slop:
             violations.append(f"G4_slop_removed:{n_slop}")
 
+        # When EVERY sentence carries an unsupported number or identifier there is nothing
+        # left to keep. The checks hand the text back unchanged in that case (this function
+        # never returns an empty answer), which let a wholly invented one-line answer
+        # through with only a log line. It is now marked `rejected`: the caller writes the
+        # answer from the rows instead.
+        n_sent = len([x for x in _SENT_SPLIT.split(out) if x.strip()])
         out, bad_nums = check_numbers(out, rows, citations)
         if bad_nums:
             violations.append(f"G1_unsupported_number:{len(bad_nums)}")
+            rejected = rejected or len(bad_nums) >= n_sent
 
+        n_sent = len([x for x in _SENT_SPLIT.split(out) if x.strip()])
         out, bad_ids = check_identifiers(out, rows)
         if bad_ids:
             violations.append(f"G3_unsupported_identifier:{len(bad_ids)}")
+            rejected = rejected or len(bad_ids) >= n_sent
 
         out, capped = cap_length(out, _KIND_BY_TEMPLATE.get(template_id, "DEFAULT"))
         if capped:
@@ -210,4 +222,8 @@ def apply_guardrails(
                 "changed": False}
 
     out = (out or "").strip() or original
-    return {"answer": out, "violations": violations, "changed": out != original}
+    res = {"answer": out, "violations": violations, "changed": out != original}
+    if rejected:
+        res["rejected"] = True
+        violations.append("unsupported_answer_rejected")
+    return res

@@ -753,7 +753,30 @@ async def select_template(user_text: str, lang: str, entities: dict, llm: LLM,
         llm(system=SELECT_SYSTEM, user=prompt, json_mode=True,
             max_tokens=256, temperature=0.1),
         timeout=SELECT_TIMEOUT_S)
-    return parse_json_response(raw)
+    return model_choice(parse_json_response(raw))
+
+
+def model_choice(choice) -> dict:
+    """What a model may choose: one of the templates it was shown, or nothing.
+
+    The registry also holds internal templates the model is never offered - the scan
+    window, the map feed, and "AST", which runs a free-form query over a list of tables
+    that includes the audit log. Callers accepted any id found in the registry, so a
+    model that named "AST" (or text injected into a record that steered it there) could
+    have read other officers' questions. The model never writes a query: an id it was not
+    offered is treated as no choice, and the caller's own router decides.
+    """
+    from app.services.zcql_repo import TEMPLATES
+    if not isinstance(choice, dict):
+        return {"template_id": "NONE", "params": {}}
+    tid = str(choice.get("template_id") or "").strip()
+    params = choice.get("params") if isinstance(choice.get("params"), dict) else {}
+    if tid in ("CLARIFY", "NONE"):
+        return {**choice, "template_id": tid, "params": params}
+    t = TEMPLATES.get(tid)
+    if t is None or t.internal:
+        return {"template_id": "NONE", "params": {}, "rejected_template": tid[:24]}
+    return {**choice, "template_id": tid, "params": params}
 
 
 def _fallback_answer(rows: list[dict], template_id: str, lang: str) -> str:
@@ -943,6 +966,9 @@ async def compose_answer(user_text: str, rows: list[dict], lang: str,
         # unsupported numbers/ids stripped, filler removed, length capped, no-result honesty.
         from app.core.answer_guardrails import apply_guardrails
         g = apply_guardrails(text, rows, user_text, lang, template_id)
+        if g.get("rejected"):
+            # nothing in the model's answer was supported by the rows: write it from them
+            return _answer(rows, template_id, lang, params, user_text), False, g["violations"]
         if g["violations"]:
             import structlog
             structlog.get_logger(__name__).warning(

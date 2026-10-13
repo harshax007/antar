@@ -141,6 +141,14 @@ class TestApplyGuardrails:
     def test_never_returns_empty(self):
         res = apply_guardrails("999999 fabricated 888888.", ROWS, "q", "en", "T1")
         assert res["answer"].strip()
+        # ... but an answer with nothing supportable in it is marked, so the caller
+        # writes one from the rows rather than showing the invention
+        assert res["rejected"] is True and "unsupported_answer_rejected" in res["violations"]
+
+    def test_a_partly_supported_answer_is_trimmed_not_rejected(self):
+        res = apply_guardrails("There are 2 chain snatching cases in Rajajinagar. Arrests rose by 47 percent.",
+                               ROWS, "q", "en", "T1")
+        assert "rejected" not in res and "47 percent" not in res["answer"]
 
     def test_never_raises_on_garbage_input(self):
         for bad in (None, "", "   "):
