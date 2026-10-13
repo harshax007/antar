@@ -16,7 +16,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.agents.heuristics import is_kannada, is_explain_request
 from app.agents.graph import app_graph
@@ -31,9 +31,9 @@ router = APIRouter()
 
 
 class ChatRequest(BaseModel):
-    session_id: str | None = None
-    text: str
-    lang: str | None = None          # "en" | "kn"; auto-detected if omitted
+    session_id: str | None = Field(default=None, max_length=128)
+    text: str = Field(max_length=4000)   # bounded: it is pattern-matched and may reach the model
+    lang: str | None = Field(default=None, max_length=8)   # "en" | "kn"; auto-detected if omitted
     deep_think: bool = False
 
 

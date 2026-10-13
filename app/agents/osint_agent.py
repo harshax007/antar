@@ -13,15 +13,11 @@ async def osint_agent_run(user_text: str, params: dict) -> dict:
     # The entity might be extracted in 'suspects' or 'persons' parameter.
     suspects = params.get("suspects", [])
     entity_name = suspects[0] if suspects else None
-    
-    # If no suspect was explicitly parsed, see if there's a raw string we can guess
-    if not entity_name:
-        words = user_text.split()
-        for w in words:
-            if w.istitle() and len(w) > 3:
-                entity_name = w
-                break
-                
+
+    # No named subject, no search. This used to take the first capitalised word of the
+    # sentence and search the open web for it - a guess that sends a word of an officer's
+    # question outside the building and can attach a stranger to a police work product
+    # (AGENTS.md, osint: "refuses without a named subject").
     if not entity_name:
         return {"summary": "No specific name found to perform OSINT.", "claims": []}
 

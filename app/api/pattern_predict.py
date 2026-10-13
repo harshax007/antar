@@ -550,6 +550,7 @@ async def predict_briefing() -> dict:
     reading = None
     try:
         from app.services.quickml import quickml_generate
+        from app.core.rag_security import fence as _fence
         text = await quickml_generate(
             system=("You brief a police station officer on the next 7 days. Plain English, short "
                     "sentences, no jargon, no statistics terms, no markdown. Two or three sentences. "
@@ -559,7 +560,9 @@ async def predict_briefing() -> dict:
                     "marked certain=false is 'possibly', never stated as fact). Say "
                     "what deserves attention first and what an officer could check. This is "
                     "decision support, not an instruction."),
-            user=json.dumps(facts, ensure_ascii=False), temperature=0.2, max_tokens=400, budget_s=60.0)
+            user=("Facts for the briefing:\n"
+                  + _fence("board_facts", json.dumps(facts, ensure_ascii=False), max_len=12000)),
+            temperature=0.2, max_tokens=400, budget_s=60.0)
         text = re.sub(r"\s+", " ", (text or "")).strip()
         allowed = set(re.findall(r"\d+(?:\.\d+)?", json.dumps(facts))) | {"7"}
         if text and all(n in allowed for n in re.findall(r"\d+(?:\.\d+)?", text)):

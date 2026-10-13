@@ -9,7 +9,11 @@ Hotspots, heat, choropleth and district drill-down.
 from __future__ import annotations
 import sqlite3
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+import re
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.core.rate_limiter import rate_limit
 
 from app.services.district_cache import get_all as dc_all, get_district as dc_get
 
@@ -292,34 +296,73 @@ async def anchor_areas(unsub_id: Optional[str] = None) -> dict:
     }
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 class SummaryRequest(BaseModel):
-    crime_type: str | None = None
-    district: str | None = None
-    date: str
-    stats: dict
+    crime_type: str | None = Field(default=None, max_length=60)
+    district: str | None = Field(default=None, max_length=80)
+    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    stats: dict = Field(default_factory=dict)
 
-@router.post("/view_summary")
+
+# What the map is allowed to tell the model about a view. The page sends qualitative
+# bands, not free text, so each one is checked against the values the page can produce;
+# a place name is kept only if it looks like one. Anything else is dropped. Before this,
+# the request body went into the prompt as written - any signed-in caller could use the
+# endpoint to have the model write whatever they liked under "Written by Antar".
+_SUMMARY_BANDS = {
+    "trend": {"steady", "rising", "rising-sharp", "easing", "easing-sharp", "unknown"},
+    "concentration": {"heavy", "focused", "spread"},
+    "hotBand": {"none", "one", "few", "many"},
+    "level": {"normal", "elevated", "high"},
+}
+_PLACE_RE = re.compile(r"^[A-Za-z\u0C80-\u0CFF][A-Za-z\u0C80-\u0CFF0-9 .&()'/-]{1,79}$")
+_CRIME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 _&()/.,-]{1,59}$")
+
+
+def _summary_facts(req: "SummaryRequest") -> dict:
+    from app.core.rag_security import normalize_untrusted, detect_injection
+
+    def place(v):
+        s = normalize_untrusted(v, max_len=80) if isinstance(v, str) else ""
+        return s if s and _PLACE_RE.match(s) and not detect_injection(s) else None
+
+    st = req.stats if isinstance(req.stats, dict) else {}
+    trend = st.get("trend")
+    trend = trend.get("key") if isinstance(trend, dict) else trend
+    crime = normalize_untrusted(req.crime_type, max_len=60) if req.crime_type else ""
+    facts = {
+        "crime_type": crime.replace("_", " ") if crime and _CRIME_RE.match(crime) else "all crimes",
+        "location": place(req.district) or "Karnataka",
+        "date": req.date,
+        "trend": trend if isinstance(trend, str) and trend in _SUMMARY_BANDS["trend"] else "unknown",
+        "busiest_area": place(st.get("lead")),
+        "second_busiest_area": place(st.get("second")),
+        "first_confirmed_hotspot": place(st.get("hotFirst")),
+    }
+    for key, out in (("concentration", "concentration"), ("hotBand", "confirmed_hotspots"), ("level", "overall_level")):
+        if isinstance(st.get(key), str) and st[key] in _SUMMARY_BANDS[key]:
+            facts[out] = st[key]
+    return {k: v for k, v in facts.items() if v is not None}
+
+
+@router.post("/view_summary", dependencies=[Depends(rate_limit(30, 0.2))])
 async def view_summary(req: SummaryRequest):
+    import json
+    from app.core.rag_security import fence, detect_injection
     from app.services.quickml import quickml_generate
-    prompt = f"""
-    You are an intelligence analyst. Summarize the following map view data.
-    Provide a minimal, highly insightful 2-3 sentence paragraph that reads easily.
-    Avoid overly colorful or dramatic language. Stick to crisp intelligence. Focus on actionable insights or notable patterns.
-    
-    Context:
-    Crime Type: {req.crime_type or 'All Crimes'}
-    Location: {req.district or 'Karnataka State'}
-    Date: {req.date}
-    
-    Data Stats:
-    {req.stats}
-    """
-    
-    system = "You are a senior intelligence analyst. Provide brief, data-driven, actionable insights in plain text without markdown or bullet points. Output exactly 1 paragraph."
-    
+    facts = _summary_facts(req)
+    system = ("You are a senior police analyst. In two or three plain sentences, say what the map view "
+              "below shows and what deserves attention first. Use only the facts given: never add a "
+              "number, a place or a cause that is not in them. Plain text, one paragraph, no markdown, "
+              "no bullet points, no dramatic language.")
+    prompt = ("Facts about the map view (qualitative bands the map computed):\n"
+              + fence("map_view", json.dumps(facts, ensure_ascii=False), max_len=1200))
     try:
-        summary = await quickml_generate(system=system, user=prompt, temperature=0.3)
-        return {"summary": summary.strip()}
-    except Exception as e:
+        summary = (await quickml_generate(system=system, user=prompt, temperature=0.3,
+                                          max_tokens=300, retries=1) or "").strip()
+        # the summary is prose about a map: no links, no markup, a bounded length
+        if not summary or detect_injection(summary) or re.search(r"https?://|<[a-z/!]|```", summary, re.I):
+            raise ValueError("summary rejected")
+        return {"summary": re.sub(r"\s+", " ", summary)[:700]}
+    except Exception:
         return {"summary": "Unable to generate summary at this time. Please check the data manually."}

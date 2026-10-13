@@ -7,7 +7,7 @@ and bilingual crime query processing.
 
 from fastapi import APIRouter, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import asyncio
 import io
 from collections import OrderedDict
@@ -21,17 +21,18 @@ router = APIRouter()
 
 
 class TranslateRequest(BaseModel):
-    text: str
-    source_lang: str = "kn"
-    target_lang: str = "en"
+    # each of these is sent to an outside speech or translation service: bounded
+    text: str = Field(max_length=6000)
+    source_lang: str = Field(default="kn", pattern="^(en|kn|hi)$")
+    target_lang: str = Field(default="en", pattern="^(en|kn|hi)$")
 
 
 class DwaniQueryRequest(BaseModel):
-    query_kn: str
+    query_kn: str = Field(max_length=4000)
 
 class TTSRequest(BaseModel):
-    text: str
-    lang: str = "kn"
+    text: str = Field(max_length=6000)
+    lang: str = Field(default="kn", pattern="^(en|kn|hi)$")
 
 
 @router.post("/transcribe")

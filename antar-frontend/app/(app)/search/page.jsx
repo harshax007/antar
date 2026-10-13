@@ -799,7 +799,8 @@ function SearchContent() {
                   <div className="sx-claim-body">{c.claim}</div>
                   <div className="sx-claim-ft">
                     <div className="bar"><div className="f" style={{ width: `${pct}%` }} /></div>
-                    {c.source_url && <a href={c.source_url} target="_blank" rel="noopener noreferrer">source ↗</a>}
+                    {/* a link from the open web: only an http(s) address is ever made clickable */}
+                    {/^https?:\/\//i.test(c.source_url || "") && <a href={c.source_url} target="_blank" rel="noopener noreferrer nofollow">source ↗</a>}
                     <span className="warn">{kn ? "ಪರಿಶೀಲಿಸದ · ಮುಕ್ತ-ಮೂಲ" : "Unverified · open-source"}</span>
                   </div>
                 </div>

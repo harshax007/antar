@@ -275,6 +275,47 @@ FORENSIC_SAMPLE_PRESETS = {
 
 # ── 4. MASTER ORCHESTRATOR ────────────────────────────────────────────────────────
 
+_EXTRACTION_KEYS = ("fir_no", "station", "district", "datetime", "crime_type", "ipc_bns_sections",
+                    "modus_operandi", "victim_profile", "accused_entities", "extracted_evidence",
+                    "ocr_transcript", "ocr_confidence")
+
+
+def _clean_extraction(raw) -> dict:
+    """What the vision model read off a scan, made safe to keep and show.
+
+    A scanned page is written by whoever produced it, and the model transcribes it. So the
+    transcript can carry text aimed at a later model ("ignore previous instructions ...")
+    or at this system (unexpected keys, a list where a record should be). Only the fields
+    asked for are kept, in the shape asked for; instruction-shaped spans are neutralised;
+    lengths and list sizes are bounded."""
+    from app.core.rag_security import normalize_untrusted, detect_injection, neutralize
+
+    def text(v, n=600):
+        s = normalize_untrusted(v if isinstance(v, str) else ("" if v is None else str(v)), max_len=n)
+        return neutralize(s) if detect_injection(s) else s
+
+    def flat(d, n=12):
+        return {text(k, 40): text(v, 300) for k, v in list(d.items())[:n] if isinstance(v, (str, int, float))} \
+            if isinstance(d, dict) else {}
+
+    src = raw if isinstance(raw, dict) else {}
+    out = {k: text(src.get(k), 200) for k in ("fir_no", "station", "district", "datetime", "crime_type")}
+    out["modus_operandi"] = text(src.get("modus_operandi"), 1500)
+    out["ocr_transcript"] = text(src.get("ocr_transcript"), 6000)
+    out["ipc_bns_sections"] = [text(x, 60) for x in (src.get("ipc_bns_sections") or [])[:20]
+                               if isinstance(x, (str, int))] if isinstance(src.get("ipc_bns_sections"), list) else []
+    out["victim_profile"] = flat(src.get("victim_profile"))
+    out["accused_entities"] = [flat(x) for x in (src.get("accused_entities") or [])[:20]] \
+        if isinstance(src.get("accused_entities"), list) else []
+    ev = src.get("extracted_evidence")
+    out["extracted_evidence"] = [flat(x) if isinstance(x, dict) else text(x, 300) for x in ev[:30]] if isinstance(ev, list) else []
+    try:
+        out["ocr_confidence"] = round(min(1.0, max(0.0, float(src.get("ocr_confidence")))), 3)
+    except (TypeError, ValueError):
+        out["ocr_confidence"] = None
+    return out
+
+
 async def analyze_forensic_evidence(
     image_base64: Optional[str] = None,
     preset_key: Optional[str] = None,
@@ -309,7 +350,7 @@ async def analyze_forensic_evidence(
                 model="VL-Qwen3.6-35B-A3B",
                 max_tokens=4096
             )
-            extraction = parse_json_response(raw_llm)
+            extraction = _clean_extraction(parse_json_response(raw_llm))
         except Exception as e:
             # Fallback to Sample 1 if live VL endpoint encounters transient error
             # The exception can carry the upstream error body — log it, show a reference.

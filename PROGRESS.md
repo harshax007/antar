@@ -1945,3 +1945,16 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Opened record**: section headings in plain words ("Query that ran", "FIR rows it read", "Agents that worked on it", "Flags on this answer"), larger text, `**bold**` in the stored answer shown as bold.
 * **Explainer** renamed "What this page records, and why" and now lists what each flag F1 to F7 means.
 * The extra gap above the title is gone; panels use a slim scrollbar; sessions and questions stack on a phone (they used to stay side by side).
+
+## LLM security pass: prompt injection and the surfaces around the model - 2026-10-13
+
+Read every place that calls the model or shows what it wrote. The core layer (`app/core/rag_security.py`: fence, canary, ingestion screen) was already in place; these were the gaps. Full table in `docs/SECURITY.md` §3.6; `tests/test_llm_security.py` has a hostile input for each (64 tests).
+
+* **Map view summary**: the browser's request body went into the prompt as written. Now an allow-list of the values the page can send, fenced, reply screened, rate-limited.
+* **Trace API**: any signed-in officer could read every officer's questions and the system prompt with its leak marker. Now Inspector+; the prompt text is Admin only; the marker is never stored or returned.
+* **Leak check**: the marker is recognised when spaced out or re-cased; a replayed prompt gets the live marker.
+* **Judge**: inputs fenced, scores kept only as four numbers between 0 and 1.
+* **Vision**: the image must be inline image data (it was passed on as a URL the provider would fetch); the extraction is reduced to the fields asked for.
+* **Open-web search**: no longer invents a claim when the search fails or finds nothing; snippets screened; links http(s) only; no named subject, no search; Inspector+.
+* **Also**: Kannada and Hindi override patterns; earlier turns fenced in template selection; query rewrites validated; Predict briefing facts fenced; chat question capped at 4,000 characters; a `javascript:` link from the open web is not made clickable.
+* Needs a backend restart to take effect.

@@ -11,12 +11,16 @@ HTTP telemetry the middleware writes.
   GET /api/obs/trace/{trace_id}          → full drill-down for one turn
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
+from app.core.auth_middleware import current_identity, require_role
 from app.core.settings import settings
 
-router = APIRouter()
+# Every route here shows what officers asked and what they were told, across officers.
+# That is case data: Inspector and above, like the other case-data routers. The text of
+# the prompt itself is narrower still - see get_trace().
+router = APIRouter(dependencies=[Depends(require_role("Inspector"))])
 
 
 def _check_enabled():
@@ -69,7 +73,7 @@ def get_session(session_id: str, all_surfaces: bool = False):
 
     turns = store.get_session_turns(session_id, conversational_only=not all_surfaces)
     if not turns:
-        raise HTTPException(status_code=404, detail=f"No traces for session {session_id}")
+        raise HTTPException(status_code=404, detail="No traces for this session.")
 
     flagged = sum(1 for t in turns if t["flags"])
     return {
@@ -90,13 +94,28 @@ def get_session(session_id: str, all_surfaces: bool = False):
 
 
 @router.get("/api/obs/trace/{trace_id}", response_class=JSONResponse)
-def get_trace(trace_id: str):
+def get_trace(trace_id: str, request: Request):
     """Everything recorded about one turn — the answer, the rows behind it, the prompt
-    that was sent, the agents that ran, and every flag and judge score."""
+    that was sent, the agents that ran, and every flag and judge score.
+
+    The prompt (`system_sent`, `prompt_sent`) goes to an Admin only. The system prompt is
+    how the model is told to behave; an officer who can read it can write a question that
+    argues with it. The leak marker inside it is withheld from everyone."""
     _check_enabled()
     from app.obs import store
+    from app.core.rag_security import mask_internal
 
     detail = store.get_trace_detail(trace_id)
     if not detail:
-        raise HTTPException(status_code=404, detail=f"Unknown trace {trace_id}")
+        raise HTTPException(status_code=404, detail="Unknown trace.")
+    r = detail.get("retrieval")
+    if isinstance(r, dict):
+        if current_identity(request).at_least("Admin"):
+            for k in ("system_sent", "prompt_sent"):
+                if r.get(k):
+                    r[k] = mask_internal(r[k])
+        else:
+            had = bool(r.get("system_sent") or r.get("prompt_sent"))
+            r["system_sent"] = r["prompt_sent"] = None
+            r["prompt_withheld"] = had
     return detail

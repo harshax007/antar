@@ -62,7 +62,10 @@ def record_llm(model, tokens_in, tokens_out, ms, retries=0, error=None,
     if error:
         from app.core.security import scrub_text
         d["error"] = scrub_text(error, limit=300)
-    if system is not None: t.ctx["system_sent"] = redact_pii(system)[:4000]
+    if system is not None:
+        # stored without the canary: a trace is read by people, the canary must not be
+        from app.core.rag_security import mask_internal
+        t.ctx["system_sent"] = mask_internal(redact_pii(system))[:4000]
     if prompt is not None: t.ctx["prompt_sent"] = redact_pii(prompt)[:8000]
 
 def set_context(template_id=None, params=None, rows=None, citations=None, mode=None):

@@ -2,7 +2,7 @@ import uuid
 from app.obs import store
 from app.core.settings import settings
 from app.services.quickml import quickml_generate_with_logprobs
-from app.obs.judge import _JUDGE_SYSTEM, parse_json_response
+from app.obs.judge import _JUDGE_SYSTEM, parse_json_response, judge_prompt, clean_scores
 from app.services.quickml import quickml_chat_generate
 from app.obs.sdar_processor import process_rollout_group
 
@@ -52,7 +52,7 @@ async def process_sdar_pending(limit: int = 2):
                 )
                 
                 # 2. Score the rollout using the Judge
-                judge_user = f"QUESTION: {r['question']}\nDATA ROW IDS: {r['row_ids_json']}\nANSWER: {text}"
+                judge_user = judge_prompt(r["question"], r["row_ids_json"], text)
                 raw_score = await quickml_chat_generate(
                     system=_JUDGE_SYSTEM, 
                     user=judge_user,
@@ -60,7 +60,7 @@ async def process_sdar_pending(limit: int = 2):
                     max_tokens=200, 
                     temperature=0.0
                 )
-                score_dict = parse_json_response(raw_score)
+                score_dict = clean_scores(parse_json_response(raw_score))
                 # Combine metrics into a single reward [0, 1]
                 reward = (score_dict.get("groundedness", 0) + score_dict.get("answered", 0) + score_dict.get("safety", 0) - score_dict.get("hallucination", 0)) / 3.0
                 
@@ -79,7 +79,10 @@ async def process_sdar_pending(limit: int = 2):
                     "tokens": tokens_data
                 })
             except Exception as e:
-                print(f"SDAR Rollout generation failed: {e}")
+                # never the exception text on stdout: it can carry the upstream body and URL
+                import logging
+                from app.core.security import scrub_text
+                logging.getLogger("antar.sdar").warning("sdar_rollout_failed %s", scrub_text(e))
                 
         # 3. Process the group if we got enough rollouts
         if len(rollouts) == G_ROLLOUTS:

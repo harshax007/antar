@@ -133,10 +133,15 @@ async def decompose_query(query_text: str, use_llm: bool = False) -> list[str]:
             raw = await quickml_generate(system=sys_prompt, user=clean, json_mode=True, max_tokens=150)
             cleaned = raw.strip().strip("```json").strip("```").strip()
             variants = json.loads(cleaned)
-            if isinstance(variants, list) and variants:
-                return variants[:3]
-        except Exception as e:
-            print(f"LLM decompose failed: {e}")
+            # the rewrites are search strings: short text only, or the question as asked
+            from app.core.rag_security import normalize_untrusted, detect_injection
+            keep = [normalize_untrusted(v, max_len=300) for v in (variants if isinstance(variants, list) else [])
+                    if isinstance(v, str)]
+            keep = [v for v in keep if 8 <= len(v) and not detect_injection(v)]
+            if keep:
+                return keep[:3]
+        except Exception:
+            pass
             
     # Fallback to deterministic regex split
     splits = re.split(r"(?i)\b(?:and\s+also|and\s+check|as\s+well\s+as|then\s+find|vs\.?|versus)\b|\?|\. |; ", clean)

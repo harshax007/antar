@@ -468,8 +468,9 @@ async def quickml_vision_generate(
     # instructions), so the vision model gets the same policy, redaction and output check.
     system = harden_system(redact_pii(system))
     content = [{"type": "text", "text": redact_pii(user)}]
-    for img in (images or []):
-        content.append({"type": "image_url", "image_url": {"url": img}})
+    # inline image data only - never an address for the provider to fetch
+    for img in (images or [])[:4]:
+        content.append({"type": "image_url", "image_url": {"url": image_data_uri(img)}})
     payload = {
         "model": model,
         "messages": [
@@ -483,6 +484,42 @@ async def quickml_vision_generate(
     if resp.status_code >= 400:
         raise RuntimeError(f"Vision LLM HTTP {resp.status_code} — {resp.text[:300]}")
     return check_output(_extract_text(resp.json()))
+
+
+_IMAGE_DATA_RE = None
+
+
+def image_data_uri(value: str | None, max_mb: float = 8.0) -> str:
+    """The one form an image may take on its way to the vision model: an inline
+    `data:image/...;base64,` payload of a type we expect and a bounded size.
+
+    The field is passed to the provider as an image URL. Left unchecked, a caller could
+    put any address there and have the provider fetch it on our credentials (a
+    server-side request to a place of the caller's choosing), or send an SVG or HTML
+    document dressed as an image. Raises ValueError with a plain message."""
+    global _IMAGE_DATA_RE
+    import base64
+    import re as _re
+    if _IMAGE_DATA_RE is None:
+        _IMAGE_DATA_RE = _re.compile(r"^data:image/(png|jpe?g|webp|gif|bmp|tiff?);base64,([A-Za-z0-9+/=\s]+)$", _re.I)
+    s = (value or "").strip()
+    if not s.lower().startswith("data:"):
+        # bare base64 from an older client: accepted as a JPEG payload, never as a URL
+        if _re.fullmatch(r"[A-Za-z0-9+/=\s]{64,}", s or ""):
+            s = "data:image/jpeg;base64," + s
+        else:
+            raise ValueError("The image must be an uploaded PNG, JPEG, WebP, GIF, BMP or TIFF file.")
+    m = _IMAGE_DATA_RE.match(s)
+    if not m:
+        raise ValueError("The image must be an uploaded PNG, JPEG, WebP, GIF, BMP or TIFF file.")
+    b64 = _re.sub(r"\s+", "", m.group(2))
+    if len(b64) * 3 / 4 > max_mb * 1024 * 1024:
+        raise ValueError(f"The image is larger than {max_mb:g} MB.")
+    try:
+        base64.b64decode(b64[:4096] + "=" * (-len(b64[:4096]) % 4), validate=True)
+    except Exception:
+        raise ValueError("The image could not be read.")
+    return f"data:image/{m.group(1).lower()};base64,{b64}"
 
 
 def _strip_reasoning(text: str) -> str:

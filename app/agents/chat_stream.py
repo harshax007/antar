@@ -46,7 +46,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.agents.heuristics import is_kannada, is_explain_request
 from app.core import orchestrator, sessions
@@ -64,9 +64,11 @@ router = APIRouter()
 
 
 class StreamChatRequest(BaseModel):
-    session_id: str | None = None
-    text: str
-    lang: str | None = None
+    # Bounded: the text is matched by the router's patterns and can be sent to the model,
+    # so its size is a cost an officer (or anyone holding a token) should not set freely.
+    session_id: str | None = Field(default=None, max_length=128)
+    text: str = Field(max_length=4000)
+    lang: str | None = Field(default=None, max_length=8)
     deep_think: bool = False
 
 

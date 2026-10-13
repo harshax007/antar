@@ -465,6 +465,10 @@ function TraceDetail({ d, kn }) {
         </Section>
       )}
 
+      {r.prompt_withheld && (
+        <p className="tlm-dim">The text sent to the language model for this answer is shown to an Admin only.</p>
+      )}
+
       {/* Identity footer */}
       <dl className="tlm-ident">
         <Meta k="Record" v={d.trace_id} />

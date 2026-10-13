@@ -1,24 +1,34 @@
 """
-Tests for Phase 6 OSINT service.
+Tests for Phase 6 OSINT service. No network: the search client is replaced.
+The hostile cases (poisoned snippet, script link, no invented claim) are in
+tests/test_llm_security.py::TestOpenWeb.
 """
-import pytest
-from app.services.osint import search_osint
+import asyncio
 
-@pytest.mark.anyio
-async def test_search_osint():
-    # Test with a made up name that will either hit the scraper or the fallback.
-    # In both cases, we expect a deterministic structure.
-    res = await search_osint("John Doe")
-    
-    assert "claims" in res
-    assert "risk_flags" in res
-    assert "summary" in res
-    
-    # We should have at least 1 claim (either from DDG or fallback)
-    assert len(res["claims"]) > 0
-    
+from app.services import osint
+
+
+class _Resp:
+    status_code = 200
+    text = ('<div class="result__body"><a class="result__url" href="https://news.example.org/a">n</a>'
+            '<a class="result__snippet">Man arrested in connection with a theft.</a></div>')
+
+
+class _Client:
+    def __init__(self, *a, **k): pass
+    async def __aenter__(self): return self
+    async def __aexit__(self, *a): return False
+    async def post(self, *a, **k): return _Resp()
+
+
+def test_search_osint(monkeypatch):
+    monkeypatch.setattr(osint.httpx, "AsyncClient", _Client)
+    res = asyncio.new_event_loop().run_until_complete(osint.search_osint("John Doe"))
+
+    assert "claims" in res and "risk_flags" in res and "summary" in res
+    assert len(res["claims"]) == 1
     claim = res["claims"][0]
-    assert "claim" in claim
-    assert "source_url" in claim
+    assert claim["source_url"] == "https://news.example.org/a"
     assert claim["status"] == "unverified"
     assert claim["confidence"] <= 0.6
+    assert res["risk_flags"] == ["High-risk keywords found in OSINT"]

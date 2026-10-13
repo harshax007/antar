@@ -46,9 +46,17 @@ async def analyze_evidence(req: ForensicAnalyzeRequest):
     """
     Executes Multimodal Forensic OCR (VL-Qwen3.6-35B-A3B) & ML Victim Linkage.
     """
+    image = req.image_base64
+    if image:
+        # an uploaded picture, never an address for the model provider to fetch
+        from app.services.quickml import image_data_uri
+        try:
+            image = image_data_uri(image)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
     try:
         result = await analyze_forensic_evidence(
-            image_base64=req.image_base64,
+            image_base64=image,
             preset_key=req.preset_key,
             custom_notes=req.custom_notes or "",
             historical_recs=req.historical_records

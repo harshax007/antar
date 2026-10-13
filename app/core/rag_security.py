@@ -84,6 +84,13 @@ _INJECTION_PATTERNS: tuple[tuple[str, re.Pattern], ...] = tuple(
         ("markdown_beacon", r"!\[[^\]]*\]\(\s*https?://[^)]*[?&][^)]*\)"),
         ("tool_hijack", r"\b(?:call|invoke|execute|run)\s+(?:the\s+)?(?:tool|function|command|shell|sql)\b[^.\n]{0,30}(?:now|immediately|without)"),
         ("delimiter_spoof", r"</?\s*untrusted_data\b"),
+        # Kannada and Hindi. FIR prose says "ignoring the traffic rules" and "ignored the
+        # constable's instruction" all the time, so the noun and the verb are not enough:
+        # the phrase must also point back at the prompt (previous / above / your).
+        ("override_kn", r"(?:ಹಿಂದಿನ|ಮೇಲಿನ|ಮೊದಲಿನ|ನಿಮ್ಮ|ನಿನ್ನ)[^.\n]{0,30}(?:ಸೂಚನೆ|ನಿರ್ದೇಶನ|ನಿಯಮ)[^.\n]{0,40}"
+                        r"(?:ನಿರ್ಲಕ್ಷಿಸ|ಕಡೆಗಣಿಸ|ಮರೆತು|ಮರೆಯಿರಿ|ಅನುಸರಿಸಬೇಡ)"),
+        ("override_hi", r"(?:पिछले|पिछली|पूर्व|ऊपर|उपरोक्त|अपने|आपके|तुम्हारे)[^.\n।]{0,30}(?:निर्देश|अनुदेश|नियम)[^.\n।]{0,40}"
+                        r"(?:अनदेखा|नज़रअंदाज़|नजरअंदाज|भूल\s*जा|मत\s*मान)"),
     )
 )
 
@@ -177,11 +184,43 @@ def fence(label: str, content: str | None, *, max_len: int = 12000) -> str:
 CANARY = "vmk-" + secrets.token_hex(6)
 
 
+_MARKER_RE = re.compile(r"\s*\(internal marker vmk-[0-9a-f]{6,}[^)]*\)")
+_MASKED_MARKER = " (internal marker [withheld])"
+
+
 def harden_system(system: str | None) -> str:
-    s = system or ""
+    """Append the untrusted-data policy and THIS process's canary.
+
+    A prompt replayed from storage (the SDAR rollouts) may already carry the policy with an
+    older marker, or a masked one. Whatever was there is dropped and the live canary is
+    written, so the output check always has something it can recognise."""
+    s = _MARKER_RE.sub("", (system or "").replace(_MASKED_MARKER, ""))
     if UNTRUSTED_POLICY in s:
-        return s
+        return s.replace(UNTRUSTED_POLICY, f"{UNTRUSTED_POLICY} (internal marker {CANARY} — confidential)", 1)
     return f"{s}\n\n{UNTRUSTED_POLICY} (internal marker {CANARY} — confidential)"
+
+
+def mask_internal(text: str | None) -> str:
+    """A prompt as it may be STORED or SHOWN: the canary is withheld.
+
+    The canary only works while nobody outside the process knows it. Traces keep the
+    system prompt so an answer can be replayed; they keep it without the marker."""
+    if not text:
+        return text or ""
+    return _MARKER_RE.sub(_MASKED_MARKER, str(text)).replace(CANARY, "[withheld]")
+
+
+def safe_url(url: str | None) -> str | None:
+    """An http(s) URL, or nothing. A link taken from a web page or a model output is shown
+    to an officer as something to click: `javascript:` and `data:` never qualify."""
+    u = normalize_untrusted(url, max_len=600)
+    if not re.match(r"(?i)^https?://[^\s/?#]+\.[^\s/?#]+", u) or re.search(r"[\s\"'<>`\\]", u):
+        return None
+    return u
+
+
+_CANARY_KEY = re.sub(r"[^a-z0-9]", "", CANARY.lower())
+_POLICY_KEY = re.sub(r"[^a-z0-9]", "", UNTRUSTED_POLICY[:120].lower())
 
 
 class OutputBlocked(RuntimeError):
@@ -198,7 +237,12 @@ def check_output(text: str | None) -> str:
     """
     if not text:
         return text or ""
-    if CANARY in text or "SECURITY POLICY: Text inside <untrusted_data>" in text:
+    # The model can be asked to spell the marker out, space it or change its case; the
+    # comparison is made on letters and digits only. The policy sentence is matched the
+    # same way, on a run long enough that an ordinary answer cannot contain it.
+    squeezed = re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKC", text).lower())
+    if (_CANARY_KEY in squeezed or _POLICY_KEY in squeezed
+            or CANARY in text or "SECURITY POLICY: Text inside <untrusted_data>" in text):
         _count("prompt_leak_blocked")
         log.error("rag_output_blocked reason=system_prompt_leak")
         raise OutputBlocked("model output echoed its system instructions")

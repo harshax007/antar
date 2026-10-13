@@ -92,7 +92,8 @@ Indic script character, because Kannada conjuncts depend on them.
 
 Fenced call sites: compose (FIR rows), multi-agent synthesis (agent context), translate,
 forensic OCR (investigator notes; the image itself is governed by the hardened vision
-system prompt).
+system prompt), template selection (earlier turns), the judge (question, row ids, answer),
+the map view summary and the Predict briefing (their facts). See §3.6.
 
 **Architectural advantage:** Antar never lets the model write SQL. Questions map to
 whitelisted templates (T1–T23) with validated parameters, so an injected instruction
@@ -127,6 +128,46 @@ output is blocked, the officer still gets a correct, record-backed answer.
   surfacing, indirect injection, delimiter spoofing, canary leak, invisible-Unicode
   smuggling, and a **benign FIR prose** set that must *not* be flagged (false positives
   would silently drop real evidence from the Brain).
+
+---
+
+### 3.6 LLM call-site audit (2026-10-13)
+
+Every place that calls the model, or shows what it wrote, was read against one question:
+what can someone outside the codebase put in front of the model or the officer here?
+`tests/test_llm_security.py` holds a hostile input for each row.
+
+| Where | What was wrong | Now |
+|---|---|---|
+| `POST /api/map/view_summary` | The request body (`crime_type`, `district`, `date`, a free `stats` dict) was written into the prompt as sent. Any signed-in caller could make the model write anything under "Written by Antar". | Each field is checked against the values the page can produce (`_summary_facts`); place names must look like place names; the facts are fenced; the reply is dropped if it carries a link, markup or instruction-shaped text; 300-token cap; rate-limited. |
+| Judge (`obs/judge.py`, SDAR rollouts) | Question and answer went in unfenced, so an answer could tell the rater how to score. The returned JSON was stored as received. | `judge_prompt` fences each part; the rater is told that being addressed is itself a defect; `clean_scores` keeps four numbers in [0, 1] and nothing else. |
+| Trace API (`/trace`, `/api/obs/*`) | No role check: any signed-in officer could read every officer's questions and answers, and the full system prompt **including the canary**. | Inspector+ for all routes; `system_sent` / `prompt_sent` to Admin only; the canary is masked before a prompt is stored (`mask_internal`) and again on the way out. |
+| Canary check | Exact string match: a model asked to space the marker out or change its case would have leaked it unnoticed. A prompt replayed from storage kept an old process's marker. | Compared on letters and digits only; the policy sentence is matched the same way; `harden_system` always writes the live marker. |
+| Detection | English only. | Kannada and Hindi overrides, requiring a pointer back at the prompt so "ignoring the traffic rules" in an FIR is not flagged. |
+| Template selection | Earlier turns (which quote FIR text) were replayed into the prompt as plain lines. | Fenced as `conversation`, each turn bounded. |
+| Query rewriting | Whatever list the model returned was used as search strings. | Short strings only, screened; otherwise the question as asked. |
+| Predict briefing | Board facts (place and crime-type names from the register) unfenced. | Fenced. |
+| Vision (`quickml_vision_generate`, `/api/forensic/analyze`) | The image field was passed to the provider as a URL, so a caller could name any address for it to fetch, or send an SVG / HTML document. The extraction JSON was returned as received. | `image_data_uri`: inline PNG / JPEG / WebP / GIF / BMP / TIFF data only, 8 MB; `_clean_extraction` keeps the fields asked for, in shape, with instruction-shaped spans removed. |
+| Open-web search (`services/osint.py`) | Snippets were returned unscreened; links were not checked; **an invented claim ("<name> mentioned in local news regarding petty theft", example.com) was returned whenever the search failed or found nothing**. With no named subject the agent searched for the first capitalised word of the question. | Snippets normalised and neutralised; `safe_url` (http/https only); no result is reported as no result, with `reached` saying whether the search ran; no subject, no search. Inspector+, rate-limited. |
+| Search page link | `href` taken from the claim as-is (`javascript:` would run on click). | Rendered only for an http(s) address. |
+| Chat / voice requests | `text` had no ceiling below the 10 MB body limit. | 4,000 characters for a question, 6,000 for speech and translation; `session_id` and `lang` bounded. |
+
+Checked and left as they are: the model never writes SQL (templates T1-T23 with validated
+parameters); no model output is rendered as HTML (the frontend has no
+`dangerouslySetInnerHTML` on data, no markdown images, so no beacon can fire); the model
+has no tools, so an injected instruction has nothing to call; feedback examples replayed
+into prompts were already screened and fenced.
+
+What this does not close:
+
+- A screen cannot prove a model will ignore an instruction. The controls reduce what
+  reaches it and check what comes back; the last line is that an answer's numbers and
+  identifiers must exist in the rows (`answer_guardrails`).
+- An officer's own question is trusted as a question. An officer can still try to talk
+  the model out of its rules; the canary, the output check and the fact that the model
+  has no tools and no SQL are what bound the damage.
+- `services/osint_recon.py` returns simulated module output (example-osint.org). It is
+  labelled as recon, not as a model answer, and was not changed in this pass.
 
 ---
 
