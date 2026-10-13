@@ -155,7 +155,11 @@ def refresh_feed(force: bool = False) -> dict | None:
             return _feed
         try:
             import httpx
-            r = httpx.get(url, timeout=FEED_TIMEOUT_S, follow_redirects=True)
+            from app.core import egress
+            egress.check(url, "event_calendar")
+            # no redirects: the allow-list is about where the request goes, and a redirect
+            # is the feed choosing somewhere else
+            r = httpx.get(url, timeout=FEED_TIMEOUT_S, follow_redirects=False)
             r.raise_for_status()
             dates = _parse_ics(r.text)
             if not dates:

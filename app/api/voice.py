@@ -64,6 +64,8 @@ _TTS_CACHE_MAX = 64
 
 
 def _synthesise(text: str, lang: str) -> bytes:
+    from app.core import egress
+    egress.check("https://translate.google.com", "speech")
     fp = io.BytesIO()
     gTTS(text=text, lang=lang).write_to_fp(fp)
     return fp.getvalue()
@@ -79,6 +81,14 @@ async def text_to_speech(req: TTSRequest):
     key = (req.lang, text_to_speak)
     audio = _TTS_CACHE.get(key)
     if audio is None:
+        # The answer's text goes to a speech service. Asked first; with outbound calls off
+        # the officer is told speech is unavailable rather than left waiting.
+        from fastapi import HTTPException
+        from app.core import egress
+        try:
+            egress.check("https://translate.google.com", "speech")
+        except egress.EgressBlocked as e:
+            raise HTTPException(status_code=503, detail=str(e))
         # gTTS does blocking network I/O. Called directly inside this async handler it
         # stalled the whole event loop for the ~3s it takes — every other request,
         # including a running chat stream, waited behind the speech. Run it in a thread.

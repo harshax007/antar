@@ -102,6 +102,8 @@ async def _get_access_token() -> str:
     if settings.QUICKML_SCOPE:
         data["scope"] = settings.QUICKML_SCOPE
 
+    from app.core import egress
+    egress.check(settings.QUICKML_TOKEN_URL, "model_token")
     resp = await _get_client().post(settings.QUICKML_TOKEN_URL, data=data)
     body = resp.json()
     if "access_token" not in body:
@@ -213,6 +215,9 @@ async def quickml_generate(
         until, why = _breaker.get(bkey, (0.0, ""))
         if time.time() < until:
             raise RuntimeError(f"QuickML LLM skipped (circuit open {int(until - time.time())}s): {why}")
+    # asked before a token is fetched: with outbound calls off, not even that leaves
+    from app.core import egress
+    egress.check(url, "language_model")
     headers = _compat_headers if _compat else await _auth_headers()
 
     user_prompt = user
@@ -435,6 +440,8 @@ async def quickml_generate_with_logprobs(
     payload = _build_payload(harden_system(redact_pii(system)), redact_pii(user), effective_max,
                              temperature or 0.7, target_model, url, logprobs=True)
 
+    from app.core import egress
+    egress.check(url, "language_model")
     resp = await _get_client().post(url, json=payload, headers=headers)
     if resp.status_code >= 400:
         raise RuntimeError(f"HTTP {resp.status_code} — {resp.text[:300]}")
@@ -494,6 +501,8 @@ async def quickml_vision_generate(
         "max_tokens": max_tokens,
         "temperature": temperature,
     }
+    from app.core import egress
+    egress.check(url, "vision_model")
     resp = await _get_client().post(url, json=payload, headers=headers)
     if resp.status_code >= 400:
         raise RuntimeError(f"Vision LLM HTTP {resp.status_code} — {resp.text[:300]}")

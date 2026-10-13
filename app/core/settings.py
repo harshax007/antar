@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     ANTAR_LLM_API_KEY: str = ""
     ANTAR_LLM_MODEL: str = ""
 
+    # What may leave the building (app/core/egress.py). Unset = the configured endpoints and
+    # the fixed feature services; "none" = nothing; or a comma-separated list of hosts.
+    ANTAR_EGRESS_ALLOW: str = ""
+
     # QuickML LLM
     QUICKML_CLIENT_ID: str = ""
     QUICKML_CLIENT_SECRET: str = ""

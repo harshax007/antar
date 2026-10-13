@@ -1996,3 +1996,10 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * Writing it found three real holes, fixed here: the model could select internal templates, including a free-form one that can read `audit_log` (`query_agent.model_choice`); an invented FIR number of the register's own shape passed the identifier check; an answer in which every sentence was unsupported was passed through unchanged (now rejected and written from the rows).
 * The query connection is read-only. A false "delimiter spoof" log line on every fenced prompt is gone.
 * Details in `docs/SECURITY.md` section 3.7. Needs a backend restart.
+
+## Security: one allow-list for everything that leaves (USP plan S7) - 2026-10-14
+
+* `app/core/egress.py`: every outbound client asks `egress.check(url, purpose)` first: the language model and its token service, the vision model, open-web search, translation, speech, the event calendar. `ANTAR_EGRESS_ALLOW` unset = configured endpoints and named feature services, counted; `none` = nothing leaves; or a list of hosts.
+* With `none`, no token is fetched, open-web search reports it was not reached, speech returns "not available", and answers are written from the records (`tests/test_egress.py`). A test fails when a new outbound call does not ask first.
+* `GET /api/orchestrator/egress` (Admin): what may be called, what was called and refused since start-up, by host and purpose only. The calendar feed no longer follows redirects.
+* Noted, not changed: "Listen to answer" sends the answer's text to a speech service. Needs a backend restart.

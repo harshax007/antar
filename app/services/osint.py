@@ -42,6 +42,8 @@ async def search_osint(entity_name: str) -> dict:
     reached = True
 
     try:
+        from app.core import egress
+        egress.check(url, "open_web_search")          # blocked -> "could not be reached", nothing invented
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(url, data=params, headers=headers)
 

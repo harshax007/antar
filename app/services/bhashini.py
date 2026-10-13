@@ -91,6 +91,8 @@ async def translate_text(text: str, source_lang: str = "kn", target_lang: str = 
                 ],
                 "pipelineRequestConfig": {"pipelineId": "64392f96daac500b55c543cd"}
             }
+            from app.core import egress
+            egress.check(url, "translation")
             async with httpx.AsyncClient(timeout=3.0) as client:
                 res = await client.post(url, json=payload, headers=headers)
                 if res.status_code == 200:
