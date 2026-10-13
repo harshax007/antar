@@ -1895,3 +1895,10 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Evidence strip**: showed the number of groups returned ("400 records") under a headline about 996,000 FIRs; it now shows the count over the template's own filters.
 * **Checked**: the 35 golden questions give identical answers before and after; 297 tests pass across the 16 test files covering this code (`tests/test_timespan.py` and `tests/test_outside_record.py` are new).
 * **Left as it was**: `_date_range` still drops a future window that has no period keyword. That guard is for dates a model invents; an officer's future period is refused before it gets there.
+
+## Predict page reordered for the officer reading it - 2026-10-13
+
+* **Order**: forecast for the next 7 days, active alerts and the week in brief are the first row; the explanation of the selected area sits directly under them; then the figures, engine confidence, "what the forecast is built on" (known data, monthly history, internet calendar), events ahead, hypotheses.
+* **Engine confidence** is one line (level, meaning, number of reasons) that opens on click; the rule that sets the level is shown beside its reasons.
+* **Added**: filters and a search on the forecast list; the three stations to watch in the selected district (from `/api/forecast/hotspots`, hidden for areas that are not police districts); "Copy for a briefing note"; 90% range coverage, forecast-against-recorded total and where the real register ends.
+* Nothing was removed from the page.
