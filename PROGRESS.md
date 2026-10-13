@@ -1936,3 +1936,12 @@ was checked by executing the old and new forms side by side and comparing rows e
 * **Removed because the record does not support them**: "Statutory Section 91" and the "Statutory Certification" line; "syndicate", "transit route", "Ring leader"; the canned "Inter-district ANPR Checkpoint" recommendation; and the "UNSUB operating zones" section. Those zones were the first 4,000 located FIRs grouped by district (hence a 457 km "radius"), not unknown offenders, and the page fell back to two invented syndicates when the server returned none.
 * **Scrolling Geo Intel lines** rewritten in plain words (no z-scores, no "predictive modeling suggests").
 * A most-recent-FIR date later than today is not shown (seeded demo rows).
+
+## Trace & Telemetry: plain labels, colour only as a signal - 2026-10-13
+
+* `components/TrustDashboard.jsx` moved from inline styles to `.tlm-*` rules in `globals.css`. No data, filter or request changed.
+* **Figures** in sentence case and plain words: "Questions recorded", "Answered with no flag", "Serious flags", "Average answer time" (with "95% answered within"), "FIRs cited", "Judge score", "How answers were written".
+* **Question rows**: one readable line of facts (time, template, rows, cited, time taken, how it was written) instead of eight monospace chips. Only flags and the judge state are tags. The left stripe is red for a serious flag or an error and is otherwise absent; it used to be amber on every row because F6 fires whenever the language model is down.
+* **Opened record**: section headings in plain words ("Query that ran", "FIR rows it read", "Agents that worked on it", "Flags on this answer"), larger text, `**bold**` in the stored answer shown as bold.
+* **Explainer** renamed "What this page records, and why" and now lists what each flag F1 to F7 means.
+* The extra gap above the title is gone; panels use a slim scrollbar; sessions and questions stack on a phone (they used to stay side by side).
