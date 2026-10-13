@@ -2003,3 +2003,8 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * With `none`, no token is fetched, open-web search reports it was not reached, speech returns "not available", and answers are written from the records (`tests/test_egress.py`). A test fails when a new outbound call does not ask first.
 * `GET /api/orchestrator/egress` (Admin): what may be called, what was called and refused since start-up, by host and purpose only. The calendar feed no longer follows redirects.
 * Noted, not changed: "Listen to answer" sends the answer's text to a speech service. Needs a backend restart.
+
+## Agent card (USP plan S9) - 2026-10-14
+
+* `docs/AGENT_CARD.md`: Antar described in the AI Agent Index's 33 fields: intended and unintended uses, the model as a setting, an empty action space, guardrails, how to switch the model or all outbound calls off, the back-test and the security scorecard, no external testing, and known limits. Not linked from the About page; it is a repository document.
+* All seven P0 items of `docs/USP01_02.md` are done.
