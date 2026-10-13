@@ -1982,3 +1982,10 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * `app/forecast/service.py::why`: every forecast taken apart exactly: a usual week here, times each of the six reasons, equals the forecast (checked on 400 stored station forecasts: worst gap 0.04%). Each reason carries the forecast without it. A forecast that does not reconcile is flagged.
 * Predict page, "Stations to watch": each station opens to the arithmetic, the counterfactual for the largest reason, the last 12 weeks with the week ahead drawn as a range, and how the forecast did in the back-test (`components/ForecastWhy.jsx`). No language model is involved.
 * Works against the running server from the reasons it already sends; the full six-reason breakdown needs a restart.
+
+## Predict: shift plan (USP plan P4) - 2026-10-14
+
+* `GET /api/forecast/shift-plan?station=` (`app/services/shift_plan.py`): one station's next shift on a page. Beats to cover first with their ranges and main reason; the kinds of case expected; which days of the week ran busier in the past year, named only when at least 60 FIRs exist and a day runs 25% above the average day; FIRs from the past year under investigation with no accused charge-sheeted, newest first; any event whose effect the record has measured for that district.
+* No language model writes any of it: fixed sentences filled with the counts (a test fails if a model is called). The register holds an FIR's date, not its hour, so the plan names days and never a time; the page says so.
+* Predict page: each station under "Stations to watch" has a "Shift plan" button. The window has Copy for a briefing note, Print, and Propose patrol deployment, which files a proposal for a supervising officer (`components/ShiftPlan.jsx`).
+* Needs a backend restart. The filled window was checked in the browser with a plan produced by the new code; the live call was not, because the running server predates it.

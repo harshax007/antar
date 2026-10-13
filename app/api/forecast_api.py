@@ -66,6 +66,18 @@ async def layer(horizon: int = 7, category: Optional[str] = None,
                        unit_type=unit, as_of=as_of)
 
 
+@router.get("/shift-plan")
+async def shift_plan(station: str = Query(min_length=2, max_length=120), as_of: Optional[str] = None) -> dict:
+    """One station's next shift on a page: beats to cover first, the kinds of case expected,
+    the days that run busier, what is still open there, and any event the record has
+    measured. Counted and templated - no model writes any of it."""
+    from app.services import shift_plan as SP
+    try:
+        return await _call(SP.build, station, as_of=as_of)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.get("/unit/{name:path}")
 async def unit(name: str, unit_type: Optional[str] = None, category: Optional[str] = None,
                as_of: Optional[str] = None) -> dict:

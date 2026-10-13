@@ -14,6 +14,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ForecastWhy from "@/components/ForecastWhy";
+import ShiftPlan from "@/components/ShiftPlan";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -860,6 +861,7 @@ function PredictScreen() {
   const [flt, setFlt] = useState("all");             // which forecasts are listed
   const [findArea, setFindArea] = useState("");
   const [whyUnit, setWhyUnit] = useState(null);       // the station whose forecast is taken apart
+  const [planFor, setPlanFor] = useState(null);       // the station whose shift plan is open
   const [stations, setStations] = useState(null);    // station forecasts for the area being explained
   const [copied, setCopied] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState(toRfNodes(DEMO_NODES));
@@ -1448,6 +1450,9 @@ const avgConf = predictions?.length
                                 {whyUnit === it.unit ? "Hide the reasons" : "Why this forecast"}
                               </button>
                             )}
+                            {it.unit && (
+                              <button type="button" className="px-linkbtn px-why" onClick={() => setPlanFor(it.unit)}>Shift plan</button>
+                            )}
                             {whyUnit === it.unit && <ForecastWhy unit={it.unit} />}
                           </li>
                         ))}
@@ -1700,6 +1705,8 @@ const avgConf = predictions?.length
           );
         })()}
       </section>
+
+      {planFor && <ShiftPlan station={planFor} kn={kn} onClose={() => setPlanFor(null)} />}
 
       <div className="px-footer">
         {engine ? `${kn ? "ಎಂಜಿನ್" : "engine"}: ${engine} · ` : ""}
