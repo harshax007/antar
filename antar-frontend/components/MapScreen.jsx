@@ -9,7 +9,8 @@ import { useLang } from "@/components/Providers";
 import { KARNATAKA_GEOJSON_URL, KARNATAKA_TOPOJSON_URL, ZONE_TO_GADM_DISTRICT, ZONE_COORDS, coordFor, aggregateByDistrict } from "@/lib/karnataka";
 import { feature as topoFeature, merge as topoMerge } from "topojson-client";
 import { parseCSV, fromRecords, prepare, aliasFor } from "@/lib/crimeGraph";
-import { MessageSquare, X, ShieldCheck } from "lucide-react";
+import { X } from "lucide-react";
+import GeoIntelDashboard, { crimeName } from "@/components/GeoIntel";
 import ProposeAction from "@/components/ProposeAction";
 import { useForecast, ForecastLayer, ForecastPanel, ForecastCard, ModelCardModal, AsOfChip } from "@/components/ForecastPanel";
 import { makeContains } from "@/lib/forecast";
@@ -259,14 +260,12 @@ export default function MapScreen() {
   const [serverCorridors, setServerCorridors] = useState([]);
   const [anchorOn, setAnchorOn] = useState(false);
   const [darkOn, setDarkOn] = useState(false);
-  const [anchorAreas, setAnchorAreas] = useState([]);
   const [darkZones, setDarkZones] = useState([]);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [flyBounds, setFlyBounds] = useState(null);
   const [districtDetail, setDistrictDetail] = useState(null);
   const [showDossier, setShowDossier] = useState(false);
 
-  const [selectedDetail, setSelectedDetail] = useState(null);
   // Map forecast (next 7 / 28 days, stations statewide → beats in a selected district)
   const fc = useForecast({
     crimeType, gadmDistrict: selectedDistrict,
@@ -283,21 +282,6 @@ export default function MapScreen() {
   // Right column: View summary by default; Where next opens on click, or by itself when a
   // station or beat is picked on the map (its card shows there).
   
-  // Escape closes the dossier detail first, then the dossier (it had only its ).
-  useEffect(() => {
-    if (!showDossier && !selectedDetail) return;
-    const onKey = (e) => {
-      if (e.key !== "Escape") return;
-      if (selectedDetail) setSelectedDetail(null); else setShowDossier(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showDossier, selectedDetail]);
-  
-  const handleViewDetail = (type, data) => {
-    setSelectedDetail({ type, data });
-  };
-
 
   // Karnataka boundaries. Preferred path is the TopoJSON: one fetch yields BOTH the 30
   // district polygons and - via topojson merge over the shared arcs - a genuinely
@@ -331,7 +315,6 @@ export default function MapScreen() {
     fetch(`${API}/api/brain/activity`).then((r) => r.json()).then((d) => setActivity(d.activity || [])).catch(() => {});
     fetch(`${API}/api/alerts`).then((r) => r.json()).then((d) => setAlerts(d.alerts || [])).catch(() => {});
     fetch(`${API}/api/corridors`).then((r) => r.json()).then((d) => setServerCorridors(d.corridors || [])).catch(() => {});
-    fetch(`${API}/api/map/anchor_areas`).then((r) => r.json()).then((d) => setAnchorAreas(d.anchor_areas || [])).catch(() => {});
     fetch(`${API}/api/map/darkzones`).then((r) => r.json()).then((d) => setDarkZones(d.zones || [])).catch(() => {});
   }, []);
 
@@ -741,62 +724,50 @@ export default function MapScreen() {
     ];
   }, [darkZones]);
 
-  const effectiveAnchorAreas = useMemo(() => {
-    if (anchorAreas && anchorAreas.length > 0) return anchorAreas;
-    return [
-      {
-        unsub_id: "UNSUB-01 · Cyber Syndicate", primary_zone: "Bengaluru City",
-        radius_km: 18.5, case_count: 24, centroid: { lat: 12.9716, lon: 77.5946 },
-        convex_hull: [[13.04, 77.52], [13.02, 77.68], [12.91, 77.69], [12.89, 77.53]],
-      },
-      {
-        unsub_id: "UNSUB-02 · Highway Robbery Crew", primary_zone: "Tumakuru",
-        radius_km: 25.0, case_count: 11, centroid: { lat: 13.3379, lon: 77.1173 },
-        convex_hull: [[13.42, 77.05], [13.40, 77.22], [13.25, 77.20], [13.24, 77.06]],
-      },
-    ];
-  }, [anchorAreas]);
 
   // Antar Intelligence - date & place synthesis (shown inside the report window)
   const intel = useMemo(() => {
     const items = [];
     if (selectedDistrict && districtDetail && !districtDetail.empty && !districtDetail.from_windows) items.push({
       dot: "var(--green)",
-      text: `Hyper-local analysis for ${districtDetail.zone}: ${districtDetail.fir_count} recent FIRs. Risk level classified as ${districtDetail.risk_level}, with a ${districtDetail.trend} trend.`,
-      src: "district cache (live)",
+      text: `${districtDetail.zone}: ${Number(districtDetail.last_30 ?? districtDetail.this_month ?? 0).toLocaleString("en-IN")} FIRs in the last 30 days, activity level ${String(districtDetail.risk_level || "not rated").toLowerCase()}.`,
+      src: "district record",
     });
     if (leadZone) items.push({
       dot: "var(--red)",
-      text: `Primary Hotspot Detected: ${leadZone.zone} exhibits intense clustering (z-score: ${leadZone.gi_stat.toFixed(2)}) based on ${leadZone.observed} active incidents.${leadZone.is_hotspot ? " Statistically confirmed via Gi*." : ""}`,
-      src: "Gi* surface (live)",
+      text: leadZone.is_hotspot
+        ? `${leadZone.zone} is a hotspot: ${leadZone.observed} ${leadZone.observed === 1 ? "case" : "cases"} on this day, more than its neighbours by a margin unlikely to be chance.`
+        : `${leadZone.zone} is the most concentrated area in this view, with ${leadZone.observed} ${leadZone.observed === 1 ? "case" : "cases"} on this day. It is not a confirmed hotspot.`,
+      src: "map hotspots",
     });
     if (topAlert) items.push({
       dot: "var(--amber)",
-      text: `Anomaly Watch (${topAlert.zone}): Elevated ${String(topAlert.crime_type || "criminal").replace(/_/g, " ")} activity detected. ${topAlert.z_score != null ? `Z-Score: ${Number(topAlert.z_score).toFixed(2)}. ` : ""}${topAlert.observed != null ? `Cases: ${topAlert.observed}. ` : ""}Strategic patrol deployment highly recommended.`,
-      src: "forecast agent (live)",
+      text: `${topAlert.zone}: ${crimeName(topAlert.crime_type || "crime")} is above its usual level${topAlert.observed != null ? `, ${topAlert.observed} recorded` : ""}.`,
+      src: "alerts",
     });
     const topCor = serverCorridors[0];
-    if (topCor) items.push({
-      dot: "#FF8C42",
-      text: `Criminal Network Linkage: Primary corridor established between ${topCor.src} and ${topCor.dst}. ${topCor.weight} repeat offender${(topCor.weight || 0) > 1 ? "s" : ""} tracked.${topCor.next_district_estimate?.district ? ` Predictive modeling suggests ${topCor.next_district_estimate.district} as the next likely target.` : ""}`,
-      src: "corridor agent (backend)",
-    });
-    else if (flows[0]) items.push({
-      dot: "#FF8C42",
-      text: `Historical Network Linkage: Corridor established between ${flows[0].a} and ${flows[0].b}. ${flows[0].n} offender movements tracked in ${calYear} (e.g., alias: ${aliasFor(flows[0].acc)}).`,
-      src: "FIR linkage (dataset)",
-    });
-    const fest = FESTIVALS.find((f) => f.month === calMonth + 1);
-    if (fest && csvRecs) {
-      const load = csvRecs.filter((r) => r._month === calMonth + 1).length;
+    if (topCor) {
+      const nd = topCor.next_district_estimate;
+      const also = nd?.district ? Math.max(1, Math.round((nd.probability || 0) * (topCor.weight || 0))) : 0;
       items.push({
-        dot: "var(--cyan)",
-        text: `Seasonal Modifier: ${fest.name} occurs this month (${fest.note}). Historically, this drives an average baseline of ${load} statewide FIRs.`,
-        src: "open data · festival calendar",
+        dot: "#FF8C42",
+        text: `${topCor.src} and ${topCor.dst}: ${topCor.weight} accused are named in FIRs in both districts.${also ? ` ${also} of them ${also === 1 ? "is" : "are"} also named in ${nd.district}.` : ""}`,
+        src: "links between districts",
       });
     }
+    else if (flows[0]) items.push({
+      dot: "#FF8C42",
+      text: `${flows[0].a} and ${flows[0].b}: ${flows[0].n} accused are named in FIRs in both districts in ${calYear}.`,
+      src: "links between districts",
+    });
+    const fest = FESTIVALS.find((f) => f.month === calMonth + 1);
+    if (fest) items.push({
+      dot: "var(--cyan)",
+      text: `${fest.name} falls in this month (${fest.note}).`,
+      src: "festival calendar",
+    });
     return items;
-  }, [selectedDistrict, districtDetail, leadZone, topAlert, flows, calMonth, calYear, csvRecs, endDate]);
+  }, [selectedDistrict, districtDetail, leadZone, topAlert, serverCorridors, flows, calMonth, calYear]);
 
   const activityByDay = useMemo(() => {
     const m = {};
@@ -815,202 +786,10 @@ export default function MapScreen() {
         {/* Geospatial Intelligence HUD Header Bar ($100B Company Product Quality) */}
         
 
-        {showDossier && createPortal(
-          <div role="dialog" aria-modal="true" aria-label={kn ? "ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್" : "Geo-intel dashboard"}
-               onMouseDown={(e) => { if (e.target === e.currentTarget) setShowDossier(false); }} style={{
-            position: "fixed",
-            top: 0, left: 0, right: 0, bottom: 0,
-            zIndex: 400,
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "center",
-            paddingTop: "90px",
-            background: "rgba(3, 5, 12, 0.6)",
-            backdropFilter: "blur(4px)"
-          }}>
-            <div className="mx-dossier" style={{
-              width: "min(720px, calc(100vw - 32px))",
-              maxHeight: "calc(100vh - 130px)",
-              overflowY: "auto",
-              background: "rgba(11,18,32,0.95)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "12px",
-              padding: "24px",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.8)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-              animation: "fadeRise 0.25s ease-out"
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <div style={{ fontSize: "11px", color: "#22E6F0", fontFamily: "Inter, sans-serif", letterSpacing: "0.02em", fontWeight: 600 }}>
-                    {kn ? "ಶಾಸನಬದ್ಧ 91 ಪ್ರಾದೇಶಿಕ ಕಡತ" : "Statutory Section 91 Spatial Dossier"}
-                  </div>
-                  <h3 style={{ margin: "4px 0 0", fontSize: "16px", fontWeight: 800, color: "#FFF", fontFamily: "Chakra Petch" }}>
-                    {kn ? "ಅಂತರ್-ಜಿಲ್ಲಾ ಅಪರಾಧ ಕಾರಿಡಾರ್‌ಗಳು ಮತ್ತು ಆಂಕರ್‌ಗಳು" : "Inter-District Crime Corridors & Anchors"}
-                  </h3>
-                </div>
-                <button 
-                  onClick={() => setShowDossier(false)} 
-                  style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "18px", padding: "0" }}
-                >
-                  
-                </button>
-              </div>
-              
-              <div style={{ fontSize: "13px", color: "#94A3B8", lineHeight: 1.5 }}>
-                {kn 
-                  ? "ಈ ವರದಿಯು ಅಪರಾಧ ಜಾಲಗಳು ಜಿಲ್ಲೆಯ ಗಡಿಗಳಲ್ಲಿ ಹೇಗೆ ಚಲಿಸುತ್ತವೆ (ಸಾರಿಗೆ ಕಾರಿಡಾರ್‌ಗಳು) ಮತ್ತು ಅವರ ಮುಖ್ಯ ಕಾರ್ಯಾಚರಣೆಯ ನೆಲೆಗಳನ್ನು ಗುರುತಿಸುತ್ತದೆ. UNSUB (ಅಪರಿಚಿತ ವ್ಯಕ್ತಿ) ವಲಯಗಳು ಭೌಗೋಳಿಕ ಆಧಾರದ ಮೇಲೆ ಗುರುತಿಸಲಾಗದ ಅಪರಾಧಿಗಳ ಕಾರ್ಯಕ್ಷೇತ್ರಗಳನ್ನು ಎತ್ತಿತೋರಿಸುತ್ತವೆ." 
-                  : "This dossier maps how criminal networks move across district borders (Transit Corridors track offender movement vectors) and identifies their primary operating bases. UNSUB (Unknown Subject) envelopes highlight the operating zones of unidentified syndicates based on geographic profiling."}
-              </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ fontSize: "11px", color: "#FF8C42", fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
-                ⇄ {kn ? "ಸಕ್ರಿಯ ಸಾರಿಗೆ ಕಾರಿಡಾರ್‌ಗಳು" : "Active Transit Corridors"}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {(serverArcs.length > 0 ? serverArcs : flows).slice(0, 5).map((item, idx) => (
-                  <div key={idx} onClick={() => handleViewDetail('corridor', item)} style={{ padding: "8px 10px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", flexDirection: "column", gap: "3px", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.06)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.02)"}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", fontWeight: 700, color: "#FFF" }}>
-                      <span>{item.a ? `${item.a} ↔ ${item.b}` : item.label.split("·")[0]}</span>
-                      <span style={{ fontSize: "10px", color: "#FF8C42", fontFamily: "JetBrains Mono", display: "flex", alignItems: "center", gap: "6px" }}>{item.n || item.weight} {kn ? "ಕೊಂಡಿಗಳು" : "LINKS"} <MessageSquare size={12} color="rgba(255,255,255,0.4)" /></span>
-                    </div>
-                    <div style={{ fontSize: "10.5px", color: "#94A3B8", lineHeight: 1.3 }}>
-                      {item.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "10px" }}>
-              <div style={{ fontSize: "11px", color: "#D8B4FE", fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
-                {kn ? "ಗುರುತಿಸದ ಶಂಕಿತರ (UNSUB) ಆಂಕರ್ ವಲಯಗಳು" : "Unknown Subject (UNSUB) Operating Zones"}
-              </div>
-              {effectiveAnchorAreas.map((anc, idx) => (
-                <div key={idx} onClick={() => handleViewDetail('anchor', anc)} style={{ padding: "8px 10px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.06)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.02)"}>
-                  <div>
-                    <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#FFF" }}>{anc.unsub_id}</div>
-                    <div style={{ fontSize: "10.5px", color: "#94A3B8" }}>{anc.primary_zone} · {anc.radius_km} km radius</div>
-                  </div>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#D8B4FE", fontFamily: "JetBrains Mono" }}>{anc.case_count} {kn ? "ಪ್ರಕರಣಗಳು" : "CASES"}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ padding: "8px 10px", borderRadius: "6px", background: "rgba(34,230,240,0.06)", border: "1px solid rgba(34,230,240,0.2)", fontSize: "10.5px", color: "#CBD5E1" }}>
-              {kn ? "ಕಾನೂನುಬದ್ಧ ಪ್ರಮಾಣೀಕರಣ: ಎಲ್ಲಾ ಜಿಯೋ-ಸ್ಥಳಗಳು ಮತ್ತು ಕಾರಿಡಾರ್‌ಗಳು ಸೆಕ್ಷನ್ 91 ಸಾಕ್ಷ್ಯ ನಿಯಮಗಳ ಅಡಿಯಲ್ಲಿ ಪರಿಶೀಲಿಸಲ್ಪಟ್ಟಿವೆ." : "Statutory Certification: All spatial polygons & transit vectors deterministically compiled under § 91 BNSS evidence rules."}
-            </div>
-          </div>
-        </div>
-        , document.body)}
-
-        {selectedDetail && createPortal(
-          <div role="dialog" aria-modal="true" aria-label="Dossier detail" style={{
-            position: "fixed",
-            top: 0, left: 0, right: 0, bottom: 0,
-            zIndex: 400,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(3, 5, 12, 0.75)",
-            backdropFilter: "blur(10px)",
-            animation: "fadeRise 0.2s ease-out"
-          }} onClick={() => setSelectedDetail(null)}>
-            <div style={{
-              width: "450px",
-              maxWidth: "92%",
-              background: "rgba(6, 11, 24, 0.94)",
-              backdropFilter: "blur(24px)",
-              border: "1px solid rgba(34, 230, 240, 0.35)",
-              borderRadius: "16px",
-              padding: "26px",
-              boxShadow: "0 24px 64px rgba(0, 0, 0, 0.85), 0 0 30px rgba(34,230,240,0.1)",
-              color: "#fff",
-              display: "flex",
-              flexDirection: "column",
-              gap: "18px",
-              position: "relative"
-            }} onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => setSelectedDetail(null)} style={{ position: "absolute", top: "18px", right: "18px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.color="#FFF"} onMouseLeave={(e)=>e.currentTarget.style.color="#94A3B8"}>
-                <X size={16} />
-              </button>
-            
-            {selectedDetail.type === 'corridor' ? (
-              <>
-                <div style={{ fontSize: "11px", color: "#FF8C42", fontWeight: 700, fontFamily: "JetBrains Mono", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>⇄</span> ACTIVE TRANSIT CORRIDOR (SECTION 91)
-                </div>
-                <h2 style={{ margin: 0, fontSize: "20px", fontFamily: "Chakra Petch", fontWeight: 800, color: "#FFFFFF" }}>
-                  <span style={{ color: "#22E6F0" }}>{selectedDetail.data.a || selectedDetail.data.label.split("A")[0]}</span> {selectedDetail.data.b ? ` ↔ ` : ''} <span style={{ color: "#22E6F0" }}>{selectedDetail.data.b || ''}</span>
-                </h2>
-                
-                <div style={{ background: "rgba(255,255,255,0.03)", padding: "14px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ fontSize: "13px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                    Cross-district FIR correlation confirms an active syndicate transit route. Perpetrators originating from <strong style={{color:"#22E6F0"}}>{selectedDetail.data.a || "origin district"}</strong> execute coordinated offenses in <strong style={{color:"#22E6F0"}}>{selectedDetail.data.b || "destination zone"}</strong>.
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div style={{ background: "rgba(34,230,240,0.04)", border: "1px solid rgba(34,230,240,0.15)", padding: "10px 12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "10px", color: "#94A3B8", fontFamily: "JetBrains Mono" }}>EVIDENTIARY LINKS</div>
-                    <div style={{ fontSize: "18px", fontWeight: 800, color: "#FF8C42", fontFamily: "JetBrains Mono", marginTop: "2px" }}>
-                      {selectedDetail.data.n || selectedDetail.data.weight} {kn ? "ಕೊಂಡಿಗಳು" : "LINKS"}
-                    </div>
-                  </div>
-                  <div style={{ background: "rgba(34,230,240,0.04)", border: "1px solid rgba(34,230,240,0.15)", padding: "10px 12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "10px", color: "#94A3B8", fontFamily: "JetBrains Mono" }}>PATROL RECOMMENDATION</div>
-                    <div style={{ fontSize: "12px", fontWeight: 700, color: "#22E6F0", marginTop: "4px" }}>
-                      Inter-district ANPR Checkpoint
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ padding: "10px", background: "rgba(255,140,66,0.08)", border: "1px solid rgba(255,140,66,0.2)", borderRadius: "8px", fontSize: "11px", color: "#E2E8F0" }}>
-                  <strong>Key Detail:</strong> {selectedDetail.data.label}
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: "11px", color: "#D8B4FE", fontWeight: 700, fontFamily: "JetBrains Mono", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span></span> UNSUB SYNDICATE OPERATING ENVELOPE
-                </div>
-                <h2 style={{ margin: 0, fontSize: "20px", fontFamily: "Chakra Petch", fontWeight: 800, color: "#FFFFFF" }}>
-                  Subject: <span style={{ color: "#22E6F0" }}>{selectedDetail.data.unsub_id}</span>
-                </h2>
-                
-                <div style={{ background: "rgba(255,255,255,0.03)", padding: "14px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ fontSize: "13px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                    Spatial probability modeling maps a concentrated operating envelope anchored in <strong style={{color:"#22E6F0"}}>{selectedDetail.data.primary_zone}</strong>. With <b style={{color:"#D8B4FE"}}>{selectedDetail.data.case_count} correlated cases</b>, the system has mapped a high-probability operating envelope stretching <b style={{color:"#22E6F0"}}>{selectedDetail.data.radius_km} km</b> around this centroid.
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div style={{ background: "rgba(216,180,254,0.04)", border: "1px solid rgba(216,180,254,0.2)", padding: "10px 12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "10px", color: "#94A3B8", fontFamily: "JetBrains Mono" }}>CORRELATED CASES</div>
-                    <div style={{ fontSize: "18px", fontWeight: 800, color: "#D8B4FE", fontFamily: "JetBrains Mono", marginTop: "2px" }}>
-                      {selectedDetail.data.case_count} FIRs
-                    </div>
-                  </div>
-                  <div style={{ background: "rgba(216,180,254,0.04)", border: "1px solid rgba(216,180,254,0.2)", padding: "10px 12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "10px", color: "#94A3B8", fontFamily: "JetBrains Mono" }}>PRIMARY ANCHOR</div>
-                    <div style={{ fontSize: "12px", fontWeight: 700, color: "#22E6F0", marginTop: "4px" }}>
-                      {selectedDetail.data.primary_zone}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "12px" }}>
-                   <div style={{ fontSize: "12px", color: "#94A3B8" }}>Correlated Cases</div>
-                   <div style={{ fontSize: "16px", fontWeight: 700, color: "#D8B4FE", fontFamily: "JetBrains Mono" }}>{selectedDetail.data.case_count}</div>
-                </div>
-              </>
-            )}
-            </div>
-          </div>
-        , document.body)}
+        {showDossier && (
+          <GeoIntelDashboard corridors={serverCorridors} flows={flows} year={calYear} notes={intel}
+                             dateLabel={prettyDate(endDate, false)} onClose={() => setShowDossier(false)} />
+        )}
 
           <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%", position: "relative" }}>
             {giLoading && (
@@ -1404,14 +1183,38 @@ export default function MapScreen() {
                 trend: pct == null ? (cur > 0 ? "+100%" : "—") : `${pct >= 0 ? "+" : ""}${pct}%`,
                 risk_level: cur >= 80 || ratio >= 1.5 ? "High" : cur >= 30 || ratio >= 1.1 ? "Medium" : "Low" };
             })();
-            const n = (v) => (v == null ? "…" : v);
+            const n = (v) => (v == null ? "…" : Number(v).toLocaleString("en-IN"));
             const nice = (iso) => { const x = new Date(`${iso}T00:00:00`); return Number.isNaN(x.getTime()) ? iso : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); };
-            const lower = (t) => { const w = String(t || "").replace(/_/g, " ").toLowerCase(); return w.charAt(0).toUpperCase() + w.slice(1); };
+            // the 30 days against the 30 before, in words
+            const versus = d.prior_30 == null || d.last_30 == null ? null
+              : d.prior_30 === 0 ? (d.last_30 > 0 ? "none then" : "none in either period")
+              : (() => { const p = Math.round(((d.last_30 - d.prior_30) / d.prior_30) * 100); return p === 0 ? "the same now" : `${Math.abs(p)}% ${p > 0 ? "more" : "fewer"} now`; })();
+            // district_cache._risk_level, said in words
+            const levelWhy = { High: "80 or more FIRs in 30 days, or at least half as many again as the 30 days before.",
+                               Medium: "30 or more FIRs in 30 days, or at least a tenth more than the 30 days before.",
+                               Low: "Fewer than 30 FIRs in 30 days and no clear rise on the 30 days before." };
+            const share = d.last_30 != null && giMonthlyTotal > 0 && d.last_30 <= giMonthlyTotal ? (d.last_30 / giMonthlyTotal) * 100 : null;
+            const openShare = d.open_unsubs_count != null && d.fir_count > 0 ? Math.round((d.open_unsubs_count / d.fir_count) * 100) : null;
+            const top = (d.from_windows ? d.top_all : d.top_crimes) || [];
+            const level = (lv) => (lv
+              ? <span className="v"><i className={`mx-dc-dot ${riskClass(lv)}`} aria-hidden="true" />{lv}</span>
+              : <span className="v">…</span>);
+            const allTime = (
+              <>
+                {d.fir_count != null && <div className="mx-dc-row"><span className="k">{kn ? "FIR (ಒಟ್ಟು)" : "All FIRs on record"}</span><span className="v">{n(d.fir_count)}</span></div>}
+                {d.open_unsubs_count != null && (
+                  <div className="mx-dc-row">
+                    <span className="k">{kn ? "ಆರೋಪಪಟ್ಟಿ ಇಲ್ಲದವು" : "No accused charge-sheeted yet"}</span><span className="v">{n(d.open_unsubs_count)}</span>
+                    <em>{openShare != null ? `${openShare}% of all FIRs here. ` : ""}All crime types, all years.</em>
+                  </div>
+                )}
+              </>
+            );
             return (
-              <div inert={reportOpen || showDossier ? "" : undefined} className={`mx-dcard mx-panel mx-dcard-enhanced${dcardBusy ? " is-busy" : ""}`} aria-busy={dcardBusy}>
+              <div inert={reportOpen || showDossier ? "" : undefined} className={`mx-dcard mx-panel mx-dc${dcardBusy ? " is-busy" : ""}`} aria-busy={dcardBusy}>
                 <div className="mx-dcard-head">
-                  <span>{d.zone}<em>{dated ? nice(d.as_of) : nice(endDate)}{crimeType ? ` · ${crimeLabel}` : ""}</em></span>
-                  <button onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }} title={kn ? "ಮುಚ್ಚಿ" : "Close"} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close district card"}>&times;</button>
+                  <span>{d.zone}<em>{dated ? nice(d.as_of) : nice(endDate)} · {crimeLabel}</em></span>
+                  <button onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }} title={kn ? "ಮುಚ್ಚಿ" : "Close"} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close district card"}><X size={16} /></button>
                 </div>
                 <div className="mx-dcard-body">
                   {d.empty && <p className="mx-dcard-none">{kn ? "ಈ ಜಿಲ್ಲೆಗೆ ದಾಖಲೆಗಳಿಲ್ಲ" : "No records are held for this district."}</p>}
@@ -1422,30 +1225,32 @@ export default function MapScreen() {
                         <div><b>{n(d.last_7)}</b><span>{kn ? "ಕಳೆದ 7 ದಿನ" : "Last 7 days"}</span></div>
                         <div><b>{n(d.last_30)}</b><span>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</span></div>
                       </div>
-                      <div className="mx-dcard-bar"><div className="fill" style={{ width: `${Math.min(100, ((d.last_30 || 0) / Math.max(d.last_30 || 0, d.prior_30 || 0, 1)) * 100)}%` }} /></div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಹಿಂದಿನ 30 ದಿನ" : "30 days before that"}</span><span className="v">{d.prior_30 == null ? "…" : `${d.prior_30} · ${d.trend}`}</span></div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಅಪಾಯದ ಮಟ್ಟ" : "Risk level"}</span>{d.risk_level ? <span className={`mx-dcard-badge ${riskClass(d.risk_level)}`}>{d.risk_level}</span> : <span className="v">…</span>}</div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಪರಿಹರಿಸಲಾಗದ (ಒಟ್ಟು)" : "Unsolved, all time"}</span><span className="v critical">{d.open_unsubs_count?.toLocaleString("en-IN") ?? "--"}</span></div>
-                      <div className="mx-dcard-top">
-                        <span className="k">{d.from_windows ? (kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (ಒಟ್ಟು)" : "Most recorded, all time") : (kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (30 ದಿನ)" : "Most recorded, last 30 days")}</span>
-                        <span>{(d.from_windows ? d.top_all : d.top_crimes)?.length ? (d.from_windows ? d.top_all.slice(0, 3) : d.top_crimes).map(lower).join(", ") : (kn ? "ಯಾವುದೂ ಇಲ್ಲ" : "Nothing recorded in this window")}</span>
+                      <div className="mx-dc-row"><span className="k">{kn ? "ಹಿಂದಿನ 30 ದಿನ" : "The 30 days before"}</span><span className="v">{d.prior_30 == null ? "…" : <>{n(d.prior_30)}{versus && <small>{versus}</small>}</>}</span></div>
+                      {share != null && <div className="mx-dc-row"><span className="k">{kn ? "ರಾಜ್ಯದ ಪಾಲು (30 ದಿನ)" : "Share of the state, last 30 days"}</span><span className="v">{share > 0 && share < 1 ? "under 1%" : `${Math.round(share)}%`}</span></div>}
+                      <div className="mx-dc-row"><span className="k">{kn ? "ಚಟುವಟಿಕೆಯ ಮಟ್ಟ" : "Activity level"}</span>{level(d.risk_level)}{d.risk_level && levelWhy[d.risk_level] && <em>{levelWhy[d.risk_level]}</em>}</div>
+                      {allTime}
+                      <div className="mx-dc-row stack">
+                        <span className="k">{d.from_windows ? (kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (ಒಟ್ಟು)" : "Most recorded, all years") : (kn ? "ಹೆಚ್ಚು ದಾಖಲಾದವು (30 ದಿನ)" : "Most recorded, last 30 days")}</span>
+                        {top.length ? <ol>{top.slice(0, 3).map((c) => <li key={c}>{crimeName(c)}</li>)}</ol> : <span className="none">{kn ? "ಯಾವುದೂ ಇಲ್ಲ" : "Nothing recorded in this period"}</span>}
                       </div>
                     </>
                   )}
                   {!d.empty && !dated && (
                     <>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "FIR (ಒಟ್ಟು)" : "FIRs, all time"}</span><span className="v" style={{ color: "var(--cyan)" }}>{d.fir_count?.toLocaleString("en-IN")}</span></div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಈ ತಿಂಗಳು / ಹಿಂದಿನ" : "This month / last month"}</span><span className="v">{d.this_month} / {d.prior_month} · {d.trend}</span></div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಅಪಾಯದ ಮಟ್ಟ" : "Risk level"}</span><span className={`mx-dcard-badge ${riskClass(d.risk_level)}`}>{d.risk_level}</span></div>
-                      <div className="mx-dcard-row"><span className="k">{kn ? "ಪರಿಹರಿಸಲಾಗದ (ಒಟ್ಟು)" : "Unsolved, all time"}</span><span className="v critical">{d.open_unsubs_count?.toLocaleString("en-IN") ?? "--"}</span></div>
-                      {d.top_crimes?.length > 0 && <div className="mx-dcard-top"><span className="k">{kn ? "ಟಾಪ್ ಅಪರಾಧಗಳು" : "Most recorded"}</span><span>{d.top_crimes.slice(0, 3).map(lower).join(", ")}</span></div>}
+                      <div className="mx-dc-row"><span className="k">{kn ? "ಈ ತಿಂಗಳು" : "This month"}</span><span className="v">{n(d.this_month)}<small>{n(d.prior_month)} last month</small></span></div>
+                      <div className="mx-dc-row"><span className="k">{kn ? "ಚಟುವಟಿಕೆಯ ಮಟ್ಟ" : "Activity level"}</span>{level(d.risk_level)}</div>
+                      {allTime}
+                      {d.top_crimes?.length > 0 && <div className="mx-dc-row stack"><span className="k">{kn ? "ಟಾಪ್ ಅಪರಾಧಗಳು" : "Most recorded, all years"}</span><ol>{d.top_crimes.slice(0, 3).map((c) => <li key={c}>{crimeName(c)}</li>)}</ol></div>}
                       <p className="mx-dcard-none">{kn ? "ಇಂದಿನ ಅಂಕಿಅಂಶಗಳು" : "These are current figures. The server has not been restarted, so it cannot yet answer for the chosen date."}</p>
                     </>
                   )}
                   {!d.empty && sessionRole && sessionRole !== "Approver" && (
-                    <button type="button" className="mx-hitl-btn" onClick={() => setPatrolRequest(true)} title={kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಅಗತ್ಯವಿದೆ" : "Requires supervising officer approval"}>
-                      <ShieldCheck size={14} className="fx-i" /> {kn ? "ಗಸ್ತು ನಿಯೋಜನೆಯನ್ನು ಪ್ರಸ್ತಾಪಿಸಿ" : "Propose patrol deployment"}
-                    </button>
+                    <>
+                      <button type="button" className="mx-dc-act" onClick={() => setPatrolRequest(true)}>
+                        {kn ? "ಗಸ್ತು ನಿಯೋಜನೆಯನ್ನು ಪ್ರಸ್ತಾಪಿಸಿ" : "Propose patrol deployment"}
+                      </button>
+                      <p className="mx-dc-actnote">{kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಅಗತ್ಯವಿದೆ" : "Nothing is sent until a supervising officer approves it."}</p>
+                    </>
                   )}
                 </div>
               </div>
