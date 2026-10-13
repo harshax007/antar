@@ -522,6 +522,68 @@ def board_facts(board: dict) -> dict:
     }
 
 
+def hypotheses_for(zone: str, world: dict | None = None, limit: int = 6) -> dict:
+    """Inferred links between accused in one district, each with the case against it.
+
+    Nothing here is written by hand or by a model. The research agent proposes a link when
+    two accused share signals (zone, occupation, MO, a phonetic name match); a sum of
+    weights says nothing about how many other pairs in the population would score the
+    same, so every proposal is passed to the advocate agent, which prices each signal
+    against its base rate and returns SURVIVES / WEAKENED / COLLAPSES / UNASSESSABLE.
+    Both halves are shown together. A district with no proposal returns an empty list:
+    the page says so, it does not fill the space.
+    """
+    from app.agents import advocate_agent
+    from app.agents.research_agent import run_research
+    from app.services.product_store import put_product
+
+    zone = " ".join(str(zone or "").split())[:80]
+    if not zone:
+        return {"zone": "", "hypotheses": [], "examined": 0}
+    dossier = run_research(zone, world=world) if world is not None else run_research(zone)
+    proposed = [h for h in (dossier.get("inferred_hypotheses") or []) if isinstance(h, dict) and h.get("id")]
+    # A-B and B-A are one link
+    seen, unique = set(), []
+    for h in proposed:
+        k = frozenset(h.get("subject_ids") or [h["id"]])
+        if k not in seen:
+            seen.add(k)
+            unique.append(h)
+    proposed = unique
+    out = []
+    for h in proposed[:limit]:
+        try:
+            r = advocate_agent.challenge(h, world=world) if world is not None else advocate_agent.challenge(h)
+        except Exception:
+            r = {"verdict": "UNASSESSABLE", "verdict_reason": "the base-rate check could not be run"}
+        # kept so Confirm / Reject on the record act on what was shown, not a placeholder
+        put_product(f"hypothesis:{h['id']}", h, ttl=3600)
+        combined, sel = r.get("combined") or {}, r.get("selection_effect") or {}
+        out.append({
+            "id": h["id"], "kind": h.get("kind"), "claim": h.get("claim"), "score": h.get("score"),
+            "subject_ids": h.get("subject_ids") or [],
+            "signals": [{"name": sg.get("name"), "weight": sg.get("weight")} for sg in (h.get("signals") or [])],
+            "verdict": r.get("verdict"), "verdict_reason": r.get("verdict_reason"),
+            "posterior_probability": combined.get("posterior_probability"),
+            "expected_false_matches": sel.get("expected_false_matches"),
+            "load_bearing_signals": r.get("load_bearing_signals") or [],
+            "discarded_signals": r.get("discarded_signals") or [],
+            "falsification_tests": (r.get("falsification_tests") or [])[:4],
+            "population": r.get("population"),
+        })
+    order = {"SURVIVES": 0, "WEAKENED": 1, "UNASSESSABLE": 2, "COLLAPSES": 3}
+    out.sort(key=lambda x: (order.get(x["verdict"], 2), -(x.get("score") or 0)))
+    return {"zone": zone, "hypotheses": out, "examined": len(proposed),
+            "method": "shared-signal scoring (research agent), then a base-rate check with no model (advocate agent)"}
+
+
+@router.get("/predict/hypotheses")
+async def predict_hypotheses(zone: str) -> dict:
+    """Proposed links for a district, with the adversarial check beside each."""
+    import asyncio
+    return await asyncio.to_thread(hypotheses_for, zone)
+
+
 _BRIEFING: dict = {}      # as_of -> reading; one model call a day, not one per page view
 _BRIEFING_RETRY_AT: dict = {}
 

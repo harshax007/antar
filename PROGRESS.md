@@ -1963,3 +1963,9 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 
 * `docs/USP01_02.md`: the two demo-day USPs, what the build already proves for each, the gaps against five papers the owner supplied (SMCP, a 50-study review of RAG security, a 142-study survey of crime prediction and explainability, Parallax, the AI Agent Index), work items S1-S10 and P1-P9 with files, steps and a "done when" test, a three-minute demo for each USP, claims to avoid, and a brief for handing an item to any coding model.
 * No code changed. The P0 list (about 7 working days) starts with the Hypotheses Engine on the Predict page, which still shows prepared text.
+
+## Predict: hypotheses are computed, not prepared (USP plan P1) - 2026-10-14
+
+* The Hypotheses panel showed two prepared paragraphs ("HYP-001-COLD", a "Highway Robbery Syndicate") whatever district was selected. They are gone.
+* `GET /api/predict/hypotheses?zone=` (`pattern_predict.hypotheses_for`): the research agent proposes links between accused in the district from shared signals; the advocate agent checks each against its base rate with no model. The panel shows what they share, the verdict in words, the chance the link is real after the check, and what would settle it. On the real data most proposals do not stand up (Raichur: 22.2 expected false matches across 59,125 compared pairs), and the panel says so.
+* A district with no proposal says "No link ... scores high enough to propose." Needs a backend restart.

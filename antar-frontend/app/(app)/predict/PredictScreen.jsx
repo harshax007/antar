@@ -850,7 +850,7 @@ function PredictScreen() {
   const [dash, setDash] = useState(null);            // dashboard cards | "offline"
   const [alertList, setAlertList] = useState([]);    // real /api/alerts
   const [runningHypotheses, setRunningHypotheses] = useState(false);
-  const [hypothesesList, setHypothesesList] = useState([]);
+  const [hypothesesList, setHypothesesList] = useState(null);   // null = not asked yet | { zone, hypotheses, examined } | { error }
   const [reading, setReading] = useState(null);      // Antar's worded reading of the board
   const [eng, setEng] = useState(null);              // engine status | "missing" (older server) | null while loading
   const eventsRef = useRef(null);
@@ -1008,42 +1008,20 @@ function PredictScreen() {
     }
   }
 
+  // Proposed links between accused in the district being explained. The research agent
+  // proposes them from shared signals; the advocate agent prices each against its base rate.
+  // Nothing is shown that the server did not compute, and a district with none says so.
   const runHypotheses = () => {
+    if (!fZone) return;
     setRunningHypotheses(true);
-    setTimeout(() => {
-      setHypothesesList([
-        {
-          id: "HYP-001-COLD",
-          confidence: 88,
-          description: kn ? "ಕ್ರಾಸ್-ಝೋನ್ ಅಸಂಗತಿ ಪತ್ತೆಯಾಗಿದೆ. ರಾಜಾಜಿನಗರದಲ್ಲಿ ಇತ್ತೀಚಿನ ಸರಗಳ್ಳತನದ ಹೆಚ್ಚಳವು ಕಳೆದ ವರ್ಷದ ಕೆಆರ್ ಪುರಂನ ಕೋಲ್ಡ್ ಕೇಸ್ ಸರಣಿಯನ್ನು ಹೋಲುತ್ತದೆ." : "Cross-zone anomaly detected. The recent spike in chain-snatching in Rajajinagar closely mirrors the modus operandi of a cold case series from KR Puram last year.",
-          pointers: kn ? [
-            "ರಾಜಾಜಿನಗರ ಮತ್ತು ಕೆಆರ್ ಪುರಂ ನಡುವೆ ಸಂಪರ್ಕವಿದೆಯೇ? ಕಪ್ಪು ಪಲ್ಸರ್ ಬಳಸುವ ಶಂಕಿತರಿಗಾಗಿ ಸಿಸಿಟಿವಿ ಪರಿಶೀಲಿಸಿ.",
-            "ಎರಡೂ ವಲಯಗಳಲ್ಲಿ ರಾತ್ರಿ 8 - 11 ಗಂಟೆಯ ನಡುವೆ ಅಪರಾಧಿಗಳ ಫೋನ್ ಸ್ಥಳಗಳನ್ನು (CDR) ಪರಿಶೀಲಿಸಿ.",
-            "ಇತ್ತೀಚೆಗೆ ಅಡವಿಟ್ಟ ಚಿನ್ನದ ಸರಗಳಿಗಾಗಿ ನೆರೆಯ ಜಿಲ್ಲೆಗಳ ಗಿರವಿ ಅಂಗಡಿ ದಾಖಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ."
-          ] : [
-            "Are the chain-snatchings in Rajajinagar and KR Puram linked? Check the CCTV footage for suspects using a stolen black Pulsar.",
-            "Review repeat offender phone locations (CDR data) between 8 PM - 11 PM in both zones.",
-            "Cross-reference pawn shop records in neighboring districts for recently fenced gold chains."
-          ]
-        },
-        {
-          id: "HYP-002-LINK",
-          confidence: 74,
-          description: kn ? "ಮೈಸೂರು ನಗರದಲ್ಲಿ ದಸರಾ ಹಬ್ಬದ 28% ಸಂಬಂಧವಿದೆ, ಇದು 2024 ರ ಪರಿಹರಿಸಲಾಗದ ಪ್ರವಾಸಿ-ಗುರಿಯ ಸಿಂಡಿಕೇಟ್‌ಗೆ ಹೊಂದಿಕೆಯಾಗುತ್ತದೆ." : "Seasonal robbery patterns in Mysuru City show a 28% correlation with the upcoming Dasara festival, matching an unresolved tourist-targeted syndicate from 2024.",
-          pointers: kn ? [
-            "ಹಬ್ಬದ ಮೂರು ದಿನಗಳ ಮೊದಲು ಪ್ರಮುಖ ಪ್ರವಾಸಿ ಕೇಂದ್ರಗಳಲ್ಲಿ ಮಫ್ತಿ ಪೊಲೀಸರನ್ನು ನಿಯೋಜಿಸಿ.",
-            "ಹೈವೇ ದರೋಡೆ ಸಿಂಡಿಕೇಟ್‌ನ ಅಲಿಯಾಸ್‌ಗಳಿಗಾಗಿ ಹೋಟೆಲ್ ಅತಿಥಿ ದಾಖಲೆಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಿ.",
-            "ಹಳೆಯ ಎಸ್ಕೇಪ್ ರೂಟ್‌ಗಳನ್ನು ಬಳಸಲಾಗುತ್ತಿದೆಯೇ? ಹೊರಹೋಗುವ ಟೋಲ್ ಪ್ಲಾಜಾಗಳನ್ನು ಗಮನಿಸಿ."
-          ] : [
-            "Deploy plainclothes officers at major tourist transit hubs three days prior to the festival.",
-            "Analyze hotel guest registries for known aliases of the 'Highway Robbery Syndicate'.",
-            "Are the same getaway routes being used? Monitor the outbound toll plazas."
-          ]
-        }
-      ]);
-      setRunningHypotheses(false);
-    }, 2500);
+    fetch(`${API}/api/predict/hypotheses?zone=${encodeURIComponent(fZone)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => setHypothesesList({ zone: fZone, hypotheses: d.hypotheses || [], examined: d.examined || 0 }))
+      .catch((st) => setHypothesesList({ zone: fZone, error: st === 404 ? "restart" : "failed" }))
+      .finally(() => setRunningHypotheses(false));
   };
+  // a result belongs to the district it was asked for
+  useEffect(() => { setHypothesesList(null); }, [fZone]);
 
   async function handleHypothesisAction(hypothesisId, action) {
     try {
@@ -1638,77 +1616,81 @@ const avgConf = predictions?.length
         </section>
       )}
 
-      {/* 4 · Hypotheses Engine (replaces the floating button) */}
-      <div className="px-panel" style={{ marginTop: "24px" }}>
-        <div className="px-panel-hd">
-          <span>{kn ? "ಊಹೆಗಳ ಯಂತ್ರ" : "Hypotheses Engine"}</span>
-        </div>
-        <div style={{ padding: "24px" }}>
-          {!runningHypotheses && hypothesesList.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "20px" }}>
-                {kn ? "ಡೇಟಾದಿಂದ ಗುಪ್ತ ಮಾದರಿಗಳು ಮತ್ತು ಕೋಲ್ಡ್ ಕೇಸ್ ಸಂಪರ್ಕಗಳನ್ನು ಹುಡುಕಿ." : "Actively connect cold cases and find hidden patterns in the data to guide your investigation."}
-              </div>
-              <button 
-                onClick={runHypotheses}
-                style={{
-                  background: "rgba(34,230,240,0.05)",
-                  border: "1px solid rgba(34,230,240,0.3)",
-                  color: "#22e6f0",
-                  padding: "10px 28px",
-                  borderRadius: "8px",
-                  fontFamily: "'Chakra Petch', sans-serif",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  transition: "all 0.2s ease"
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(34,230,240,0.1)"}
-                onMouseLeave={e => e.currentTarget.style.background = "rgba(34,230,240,0.05)"}
-              >
-                {kn ? "ಊಹೆಗಳನ್ನು ರನ್ ಮಾಡಿ" : "Run Hypotheses"}
-              </button>
-            </div>
-          ) : runningHypotheses ? (
-            <div className="px-loading">
-              {kn ? "ಕೋಲ್ಡ್ ಕೇಸ್‌ಗಳನ್ನು ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ..." : "Analyzing data to connect cold cases..."}
-              <div className="signal-pulse" style={{ marginTop: 16 }} />
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {hypothesesList.map((h, i) => (
-                <div key={i} style={{
-                  background: "rgba(34,230,240,0.03)",
-                  border: "1px solid rgba(34,230,240,0.15)",
-                  borderRadius: "10px",
-                  padding: "20px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", alignItems: "center" }}>
-                    <span style={{ fontSize: "13px", color: "#22e6f0", fontFamily: "JetBrains Mono", fontWeight: "bold" }}>{h.id}</span>
-                    <span style={{ fontSize: "12px", color: "var(--muted-2)" }}>{kn ? "ವಿಶ್ವಾಸ:" : "Confidence:"} <span style={{ color: "#22e6f0", fontWeight: "bold" }}>{h.confidence}%</span></span>
-                  </div>
-                  <div style={{ color: "#E2E8F0", fontSize: "15px", lineHeight: 1.6, marginBottom: "16px" }}>
-                    {h.description}
-                  </div>
-                  <div style={{
-                    borderTop: "1px dashed rgba(255,255,255,0.1)",
-                    paddingTop: "16px",
-                    color: "var(--muted)",
-                    fontSize: "14px"
-                  }}>
-                    <b style={{ color: "#9DABBC", display: "block", marginBottom: "10px" }}>{kn ? "ತನಿಖಾ ಸೂಚಕಗಳು:" : "Investigative Pointers:"}</b>
-                    <ul style={{ margin: "0", paddingLeft: "24px", display: "flex", flexDirection: "column", gap: "8px", lineHeight: 1.5 }}>
-                      {h.pointers.map((p, j) => (
-                        <li key={j}>{p}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* 4 · Hypotheses: links the record suggests, and the case against each */}
+      <section className="px-hyp" aria-label="Hypotheses">
+        <header>
+          <div>
+            <h3>{kn ? "ಊಹೆಗಳು" : "Hypotheses"}{fZone ? ` · ${fZone}` : ""}</h3>
+            <p>Possible links between accused in this district, proposed from what they share in the record. Each one is then tested: how many other pairs in the state would look just as linked by chance?</p>
+          </div>
+          <button type="button" onClick={runHypotheses} disabled={!fZone || runningHypotheses}>
+            {runningHypotheses ? "Checking…" : hypothesesList ? "Run again" : "Look for links"}
+          </button>
+        </header>
+
+        {!fZone && <p className="px-hyp-empty">Select a district in the forecast list to look for links there.</p>}
+        {fZone && !hypothesesList && !runningHypotheses && (
+          <p className="px-hyp-empty">Nothing has been run for {fZone} yet.</p>
+        )}
+        {runningHypotheses && <p className="px-hyp-empty">Comparing accused in {fZone} and checking each link against its base rate…</p>}
+        {hypothesesList?.error && !runningHypotheses && (
+          <p className="px-hyp-empty">{hypothesesList.error === "restart"
+            ? "This needs the server restarted to load it."
+            : "The links could not be read just now. Try again."}</p>
+        )}
+        {hypothesesList && !hypothesesList.error && !runningHypotheses && hypothesesList.hypotheses.length === 0 && (
+          <p className="px-hyp-empty">No link between accused in {hypothesesList.zone} scores high enough to propose. That is a result, not a failure.</p>
+        )}
+
+        {hypothesesList && !hypothesesList.error && !runningHypotheses && hypothesesList.hypotheses.length > 0 && (() => {
+          const list = hypothesesList.hypotheses;
+          const stands = list.filter((h) => h.verdict === "SURVIVES").length;
+          const WORD = { SURVIVES: "Stands up", WEAKENED: "Weakened", COLLAPSES: "Does not stand up", UNASSESSABLE: "Could not be checked" };
+          const pct = (p) => (p == null ? null : p < 0.01 ? "under 1%" : p > 0.99 ? "over 99%" : `${Math.round(p * 100)}%`);
+          return (
+            <>
+              <p className="px-hyp-sum">
+                {list.length} {list.length === 1 ? "link" : "links"} proposed{hypothesesList.examined > list.length ? ` (the strongest of ${hypothesesList.examined})` : ""}.{" "}
+                {stands === 0 ? "None stands up to the base-rate check." : `${stands} ${stands === 1 ? "stands" : "stand"} up to the base-rate check.`}
+              </p>
+              <ul className="px-hyp-list">
+                {list.map((h) => (
+                  <li key={h.id} className={`v-${String(h.verdict || "").toLowerCase()}`}>
+                    <div className="top">
+                      <b>{(h.subject_ids || []).join(" and ") || h.id}</b>
+                      <span className="verdict"><i aria-hidden="true" />{WORD[h.verdict] || h.verdict}</span>
+                    </div>
+                    <p className="claim">{h.claim}</p>
+                    <dl>
+                      <div>
+                        <dt>What they share</dt>
+                        <dd>{(h.signals || []).map((sg) => sg.name).join("; ") || "Not recorded"}</dd>
+                      </div>
+                      <div>
+                        <dt>The check</dt>
+                        <dd>{h.verdict_reason}
+                          {h.posterior_probability != null && <small>Chance the link is real after the check: {pct(h.posterior_probability)}.</small>}
+                        </dd>
+                      </div>
+                      {(h.falsification_tests || []).length > 0 && (
+                        <div>
+                          <dt>What would settle it</dt>
+                          <dd>
+                            <ol>{h.falsification_tests.slice(0, 3).map((t, i) => (
+                              <li key={i}>{typeof t === "string" ? t : t.test}{t?.would_disprove && <small>{t.would_disprove}</small>}</li>
+                            ))}</ol>
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+              <p className="px-hyp-foot">A proposed link is an inference, never a finding. Scored from shared signals in the record, then checked with counted base rates; no language model is involved in either step.</p>
+            </>
+          );
+        })()}
+      </section>
 
       <div className="px-footer">
         {engine ? `${kn ? "ಎಂಜಿನ್" : "engine"}: ${engine} · ` : ""}

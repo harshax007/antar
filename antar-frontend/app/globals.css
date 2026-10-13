@@ -4866,3 +4866,28 @@ body:has(.bsx-focus) .bt-toasts { right: 440px; }
   .tlm-kv { grid-template-columns: minmax(0, 1fr); gap: 1px; } .tlm-span { grid-template-columns: minmax(0, 1fr) auto; } .tlm-span b { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .tlm .spin, .tlm-spinner { animation: none; } }
+
+/* ── Predict · hypotheses: a proposed link and the case against it ── */
+.px-hyp { margin-top: 24px; padding: 20px 22px; border-radius: 12px; background: #0A111F; border: 1px solid rgba(148,163,184,.16); font-family: 'Inter', sans-serif; }
+.px-hyp > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.px-hyp h3 { margin: 0; font: 600 16px/1.3 'Inter', sans-serif; letter-spacing: 0; text-transform: none; color: #fff; }
+.px-hyp > header p { margin: 5px 0 0; max-width: 70ch; font-size: 13.5px; line-height: 1.55; color: #8E9BB0; }
+.px-hyp > header button { flex: none; padding: 9px 16px; border-radius: 9px; cursor: pointer; font: 600 13px 'Inter', sans-serif; color: #fff; background: rgba(148,163,184,.1); border: 1px solid rgba(148,163,184,.32); }
+.px-hyp > header button:hover:not(:disabled) { background: rgba(148,163,184,.2); } .px-hyp > header button:disabled { opacity: .5; cursor: default; }
+.px-hyp-empty { margin: 18px 0 2px; font-size: 13.5px; color: #8E9BB0; }
+.px-hyp-sum { margin: 18px 0 12px; font-size: 14px; color: #D5DEEA; }
+.px-hyp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.px-hyp-list > li { padding: 14px 16px; border-radius: 10px; background: rgba(148,163,184,.04); border: 1px solid rgba(148,163,184,.14); }
+.px-hyp-list .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.px-hyp-list .top b { font: 600 14px 'JetBrains Mono', ui-monospace, monospace; color: #fff; }
+.px-hyp-list .verdict { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: #C3CEDB; }
+.px-hyp-list .verdict i { width: 8px; height: 8px; border-radius: 50%; background: #94A3B8; }
+.px-hyp-list .v-survives .verdict i { background: #34D399; } .px-hyp-list .v-weakened .verdict i { background: #FBBF24; } .px-hyp-list .v-collapses .verdict i { background: #F87171; }
+.px-hyp-list .claim { margin: 6px 0 10px; font-size: 13.5px; line-height: 1.5; color: #C3CEDB; }
+.px-hyp-list dl { margin: 0; display: grid; }
+.px-hyp-list dl > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid rgba(148,163,184,.1); }
+.px-hyp-list dt { font-size: 12.5px; color: #8E9BB0; } .px-hyp-list dd { margin: 0; font-size: 13.5px; line-height: 1.5; color: #E2E8F0; }
+.px-hyp-list dd small { display: block; margin-top: 2px; font-size: 12.5px; color: #8E9BB0; }
+.px-hyp-list ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.px-hyp-foot { margin: 14px 0 0; font-size: 12.5px; line-height: 1.5; color: #7C8A9E; }
+@media (max-width: 640px) { .px-hyp { padding: 16px 14px; } .px-hyp-list dl > div { grid-template-columns: 1fr; gap: 2px; } }
