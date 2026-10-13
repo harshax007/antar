@@ -1958,3 +1958,8 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * **Open-web search**: no longer invents a claim when the search fails or finds nothing; snippets screened; links http(s) only; no named subject, no search; Inspector+.
 * **Also**: Kannada and Hindi override patterns; earlier turns fenced in template selection; query rewrites validated; Predict briefing facts fenced; chat question capped at 4,000 characters; a `javascript:` link from the open web is not made clickable.
 * Needs a backend restart to take effect.
+
+## USP plan: Secure AI and Predict - 2026-10-14
+
+* `docs/USP01_02.md`: the two demo-day USPs, what the build already proves for each, the gaps against five papers the owner supplied (SMCP, a 50-study review of RAG security, a 142-study survey of crime prediction and explainability, Parallax, the AI Agent Index), work items S1-S10 and P1-P9 with files, steps and a "done when" test, a three-minute demo for each USP, claims to avoid, and a brief for handing an item to any coding model.
+* No code changed. The P0 list (about 7 working days) starts with the Hypotheses Engine on the Predict page, which still shows prepared text.
