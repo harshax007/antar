@@ -136,16 +136,29 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2.0 * R * math.asin(math.sqrt(a))
 
 
+_centroid_cache: dict = {"sig": None, "value": {}}
+
+
 def _zone_centroids() -> dict[str, tuple[float, float]]:
-    """Returns {zone: (avg_lat, avg_lon)} from the crimes table."""
+    """Returns {zone: (avg_lat, avg_lon)} from the crimes table.
+
+    An average over every located FIR (1.9 s of the Map's 2.2 s Gi* call, on every call).
+    It changes only when rows are added, so it is kept until the newest row id moves."""
     try:
         conn = sqlite3.connect(DB_PATH)
-        rows = conn.execute(
-            "SELECT zone, AVG(lat), AVG(lon) FROM crimes "
-            "WHERE lat IS NOT NULL AND lon IS NOT NULL GROUP BY zone"
-        ).fetchall()
-        conn.close()
-        return {r[0]: (r[1], r[2]) for r in rows if r[0] and r[1] is not None and r[2] is not None}
+        try:
+            sig = conn.execute("SELECT MAX(rowid) FROM FIRs").fetchone()[0]
+            if sig is not None and sig == _centroid_cache["sig"]:
+                return dict(_centroid_cache["value"])
+            rows = conn.execute(
+                "SELECT zone, AVG(lat), AVG(lon) FROM crimes "
+                "WHERE lat IS NOT NULL AND lon IS NOT NULL GROUP BY zone"
+            ).fetchall()
+        finally:
+            conn.close()
+        value = {r[0]: (r[1], r[2]) for r in rows if r[0] and r[1] is not None and r[2] is not None}
+        _centroid_cache.update(sig=sig, value=value)
+        return dict(value)
     except Exception:
         return {}
 

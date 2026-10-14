@@ -2104,3 +2104,22 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * **Archive, not rewrite:** `archive_and_restart()` / `scripts/audit_archive.py` copies every row unchanged into `audit_log_archive`, then starts the live chain with one CHAIN_ARCHIVED entry whose previous hash is the archived tail and which records the row count, a SHA-256 over the archived hashes and the breaks found. It needs a written reason and runs with the server stopped. **Not run yet:** the owner runs it.
 * **Tests that wiped the live ledger:** `tests/test_audit.py` and `tests/test_audit_chain_persistence.py` call `audit_store.clear()` (deletes every row). They were safe only when `tests/conftest.py` loaded; run without it they pointed at main.db. Both now use their own file, and tamper with stored rows instead of memory. New tests: 80 concurrent writes stay in order, a second process does not fork the chain, archiving moves every row and links the new chain to it.
 * `tests/test_hitl.py`: two tests that start the full app fail with 401 in signed-token mode; unrelated to this change.
+
+## Speed pass - 2026-10-14
+
+Measured every page-load endpoint against the running backend (`/api/*`, cold then warm), then fixed the four that cost the most.
+
+| Endpoint | Before | After | Change |
+|---|---|---|---|
+| `/api/dataset/overview` (first load after a restart) | 47.8 s | 2.0 s | Data Overview products are kept on disk (`product_cache` table), tied to the registry's row count and newest row id, TTL unchanged; recomputed when rows change |
+| `/api/dataset/officer_view` (same) | 43.9 s | 0.08 s | same |
+| `/api/dataset/cycles` (same) | 13.9 s | 0.08 s | same |
+| `/api/dataset/summary` (same) | 11.5 s | 1.1 s | same |
+| `/api/map/gi_star` (every call) | 2.2-3.3 s | 0.36 s | district centre points (a full-table average) kept until the newest row id moves |
+| `/api/dataset/graph` on the wire | 1.8 MB | 170 KB | responses over 1 KB are gzip-compressed; the chat stream and audio are not |
+
+* The first restart after this change writes the disk copies during warm-up; the gain shows from the next restart on. On Catalyst the database is unpacked fresh on each cold start, so the disk copies help there only if `main.db.gz` is repacked after a warm-up.
+* Still slow on first load after a restart, while warm-up runs: `/api/predict/board` (7 s, then 70 ms).
+* Also: a count of demonstration records is now shown beside the bottom line, not folded under Limits.
+* `tests/test_speed_fixes.py` (8).
+* Not caused by this work, found while testing: `tests/test_hypothesis_gate.py` and two `tests/test_hitl.py` tests fail with 401 when run without `tests/conftest.py` (it turns signed tokens off).

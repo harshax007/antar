@@ -32,10 +32,91 @@ def register_generator(key: str, gen_func: Callable[[], Any], default_ttl: int =
     _generators[key] = (gen_func, default_ttl)
 
 
+# Products that take 10-45 s of full-table aggregates (the Data Overview's KPIs, officer
+# view and crime cycles) are also kept on disk. In memory only, every restart made the
+# first officers to open the Brain or Data Overview wait 30-48 s while warm-up recomputed
+# them. On disk they are tied to the registry's signature (row count and newest row id):
+# rows added or removed and they are recomputed, never served stale; the TTL still applies.
+_PERSIST_PREFIXES = ("dataset:",)
+_sig_cache: dict = {"value": None}
+
+
+def _persisted(key: str) -> bool:
+    return key.startswith(_PERSIST_PREFIXES)
+
+
+def _registry_sig() -> str | None:
+    if _sig_cache["value"] is None:
+        try:
+            import sqlite3
+            from app.core.db_path import get_db_path
+            conn = sqlite3.connect(get_db_path(), timeout=10)
+            try:
+                n, top = conn.execute("SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM FIRs").fetchone()
+            finally:
+                conn.close()
+            _sig_cache["value"] = f"{n}:{top}"
+        except Exception:
+            return None
+    return _sig_cache["value"]
+
+
+def _disk():
+    import sqlite3
+    from app.core.db_path import get_db_path
+    conn = sqlite3.connect(get_db_path(), timeout=10)
+    conn.execute("CREATE TABLE IF NOT EXISTS product_cache (key TEXT PRIMARY KEY, sig TEXT NOT NULL, "
+                 "expires_at REAL NOT NULL, payload TEXT NOT NULL)")
+    return conn
+
+
+def _disk_put(key: str, payload: Any, expires_at: float) -> None:
+    import json
+    sig = _registry_sig()
+    if sig is None:
+        return
+    try:
+        body = json.dumps(payload)
+        if json.loads(body) != payload:            # a tuple or a date would come back changed
+            return
+        conn = _disk()
+        try:
+            conn.execute("INSERT OR REPLACE INTO product_cache VALUES (?, ?, ?, ?)", (key, sig, expires_at, body))
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:                         # the disk copy is a convenience, never a failure
+        logger.debug("product_disk_put_failed", key=key, error=str(e))
+
+
+def _disk_get(key: str) -> Any | None:
+    import json
+    sig = _registry_sig()
+    if sig is None:
+        return None
+    try:
+        conn = _disk()
+        try:
+            row = conn.execute("SELECT sig, expires_at, payload FROM product_cache WHERE key = ?", (key,)).fetchone()
+        finally:
+            conn.close()
+    except Exception:
+        return None
+    if not row or row[0] != sig or row[1] < time.time():
+        return None
+    payload = json.loads(row[2])
+    _products[key] = payload
+    _expires_at[key] = row[1]
+    logger.debug("product_loaded_from_disk", key=key)
+    return payload
+
+
 def put_product(key: str, payload: Any, ttl: int = 300) -> None:
     """Store a compiled product in memory with a specified TTL (in seconds)."""
     _products[key] = payload
     _expires_at[key] = time.time() + ttl if ttl > 0 else float("inf")
+    if _persisted(key) and ttl > 0:
+        _disk_put(key, payload, _expires_at[key])
     logger.debug("product_stored", key=key, ttl=ttl)
 
 
@@ -44,6 +125,10 @@ def get_product(key: str) -> Any | None:
     now = time.time()
     if key in _products and now <= _expires_at.get(key, 0):
         return _products[key]
+    if _persisted(key):
+        hit = _disk_get(key)
+        if hit is not None:
+            return hit
 
     # Check if we can recalculate from a registered generator
     if key in _generators and key not in _recalculating:
@@ -76,6 +161,17 @@ def invalidate(prefix: str = "") -> int:
     for k in keys_to_remove:
         _products.pop(k, None)
         _expires_at.pop(k, None)
+    if not prefix or _persisted(prefix) or any(p.startswith(prefix) for p in _PERSIST_PREFIXES):
+        _sig_cache["value"] = None                 # rows may have changed: re-read the signature
+        try:
+            conn = _disk()
+            try:
+                conn.execute("DELETE FROM product_cache WHERE key LIKE ?", (prefix.replace("%", "") + "%",))
+                conn.commit()
+            finally:
+                conn.close()
+        except Exception:
+            pass
     logger.info("products_invalidated", prefix=prefix, count=len(keys_to_remove))
     return len(keys_to_remove)
 

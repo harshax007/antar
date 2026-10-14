@@ -46,7 +46,7 @@
     },
     "products": {
       "path": "app/services/product_store.py",
-      "sha256": "3f0548ae7f687d7c69dbf830b7280dafa71de3c05a7309bbd0581174a4e7e2db"
+      "sha256": "31b73b1ffb71a1546470faf8fd54099d2d83e83aac411f91927071f0b516ed23"
     },
     "profile": {
       "path": "app/agents/profile_agent.py",

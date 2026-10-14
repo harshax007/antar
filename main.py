@@ -387,6 +387,27 @@ app.add_middleware(
     expose_headers=["x-trace-id", "x-call-chain-id"],
 )
 
+
+# Compress responses over 1 KB. Several screens load large JSON (the crime graph is
+# 1.8 MB, the forecast list 94 KB, the heat layer 67 KB); over a deployed link that is
+# the difference between a page that appears and one that crawls. The chat stream is left
+# alone: it is sent token by token and must not wait in a compression buffer. Audio is
+# already compressed.
+from starlette.middleware.gzip import GZipMiddleware as _GZip
+
+
+class _Compress(_GZip):
+    _SKIP = ("/api/chat/stream", "/api/chat_stream", "/api/voice")
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["path"].startswith(self._SKIP):
+            await self.app(scope, receive, send)
+            return
+        await super().__call__(scope, receive, send)
+
+
+app.add_middleware(_Compress, minimum_size=1024)
+
 @app.middleware("http")
 async def _obs_mw(request, call_next):
     from app.obs import trace

@@ -111,6 +111,7 @@ _CONTEXT_RE = re.compile(r"^\s*[•\-*]?\s*(?:direction|trend|ಪ್ರವೃತ
 _LIMIT_RE = re.compile(
     r"^\s*[•\-*]?\s*(?:note|ಗಮನಿಸಿ)\s*:\s*|is incomplete|still in progress|aren't recorded|"
     r"not recorded|ಅಪೂರ್ಣ|ಮುಗಿದಿಲ್ಲ|ದಾಖಲಾಗಿಲ್ಲ", re.I)
+_DEMO_RE = re.compile(r"demonstration records|ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆ", re.I)
 _JUDGMENT_RE = re.compile(r"\((?:estimate|ಅಂದಾಜು)\)|\bestimate\b|ಅಂದಾಜು|\bforecast\b", re.I)
 _INTERNAL_RE = re.compile(
     r"^\s*(?:classified as\b|extracted\s*:|queried the crime database|summarized using only|"
@@ -256,6 +257,13 @@ def shape(answer: str, query: dict | None = None, lang: str = "en") -> dict:
             text = text[:1].upper() + text[1:] if text else text
             context.append(text)
             claims.append({"tag": "D", "text": _plain(text)})
+        elif _DEMO_RE.search(text):
+            # A count of demonstration records changes what the bottom line means, so it is
+            # shown beside it, not folded away under Limits where nobody opens it.
+            text = re.sub(r"^\s*[•\-*]\s*(?:note|ಗಮನಿಸಿ)\s*:\s*", "", text, flags=re.I)
+            text = text[:1].upper() + text[1:] if text else text
+            context.insert(0, text)
+            claims.append({"tag": "U", "text": _plain(text)})
         elif _LIMIT_RE.search(text):
             text = re.sub(r"^\s*[•\-*]\s*", "", text)
             limits.append(text)
