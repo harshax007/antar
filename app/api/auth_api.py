@@ -45,7 +45,7 @@ async def login(req: LoginRequest) -> dict:
     acct = await asyncio.to_thread(accounts.verify, req.user_id, req.password)
     if not acct:
         raise HTTPException(status_code=401, detail="User ID or password is incorrect.")
-    return {"token": mint_token(acct["id"], acct["role"]), "officer": acct["id"], "role": acct["role"],
+    return {"token": mint_token(acct["id"], acct["role"], posting=acct.get("posting")), "officer": acct["id"], "role": acct["role"],
             "name": acct["name"], "expires_at": int(time.time()) + int(settings.ANTAR_TOKEN_TTL_S)}
 
 

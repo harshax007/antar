@@ -403,7 +403,8 @@ async def _audit(request, call_next):
     path = request.url.path
     ident = resolve_identity(request)
     officer, role = (ident.officer, ident.role) if ident else ("anonymous", "none")
-    ctx, token = security_context.begin(officer, role, session_id=request.headers.get("x-session-id", "")[:128])
+    ctx, token = security_context.begin(officer, role, session_id=request.headers.get("x-session-id", "")[:128],
+                                        posting=getattr(ident, "posting", "") if ident else "")
     try:
         response = await call_next(request)
     finally:

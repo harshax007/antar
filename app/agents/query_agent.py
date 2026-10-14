@@ -1041,7 +1041,9 @@ async def query_agent_run(
     t0 = time.time()
     
     # -- CACHE LOOKUP --
-    cache_key = f"{lang}:{user_text.strip().lower()}"
+    # the answer depends on whose question it is when case rows are limited to a posting
+    from app.services.zcql_repo import scoped_posting as _scoped_posting
+    cache_key = f"{lang}:{_scoped_posting().lower()}:{user_text.strip().lower()}"
     cached = _get_cached_query(cache_key)
     if cached:
         return cached
@@ -1153,6 +1155,19 @@ async def query_agent_run(
             _notes = []
         if _notes:
             params = {**params, "unapplied": _notes}
+
+    # Need to know: when this caller's case rows are limited to their posting, the
+    # parameters say so too, so the count, the heading and the rows all describe the same
+    # district. (The limit itself is enforced in build_spec, whatever the parameters say.)
+    if _scoped_posting() and isinstance(params, dict) and template_id in TEMPLATES:
+        try:
+            from app.core import security_context as _sc0
+            from app.services.zcql_repo import build_spec as _bs
+            _bs(template_id, dict(params))
+            if getattr(_sc0.current(), "scope", None):
+                params = {**params, "zones": [_scoped_posting()]}
+        except Exception:
+            pass
 
     bad_filters = unresolved_filters(params) if isinstance(params, dict) else {}
     if bad_filters:
@@ -1306,6 +1321,20 @@ async def query_agent_run(
         })
     suspects = [{"id": r["suspect_id"], "name": r.get("full_name") or r["suspect_id"]}
                 for r in rows if r.get("suspect_id")][:6]
+
+    # Need to know: when the rows were limited to the officer's posting, say so first.
+    try:
+        from app.core import security_context as _sc
+        _scope = getattr(_sc.current(), "scope", None)
+    except Exception:
+        _scope = None
+    if _scope:
+        _asked = _scope.get("asked_for")
+        _line = (f"These case rows and their count are for {_scope['posting']} only, your posting"
+                 + (f", not {', '.join(_asked)}" if _asked else "")
+                 + ". Statewide totals, trends and rankings are not limited; individual FIRs elsewhere need Analyst or above.")
+        answer = f"{_line}\n\n{answer}"
+        reasoning.append({"step": "need_to_know", "detail": _line})
 
     res = {
         "answer": answer, "rows": rows, "citations": citations,

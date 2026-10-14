@@ -195,7 +195,7 @@ def record(officer: str, role: str, method: str, path: str, status: int,
         "type": "HTTP"
     }
     # the call chain, the traces it opened and what policy decided: hashed with the row
-    for k in ("call_chain_id", "trace_ids", "policy"):
+    for k in ("call_chain_id", "trace_ids", "policy", "scope"):
         if extra and extra.get(k):
             payload[k] = extra[k]
     entry = _append(payload)

@@ -46,6 +46,7 @@ class Identity:
     officer: str
     role: str
     verified: bool          # True only for a valid signed token
+    posting: str = ""       # the officer's district, from the token; "" = not recorded
 
     def at_least(self, minimum: str) -> bool:
         return _RANK.get(self.role, -1) >= _RANK.get(minimum, 1)
@@ -80,7 +81,8 @@ def _sig(body: str, secret: str) -> str:
     return _b64(hmac.new(secret.encode(), body.encode(), hashlib.sha256).digest())
 
 
-def mint_token(officer: str, role: str, ttl_s: int | None = None, secret: str | None = None) -> str:
+def mint_token(officer: str, role: str, ttl_s: int | None = None, secret: str | None = None,
+               posting: str | None = None) -> str:
     secret = secret or settings.ANTAR_AUTH_SECRET
     if not secret:
         raise RuntimeError("ANTAR_AUTH_SECRET is not set")
@@ -89,6 +91,8 @@ def mint_token(officer: str, role: str, ttl_s: int | None = None, secret: str | 
     now = int(time.time())
     claims = {"sub": _clean_officer(officer), "role": role, "iat": now,
               "exp": now + int(ttl_s or settings.ANTAR_TOKEN_TTL_S)}
+    if posting:
+        claims["post"] = " ".join(str(posting).split())[:80]
     body = _b64(json.dumps(claims, separators=(",", ":")).encode())
     return f"{body}.{_sig(body, secret)}"
 
@@ -110,7 +114,8 @@ def verify_token(token: str, secret: str | None = None) -> Identity | None:
     role = claims.get("role")
     if role not in _RANK:
         return None
-    return Identity(officer=_clean_officer(claims.get("sub")), role=role, verified=True)
+    return Identity(officer=_clean_officer(claims.get("sub")), role=role, verified=True,
+                    posting=" ".join(str(claims.get("post") or "").split())[:80])
 
 
 def _bearer(request: Request) -> str:
@@ -127,7 +132,8 @@ def resolve_identity(request: Request) -> Identity | None:
         ident = verify_token(_bearer(request))
     else:
         ident = Identity(officer=_clean_officer(request.headers.get("x-officer")),
-                         role=resolve_role(request.headers.get("x-role")), verified=False)
+                         role=resolve_role(request.headers.get("x-role")), verified=False,
+                         posting=" ".join((request.headers.get("x-posting") or "").split())[:80])
     if ident is not None:
         request.state.identity = ident
     return ident

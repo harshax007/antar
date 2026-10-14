@@ -32,6 +32,8 @@ def main() -> int:
     ap.add_argument("user_id", nargs="?")
     ap.add_argument("role", nargs="?", choices=ROLES)
     ap.add_argument("--name", default="", help="display name shown after sign-in")
+    ap.add_argument("--posting", default=None,
+                    help="the officer's district, e.g. \"Mysuru City\". Below Analyst, case rows are limited to it.")
     ap.add_argument("--show-env", action="store_true",
                     help="print the accounts file as one line, for the ANTAR_USERS variable")
     a = ap.parse_args()

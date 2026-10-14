@@ -2021,3 +2021,11 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * `app/agents/agent_lock.py` and `agents.lock.json`: a SHA-256 of every agent's module and of every system prompt (line endings normalised). `python scripts/lock_agents.py` writes it; `--check` says what changed.
 * At start-up a mismatch is a warning in development and stops the server in production. `tests/test_agent_lock.py` fails when an agent or prompt was edited without re-locking, so the lock has to be committed with the change.
 * The short hash of all prompts is stamped on each trace as its prompt version (it was the constant "v1").
+
+## Need-to-know retrieval (USP plan S6) - 2026-10-14
+
+* An account can hold a `posting` (the officer's district; `scripts/set_password.py --posting "Mysuru City"`). It travels inside the signed token, never in a header in signed mode.
+* `zcql_repo.need_to_know`, called from `build_spec`: below Analyst, a query that returns case rows is limited to the posting. Counts, trends and rankings are not. If another district was asked for, the rows are still the officer's own, the answer says so first ("These case rows and their count are for Mysuru City only, your posting, not Belagavi Dist"), and what was asked goes on the audit row.
+* The query cache key includes the scope, so one officer's rows are never served to another.
+* Not limited: Analyst and above, system tasks, and an officer with no posting on record. The two existing accounts (Admin, Approver) are unaffected. Suspect-level tables are not scoped yet.
+* `tests/test_need_to_know.py` (13). Needs a backend restart.

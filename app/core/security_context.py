@@ -40,6 +40,8 @@ class SecurityContext:
     call_chain_id: str = field(default_factory=lambda: f"cc-{uuid.uuid4().hex[:16]}")
     origin: str = "request"                # request | system
     session_id: str = ""
+    posting: str = ""                      # the officer's district; "" = not recorded
+    scope: dict | None = None              # set when case rows were limited to the posting
     policy_ref: str = "AGENTS.md"
     decisions: list[dict] = field(default_factory=list)
     trace_ids: list[str] = field(default_factory=list)
@@ -64,6 +66,8 @@ class SecurityContext:
             out["trace_ids"] = list(self.trace_ids)
         if self.decisions:
             out["policy"] = list(self.decisions)
+        if self.scope:
+            out["scope"] = dict(self.scope)
         return out
 
 
@@ -71,10 +75,11 @@ def current() -> SecurityContext | None:
     return _var.get()
 
 
-def begin(officer: str, role: str, *, origin: str = "request", session_id: str = ""):
+def begin(officer: str, role: str, *, origin: str = "request", session_id: str = "", posting: str = ""):
     """Bind a context for the work that follows. Returns (context, token); pass the token
     to `end`."""
-    ctx = SecurityContext(officer=officer or "anonymous", role=role or "none", origin=origin, session_id=session_id)
+    ctx = SecurityContext(officer=officer or "anonymous", role=role or "none", origin=origin,
+                          session_id=session_id, posting=posting or "")
     return ctx, _var.set(ctx)
 
 

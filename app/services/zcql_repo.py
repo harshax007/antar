@@ -1525,4 +1525,45 @@ def build_spec(template_id: str, params: dict) -> QuerySpec:
     # then fails int/str validation. Drop both so the model defaults apply.
     clean = {k: v for k, v in (params or {}).items() if v is not None and v != ""}
     validated = tmpl.param_model(**clean)
-    return tmpl.builder(validated)
+    return need_to_know(tmpl.builder(validated))
+
+
+# Roles from this rank up see case rows statewide.
+STATEWIDE_FROM = "Analyst"
+
+
+def scoped_posting() -> str:
+    """The district this caller's case rows are limited to, or "" when they are not limited:
+    no request context, a system task, a role of Analyst or above, or no posting recorded."""
+    from app.core import security_context
+    from app.core.auth_middleware import _RANK
+    ctx = security_context.current()
+    if ctx is None or ctx.origin == "system" or not ctx.posting:
+        return ""
+    return "" if _RANK.get(ctx.role, -1) >= _RANK[STATEWIDE_FROM] else ctx.posting
+
+
+def need_to_know(spec: QuerySpec) -> QuerySpec:
+    """Limit a listing of case rows to the caller's own district.
+
+    Applies to a query that RETURNS cases (the crimes table, no aggregate, no grouping).
+    Counts, trends and rankings are untouched: an Inspector may see that Mysuru City had
+    134 burglaries, but reads the individual FIRs only for their own posting. If the
+    officer named another district, the rows are still their own district's, and the
+    context records what was asked so the answer can say so. An officer with no posting
+    on record is not limited (and is counted as such), because there is nothing to limit to.
+    """
+    posting = scoped_posting()
+    if not posting or spec.table != "crimes" or spec.aggregates or spec.group_by:
+        return spec
+    asked = [str(v) for f in spec.filters if f.column == "zone" and f.op == "in" for v in (f.value or [])]
+    other = [z for z in asked if z.strip().upper() != posting.strip().upper()]
+    filters = [f for f in spec.filters if f.column != "zone"] + [Filter("zone", "in", [posting])]
+    from app.core import security_context
+    ctx = security_context.current()
+    if ctx is not None:
+        # what the officer first asked for is kept across the further queries of one answer
+        asked_for = other[:5] or (ctx.scope or {}).get("asked_for")
+        ctx.scope = {"posting": posting, **({"asked_for": asked_for} if asked_for else {})}
+    import dataclasses
+    return dataclasses.replace(spec, filters=filters)

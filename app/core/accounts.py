@@ -108,10 +108,11 @@ def verify(user_id: str, password: str) -> dict | None:
             _failures[uid] = (n, time.time() + LOCK_S if n >= MAX_FAILURES else 0.0)
             if len(_failures) > 4096:               # ids are attacker-supplied: stay bounded
                 _failures.pop(next(iter(_failures)))
-    return {"id": uid, "role": acct["role"], "name": acct.get("name") or uid} if ok else None
+    return ({"id": uid, "role": acct["role"], "name": acct.get("name") or uid,
+             "posting": acct.get("posting") or ""} if ok else None)
 
 
-def set_password(user_id: str, role: str, password: str, name: str = "") -> Path:
+def set_password(user_id: str, role: str, password: str, name: str = "", posting: str | None = None) -> Path:
     """Create or update one account in the accounts file. Used by scripts/set_password.py."""
     from app.core.auth_middleware import ROLES
     uid = norm_id(user_id)
@@ -127,7 +128,13 @@ def set_password(user_id: str, role: str, password: str, name: str = "") -> Path
     except ValueError:
         data = {}
     salt, digest = hash_password(password)
+    # `posting` is the officer's district. Below Analyst, case rows are limited to it
+    # (zcql_repo.need_to_know). None keeps whatever was set before.
+    kept = data.get(uid, {}).get("posting", "")
     data[uid] = {"role": role, "name": name or data.get(uid, {}).get("name") or uid,
                  "salt": salt, "hash": digest}
+    post = kept if posting is None else " ".join(str(posting).split())[:80]
+    if post:
+        data[uid]["posting"] = post
     f.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return f
