@@ -13,6 +13,7 @@ the dict that was hashed. The fix stores the hashed bytes (`payload_json`) and t
 link (`prev_hash`) on the row.
 """
 
+import json
 import sqlite3
 
 import pytest
@@ -21,10 +22,36 @@ from app.services import audit_store
 
 
 @pytest.fixture(autouse=True)
-def _clean_ledger():
+def _clean_ledger(tmp_path, monkeypatch):
+    # Its own file, always: `clear()` deletes every row of audit_log, and run without the
+    # shared fixtures this used to point at main.db - the live ledger.
+    monkeypatch.setattr(audit_store, "DB_PATH", str(tmp_path / "ledger.db"))
+    monkeypatch.setattr(audit_store, "_sync_to_catalyst_placeholder", lambda entry: None)
+    audit_store.init_db()
     audit_store.clear()
     yield
     audit_store.clear()
+
+
+def _rows():
+    conn = sqlite3.connect(audit_store.DB_PATH)
+    try:
+        return conn.execute("SELECT log_id, payload_json, hash, prev_hash FROM audit_log ORDER BY log_id").fetchall()
+    finally:
+        conn.close()
+
+
+def _sql(stmt, args=()):
+    conn = sqlite3.connect(audit_store.DB_PATH)
+    conn.execute(stmt, args)
+    conn.commit()
+    conn.close()
+
+
+def _edit_payload(index, **changes):
+    log_id, pj, _h, _p = _rows()[index]
+    _sql("UPDATE audit_log SET payload_json = ? WHERE log_id = ?",
+         (json.dumps({**json.loads(pj), **changes}, sort_keys=True), log_id))
 
 
 def _write_one_of_each():
@@ -97,7 +124,7 @@ def test_edited_entry_is_detected_after_reload():
     """Persistence must not become a laundering path for edits."""
     _write_one_of_each()
     audit_store.load_from_db()
-    audit_store._log[1]["officer"] = "OF-IMPOSTOR"
+    _edit_payload(1, officer="OF-IMPOSTOR")
 
     r = audit_store.verify_chain_report()
     assert r["ok"] is False
@@ -109,7 +136,7 @@ def test_deleted_entry_is_detected():
     """Deleting a row leaves the surviving digests intact — only the prev_hash linkage
     catches it. This was undetectable before prev_hash was stored."""
     _write_one_of_each()
-    del audit_store._log[1]
+    _sql("DELETE FROM audit_log WHERE log_id = ?", (_rows()[1][0],))
 
     r = audit_store.verify_chain_report()
     assert r["ok"] is False
@@ -118,13 +145,15 @@ def test_deleted_entry_is_detected():
 
 def test_reordered_entries_are_detected():
     _write_one_of_each()
-    audit_store._log[0], audit_store._log[1] = audit_store._log[1], audit_store._log[0]
+    (a, pa, ha, xa), (b, pb, hb, xb) = _rows()[:2]
+    _sql("UPDATE audit_log SET payload_json = ?, hash = ?, prev_hash = ? WHERE log_id = ?", (pb, hb, xb, a))
+    _sql("UPDATE audit_log SET payload_json = ?, hash = ?, prev_hash = ? WHERE log_id = ?", (pa, ha, xa, b))
     assert audit_store.verify_chain() is False
 
 
 def test_tampering_with_the_stored_hash_is_detected():
     _write_one_of_each()
-    audit_store._log[2]["hash"] = "0" * 64
+    _sql("UPDATE audit_log SET hash = ? WHERE log_id = ?", ("0" * 64, _rows()[2][0]))
     assert audit_store.verify_chain() is False
 
 
@@ -183,7 +212,7 @@ def test_tampering_after_a_legacy_gap_is_still_caught():
     _insert_legacy_row()
     audit_store.load_from_db()
     audit_store.record("OF-NEW", "Inspector", "GET", "/new", 200)
-    audit_store._log[-1]["path"] = "/tampered"
+    _edit_payload(-1, path="/tampered")
 
     assert audit_store.verify_chain() is False
 
@@ -194,11 +223,8 @@ def test_empty_ledger_verifies():
     assert audit_store.verify_chain_report()["total_entries"] == 0
 
 
-def test_verification_survives_in_memory_truncation():
-    """_log is capped at _MAX, so the oldest entries are dropped and the first surviving
-    entry's prev_hash points at something no longer present. That must verify (its own
-    digest still checks out) without the missing predecessor reading as a break — the
-    middleware writes one entry per API call, so the cap is hit in normal operation."""
+def test_verification_reads_the_whole_stored_ledger_not_the_memory_cap():
+    """_log is capped at _MAX; the ledger is the table. Every stored entry is checked."""
     original = audit_store._MAX
     audit_store._MAX = 5
     try:
@@ -207,13 +233,79 @@ def test_verification_survives_in_memory_truncation():
         assert len(audit_store._log) == 5
 
         r = audit_store.verify_chain_report()
-        assert r["ok"] is True
-        assert r["verified"] == 5
+        assert r["ok"] is True and r["verified"] == 12 and r["checked"] == "every stored entry"
 
-        audit_store._log[-1]["path"] = "/tampered"
-        assert audit_store.verify_chain() is False
+        _edit_payload(3, path="/tampered")
+        assert audit_store.verify_chain_report()["broken_at_index"] == 3
     finally:
         audit_store._MAX = original
+
+
+# ── the cause of the 32 breaks: writes racing each other ─────────────────────
+def test_concurrent_writers_keep_the_chain_in_row_order():
+    """A request's HTTP row and its AI_REASONING row are written from different threads.
+    Chained from memory and stored afterwards, they could be stored in the other order."""
+    import threading
+
+    def http(i):
+        audit_store.record(f"OF-{i}", "Inspector", "GET", f"/api/{i}", 200)
+
+    def reasoning(i):
+        audit_store.record_ai_reasoning(f"OF-{i}", "s", "q", "a", ["query"], [], reasoning_id=f"rsn-{i}",
+                                        reasoning_trace=[{"step": "x"}])
+    threads = [threading.Thread(target=f, args=(i,)) for i in range(40) for f in (http, reasoning)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    r = audit_store.verify_chain_report()
+    assert r["ok"] is True and r["verified"] == 80
+
+
+def test_a_second_process_writing_does_not_fork_the_chain():
+    """Each process used to chain from its own in-memory tail. A script or test run that
+    loaded the ledger, then wrote after the server had written, forked it."""
+    audit_store.record("OF-1", "Inspector", "GET", "/server-1", 200)
+    stale = audit_store._last_hash               # what another process loaded at its start
+    _sql("INSERT INTO audit_log (ts, type, hash, payload_json, prev_hash) VALUES (?, ?, ?, ?, ?)",
+         ("t", "HTTP", *_chained({"ts": "t", "type": "HTTP", "path": "/other-process"})))
+    audit_store._last_hash = stale               # this process has not seen that write
+    audit_store.record("OF-1", "Inspector", "GET", "/server-2", 200)
+    assert audit_store.verify_chain() is True
+
+
+def _chained(payload):
+    from app.core.audit import hash_event
+    prev = _rows()[-1][2]
+    return hash_event(prev, payload), json.dumps(payload, sort_keys=True), prev
+
+
+# ── archive and restart ──────────────────────────────────────────────────────
+def test_archiving_moves_every_row_and_links_the_new_chain_to_it():
+    _write_one_of_each()
+    tail = _rows()[-1][2]
+    _sql("UPDATE audit_log SET prev_hash = ? WHERE log_id = ?", ("f" * 64, _rows()[1][0]))   # a linkage break
+    assert audit_store.verify_chain() is False
+
+    out = audit_store.archive_and_restart("OF-ADMIN", "Linkage breaks from concurrent writers; content intact.")
+    assert out["archived"] == 3 and out["breaks_in_archive"] == 1 and out["after"]["ok"] is True
+    conn = sqlite3.connect(audit_store.DB_PATH)
+    assert conn.execute("SELECT COUNT(*) FROM audit_log_archive WHERE archive_id = ?", (out["archive_id"],)).fetchone()[0] == 3
+    (first,) = conn.execute("SELECT payload_json, prev_hash FROM audit_log").fetchall()
+    conn.close()
+    head = json.loads(first[0])
+    assert first[1] == tail and head["archived_tail_hash"] == tail and head["type"] == "CHAIN_ARCHIVED"
+
+    audit_store.record("OF-1", "Inspector", "GET", "/after", 200)
+    r = audit_store.verify_chain_report()
+    assert r["ok"] is True and r["verified"] == 2 and r["chained_from_archive"]["archived_rows"] == 3
+
+
+def test_archiving_needs_a_written_reason():
+    _write_one_of_each()
+    with pytest.raises(ValueError):
+        audit_store.archive_and_restart("OF-ADMIN", "fix")
+    assert len(_rows()) == 3
 
 
 def test_meta_keys_are_excluded_from_the_hashed_payload():

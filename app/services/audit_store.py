@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from app.core.audit import hash_event
 
@@ -58,20 +59,69 @@ def _payload_of(entry: dict) -> dict:
     return {k: v for k, v in entry.items() if k not in _META_KEYS}
 
 
-def _append(payload: dict) -> dict:
-    """Hash `payload` onto the chain and append it in memory.
+_write_lock = threading.Lock()
 
-    The single place a chain link is formed. Every write path goes through here so the
-    hashed shape and the persisted shape cannot drift apart again.
-    """
+
+def _remember(entry: dict) -> None:
     global _last_hash
-    prev = _last_hash
-    digest = hash_event(prev, payload)
-    _last_hash = digest
-    entry = {**payload, "prev_hash": prev, "hash": digest, "chain_verifiable": True}
+    _last_hash = entry["hash"]
     _log.append(entry)
     if len(_log) > _MAX:
         del _log[: len(_log) - _MAX]
+
+
+def _append(payload: dict) -> dict:
+    """Hash `payload` onto the in-memory chain only. Used when the database cannot be
+    written, so the caller still gets a hash; `_write` is the normal path."""
+    with _write_lock:
+        prev = _last_hash
+        entry = {**payload, "prev_hash": prev, "hash": hash_event(prev, payload), "chain_verifiable": True}
+        _remember(entry)
+        return entry
+
+
+def _write(payload: dict, cols: dict, after=None) -> dict:
+    """Hash `payload` onto the chain and store it: the single place a link is formed.
+
+    The previous hash is read from the database INSIDE the write transaction, not from
+    this process's memory. Before, each process chained from its own in-memory tail and
+    wrote afterwards, so two writes at the same moment (a request's HTTP row and its
+    AI_REASONING row from a worker thread, or a second process such as a script or a test
+    run) were stored in a different order from the one they were chained in. Nothing was
+    altered, but the ledger read as broken: 32 linkage breaks in 11,447 entries, every
+    digest intact. BEGIN IMMEDIATE takes SQLite's write lock, so the order of the links
+    and the order of the rows are now the same thing, across threads and processes.
+    `after(conn)` runs in the same transaction (the reasoning trail beside its row).
+    """
+    with _write_lock:
+        conn = None
+        try:
+            conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT hash FROM audit_log ORDER BY log_id DESC LIMIT 1").fetchone()
+            prev = row[0] if row else _GENESIS
+            digest = hash_event(prev, payload)
+            allc = {**cols, "hash": digest, "payload_json": json.dumps(payload, sort_keys=True), "prev_hash": prev}
+            conn.execute(f"INSERT INTO audit_log ({', '.join(allc)}) VALUES ({', '.join('?' * len(allc))})",
+                         tuple(allc.values()))
+            if after:
+                after(conn)
+            conn.execute("COMMIT")
+        except Exception as e:
+            try:
+                if conn is not None:
+                    conn.execute("ROLLBACK")
+            except Exception:
+                pass
+            print(f"Audit SQLite write error: {e}")
+            prev = _last_hash
+            digest = hash_event(prev, payload)
+        finally:
+            if conn is not None:
+                conn.close()
+        entry = {**payload, "prev_hash": prev, "hash": digest, "chain_verifiable": True}
+        _remember(entry)
+    _sync_to_catalyst_placeholder(entry)
     return entry
 
 def init_db():
@@ -198,21 +248,8 @@ def record(officer: str, role: str, method: str, path: str, status: int,
     for k in ("call_chain_id", "trace_ids", "policy", "scope"):
         if extra and extra.get(k):
             payload[k] = extra[k]
-    entry = _append(payload)
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute("""
-            INSERT INTO audit_log (ts, officer, role, method, path, status, type, hash,
-                                   payload_json, prev_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (payload["ts"], officer, role, method, path, status, "HTTP", entry["hash"],
-              json.dumps(payload, sort_keys=True), entry["prev_hash"]))
-        conn.commit()
-        conn.close()
-        _sync_to_catalyst_placeholder(entry)
-    except Exception as e:
-        print(f"Audit SQLite write error: {e}")
+    _write(payload, {"ts": payload["ts"], "officer": officer, "role": role, "method": method,
+                     "path": path, "status": status, "type": "HTTP"})
 
 
 def _answer_evidence() -> dict:
@@ -268,36 +305,23 @@ def record_ai_reasoning(
         "reasoning_id": reasoning_id
     }
     payload.update(_answer_evidence())
-    entry = _append(payload)
 
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute("""
-            INSERT INTO audit_log (ts, officer, session_id, user_text, answer, agents_used,
-                                   citations, type, hash, reasoning_id, payload_json, prev_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (payload["ts"], officer, session_id, user_text, answer, json.dumps(agents_used),
-              json.dumps(citations), "AI_REASONING", entry["hash"], reasoning_id,
-              json.dumps(payload, sort_keys=True), entry["prev_hash"]))
-
-        if reasoning_id and reasoning_trace:
+    def trail(conn):
+        trace = reasoning_trace
+        if reasoning_id and trace:
             # A turn's trail is a few dozen steps. Anything past the cap is a runaway, and
             # on Catalyst this table lives in /tmp beside the database.
-            if len(reasoning_trace) > _MAX_TRACE_STEPS:
-                dropped = len(reasoning_trace) - _MAX_TRACE_STEPS
-                reasoning_trace = reasoning_trace[:_MAX_TRACE_STEPS] + [
+            if len(trace) > _MAX_TRACE_STEPS:
+                dropped = len(trace) - _MAX_TRACE_STEPS
+                trace = trace[:_MAX_TRACE_STEPS] + [
                     {"step": "truncated", "detail": f"{dropped} further step(s) not stored."}]
-            conn.execute("""
-                INSERT INTO agent_reasoning_logs (reasoning_id, trace_json, ts)
-                VALUES (?, ?, ?)
-            """, (reasoning_id, json.dumps(reasoning_trace), payload["ts"]))
+            conn.execute("INSERT INTO agent_reasoning_logs (reasoning_id, trace_json, ts) VALUES (?, ?, ?)",
+                         (reasoning_id, json.dumps(trace), payload["ts"]))
 
-        conn.commit()
-        conn.close()
-        _sync_to_catalyst_placeholder(entry)
-    except Exception as e:
-        print(f"Audit SQLite write error: {e}")
-
+    entry = _write(payload, {"ts": payload["ts"], "officer": officer, "session_id": session_id,
+                             "user_text": user_text, "answer": answer, "agents_used": json.dumps(agents_used),
+                             "citations": json.dumps(citations), "type": "AI_REASONING",
+                             "reasoning_id": reasoning_id}, after=trail)
     return entry["hash"]
 
 
@@ -344,28 +368,11 @@ def record_hypothesis_event(
         "path": f"/hypothesis/{hypothesis_id}/{event_type.replace('hypothesis_', '')}",
         "status": 200,
     }
-    entry = _append(payload)
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        # hypothesis_id and reason are ALSO mirrored into user_text/answer so the existing
-        # audit views keep rendering; payload_json is what verification actually reads.
-        conn.execute("""
-            INSERT INTO audit_log (ts, officer, role, method, path, status, type, user_text,
-                                   answer, hash, payload_json, prev_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            payload["ts"], officer, role, payload["method"], payload["path"],
-            200, event_type, hypothesis_id, reason, entry["hash"],
-            json.dumps(payload, sort_keys=True), entry["prev_hash"]
-        ))
-        conn.commit()
-        conn.close()
-        _sync_to_catalyst_placeholder(entry)
-    except Exception as e:
-        print(f"Audit SQLite write error: {e}")
-
-    return entry
+    # hypothesis_id and reason are ALSO mirrored into user_text/answer so the existing
+    # audit views keep rendering; payload_json is what verification actually reads.
+    return _write(payload, {"ts": payload["ts"], "officer": officer, "role": role, "method": payload["method"],
+                            "path": payload["path"], "status": 200, "type": event_type,
+                            "user_text": hypothesis_id, "answer": reason})
 
 
 HITL_EVENTS = {
@@ -396,21 +403,9 @@ def record_hitl_event(event_type: str, *, action_id: str, action_type: str, payl
         "payload_hash": payload_hash,
         "reason": reason,
     }
-    entry = _append(payload)
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute("""
-            INSERT INTO audit_log (ts, officer, role, method, path, status, type, user_text,
-                                   answer, hash, payload_json, prev_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (payload["ts"], officer, role, "HITL", payload["path"], 200, event_type, action_id,
-              reason, entry["hash"], json.dumps(payload, sort_keys=True), entry["prev_hash"]))
-        conn.commit()
-        conn.close()
-        _sync_to_catalyst_placeholder(entry)
-    except Exception as e:
-        print(f"Audit SQLite write error: {e}")
-    return entry
+    return _write(payload, {"ts": payload["ts"], "officer": officer, "role": role, "method": "HITL",
+                            "path": payload["path"], "status": 200, "type": event_type,
+                            "user_text": action_id, "answer": reason})
 
 
 def verify_chain_report() -> dict:
@@ -427,13 +422,17 @@ def verify_chain_report() -> dict:
     re-bases on their stored hash — otherwise every restart would raise a false tamper
     alarm for the entire history.
     """
-    total = len(_log)
+    entries = _stored_entries()
+    from_db = entries is not None
+    if entries is None:
+        entries = list(_log)          # the database could not be read: check what is held
+    total = len(entries)
     verified = legacy = 0
     broken_at: int | None = None
     broken_reason: str | None = None
     prev: str | None = None
 
-    for i, entry in enumerate(_log):
+    for i, entry in enumerate(entries):
         if not entry.get("chain_verifiable"):
             legacy += 1
             prev = entry.get("hash")          # re-base; cannot check across this gap
@@ -454,6 +453,8 @@ def verify_chain_report() -> dict:
     return {
         "ok": broken_at is None,
         "total_entries": total,
+        "checked": "every stored entry" if from_db else "this process's entries only (database unreadable)",
+        "chained_from_archive": _archive_link(entries),
         "verified": verified,
         "legacy_unverifiable": legacy,
         "broken_at_index": broken_at,
@@ -467,6 +468,105 @@ def verify_chain_report() -> dict:
              "and nothing after it was checked.")
         ),
     }
+
+
+def _entry_of(r: sqlite3.Row) -> dict:
+    raw = r["payload_json"]
+    if raw:
+        try:
+            return {**json.loads(raw), "prev_hash": r["prev_hash"], "hash": r["hash"], "chain_verifiable": True}
+        except (TypeError, ValueError):
+            pass
+    return {"hash": r["hash"], "prev_hash": None, "chain_verifiable": False}
+
+
+def _stored_entries() -> list[dict] | None:
+    """Every entry as stored, in the order it was written. Other processes write to the
+    same table, so the ledger is the database, not this process's memory."""
+    try:
+        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True, timeout=10)
+        conn.row_factory = sqlite3.Row
+        try:
+            return [_entry_of(r) for r in conn.execute(
+                "SELECT hash, prev_hash, payload_json FROM audit_log ORDER BY log_id ASC")]
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return None
+
+
+def _archive_link(entries: list[dict]) -> dict | None:
+    """When the ledger starts from an archived chain, what it is chained to."""
+    if not entries or entries[0].get("type") != "CHAIN_ARCHIVED":
+        return None
+    e = entries[0]
+    return {k: e.get(k) for k in ("archive_id", "archived_rows", "archived_tail_hash", "archived_rows_sha256",
+                                  "archived_breaks", "archived_digest_mismatches", "reason", "officer", "ts")}
+
+
+def archive_and_restart(officer: str, reason: str) -> dict:
+    """Move the whole ledger into `audit_log_archive` and start a new chain from it.
+
+    Nothing is edited and nothing is lost: every row is copied unchanged, then the live
+    table starts again with one CHAIN_ARCHIVED entry whose previous hash IS the archived
+    tail, and which records how many rows were archived, a SHA-256 over their hashes in
+    order, and what was wrong with the old chain. Anyone can check the archive against that
+    entry. Run with the server stopped (scripts/audit_archive.py).
+    """
+    import hashlib
+    import uuid
+    if len((reason or "").strip()) < 10:
+        raise ValueError("a written reason is required")
+    old = _stored_entries() or []
+    report = verify_chain_report()
+    mism = 0
+    for e in old:
+        if e.get("chain_verifiable") and hash_event(e["prev_hash"] or _GENESIS, _payload_of(e)) != e["hash"]:
+            mism += 1
+    breaks = sum(1 for a, b in zip(old, old[1:]) if b.get("chain_verifiable") and b.get("prev_hash") != a.get("hash"))
+    archive_id = f"arc-{uuid.uuid4().hex[:12]}"
+    archived_at = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("CREATE TABLE IF NOT EXISTS audit_log_archive AS "
+                     "SELECT '' AS archive_id, '' AS archived_at, * FROM audit_log WHERE 0")
+        rows = conn.execute("SELECT log_id, hash FROM audit_log ORDER BY log_id").fetchall()
+        if not rows:
+            conn.execute("ROLLBACK")
+            return {"archived": 0, "note": "the ledger is empty; nothing to archive"}
+        conn.execute("INSERT INTO audit_log_archive SELECT ?, ?, * FROM audit_log ORDER BY log_id",
+                     (archive_id, archived_at))
+        copied = conn.execute("SELECT COUNT(*) FROM audit_log_archive WHERE archive_id = ?", (archive_id,)).fetchone()[0]
+        if copied != len(rows):
+            raise RuntimeError(f"archive copy incomplete ({copied} of {len(rows)}); nothing was removed")
+        sha = hashlib.sha256("".join(h for _i, h in rows).encode()).hexdigest()
+        tail = rows[-1][1]
+        conn.execute("DELETE FROM audit_log")
+        payload = {"ts": archived_at, "officer": officer, "role": "Admin", "type": "CHAIN_ARCHIVED",
+                   "method": "AUDIT", "path": "/audit/archive", "status": 200,
+                   "archive_id": archive_id, "archived_rows": len(rows),
+                   "archived_first_log_id": rows[0][0], "archived_last_log_id": rows[-1][0],
+                   "archived_tail_hash": tail, "archived_rows_sha256": sha,
+                   "archived_breaks": breaks, "archived_digest_mismatches": mism, "reason": reason.strip()}
+        digest = hash_event(tail, payload)
+        conn.execute("INSERT INTO audit_log (ts, officer, role, method, path, status, type, answer, hash, "
+                     "payload_json, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     (archived_at, officer, "Admin", "AUDIT", "/audit/archive", 200, "CHAIN_ARCHIVED", reason.strip(),
+                      digest, json.dumps(payload, sort_keys=True), tail))
+        conn.execute("COMMIT")
+    except Exception:
+        try:
+            conn.execute("ROLLBACK")
+        except Exception:
+            pass
+        raise
+    finally:
+        conn.close()
+    load_from_db()
+    return {"archive_id": archive_id, "archived": len(rows), "breaks_in_archive": breaks,
+            "digest_mismatches_in_archive": mism, "before": {k: report.get(k) for k in ("ok", "total_entries", "broken_at_index")},
+            "after": verify_chain_report()}
 
 
 def verify_chain() -> bool:

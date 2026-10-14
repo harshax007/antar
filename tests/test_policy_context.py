@@ -156,7 +156,12 @@ class TestAuditRow:
         A, _db = ledger
         A.record("OF-1", "Inspector", "GET", "/api/x", 200, extra={"call_chain_id": "cc-1", "policy": [{"agent": "profile", "outcome": "DENY"}]})
         A.record("OF-1", "Inspector", "GET", "/api/y", 200, extra={"call_chain_id": "cc-2"})
-        A._log[0]["policy"] = [{"agent": "profile", "outcome": "PERMIT"}]
+        conn = sqlite3.connect(_db)                # rewrite the stored decision, as an insider would
+        log_id, pj = conn.execute("SELECT log_id, payload_json FROM audit_log ORDER BY log_id LIMIT 1").fetchone()
+        conn.execute("UPDATE audit_log SET payload_json = ? WHERE log_id = ?",
+                     (json.dumps({**json.loads(pj), "policy": [{"agent": "profile", "outcome": "PERMIT"}]}, sort_keys=True), log_id))
+        conn.commit()
+        conn.close()
         rep = A.verify_chain_report()
         assert rep["ok"] is False and rep["broken_at_index"] == 0
 
