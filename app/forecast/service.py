@@ -280,6 +280,14 @@ NOT_USED = (
 )
 
 
+def _fairness(conn: sqlite3.Connection, unit_type: str) -> dict | None:
+    try:
+        from app.forecast import fairness
+        return fairness.measure(conn, unit_type)
+    except Exception:
+        return None
+
+
 def global_explanation(conn: sqlite3.Connection, *, unit_type: str = "station", horizon: int = 7,
                        as_of: str | None = None) -> dict:
     """How the engine behaves across the state, as opposed to why one forecast is what it is.
@@ -343,6 +351,7 @@ def global_explanation(conn: sqlite3.Connection, *, unit_type: str = "station", 
     return {
         "as_of": _basis(a, info), "unit_type": unit_type, "horizon_days": horizon,
         "reason_labels": labels, "categories": cats, "weakest": weakest, "not_used": list(NOT_USED),
+        "fairness": _fairness(conn, unit_type),
         "method": ("Poisson regression on top of a seasonal and recent-weeks baseline; a forecast is a usual "
                    "period times these six reasons. Ranges are split-conformal, calibrated on weeks the model did not see."),
         "evidence_class": "D",

@@ -61,6 +61,23 @@ export default function EngineOverall() {
           <ul>{(d.not_used || []).map((x) => <li key={x}>{x}</li>)}</ul>
         </div>
       </div>
+      {d.fairness && (
+        <div className="eo-fair">
+          <h4>Fairness and feedback</h4>
+          <p className="eo-lede">Measured on the back-test's own flags (the top 5% of stations each week, {d.fairness.weeks} weeks). A forecast of registered cases can keep sending attention to the same places; this is how far it does.</p>
+          <ul className="eo-find">{d.fairness.findings.map((x) => <li key={x}>{x}</li>)}</ul>
+          <div className="eo-two">
+            <div>
+              <h5>Not measured</h5>
+              <ul>{d.fairness.not_measured.map((x) => <li key={x}>{x}</li>)}</ul>
+            </div>
+            <div>
+              <h5>How to use a flag</h5>
+              <ul>{d.fairness.what_to_do.map((x) => <li key={x}>{x}</li>)}</ul>
+            </div>
+          </div>
+        </div>
+      )}
       <p className="eo-note">{d.method}</p>
     </div>
   );
