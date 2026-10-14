@@ -2040,3 +2040,11 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 
 * `GET /api/forecast/explain` (`service.global_explanation`): for each crime category, how much each of the six reasons typically moves a forecast and at what share of stations it moves it by 10% or more; that category's back-test figures; the engine's weak spots by its own back-test (a calibration 10% or more off, beating recent history in 65% of weeks or fewer, a range far from 80%); and what it does not use.
 * Shown inside Engine confidence on the Predict page (`components/EngineOverall.jsx`). On the stored forecasts it names murder, cyber crime, narcotics and environment offences as weakest. Needs a backend restart.
+
+## Predict: case leads (USP plan P5) - 2026-10-14
+
+* `GET /api/predict/leads?zone=` (`app/services/case_leads.py`), shown as "Case leads" on the Predict page for the selected district. No language model; each lead says what would settle it.
+* **Shared keys**: FIRs that carry the same vehicle number, UPI id or IP address, with the key named. A key on 5 FIRs or fewer is called specific; one on more is marked as more likely a common value or a data artefact, and listed last.
+* **Across a border**: accused named in this district and another, from the same count the Map uses.
+* **Near repeat, measured**: a Knox test with 199 date shuffles on the district's real burglaries. The first measurement gave Belagavi 12.85 times chance; 352 of its 399 pairs were FIRs at the same recorded point on the same day (one incident, several FIRs). Those are now left out and reported apart: Belagavi 2.85, Tumakuru 2.3, Bengaluru City 1.3. The lead is offered only with at least 20 such pairs, 20% above chance and p < 0.05; a district with under 150 located burglaries is said to be untested (Mysuru City, Raichur).
+* `tests/test_case_leads.py` (12). Needs a backend restart.

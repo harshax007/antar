@@ -16,6 +16,7 @@ import "@xyflow/react/dist/style.css";
 import ForecastWhy from "@/components/ForecastWhy";
 import ShiftPlan from "@/components/ShiftPlan";
 import EngineOverall from "@/components/EngineOverall";
+import CaseLeads from "@/components/CaseLeads";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -1707,6 +1708,8 @@ const avgConf = predictions?.length
           );
         })()}
       </section>
+
+      <CaseLeads zone={fZone} />
 
       {planFor && <ShiftPlan station={planFor} kn={kn} onClose={() => setPlanFor(null)} />}
 

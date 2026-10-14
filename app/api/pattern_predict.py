@@ -577,6 +577,25 @@ def hypotheses_for(zone: str, world: dict | None = None, limit: int = 6) -> dict
             "method": "shared-signal scoring (research agent), then a base-rate check with no model (advocate agent)"}
 
 
+@router.get("/predict/leads")
+async def predict_leads(zone: str) -> dict:
+    """Case leads for a district: FIRs sharing a vehicle, UPI id or IP address; accused named
+    here and elsewhere; and a near-repeat check measured on the district's own burglaries."""
+    import asyncio
+    import sqlite3
+    from app.core.db_path import DB_PATH, ensure_db_staged
+    from app.services import case_leads
+
+    def work():
+        ensure_db_staged()
+        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        try:
+            return case_leads.build(conn, zone)
+        finally:
+            conn.close()
+    return await asyncio.to_thread(work)
+
+
 @router.get("/predict/hypotheses")
 async def predict_hypotheses(zone: str) -> dict:
     """Proposed links for a district, with the adversarial check beside each."""
