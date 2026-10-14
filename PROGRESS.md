@@ -2015,3 +2015,9 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * **S2** `app/core/policy.py` and three new required fields in every AGENTS.md block: `sensitivity`, `min_role`, `obligations`. `orchestrator.run_agent` asks `policy.decide` first: a Constable is refused a person- or case-level agent before it starts (no breaker penalty), and obligations are applied to the result by the orchestrator (`social` cannot return people; open-web results are labelled unverified). A block without a valid declaration fails the build.
 * **S4** The request's audit row now carries the call chain, the traces it opened and each policy decision; an answer's row carries digests of what it rested on (template, parameter digest, rows digest, row count, model or "offline", prompt hash). Changing a recorded decision breaks the chain. The Trace page shows the ledger's own check to an Admin.
 * `tests/test_policy_context.py` (31). Needs a backend restart.
+
+## Pin what runs (USP plan S3) - 2026-10-14
+
+* `app/agents/agent_lock.py` and `agents.lock.json`: a SHA-256 of every agent's module and of every system prompt (line endings normalised). `python scripts/lock_agents.py` writes it; `--check` says what changed.
+* At start-up a mismatch is a warning in development and stops the server in production. `tests/test_agent_lock.py` fails when an agent or prompt was edited without re-locking, so the lock has to be committed with the change.
+* The short hash of all prompts is stamped on each trace as its prompt version (it was the constant "v1").

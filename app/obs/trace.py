@@ -110,6 +110,13 @@ def close(answer="", reasoning_id=None, prompt_version="v1", model_version=None)
         d["ts_end"] = int(time.time()*1000)
         d["answer"] = redact_pii(answer or "")[:8000]
         d["reasoning_id"] = reasoning_id
+        # the hash of the system prompts in force, so an answer is tied to its instructions
+        if prompt_version in (None, "", "v1"):
+            try:
+                from app.agents import agent_lock
+                prompt_version = agent_lock.prompt_version()
+            except Exception:
+                prompt_version = prompt_version or "v1"
         d["prompt_version"] = prompt_version
         d["model_version"] = model_version
         d["cost_micros"] = metrics.cost_micros(d["tokens_in"] + d["tokens_out"])

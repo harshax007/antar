@@ -320,6 +320,14 @@ async def lifespan(app: FastAPI):
           f"identity={_posture['auth_mode']}")
     for _w in _posture["warnings"]:
         print(f"  ⚠️  SECURITY: {_w}")
+    # What runs must be what was reviewed: agent modules and system prompts against
+    # agents.lock.json. A warning in development; in production a mismatch stops here.
+    from app.agents import agent_lock
+    _lock = agent_lock.enforce(_posture["production"])
+    print(f"🔏 Agents and prompts: {'in step with the lock' if _lock['ok'] else 'DIFFER from agents.lock.json'}"
+          f" (prompt version {_lock.get('prompt_version')})")
+    for _c in (_lock.get("changed") or [])[:8]:
+        print(f"  ⚠️  LOCK: {_c}")
     
     # Start real-time dispatch simulator task in the background
     from app.api.live_stream import start_dispatch_simulator

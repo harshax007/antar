@@ -1,0 +1,96 @@
+{
+  "modules": {
+    "advocate_agent": {
+      "path": "app/agents/advocate_agent.py",
+      "sha256": "ac7f00c020f0707f57137f4f535cc88786a593322ba95fa639870dfc8c2a7e4b"
+    },
+    "alert_suggest": {
+      "path": "app/agents/alert_suggest_agent.py",
+      "sha256": "b31de1319ffb6b9f3b04ee560901ab9aabb3d3485755a2cf483f84a36dd9b6cc"
+    },
+    "brain": {
+      "path": "app/agents/graph.py",
+      "sha256": "521f4244717ddc8d79b2d6c6b5d255a7f8999a98e59ac31f1896cd7aedf19aa7"
+    },
+    "corridor": {
+      "path": "app/agents/corridor_agent.py",
+      "sha256": "be338200091da9c1de7979f6451622b514779696945069a519a728491af48303"
+    },
+    "forecast": {
+      "path": "app/agents/graph.py",
+      "sha256": "521f4244717ddc8d79b2d6c6b5d255a7f8999a98e59ac31f1896cd7aedf19aa7"
+    },
+    "geo": {
+      "path": "app/agents/geo_agent.py",
+      "sha256": "63d33e0328048b16ca387cb5512425507f19487110b2100b15a8b5b5beac142d"
+    },
+    "linkage": {
+      "path": "app/agents/linkage_agent.py",
+      "sha256": "4548d2b27fae1054a8be82f14f0b117f3642512bd3f0f11e59a7bd826e8fe3b6"
+    },
+    "network": {
+      "path": "app/agents/network_agent.py",
+      "sha256": "3f7db61e465f0bfb3ba6301c5517f892e2f7b65aa65d1839517752882e3b97de"
+    },
+    "osint": {
+      "path": "app/agents/graph.py",
+      "sha256": "521f4244717ddc8d79b2d6c6b5d255a7f8999a98e59ac31f1896cd7aedf19aa7"
+    },
+    "pattern": {
+      "path": "app/agents/pattern_agent.py",
+      "sha256": "7381d189b5c2e05c4c328568322c310b82d1cc37929cedc9a03e5fbb4f7cc8c8"
+    },
+    "predict": {
+      "path": "app/agents/prediction_agent.py",
+      "sha256": "a2fc93a6044b7924570fd6ae2cf1369a364f0e2c0a73f4e022ad38504c0cf3e7"
+    },
+    "products": {
+      "path": "app/services/product_store.py",
+      "sha256": "3f0548ae7f687d7c69dbf830b7280dafa71de3c05a7309bbd0581174a4e7e2db"
+    },
+    "profile": {
+      "path": "app/agents/profile_agent.py",
+      "sha256": "3e62985354ecb383feadafb62877214c23136cc453fbd6a8b56790dabaa14705"
+    },
+    "query": {
+      "path": "app/agents/query_agent.py",
+      "sha256": "5cfe3f3b0bd422e7f9d5dc40ec2f21f3e5f86b98e31b2792252f920a0874df7a"
+    },
+    "research": {
+      "path": "app/agents/graph.py",
+      "sha256": "521f4244717ddc8d79b2d6c6b5d255a7f8999a98e59ac31f1896cd7aedf19aa7"
+    },
+    "sentinel": {
+      "path": "app/agents/sentinel_agent.py",
+      "sha256": "a79e840229425e6fd4a4e7aa78381a4bf5005ebc46bdad2a2098673fbf4b7d2b"
+    },
+    "social": {
+      "path": "app/agents/social_agent.py",
+      "sha256": "3f18f684d0979694dd480a66c085e1c7f2c04d66b2d29c3c843c78f5dba96557"
+    },
+    "supervisor": {
+      "path": "app/agents/supervisor.py",
+      "sha256": "fb7ad8f0c50409602fa6fdba7cfbb0655e90b924960b4412cc8c2a2f93629e80"
+    },
+    "synthesize": {
+      "path": "app/agents/graph.py",
+      "sha256": "521f4244717ddc8d79b2d6c6b5d255a7f8999a98e59ac31f1896cd7aedf19aa7"
+    },
+    "vigil": {
+      "path": "app/agents/vigil_agent.py",
+      "sha256": "368dcef64a60301176ac0071e03f85e0971462876868a69a8f94f9935d733d09"
+    }
+  },
+  "prompt_version": "eaad9d5db3d3",
+  "prompts": {
+    "compose": "ecc7b7623f0d19b2af1cda9ecc3bc41b2e107d9bc0ebf3ad7ec47cc1d05cc9e1",
+    "identity:answer:en": "5496f22b8f78a6931faef71a2b19964693f7e559ee64469c55e68c529eba754b",
+    "identity:answer:kn": "9747dc9c72a8d7cce758f3eebee363645b52ba93181f855a180900e74d0a82f5",
+    "identity:synthesis:en": "923e73d8e60608d1e610a8edc2196fb4f09c7db7e1926bcc083a247a987d9ecf",
+    "identity:synthesis:kn": "31086c222b5c3541f56537f9b40c5d8ee06524085ad7adefff5330570c7c4b87",
+    "intent": "1d4bd138167dc832daa29beec9c24edcd88519ccc104b529bdb0a0842769f9ba",
+    "judge": "0c22d23c63444c7bb2ae36d640f7ce9cd2e2a97c649f7ab03fc9a9cebbd768cc",
+    "select": "d5b8c5b87b940608a72a87972e3aa31e751d712541059dd177bbf48a3a0b060c",
+    "untrusted_data_policy": "df7bc1f67eabf7f079e52ebe67fa49d7cf9e1b35c27dbcd36452b224de1fc1bf"
+  }
+}
