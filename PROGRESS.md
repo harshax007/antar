@@ -2070,3 +2070,12 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * **In the running app**: once an hour the orchestrator refits the forecasts if the week has moved, so a server left up over a Monday does not serve last week's forecast. It never runs the back-test (minutes of CPU); `GET /api/forecast/refit` says when that is due and what to run.
 * Not done: the job is not scheduled on any machine. Schedule it weekly after Sunday, e.g. `schtasks /Create /SC WEEKLY /D MON /ST 05:00 /TN AntarForecastRefit /TR "D:\Project\.venv\Scripts\python.exe -m app.forecast.refit"` run from `D:\Project`, or a Catalyst cron job after deploy.
 * `tests/test_forecast_refit.py` (16). The endpoint and the hourly refit need a backend restart.
+
+## Deploy image: built and run locally - 2026-10-14
+
+* `docker build -t antar-api:local .` succeeds: 867 MB compressed, 3.06 GB unpacked. Not pushed, not deployed.
+* **Two bugs that would have broken the deployment, found by running the container:** (1) the first request opened the database path before the packed database was unpacked, sqlite created an empty file there and staging took it for the registry, so the app ran on no data; (2) the Brain's 100,000-FIR index shipped in the image but was looked for beside the staged database, so it was empty. Staging now runs before anything is served (about 3 seconds), checks for the FIR table rather than a non-empty file, and copies the index with it (`app/core/db_path.py`, `main.py`).
+* **Non-root (S10):** the image runs as user `antar` (uid 10001). Confirmed locally; not confirmed on AppSail.
+* Measured in the container with a 2 GB limit: warm-up completes in about 5 minutes (1,000,000 FIRs, forecasts fitted, 100,000 FIRs in the Brain index); memory 1.7 GB of 2 GB after warm-up; `/tmp` 1.5 GB. No out-of-memory kill.
+* Open before a deploy: the container starts with unsigned header identity unless `ANTAR_AUTH_SECRET` and the accounts are set in the Catalyst console; `main.db.gz` is the 2026-09-18 snapshot; no language model is configured in the image; 1.7 GB of a 2 GB limit leaves little room.
+* The audit integrity note no longer says "every entry was verified" beside a broken chain.
