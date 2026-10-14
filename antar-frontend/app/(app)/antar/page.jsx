@@ -905,6 +905,7 @@ function applyEvent(msg, evt) {
         lang: evt.lang || msg.lang,
         suspects: evt.suspects || [],
         template: evt.template_id,
+        reasoningId: evt.reasoning_id || null,
         reasoning: evt.reasoning || [],
         noResults: !!evt.no_results,
         thoughtMs: typeof evt.elapsed_ms === "number" ? evt.elapsed_ms : Date.now() - (msg.ts || Date.now()),
@@ -1866,14 +1867,13 @@ export default function ChatPage() {
       await fetch(`${API}/api/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Context travels with the rating so the review queue can act on it: which
-        // language, which template produced the answer, and what the answer said.
+        // The server takes the officer from the sign-in and the answer from its own record
+        // of this conversation (found by reasoning_id), so neither is sent from here.
         body: JSON.stringify({
           session_id: sessionId || "local", question: question || "(unknown)", rating,
-          officer: getActiveOfficerId(),
+          reasoning_id: messages[idx]?.reasoningId || null,
           lang: messages[idx]?.lang || lang,
           template_id: messages[idx]?.template || null,
-          answer: String(messages[idx]?.text || "").slice(0, 4000),
         }),
       });
       loadSignal();          // a poor rating stops that question being suggested right away

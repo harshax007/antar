@@ -70,7 +70,8 @@ USPS = (
     ("It argues against itself", "an LLM-free adversary prices every hypothesis at its base rate"),
     ("A forecast that is graded", "week-by-week scorecard on the real record, ranges included"),
     ("The officer decides", "two-person approval and a hash-chained audit trail for any action"),
-    ("It learns from officers", "rated answers shape the next similar answer, no retraining"),
+    ("It learns from use", "forecasts are scored against what happened and lower their own confidence; "
+                           "officer-rated answers shape later ones; one vote per officer, nothing retrained"),
     ("Kannada and voice", "administrative Kannada with statutes and FIR numbers left in English"),
     ("It protects the vulnerable", "victim identities and community targeting blocked in code"),
 )

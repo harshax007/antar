@@ -62,6 +62,7 @@ export function applyEvent(msg, evt) {
         lang: evt.lang || msg.lang,
         suspects: evt.suspects || [],
         template: evt.template_id,
+        reasoningId: evt.reasoning_id || null,
         reasoning: evt.reasoning || [],
         command: evt.command || null,
         noResults: !!evt.no_results,

@@ -697,10 +697,24 @@ def evolution() -> dict:
         from app.api.feedback import _tally
         t = list(_tally().values())
         up, down = sum(q["up"] for q in t), sum(q["down"] for q in t)
-        usable = sum(1 for q in t if q["up"] > q["down"])
-        return (f"{_plural(up + down, 'rating')} from officers: {up} useful, {down} not",
-                f"{_plural(usable, 'question')} now {'has' if usable == 1 else 'have'} a rated answer that "
-                "shapes the next similar one; a thumbs-down removes it")
+        officers = len(set().union(*(q["officers"] for q in t))) if t else 0
+        usable = sum(1 for q in t if q["up"] > q["down"] and q.get("has_answer"))
+        return (f"{_plural(up + down, 'rating')} from {_plural(officers, 'officer')}: {up} useful, {down} not",
+                f"{_plural(usable, 'rated answer')} can shape the next similar answer when the language model "
+                "writes it; a question rated poor stops being suggested. One vote per officer per question; "
+                "nothing is retrained")
+
+    def in_use():
+        from app.services import forecast_outcomes as FO
+        tr = FO.trailing()
+        fb = FO.feedback_summary()
+        useful = sum(k["useful"] for k in fb["by_kind"])
+        total = sum(k["total"] for k in fb["by_kind"])
+        held = (f"likely range held {100 * tr['coverage80']:.0f}% over {_plural(tr['weeks'], 'scored week')}"
+                if tr["weeks"] else f"{_plural(tr['kept_weeks'], 'week')} kept, none complete yet")
+        return (f"Forecasts in use: {held}; officers marked {useful} of {_plural(total, 'forecast or plan')} useful",
+                "each week's forecasts are kept and scored once that week is in; four or more scored weeks "
+                "outside 70-90% lower the engine's confidence by themselves")
 
     def forecast():
         from app.forecast import service as S
@@ -743,6 +757,7 @@ def evolution() -> dict:
                               f"{len(identity.LAWS)} laws and {len(identity.THINKING)} working steps, the same on every answer"))
     line("Learned from officers", ratings)
     line("Forecast, graded", forecast)
+    line("Forecast, in use", in_use)
     line("Challenged before confirmed", adversary)
     line("Accountable", ledger)
     line("Memory", memory)
@@ -881,7 +896,7 @@ def learnings() -> dict:
         start = _dt.datetime.combine(today, _dt.time.min).timestamp()
         mine = [e for e in _read() if float(e.get("ts") or 0) >= start and e.get("rating") in ("up", "down")]
         up = sum(1 for e in mine if e["rating"] == "up")
-        usable = sum(1 for q in _tally().values() if q["up"] > q["down"])
+        usable = sum(1 for q in _tally().values() if q["up"] > q["down"] and q.get("has_answer"))
         text = (f"Officers rated {_plural(len(mine), 'answer')} today: {up} useful, {len(mine) - up} not."
                 if mine else "No answer has been rated today.")
         add("ratings", "recall", "research", "K",
