@@ -366,7 +366,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Role", "X-Officer", "X-Cron-Secret",
                    "X-Session-Id", "Accept", "Accept-Language"],
-    expose_headers=["x-trace-id"],
+    expose_headers=["x-trace-id", "x-call-chain-id"],
 )
 
 @app.middleware("http")
@@ -389,12 +389,20 @@ install_gateway(app)
 # Audit every API call (M10) — dev: officer/role from headers; deploy: from Catalyst Auth.
 @app.middleware("http")
 async def _audit(request, call_next):
-    response = await call_next(request)
+    # One security context per request, bound here at the outermost layer so everything
+    # the request runs - agents, traces, the audit row below - shares one call chain.
+    from app.core import security_context
     path = request.url.path
+    ident = resolve_identity(request)
+    officer, role = (ident.officer, ident.role) if ident else ("anonymous", "none")
+    ctx, token = security_context.begin(officer, role, session_id=request.headers.get("x-session-id", "")[:128])
+    try:
+        response = await call_next(request)
+    finally:
+        security_context.end(token)
+    response.headers["x-call-chain-id"] = ctx.call_chain_id
     if path.startswith("/api/") and not path.startswith("/api/health"):
-        ident = resolve_identity(request)
-        officer, role = (ident.officer, ident.role) if ident else ("anonymous", "none")
-        audit_store.record(officer, role, request.method, path, response.status_code)
+        audit_store.record(officer, role, request.method, path, response.status_code, extra=ctx.for_audit())
     return response
 
 

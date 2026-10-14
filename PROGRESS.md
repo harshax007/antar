@@ -2008,3 +2008,10 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 
 * `docs/AGENT_CARD.md`: Antar described in the AI Agent Index's 33 fields: intended and unintended uses, the model as a setting, an empty action space, guardrails, how to switch the model or all outbound calls off, the back-test and the security scorecard, no external testing, and known limits. Not linked from the About page; it is a repository document.
 * All seven P0 items of `docs/USP01_02.md` are done.
+
+## Security context, declared policy, audit rows that carry the evidence (USP plan S1, S2, S4) - 2026-10-14
+
+* **S1** `app/core/security_context.py`: one context per request (officer and role from the token, one `call_chain_id`), bound at the outermost middleware and carried by a context variable into agents, threads and traces. Returned as the `x-call-chain-id` header. The autonomous loop runs under a named system context. A call with no context (a script, a direct test) is counted as unbound, not refused.
+* **S2** `app/core/policy.py` and three new required fields in every AGENTS.md block: `sensitivity`, `min_role`, `obligations`. `orchestrator.run_agent` asks `policy.decide` first: a Constable is refused a person- or case-level agent before it starts (no breaker penalty), and obligations are applied to the result by the orchestrator (`social` cannot return people; open-web results are labelled unverified). A block without a valid declaration fails the build.
+* **S4** The request's audit row now carries the call chain, the traces it opened and each policy decision; an answer's row carries digests of what it rested on (template, parameter digest, rows digest, row count, model or "offline", prompt hash). Changing a recorded decision breaks the chain. The Trace page shows the ledger's own check to an Admin.
+* `tests/test_policy_context.py` (31). Needs a backend restart.

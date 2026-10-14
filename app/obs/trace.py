@@ -27,6 +27,13 @@ def start(session_id="", surface="chat", question="", lang="en", env="local"):
         return None
     t = _Trace(session_id, surface, question, lang, env)
     _current.set(t)
+    try:        # the audit row for this request points at the traces it opened
+        from app.core import security_context
+        ctx = security_context.current()
+        if ctx:
+            ctx.note_trace(t.d["trace_id"])
+    except Exception:
+        pass
     return t.d["trace_id"]
 
 def current():

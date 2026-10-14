@@ -62,6 +62,10 @@ class AgentDef:
     hitl: bool = False
     degraded: str = ""
     notes: str = ""
+    # what policy decides on (app/core/policy.py)
+    sensitivity: str = ""                  # aggregate | case | person | external
+    min_role: str = "Constable"
+    obligations: tuple[str, ...] = ()
 
     @property
     def dispatch_node(self) -> str | None:
@@ -188,8 +192,24 @@ def _build_agent(d: dict, errors: list[str]) -> AgentDef | None:
     if kind not in VALID_KINDS:
         errors.append(f"agent '{name}' has invalid kind '{kind}' (expected one of {sorted(VALID_KINDS)})")
         return None
+    sensitivity = str(d.get("sensitivity") or "").strip().lower()
+    min_role = str(d.get("min_role") or "Constable").strip()
+    obligations = _tuple(d.get("obligations"))
+    from app.core import policy as _policy
+    from app.core.auth_middleware import ROLES as _ROLES
+    if sensitivity not in _policy.SENSITIVITIES:
+        errors.append(f"agent '{name}' must declare sensitivity as one of {list(_policy.SENSITIVITIES)}")
+        return None
+    if min_role not in _ROLES:
+        errors.append(f"agent '{name}' has an unknown min_role '{min_role}'")
+        return None
+    bad = [o for o in obligations if o.partition(":")[0] not in _policy.OBLIGATIONS]
+    if bad:
+        errors.append(f"agent '{name}' declares unknown obligations {bad}")
+        return None
     try:
         return AgentDef(
+            sensitivity=sensitivity, min_role=min_role, obligations=obligations,
             agent=str(name).strip().lower(),
             kind=kind,
             role=str(d["role"]).strip(),

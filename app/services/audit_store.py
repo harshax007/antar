@@ -187,12 +187,17 @@ def _sync_to_catalyst_placeholder(payload: dict) -> None:
     import structlog
     structlog.get_logger().info("catalyst_sync_placeholder", record_hash=payload["hash"], synced=True)
 
-def record(officer: str, role: str, method: str, path: str, status: int) -> None:
+def record(officer: str, role: str, method: str, path: str, status: int,
+           extra: dict | None = None) -> None:
     payload = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "officer": officer, "role": role, "method": method, "path": path, "status": status,
         "type": "HTTP"
     }
+    # the call chain, the traces it opened and what policy decided: hashed with the row
+    for k in ("call_chain_id", "trace_ids", "policy"):
+        if extra and extra.get(k):
+            payload[k] = extra[k]
     entry = _append(payload)
 
     try:
@@ -208,6 +213,41 @@ def record(officer: str, role: str, method: str, path: str, status: int) -> None
         _sync_to_catalyst_placeholder(entry)
     except Exception as e:
         print(f"Audit SQLite write error: {e}")
+
+
+def _answer_evidence() -> dict:
+    """What an answer rested on, for the tamper-evident row: the call chain and role it
+    was given under, the template that ran, a digest of its parameters and of the rows it
+    read, how many rows, which model wrote it (or "offline") and a hash of the prompt.
+    Digests and ids only - the rows and the prompt themselves stay in the trace store.
+    Empty when there is no request context and no open trace; never raises."""
+    import hashlib
+    out: dict = {}
+    try:
+        from app.core import security_context
+        ctx = security_context.current()
+        if ctx:
+            out["call_chain_id"] = ctx.call_chain_id
+            out["role"] = ctx.role
+            if ctx.decisions:
+                out["policy"] = list(ctx.decisions)
+    except Exception:
+        pass
+    try:
+        from app.obs import trace
+        t = trace.current()
+        if t:
+            ev = {"trace_id": t.d.get("trace_id"), "template_id": t.d.get("template_id"),
+                  "n_rows": t.d.get("n_rows"), "rows_digest": t.ctx.get("rows_digest"),
+                  "written_by": t.d.get("model") if t.d.get("mode") == "llm" else "offline"}
+            if t.ctx.get("params_json"):
+                ev["params_digest"] = hashlib.sha256(t.ctx["params_json"].encode()).hexdigest()[:16]
+            if t.ctx.get("system_sent"):
+                ev["prompt_hash"] = hashlib.sha256(t.ctx["system_sent"].encode()).hexdigest()[:16]
+            out["evidence"] = {k: v for k, v in ev.items() if v not in (None, "")}
+    except Exception:
+        pass
+    return out
 
 
 def record_ai_reasoning(
@@ -227,6 +267,7 @@ def record_ai_reasoning(
         "type": "AI_REASONING",
         "reasoning_id": reasoning_id
     }
+    payload.update(_answer_evidence())
     entry = _append(payload)
 
     try:

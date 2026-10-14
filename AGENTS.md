@@ -48,6 +48,9 @@ Every block below declares one agent. Fields:
 | `guardrails` | validators this agent's output MUST pass before reaching an officer |
 | `hitl` | true when a real-world effect requires a named officer's approval |
 | `degraded` | what the officer sees when this agent fails — never fabricated data |
+| `sensitivity` | what the output is about: `aggregate` (counts, areas), `case` (FIR rows), `person` (a named accused), `external` (the open web). **Required** — an agent without it fails the build |
+| `min_role` | the lowest role that may run it; `app/core/policy.py` refuses a lower one before the agent starts |
+| `obligations` | conditions applied to the result before it leaves the agent: `redact_pii`, `aggregate_only`, `label_unverified`, `row_cap:N` |
 
 ---
 
@@ -75,6 +78,9 @@ BM25, honest dead-end) rather than returning an empty answer.
 ```yaml
 agent: query
 kind: worker
+sensitivity: case
+min_role: Constable
+obligations: []
 role: Vault - template query
 module: app/agents/query_agent.py::query_agent_run
 graph_node: query
@@ -96,6 +102,9 @@ notes: >
 ```yaml
 agent: network
 kind: worker
+sensitivity: person
+min_role: Inspector
+obligations: []
 role: Link - graph builder
 module: app/agents/network_agent.py::build_network
 graph_node: network
@@ -118,6 +127,9 @@ notes: >
 ```yaml
 agent: profile
 kind: worker
+sensitivity: person
+min_role: Inspector
+obligations: []
 role: Motive - suspect profiler
 module: app/agents/profile_agent.py::compute_profile
 graph_node: profile
@@ -144,6 +156,9 @@ graph nodes would quadruple the work.
 ```yaml
 agent: forecast
 kind: worker
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Core - risk forecaster (composite node)
 module: app/agents/graph.py::forecast_node
 graph_node: forecast
@@ -168,6 +183,9 @@ notes: >
 ```yaml
 agent: social
 kind: worker
+sensitivity: aggregate
+min_role: Constable
+obligations: [aggregate_only]
 role: Sense - demographic insight
 module: app/agents/social_agent.py::demographics
 graph_node: social
@@ -198,6 +216,9 @@ which executes them.
 ```yaml
 agent: geo
 kind: worker
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Lens - geo intelligence
 module: app/agents/geo_agent.py::geo_agent_run
 graph_node: forecast
@@ -218,6 +239,9 @@ degraded: "beat suggestions omitted; map falls back to unfiltered density"
 ```yaml
 agent: predict
 kind: worker
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Core - risk forecaster
 module: app/agents/prediction_agent.py::prediction_agent_run
 graph_node: forecast
@@ -243,6 +267,9 @@ notes: >
 ```yaml
 agent: pattern
 kind: worker
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Sense - MO pattern detector
 module: app/agents/pattern_agent.py::pattern_agent_run
 graph_node: forecast
@@ -263,6 +290,9 @@ degraded: "pattern section omitted from synthesis"
 ```yaml
 agent: alert_suggest
 kind: worker
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Beacon - patrol advisor
 module: app/agents/alert_suggest_agent.py::alert_suggest_agent_run
 graph_node: forecast
@@ -303,6 +333,9 @@ here.
 ```yaml
 agent: osint
 kind: worker
+sensitivity: external
+min_role: Inspector
+obligations: [label_unverified]
 role: Scout - open-web scan
 module: app/agents/graph.py::osint_node
 graph_node: osint
@@ -330,6 +363,9 @@ notes: >
 ```yaml
 agent: research
 kind: worker
+sensitivity: person
+min_role: Inspector
+obligations: []
 role: Trace - K/D/I/U dossier
 module: app/agents/graph.py::research_node
 graph_node: research
@@ -360,6 +396,9 @@ notes: >
 ```yaml
 agent: brain
 kind: worker
+sensitivity: case
+min_role: Inspector
+obligations: []
 role: Vault - semantic recall
 module: app/agents/graph.py::brain_node
 graph_node: brain
@@ -398,6 +437,9 @@ surfaced it, and states what evidence would falsify it.
 ```yaml
 agent: advocate_agent
 kind: worker
+sensitivity: person
+min_role: Inspector
+obligations: []
 role: Adversary - hypothesis falsification and base-rate audit
 module: app/agents/advocate_agent.py::challenge
 graph_node: research
@@ -445,6 +487,9 @@ is exactly the drift this manifest exists to catch.
 ```yaml
 agent: vigil
 kind: worker
+sensitivity: case
+min_role: Constable
+obligations: []
 role: A5 - bias and compliance auditor
 module: app/agents/vigil_agent.py::audit_request
 graph_node: null
@@ -469,6 +514,9 @@ notes: >
 ```yaml
 agent: corridor
 kind: worker
+sensitivity: case
+min_role: Inspector
+obligations: []
 role: Corridor intelligence compiler
 module: app/agents/corridor_agent.py::compile_corridors
 graph_node: null
@@ -488,6 +536,9 @@ degraded: "last compiled corridor set served with its original timestamp"
 ```yaml
 agent: linkage
 kind: worker
+sensitivity: case
+min_role: Inspector
+obligations: []
 role: MO case-matcher
 module: app/agents/linkage_agent.py::compile_linkage
 graph_node: null
@@ -514,6 +565,9 @@ notes: >
 ```yaml
 agent: sentinel
 kind: service
+sensitivity: person
+min_role: Inspector
+obligations: []
 role: Breach - watchlist tripwires
 module: app/agents/sentinel_agent.py::scan_watches
 graph_node: null
@@ -539,6 +593,9 @@ notes: >
 ```yaml
 agent: products
 kind: service
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Master Orchestrator - product compiler
 module: app/services/product_store.py::refresh_expiring
 graph_node: null
@@ -562,6 +619,9 @@ degraded: "stale product served with its original compiled_at timestamp, never r
 ```yaml
 agent: supervisor
 kind: system
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Intent classification and routing
 module: app/agents/supervisor.py::supervisor_node
 graph_node: supervisor
@@ -583,6 +643,9 @@ notes: >
 ```yaml
 agent: synthesize
 kind: system
+sensitivity: aggregate
+min_role: Constable
+obligations: []
 role: Answer composition and claim verification
 module: app/agents/graph.py::synthesize_node
 graph_node: synthesize
@@ -637,6 +700,21 @@ through `app/core/hitl.py`:
 
 Adding a new real-world action means adding an entry to `hitl.ACTION_TYPES` (validator,
 executor, risk, TTL) — never calling the effect directly from an agent or route.
+
+## Policy
+
+`sensitivity`, `min_role` and `obligations` are enforced, not descriptive. `orchestrator.run_agent`
+asks `policy.decide(ctx, agent)` before an agent runs:
+
+| Outcome | When | Effect |
+|---|---|---|
+| `DENY` | the caller's role ranks below `min_role` | the agent does not start; the officer sees the reason; nothing counts against the circuit breaker |
+| `PERMIT_WITH_OBLIGATIONS` | the agent declares obligations | they are applied to the result by the orchestrator, whatever the agent's own code returned |
+| `PERMIT` | otherwise | |
+
+The caller is the request's security context (`app/core/security_context.py`): officer and role
+from the verified token, one `call_chain_id` per request. Every decision is written on the
+audit row for that request. Routers keep their own role checks; this is a second, independent one.
 
 ## Adding an agent
 

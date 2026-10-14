@@ -4955,3 +4955,5 @@ body:has(.bsx-focus) .bt-toasts { right: 440px; }
 @media (max-width: 640px) { .sp-back { padding: 72px 10px 16px; } .sp > header, .sp-body, .sp > footer { padding-left: 16px; padding-right: 16px; } .sp-rows > div { grid-template-columns: 1fr; gap: 3px; } }
 @media print { body:has(.sp-back) > *:not(.sp-back) { display: none !important; } .sp-back { position: static; padding: 0; background: #fff; backdrop-filter: none; }
   .sp { max-height: none; width: 100%; border: 0; box-shadow: none; background: #fff; color: #000; } .sp *, .sp h3, .sp-top > b { color: #000 !important; } .sp-body { overflow: visible; } .sp > footer, .sp-x { display: none; } }
+.tlm-chain { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 13px; line-height: 1.45; color: #A9B6C8; }
+.tlm-chain i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #34D399; transform: translateY(-1px); } .tlm-chain.bad i { background: #F87171; } .tlm-chain.bad { color: #E2E8F0; }

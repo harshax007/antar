@@ -70,6 +70,9 @@ export default function TrustDashboard() {
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [showHttp, setShowHttp] = useState(false);
   const [explainOpen, setExplainOpen] = useState(false);
+  // The audit ledger's own check, for an Admin (the route refuses anyone else, and the line is then absent).
+  const [chain, setChain] = useState(null);
+  useEffect(() => { fetchAPI("/api/audit/integrity").then(setChain).catch(() => setChain(null)); }, []);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -190,6 +193,16 @@ export default function TrustDashboard() {
               </span>
             ))}
           </div>
+        )}
+
+        {chain && (
+          <p className={`tlm-chain ${chain.ok ? "ok" : "bad"}`}>
+            <i aria-hidden="true" />
+            {chain.ok
+              ? `Audit ledger: ${fmtNum(chain.verified)} entries checked, none altered.`
+              : `Audit ledger: the chain breaks at entry ${fmtNum(chain.broken_at_index)}. Entries after it cannot be relied on until it is reset.`}
+            {chain.legacy_unverifiable > 0 && ` ${fmtNum(chain.legacy_unverifiable)} older entries predate the checkable format.`}
+          </p>
         )}
 
         {/* ── Explainer (collapsed by default - it used to eat the fold) ── */}

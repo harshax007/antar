@@ -140,6 +140,18 @@ async def run_agent(
     timeout = timeout_s or spec.timeout_s
     now = time.time()
 
+    # Policy first: who is asking (the request's security context) against what AGENTS.md
+    # declares for this agent. A refusal is not a failure of the agent - the breaker and
+    # the failure counts are untouched.
+    from app.core import policy, security_context
+    ctx = security_context.current()
+    decision = policy.decide(ctx, name)
+    chain = ctx.call_chain_id if ctx else None
+    if decision.denied:
+        st.last_status = "denied"
+        return False, None, {"agent": name, "status": "denied", "reason": decision.reason,
+                             "call_chain_id": chain}
+
     if now < st.breaker_open_until:
         remaining = int(st.breaker_open_until - now)
         st.last_status = "circuit_open"
@@ -161,8 +173,11 @@ async def run_agent(
             st.consecutive_failures = 0
             st.last_status = "ok"
             st.last_error = None
+            if decision.obligations:
+                result = policy.apply_obligations(result, decision.obligations)
             return True, result, {"agent": name, "status": "ok", "ms": st.last_ms,
-                                  "attempt": attempt + 1}
+                                  "attempt": attempt + 1, "call_chain_id": chain,
+                                  "policy": decision.outcome}
         except asyncio.TimeoutError:
             last_exc = f"timed out after {timeout:.0f}s"
         except Exception as exc:              # noqa: BLE001 — orchestration boundary
@@ -217,7 +232,10 @@ async def _autonomous_loop(interval_s: int) -> None:
     _loop_state["interval_s"] = interval_s
     while True:
         try:
-            await _autonomous_tick()
+            # the loop is nobody's request: it runs under a named system context
+            from app.core import security_context
+            with security_context.system("autonomous"):
+                await _autonomous_tick()
             _loop_state["ticks"] += 1
             _loop_state["last_tick_at"] = time.time()
             _loop_state["last_error"] = None
@@ -272,7 +290,9 @@ def status() -> dict:
     if isinstance(man, dict) and man.get("errors"):
         from app.core.security import scrub_text
         man = {**man, "errors": [scrub_text(e) for e in man["errors"]]}
-    return {"agents": agents, "autonomous": dict(_loop_state), "manifest": man}
+    from app.core import policy
+    return {"agents": agents, "autonomous": dict(_loop_state), "manifest": man,
+            "policy": policy.counters()}
 
 
 def reset() -> None:
