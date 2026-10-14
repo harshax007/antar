@@ -321,6 +321,14 @@ def _connect_ro() -> sqlite3.Connection:
 
 
 def run_local(spec: QuerySpec) -> list[dict]:
+    rows = _run_local(spec)
+    rn = getattr(spec, "rename", None)
+    if rn and rows and isinstance(rows[0], dict):
+        rows = [{rn.get(k, k): v for k, v in r.items()} for r in rows]
+    return rows
+
+
+def _run_local(spec: QuerySpec) -> list[dict]:
     # Every query path goes through here, so this is where the index set is guaranteed to
     # exist. It used to be reachable only via load_world(), which meant a freshly staged
     # database on Catalyst (expanded from main.db.gz, no secondary indexes) could serve

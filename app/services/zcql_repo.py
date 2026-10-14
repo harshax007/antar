@@ -355,6 +355,32 @@ def expand_crime_types(concepts: list[str]) -> list[str]:
     return list(dict.fromkeys(out))
 
 
+@lru_cache(maxsize=1)
+def _real_crime_groups() -> frozenset:
+    """Crime groups that have at least one row of the real KSP record."""
+    import sqlite3
+    from app.core.db_path import get_db_path
+    try:
+        con = sqlite3.connect(f"file:{get_db_path()}?mode=ro", uri=True, timeout=10)
+        try:
+            return frozenset(r[0] for r in con.execute(
+                "SELECT DISTINCT crime_type FROM FIRs WHERE is_synthetic_row = 0"))
+        finally:
+            con.close()
+    except Exception:
+        return frozenset()
+
+
+def demo_only_crime_types(concepts: list[str]) -> list[str]:
+    """The named crime types that exist ONLY in seeded demonstration rows. The real
+    register has no "vehicle theft" or "chain snatching" head; a statewide figure for one
+    is a count of demonstration records and the answer has to say so."""
+    real = _real_crime_groups()
+    if not real:
+        return []                       # could not tell: say nothing rather than guess
+    return [c for c in concepts or [] if not any(v in real for v in expand_crime_types([c]))]
+
+
 # Make every concept the registry knows about nameable by the template selector, so the
 # LLM can pick "ATTEMPT TO MURDER" or "CRIMINAL TRESPASS" instead of guessing a near-miss.
 CRIME_TYPES += [c for c in _concept_map() if c not in CRIME_TYPES]
@@ -552,6 +578,7 @@ class QuerySpec:
     order_by: Optional[tuple[str, Literal["asc", "desc"]]] = None
     limit: int = 100
     olap: bool = False                                        # route to OLAP engine
+    rename: dict = field(default_factory=dict)                # result key -> the key readers expect
 
 
 # ── Pydantic-based ZCQL AST (Build 03 Dynamic Query Engine) ───────────────────
@@ -1002,9 +1029,16 @@ def _t11(p: ZoneHotspots) -> QuerySpec:
         filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))
     filters += _named(p.arrest_status)
     dim = getattr(p, "dimension", "zone") or "zone"
+    # A ranking "by district" groups on the district, not on `zone`: 3,868 seeded rows
+    # carry a locality there (Jayanagar, Whitefield, Mysuru-Devaraja) and each was listed
+    # as a district of its own. `district` holds the parent for every row.
+    # Readers of these rows look the place up under "zone", so the result keeps that key.
+    rename = {}
+    if dim == "zone":
+        dim, rename = "district", {"district": "zone"}
     lim = getattr(p, "limit", 10) or 10
     return QuerySpec(
-        table="crimes", select=[dim],
+        table="crimes", select=[dim], rename=rename,
         aggregates=[Aggregate("count", "crime_id", "n")],
         filters=filters, group_by=[dim], order_by=("n", "asc" if p.order == "asc" else "desc"),
         limit=lim, olap=True,

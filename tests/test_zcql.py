@@ -63,8 +63,8 @@ def test_t3_garbage_months_defaults_not_crash():
 
 
 def test_t11_hotspots_rajajinagar_is_hot_for_theft():
-    # Rajajinagar is a sub-zone of Bengaluru City — T11 groups by zone, so Bengaluru City
-    # dominates. The real invariant: Bengaluru appears in the top 2 hotspots for theft.
+    # Rajajinagar is a seeded locality inside Bengaluru City. T11 ranks by district (the
+    # result key stays "zone"), so a locality never appears as a district of its own.
     spec = build_spec("T11", {"crime_types": ["theft"]})
     rows = run_local(spec)
     top_zones = [r["zone"] for r in rows[:4]]
@@ -149,3 +149,33 @@ def test_all_templates_build_with_examples():
     for tid in TEMPLATES:
         spec = build_spec(tid, minimal.get(tid, {}))
         assert spec.table  # produced a spec
+
+
+def test_t11_never_lists_a_seeded_locality_as_a_district():
+    from app.services.zcql_repo import ALL_ZONES
+    real_districts = {"Belagavi", "Kalaburagi"}          # names that are also real districts' roots
+    for params in ({"crime_types": ["vehicle_theft"]}, {"crime_types": ["theft"], "limit": 60}, {"limit": 60}):
+        rows = run_local(build_spec("T11", params))
+        assert rows and "zone" in rows[0] and "district" not in rows[0]
+        names = {r["zone"] for r in rows}
+        assert not (names & (set(ALL_ZONES) - real_districts)), names & set(ALL_ZONES)
+        assert "Belagavi" not in names                   # the seeded locality; the district is "Belagavi Dist"
+
+
+def test_a_crime_type_with_no_real_rows_is_flagged_and_a_real_one_is_not():
+    from app.services.zcql_repo import demo_only_crime_types
+    assert demo_only_crime_types(["VEHICLE_THEFT"]) == ["VEHICLE_THEFT"]
+    assert demo_only_crime_types(["THEFT", "MURDER", "BURGLARY"]) == []
+    assert demo_only_crime_types([]) == []
+
+
+def test_the_answer_says_when_a_count_is_demonstration_records_only():
+    from app.agents.answer_writer import write_answer
+    from app.agents.query_agent import run_template
+    p = {"crime_types": ["VEHICLE_THEFT"], "limit": 10, "dimension": "zone"}
+    rows, _ = run_template("T11", p)
+    text = write_answer(rows, "T11", "en", p, "Which districts have the most vehicle theft?")
+    assert "Jayanagar" not in text and "demonstration records" in text
+    p = {"crime_types": ["THEFT"], "limit": 10, "dimension": "zone"}
+    rows, _ = run_template("T11", p)
+    assert "demonstration records" not in write_answer(rows, "T11", "en", p, "Which districts have the most theft?")

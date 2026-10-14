@@ -1428,6 +1428,17 @@ def write_answer(rows: list[dict], template_id: str, lang: str = "en",
         lines = fn(rows, kn, p, template_id)
     if not lines:
         return None
+    try:
+        from app.services.zcql_repo import demo_only_crime_types
+        demo = demo_only_crime_types(p.get("crime_types") or [])
+    except Exception:
+        demo = []
+    if demo:
+        names = ", ".join(_crime_word(c, kn) for c in demo)
+        lines = list(lines)
+        lines.insert(1, f"• ಗಮನಿಸಿ: ನೈಜ KSP ದಾಖಲೆಯಲ್ಲಿ “{names}” ಎಂಬ ಪ್ರತ್ಯೇಕ ಶೀರ್ಷಿಕೆ ಇಲ್ಲ. ಈ ಎಣಿಕೆ ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆಗಳದ್ದು, ನೋಂದಾಯಿತ FIR ಗಳದ್ದಲ್ಲ." if kn else
+                        f"• Note: the real KSP register has no separate head for {names}. These are demonstration records, not registered FIRs; "
+                        f"the register files such cases under a broader head such as Theft.")
     up = p.get("unknown_place")
     if up and not p.get("unapplied"):          # otherwise it is said in the lead, below
         lines = list(lines)

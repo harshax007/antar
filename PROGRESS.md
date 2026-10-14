@@ -2079,3 +2079,11 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * Measured in the container with a 2 GB limit: warm-up completes in about 5 minutes (1,000,000 FIRs, forecasts fitted, 100,000 FIRs in the Brain index); memory 1.7 GB of 2 GB after warm-up; `/tmp` 1.5 GB. No out-of-memory kill.
 * Open before a deploy: the container starts with unsigned header identity unless `ANTAR_AUTH_SECRET` and the accounts are set in the Catalyst console; `main.db.gz` is the 2026-09-18 snapshot; no language model is configured in the image; 1.7 GB of a 2 GB limit leaves little room.
 * The audit integrity note no longer says "every entry was verified" beside a broken chain.
+
+## Chat: a locality is no longer listed as a district - 2026-10-14
+
+* **What was wrong:** "Which districts have the most vehicle theft?" answered "Jayanagar, 27 FIRs, 11% of the Karnataka total". Two causes. (1) Rankings grouped on `zone`, and 3,868 seeded rows carry a locality there (Jayanagar, Whitefield, Mysuru-Devaraja...). (2) "Vehicle theft" exists only in 286 seeded rows; the real register has no such head.
+* **Fix:** district rankings (T11) now group on the district column, which holds the parent district for every row; the result key is unchanged, so no reader had to change (`QuerySpec.rename`). An answer about a crime type with no real rows now says so on its second line: demonstration records, not registered FIRs. This covers every template, including counts and trends. 17 crime-type spellings are seeded-only; most merge into a real head (theft into THEFT), and the ones that do not are vehicle theft, chain snatching and a few others.
+* Now: Bengaluru City 175, Mysuru City 33, Belagavi Dist 22, with the note.
+* Left as is: CID, ISD Bengaluru, Coastal Security Police and Karnataka Railways still appear in district rankings; they are police units in the KSP record, not districts. The Map and the Predict list still show the seeded localities, where they are called areas.
+* `tests/test_zcql.py` (3 new). Needs a backend restart.
