@@ -2055,3 +2055,10 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * What it found for stations: 69 of about 1,030 were ever in the top 5% over 23 weeks; 34 of the 52 flagged each week were the same every week (65% of all flags); 96% of flags fell in city commissionerates. The report says a stable pattern and a feedback loop look the same in this record and that it cannot tell them apart. Ranges held 80% to 90% across quiet and busy stations.
 * It states what is not measured: error for units never flagged (the stored back-test keeps per-unit totals for flagged units only), and any effect of policing on registration.
 * A test keeps the engine's code free of any field about a person or a community. Needs a backend restart.
+
+## Forecast outcomes: kept, scored, and fed back (USP plan P7) - 2026-10-14
+
+* `app/services/forecast_outcomes.py`: each week's station forecasts (all crime, next 7 days) are kept the first time they are served. A kept week is scored once its target week is complete: how many likely ranges held, forecast against recorded totals. A station's last scored forecast shows on its breakdown ("The week before: forecast 1 to 3, recorded 9").
+* **Confidence moves by itself**: once four weeks are scored, range coverage under 70% or over 90% across the last eight caps Engine confidence at Moderate (Limited under 60%), with the reason listed beside the others.
+* **Officer feedback**: "Was this useful?" on the forecast breakdown and the shift plan (`POST /api/forecast/feedback`); "No" needs a reason. `GET /api/forecast/outcomes` returns the scores and what officers said.
+* Scoring starts with the first week kept after this goes live: earlier forecasts were not stored, and until a kept week is complete the endpoint says there is nothing to score. `tests/test_forecast_outcomes.py` (13). Needs a backend restart.

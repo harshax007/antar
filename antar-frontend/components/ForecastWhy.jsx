@@ -7,6 +7,7 @@
 // by a language model.
 import { useEffect, useState } from "react";
 import { fetchAPI } from "@/lib/api";
+import UsefulFeedback from "@/components/UsefulFeedback";
 
 const LABEL = { recent: "The last 4 weeks", last_year: "The same weeks last year", neighbours: "Neighbouring stations",
                 area: "The district as a whole", season: "The time of year", level: "Pull toward the district's level" };
@@ -46,9 +47,15 @@ function Weeks({ history, ahead }) {
 export default function ForecastWhy({ unit, unitType = "station" }) {
   const [d, setD] = useState(null);
   const [err, setErr] = useState(false);
+  const [last, setLast] = useState(null);          // this station's last forecast that could be scored
   useEffect(() => {
     let alive = true;
-    setD(null); setErr(false);
+    setD(null); setErr(false); setLast(null);
+    if (unitType === "station") {
+      fetchAPI(`/api/forecast/outcomes?unit=${encodeURIComponent(unit)}`)
+        .then((x) => { if (alive) setLast(x?.unit || null); })
+        .catch(() => {});
+    }
     fetchAPI(`/api/forecast/unit/${encodeURIComponent(unit)}?unit_type=${unitType}`)
       .then((x) => { if (alive) setD(x); })
       .catch(() => { if (alive) setErr(true); });
@@ -97,7 +104,9 @@ export default function ForecastWhy({ unit, unitType = "station" }) {
           {d.track_record?.text ? ` ${d.track_record.text}` : ""}
         </p>
       )}
+      {last && <p className="fw-acc"><b>In use.</b> {last.text} {last.held ? "Inside the likely range." : "Outside the likely range."}</p>}
       <p className="fw-limit">A forecast of registered FIRs, not of crime. Where more is policed, more is registered.</p>
+      <UsefulFeedback kind="forecast" unit={unit} />
     </div>
   );
 }

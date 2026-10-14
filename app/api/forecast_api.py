@@ -11,7 +11,8 @@ import asyncio
 import sqlite3
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 
 from app.core.db_path import DB_PATH, ensure_db_staged
 from app.forecast import backtest as BT
@@ -53,8 +54,68 @@ async def hotspots(horizon: int = 7, category: Optional[str] = None,
     """Ranked stations or beats by expected FIRs over the next 7 or 28 days — each with
     its 80/90% range, P(at least one), the reasons, a Gi* district flag (all crime) and
     evidence class I. `as_of`: omit for the configured date, or "real" / YYYY-MM-DD."""
-    return await _call(S.hotspots, horizon=horizon, category=category, district=district,
-                       station=station, unit_type=unit, limit=limit, as_of=as_of)
+    out = await _call(S.hotspots, horizon=horizon, category=category, district=district,
+                      station=station, unit_type=unit, limit=limit, as_of=as_of)
+    _keep(out)
+    return out
+
+
+_kept_weeks: set = set()
+
+
+def _keep(out: dict) -> None:
+    """Keep this week's station forecasts the first time they are served, so they can be
+    scored once the week is in (app/services/forecast_outcomes.py). Never blocks or fails
+    the request."""
+    try:
+        basis = out.get("as_of") or {}
+        if basis.get("mode") != "wallclock":
+            return                           # a look back at another date is not this week's forecast
+        from datetime import date, timedelta
+        through = basis.get("history_through")
+        week = (date.fromisoformat(through) - timedelta(days=6)).isoformat() if through else None
+        if week and week not in _kept_weeks:
+            _kept_weeks.add(week)
+            from app.services import forecast_outcomes
+            asyncio.get_running_loop().run_in_executor(None, forecast_outcomes.snapshot, week)
+    except Exception:
+        pass
+
+
+class ForecastFeedback(BaseModel):
+    kind: str = Field(pattern="^(forecast|shift_plan|lead)$")
+    unit: str = Field(min_length=1, max_length=160)
+    useful: bool
+    reason: str = Field(default="", max_length=500)
+
+
+@router.post("/feedback")
+async def feedback(req: ForecastFeedback, request: Request) -> dict:
+    """An officer marks a forecast, a shift plan or a lead useful or not. "Not useful" needs
+    a reason: that is the part worth reading."""
+    from app.core.auth_middleware import current_identity
+    from app.services import forecast_outcomes
+    try:
+        return await asyncio.to_thread(forecast_outcomes.feedback_add, current_identity(request).officer,
+                                       req.kind, req.unit, req.useful, req.reason)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+@router.get("/outcomes")
+async def outcomes(unit: Optional[str] = None) -> dict:
+    """How the forecast is doing in use: kept weeks scored against what was recorded, one
+    station's last scored forecast, and what officers said."""
+    from app.services import forecast_outcomes as FO
+
+    def work():
+        tr = FO.trailing()
+        return {"trailing": tr, "confidence": FO.confidence_cap(tr), "unit": FO.unit_last(unit) if unit else None,
+                "feedback": FO.feedback_summary(),
+                "note": (None if tr["weeks"] else
+                         ("This week's forecasts are kept and will be scored once the week is complete."
+                          if tr["kept_weeks"] else "No forecast has been kept yet; open the forecast list once to start."))}
+    return await asyncio.to_thread(work)
 
 
 @router.get("/layer")

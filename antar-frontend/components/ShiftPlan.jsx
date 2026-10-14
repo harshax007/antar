@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import ProposeAction from "@/components/ProposeAction";
+import UsefulFeedback from "@/components/UsefulFeedback";
 
 const day = (iso) => {
   const x = new Date(`${iso}T00:00:00`);
@@ -115,6 +116,7 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
             {p.accuracy && <p className="sp-acc"><b>How far to trust it.</b> {p.accuracy}</p>}
             <ul className="sp-limits">{p.limits.map((l) => <li key={l}>{l}</li>)}</ul>
             {p.basis && <p className="sp-basis">{p.basis}</p>}
+            <UsefulFeedback kind="shift_plan" unit={p.unit} />
           </div>
         )}
 

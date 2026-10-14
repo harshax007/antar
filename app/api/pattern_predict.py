@@ -327,6 +327,17 @@ def _engine() -> dict:
     else:
         level = cap(level, "Limited")
         reasons.append({"ok": False, "text": "The forecast has not been graded against past weeks yet."})
+    # In use: forecasts kept week by week and scored once the week is in. Recent accuracy
+    # can lower the level by itself, with no one editing a rule.
+    try:
+        from app.services import forecast_outcomes as _fo
+        _use = _fo.confidence_cap(_fo.trailing())
+    except Exception:
+        _use = None
+    if _use:
+        reasons.append({"ok": _use["ok"], "text": _use["text"]})
+        if _use["cap"]:
+            level = cap(level, _use["cap"])
     share = records["recent_real_share"]
     if share is not None and share < 0.5:
         level = cap(level, "Moderate")
