@@ -2190,7 +2190,7 @@ export default function ChatPage() {
         borderTop: "1px solid rgba(255, 255, 255, 0.06)"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", fontFamily: "'Inter', sans-serif", flexWrap: "wrap", color: "rgba(255,255,255,0.4)" }}>
-          {kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್ (GLM 4.7)" : "Antar System (GLM 4.7)"}
+          {kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್" : "Antar System"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <WhisperMicButton recording={recording} onClick={toggleVoice} kn={kn} />
@@ -2417,9 +2417,9 @@ export default function ChatPage() {
                 fontFamily: kn ? "'Noto Sans Kannada', sans-serif" : "'Inter', sans-serif"
               }}>
                 {kn ? (
-                  <>15 AI ಏಜೆಂಟ್‌ಗಳು, ಪೂರ್ಣ ಟೆಲಿಮೆಟ್ರಿ ವೀಕ್ಷಣೆ ಮತ್ತು ಸ್ವಯಂ-ನಿವಾರಿತ ಬಲವರ್ಧನೆ ಕಲಿಕೆಯೊಂದಿಗೆ 10,00,000+ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳ ನೈಜ-ಸಮಯದ ವಿಶ್ಲೇಷಣೆ.</>
+                  <>10,00,000+ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳನ್ನು ಓದುವ ಏಜೆಂಟ್‌ಗಳು: ಪ್ರತಿ ಉತ್ತರಕ್ಕೂ ಸಾಕ್ಷ್ಯ, ಪ್ರತಿ ಮುನ್ಸೂಚನೆಯೂ ನಡೆದದ್ದರ ವಿರುದ್ಧ ಪರಿಶೀಲಿತ.</>
                 ) : (
-                  <>15 AI agents with full telemetry & self-distilled Reinforcement Learning analyzing 10,00,000+ FIR records in real time.</>
+                  <>Agents that read 10,00,000+ FIR records, show the evidence for every answer, and grade every forecast against what happened.</>
                 )}
               </p>
             </motion.div>
@@ -2618,7 +2618,7 @@ export default function ChatPage() {
               }}>
                 {/* Left: Model Pill */}
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", fontFamily: "'Inter', sans-serif", flexWrap: "wrap", color: "rgba(255,255,255,0.4)" }}>
-                  {kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್ (GLM 4.7)" : "Antar System (GLM 4.7)"}
+                  {kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್" : "Antar System"}
                 </div>
 
                 {/* Right controls: Mic + Paperclip + Blue Rounded Square Send Button */}

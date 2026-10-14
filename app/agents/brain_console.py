@@ -712,7 +712,9 @@ def evolution() -> dict:
         total = sum(k["total"] for k in fb["by_kind"])
         held = (f"likely range held {100 * tr['coverage80']:.0f}% over {_plural(tr['weeks'], 'scored week')}"
                 if tr["weeks"] else f"{_plural(tr['kept_weeks'], 'week')} kept, none complete yet")
-        return (f"Forecasts in use: {held}; officers marked {useful} of {_plural(total, 'forecast or plan')} useful",
+        said = (f"officers marked {useful} of {total} forecasts and plans useful" if total
+                else "no officer has rated a forecast or plan yet")
+        return (f"Forecasts in use: {held}; {said}",
                 "each week's forecasts are kept and scored once that week is in; four or more scored weeks "
                 "outside 70-90% lower the engine's confidence by themselves")
 
