@@ -12,7 +12,7 @@ from __future__ import annotations
 import html
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 from app.core import sessions
@@ -71,9 +71,24 @@ def _report_model(session_id: str) -> dict:
             "document_sha256": hash_event("DOC_ROOT", payload)}
 
 
+def _may_read(session_id: str, request) -> None:
+    """A conversation's report is for the officers who took part in it, and for an Admin.
+    It used to open for any signed-in officer who knew or guessed the session id."""
+    from fastapi import HTTPException
+    from app.core.auth_middleware import current_identity
+    ident = current_identity(request)
+    if ident.at_least("Admin"):
+        return
+    owners = {(t.get("meta") or {}).get("officer") for t in sessions.all_turns(session_id)} - {None, ""}
+    if ident.officer not in owners:
+        # the same answer whether the session exists or not
+        raise HTTPException(status_code=403, detail="This report belongs to another officer's conversation.")
+
+
 @router.get("/{session_id}")
 @router.post("/{session_id}")
-async def export(session_id: str) -> dict:
+async def export(session_id: str, request: Request) -> dict:
+    _may_read(session_id, request)
     m = _report_model(session_id)
     return {
         "session_id": session_id,
@@ -294,7 +309,8 @@ def _render(session_id: str) -> str:
 
 
 @report_router.get("/report/{session_id}")
-async def report(session_id: str):
+async def report(session_id: str, request: Request):
+    _may_read(session_id, request)
     return HTMLResponse(_render(session_id))
 
 

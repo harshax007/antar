@@ -61,7 +61,16 @@ export function readSession() {
 }
 
 export function clearSession() {
+  // Signing out ends the session on the server too, so a copy of the token stops working.
+  // Forgotten here first; the request is best-effort (the token may already have expired).
+  let token = null;
+  try { token = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null")?.token || null; } catch {}
   try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+  if (token && typeof fetch === "function") {
+    try {
+      fetch(`${API_BASE}/api/auth/logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, keepalive: true }).catch(() => {});
+    } catch {}
+  }
 }
 
 // Ask the server to sign this officer in. Resolves to the session; rejects with an Error

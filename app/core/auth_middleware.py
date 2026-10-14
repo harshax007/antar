@@ -47,6 +47,8 @@ class Identity:
     role: str
     verified: bool          # True only for a valid signed token
     posting: str = ""       # the officer's district, from the token; "" = not recorded
+    issued_at: int = 0      # the token's iat; a session ended by an Admin is one issued before the cut-off
+    expires_at: int = 0
 
     def at_least(self, minimum: str) -> bool:
         return _RANK.get(self.role, -1) >= _RANK.get(minimum, 1)
@@ -115,7 +117,8 @@ def verify_token(token: str, secret: str | None = None) -> Identity | None:
     if role not in _RANK:
         return None
     return Identity(officer=_clean_officer(claims.get("sub")), role=role, verified=True,
-                    posting=" ".join(str(claims.get("post") or "").split())[:80])
+                    posting=" ".join(str(claims.get("post") or "").split())[:80],
+                    issued_at=int(claims.get("iat") or 0), expires_at=int(claims.get("exp") or 0))
 
 
 def _bearer(request: Request) -> str:
@@ -130,6 +133,12 @@ def resolve_identity(request: Request) -> Identity | None:
         return cached
     if auth_mode() == "signed":
         ident = verify_token(_bearer(request))
+        # a good signature is not enough: the holder may have signed out, or an Admin
+        # may have ended this officer's sessions (app/core/revocation.py)
+        if ident is not None:
+            from app.core import revocation
+            if revocation.is_revoked(_bearer(request), ident.officer, ident.issued_at):
+                ident = None
     else:
         ident = Identity(officer=_clean_officer(request.headers.get("x-officer")),
                          role=resolve_role(request.headers.get("x-role")), verified=False,

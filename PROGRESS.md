@@ -2029,3 +2029,9 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * The query cache key includes the scope, so one officer's rows are never served to another.
 * Not limited: Analyst and above, system tasks, and an officer with no posting on record. The two existing accounts (Admin, Approver) are unaffected. Suspect-level tables are not scoped yet.
 * `tests/test_need_to_know.py` (13). Needs a backend restart.
+
+## Sessions: sign-out ends the token; a report belongs to its officers (USP plan S10, part) - 2026-10-14
+
+* `app/core/revocation.py`: `POST /api/auth/logout` ends the presented token on the server (only its SHA-256 is kept, until it would have expired); `POST /api/auth/revoke/{officer}` (Admin) ends every session an officer holds. The gateway checks both on every request, and the list survives a restart. The frontend calls logout when it clears the session.
+* `/report/{session_id}` and `/api/export/{session_id}` open for the officers who took part in the conversation and for an Admin. Another officer gets the same refusal whether or not the session exists. A conversation with no officer on record (the non-streaming chat route does not record one) is Admin only.
+* **Not done from S10, each for a reason:** moving the token to an HttpOnly cookie (changes sign-in and every request; not safe to do untested this close to the demo); running the containers as a non-root user (needs an image build and a test on AppSail); rotating the session key and removing it from git history (rewrites history; needs the owner's go-ahead).

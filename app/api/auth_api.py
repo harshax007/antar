@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.core import accounts
-from app.core.auth_middleware import auth_mode, current_identity, mint_token
+from app.core.auth_middleware import _bearer, _clean_officer, auth_mode, current_identity, mint_token, require_role
 from app.core.rate_limiter import rate_limit
 from app.core.settings import settings
 
@@ -47,6 +47,27 @@ async def login(req: LoginRequest) -> dict:
         raise HTTPException(status_code=401, detail="User ID or password is incorrect.")
     return {"token": mint_token(acct["id"], acct["role"], posting=acct.get("posting")), "officer": acct["id"], "role": acct["role"],
             "name": acct["name"], "expires_at": int(time.time()) + int(settings.ANTAR_TOKEN_TTL_S)}
+
+
+@router.post("/logout")
+async def logout(request: Request) -> dict:
+    """End this session on the server. The token stops working at once, here and in any
+    copy of it - signing out used to make only the browser forget it."""
+    ident = current_identity(request)
+    if ident.verified:
+        from app.core import revocation
+        revocation.revoke_token(_bearer(request), ident.expires_at)
+    return {"signed_out": True}
+
+
+@router.post("/revoke/{officer}", dependencies=[Depends(require_role("Admin"))])
+async def revoke_officer(officer: str, request: Request) -> dict:
+    """End every session an officer holds now (a lost device, a changed role). They can
+    sign in again; tokens issued before this moment are refused."""
+    from app.core import revocation
+    target = _clean_officer(officer)
+    revocation.revoke_officer(target, by=current_identity(request).officer)
+    return {"officer": target, "sessions_ended": True}
 
 
 @router.get("/me")
