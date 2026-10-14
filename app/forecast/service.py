@@ -272,6 +272,83 @@ def why(row: dict, unit_type: str, horizon: int) -> dict | None:
     }
 
 
+NOT_USED = (
+    "Anything about a person: no name, accused id, age, gender, caste, religion or income.",
+    "The time of day. The register holds the date of an FIR, not the hour.",
+    "Anything outside the FIR register: weather, CCTV, calls for service, social media.",
+    "The language model. It words a forecast; it never produces one.",
+)
+
+
+def global_explanation(conn: sqlite3.Connection, *, unit_type: str = "station", horizon: int = 7,
+                       as_of: str | None = None) -> dict:
+    """How the engine behaves across the state, as opposed to why one forecast is what it is.
+
+    For every crime category: how much each of the six reasons typically moves a forecast
+    (the typical multiplier, and the share of units where it moves the forecast by 10% or
+    more), and how the category did in the back-test. Then where the engine is weakest,
+    by the back-test's own figures. Everything is read from the stored forecasts and the
+    stored back-test; nothing is typed in.
+
+    "Typical" is the geometric mean of each factor's size: exp(mean |ln x|) - 1, so a
+    reason that halves some forecasts and doubles others reads as large, not as zero.
+    """
+    horizon, unit_type = _check_horizon(horizon), _check_unit_type(unit_type)
+    a, info = _as_of(conn, as_of)
+    wk = a.history_end.isoformat()
+    cols = ", ".join(f"x_{k}" for k in _WHY_KEYS)
+    cats = []
+    for cat in (ALL, *CATEGORIES):
+        rows = conn.execute(f"SELECT {cols} FROM forecast_output WHERE as_of_week = ? AND unit_type = ? "
+                            f"AND category = ? AND horizon = ? AND usual_level > 0 AND n52 >= ?",
+                            (wk, unit_type, cat, horizon, THIN_N52)).fetchall()
+        if not rows:
+            continue
+        reasons = []
+        for i, key in enumerate(_WHY_KEYS):
+            logs = [abs(math.log(r[i])) for r in rows if r[i] and r[i] > 0]
+            if not logs:
+                continue
+            reasons.append({"key": key, "typical_move": round(math.exp(sum(logs) / len(logs)) - 1, 3),
+                            "share_notable": round(sum(1 for v in logs if v >= math.log(1 + DRIVER_MIN)) / len(logs), 3)})
+        reasons.sort(key=lambda d: -d["typical_move"])
+        acc = accuracy(conn, unit_type, cat, horizon)
+        cats.append({
+            "category": cat, "label": LABELS[cat], "units": len(rows), "reasons": reasons,
+            "main_reason": reasons[0]["key"] if reasons else None,
+            "backtest": ({k: acc[k] for k in ("weeks", "top5_share_caught", "top5_share_caught_last4",
+                                              "weeks_better_than_last4", "coverage80", "calibration") if k in acc}
+                         if acc else None),
+        })
+
+    weakest = []
+    for c in cats:
+        b = c["backtest"]
+        if not b:
+            continue
+        why = []
+        if b.get("calibration") is not None and abs(b["calibration"] - 1) >= 0.10:
+            why.append(f"forecasts ran {'high' if b['calibration'] > 1 else 'low'}: {b['calibration']:.2f} forecast for every 1 recorded")
+        if b.get("weeks") and b.get("weeks_better_than_last4") is not None and b["weeks_better_than_last4"] <= 0.65 * b["weeks"]:
+            why.append(f"beat last-4-weeks ranking in only {b['weeks_better_than_last4']} of {b['weeks']} weeks")
+        if b.get("coverage80") is not None and not (0.70 <= b["coverage80"] <= 0.995):
+            why.append(f"the likely range held {100 * b['coverage80']:.0f}% of the time (it should be near 80%)")
+        if why:
+            weakest.append({"category": c["category"], "label": c["label"], "why": why})
+
+    labels = {"recent": "The last 4 weeks", "last_year": "The same weeks last year",
+              "neighbours": f"Neighbouring {'beats' if unit_type == 'beat' else 'stations'}",
+              "area": f"The {'station' if unit_type == 'beat' else 'district'} as a whole",
+              "season": "The time of year", "level": f"Pull toward the {'station' if unit_type == 'beat' else 'district'}'s level"}
+    return {
+        "as_of": _basis(a, info), "unit_type": unit_type, "horizon_days": horizon,
+        "reason_labels": labels, "categories": cats, "weakest": weakest, "not_used": list(NOT_USED),
+        "method": ("Poisson regression on top of a seasonal and recent-weeks baseline; a forecast is a usual "
+                   "period times these six reasons. Ranges are split-conformal, calibrated on weeks the model did not see."),
+        "evidence_class": "D",
+    }
+
+
 def summary_sentence(row: dict, cat: str, horizon: int) -> str:
     lo8, hi8, lo9, hi9 = (_int(row[k]) for k in ("lo80", "hi80", "lo90", "hi90"))
     rng = (lambda a, b: f"{a}" if a == b else f"{a}–{b}")

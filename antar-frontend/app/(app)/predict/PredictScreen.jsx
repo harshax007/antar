@@ -15,6 +15,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import ForecastWhy from "@/components/ForecastWhy";
 import ShiftPlan from "@/components/ShiftPlan";
+import EngineOverall from "@/components/EngineOverall";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -246,6 +247,7 @@ function EngineConfidence({ eng, open, onToggle, anchor }) {
             <p><b>High</b> needs the graded ranges to have held and the records to be current. It is capped at <b>Moderate</b> when the latest weeks are not real records, or when the ranges held less often than stated. It falls to <b>Limited</b> when the forecast has not been graded, or when too few cases are on record.</p>
             <p>A green mark is a reason that counts for the forecast; an amber one counts against it.</p>
           </div>
+          <EngineOverall />
         </div>
       )}
     </section>

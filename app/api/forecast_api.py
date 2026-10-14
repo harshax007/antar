@@ -66,6 +66,13 @@ async def layer(horizon: int = 7, category: Optional[str] = None,
                        unit_type=unit, as_of=as_of)
 
 
+@router.get("/explain")
+async def explain(unit: str = "station", horizon: int = 7, as_of: Optional[str] = None) -> dict:
+    """How the engine behaves overall: which reasons move forecasts, per crime category,
+    where it is weakest by its own back-test, and what it does not use."""
+    return await _call(S.global_explanation, unit_type=unit, horizon=horizon, as_of=as_of)
+
+
 @router.get("/shift-plan")
 async def shift_plan(station: str = Query(min_length=2, max_length=120), as_of: Optional[str] = None) -> dict:
     """One station's next shift on a page: beats to cover first, the kinds of case expected,
