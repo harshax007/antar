@@ -226,6 +226,31 @@ async def _autonomous_tick() -> None:
     ok, hits, _ = await run_agent("sentinel", _scan)
     _loop_state["last_sentinel_hits"] = len(hits) if ok and hits else 0
 
+    # Once an hour: refit the forecasts if the week or the registry has moved. The back-test
+    # is left to the weekly job (python -m app.forecast.refit) - minutes of CPU do not belong here.
+    # Start-up has just fitted them, so the first tick only starts the clock.
+    if _loop_state.get("refit_checked_at") is None:
+        _loop_state["refit_checked_at"] = time.time()
+    elif time.time() - _loop_state["refit_checked_at"] >= 3600:
+        _loop_state["refit_checked_at"] = time.time()
+        try:
+            _loop_state["last_refit"] = await asyncio.to_thread(_refit_forecasts)
+        except Exception as exc:             # noqa: BLE001 - a failed refit keeps last week's forecast
+            logger.error("forecast_refit_failed", error=str(exc))
+
+
+def _refit_forecasts() -> dict | None:
+    import sqlite3
+    from app.core.db_path import DB_PATH
+    from app.forecast import refit
+    con = sqlite3.connect(DB_PATH, timeout=60)
+    try:
+        if not refit.due(con)["forecasts"]:
+            return None
+        return refit.run_once(con, backtest=False, log=lambda *_: None)
+    finally:
+        con.close()
+
 
 async def _autonomous_loop(interval_s: int) -> None:
     _loop_state["running"] = True

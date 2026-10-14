@@ -2062,3 +2062,11 @@ Read every place that calls the model or shows what it wrote. The core layer (`a
 * **Confidence moves by itself**: once four weeks are scored, range coverage under 70% or over 90% across the last eight caps Engine confidence at Moderate (Limited under 60%), with the reason listed beside the others.
 * **Officer feedback**: "Was this useful?" on the forecast breakdown and the shift plan (`POST /api/forecast/feedback`); "No" needs a reason. `GET /api/forecast/outcomes` returns the scores and what officers said.
 * Scoring starts with the first week kept after this goes live: earlier forecasts were not stored, and until a kept week is complete the endpoint says there is nothing to score. `tests/test_forecast_outcomes.py` (13). Needs a backend restart.
+
+## Fresh data and refit (USP plan P9) - 2026-10-14
+
+* **Label on the page**: the Predict page now opens with "Demonstration data. The real FIR record ends on 10 Mar 2024; the weeks after it are seeded..." whenever this week's forecast stands on seeded rows. It reads fields the engine endpoint already sent, so it shows without a restart, and disappears by itself once the recent weeks are real record.
+* **Weekly job**: `python -m app.forecast.refit` (`app/forecast/refit.py`). It refits the forecasts when the week or the registry moved, re-runs the back-test only when the real record or the model changed (an unchanged record gives the same numbers), then regenerates `docs/FORECAST_BACKTEST.md` and `docs/FORECAST_FAIRNESS.md`. `--check` only says what is due; `--force` re-runs everything.
+* **In the running app**: once an hour the orchestrator refits the forecasts if the week has moved, so a server left up over a Monday does not serve last week's forecast. It never runs the back-test (minutes of CPU); `GET /api/forecast/refit` says when that is due and what to run.
+* Not done: the job is not scheduled on any machine. Schedule it weekly after Sunday, e.g. `schtasks /Create /SC WEEKLY /D MON /ST 05:00 /TN AntarForecastRefit /TR "D:\Project\.venv\Scripts\python.exe -m app.forecast.refit"` run from `D:\Project`, or a Catalyst cron job after deploy.
+* `tests/test_forecast_refit.py` (16). The endpoint and the hourly refit need a backend restart.

@@ -458,6 +458,8 @@ const PREDICT_MODERN_STYLES = `
 .px-page { background: #000000; color: #e6edf3; font-family: 'Inter', sans-serif; }
 
 /* Typography */
+.px-seed { margin: 0 0 14px; padding: 9px 14px; border: 1px solid rgba(210,153,34,0.45); border-left-width: 3px; border-radius: 6px; background: rgba(210,153,34,0.08); color: #c9d1d9; font-size: 13px; line-height: 1.5; }
+.px-seed b { color: #e3b341; font-weight: 600; }
 .px-title { color: #58a6ff; font-family: 'Chakra Petch', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: 0.03em; text-shadow: 0 0 15px rgba(88,166,255,0.4); margin-bottom: 4px; }
 .px-sub { font-size: 13px; color: #8b949e; font-weight: 500; font-family: 'JetBrains Mono', monospace; /* text-transform: uppercase; */ letter-spacing: 0.05em; }
 
@@ -1184,6 +1186,15 @@ const avgConf = predictions?.length
           )}
         </div>
       </div>
+
+      {/* The real record ends on a fixed date; say so before any figure is read */}
+      {eng && eng !== "missing" && eng.records?.recent_real_share != null && eng.records.recent_real_share < 0.99 && (
+        <p className="px-seed" role="note">
+          <b>Demonstration data.</b>{" "}
+          {eng.records.real_record_ends ? `The real FIR record ends on ${dayOf(eng.records.real_record_ends)}; the weeks after it are seeded. ` : "The most recent weeks are seeded. "}
+          This week&apos;s figures show the method at work, not live crime. The accuracy figures are measured on the real record only.
+        </p>
+      )}
 
       {/* What to act on, first: the forecast, the alerts, and the week in a few sentences */}
       <div className="px-top">

@@ -183,6 +183,14 @@ async def scorecard(unit: str = "beat", category: Optional[str] = None) -> dict:
     return await _call(S.scorecard, unit_type=unit, category=category)
 
 
+@router.get("/refit")
+async def refit_state() -> dict:
+    """Whether this week stands on real record or seeded rows, when the weekly job last
+    ran, and what it would do now (app/forecast/refit.py)."""
+    from app.forecast import refit
+    return await _call(refit.state)
+
+
 @router.get("/status")
 async def status() -> dict:
     """The configured as-of, the forecast runs on file, and the back-test headline."""
