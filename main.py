@@ -329,6 +329,16 @@ async def lifespan(app: FastAPI):
     for _c in (_lock.get("changed") or [])[:8]:
         print(f"  ⚠️  LOCK: {_c}")
     
+    # Stage the database BEFORE anything is served. It takes about 3 seconds; done in the
+    # background instead, the first request (a health probe, written to the audit log)
+    # opened the path first, sqlite created an empty file there, and staging then took
+    # that file for the registry. The whole deployment ran on an empty database.
+    try:
+        from app.core.db_path import ensure_db_staged
+        await asyncio.to_thread(ensure_db_staged)
+    except Exception as e:
+        print(f"  ⚠️  database staging failed: {e}")
+
     # Start real-time dispatch simulator task in the background
     from app.api.live_stream import start_dispatch_simulator
     simulator_task = asyncio.create_task(start_dispatch_simulator())

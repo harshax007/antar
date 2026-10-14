@@ -101,6 +101,49 @@ def _ensure_wal(path: str) -> None:
         print(f"[db_path] could not enable WAL: {e}")
 
 
+def _is_registry(path: str) -> bool:
+    """True when `path` is a database that holds the FIR registry, not just a file."""
+    try:
+        if not os.path.exists(path) or os.path.getsize(path) == 0:
+            return False
+        import sqlite3
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=10)
+        try:
+            return con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'FIRs'").fetchone() is not None
+        finally:
+            con.close()
+    except Exception:
+        return False
+
+
+# The Brain's corpus index ships beside the registry and is looked for beside the staged
+# one (app/second_brain/vec_store.py). Without this copy a deployed container searched an
+# empty index: 0 of 100,000 FIRs.
+_SIDECARS = ("brain_vectors.db", "brain_vectors.i8", "brain_vectors.ids", "brain_vectors.mult")
+
+
+def _stage_sidecars() -> None:
+    src_dir, dst_dir = os.path.dirname(_source_db), os.path.dirname(DB_PATH)
+    if os.path.abspath(src_dir) == os.path.abspath(dst_dir):
+        return
+    for name in _SIDECARS:
+        src, dst = os.path.join(src_dir, name), os.path.join(dst_dir, name)
+        try:
+            if not os.path.exists(src):
+                continue
+            if os.path.exists(dst) and os.path.getsize(dst) >= os.path.getsize(src):
+                continue                     # already staged (the store only grows)
+            tmp = f"{dst}.staging-{os.getpid()}"
+            shutil.copyfile(src, tmp)
+            for stale in (dst + "-wal", dst + "-shm"):
+                if os.path.exists(stale):
+                    os.remove(stale)
+            os.replace(tmp, dst)
+            print(f"[db_path] staged {name} ({os.path.getsize(dst) / 1048576:.0f} MB)")
+        except Exception as e:               # the Brain degrades; the registry still serves
+            print(f"[db_path] could not stage {name}: {e}")
+
+
 def ensure_db_staged() -> str:
     """Expand main.db.gz into /tmp if it is not there yet. Idempotent and thread-safe.
 
@@ -121,9 +164,21 @@ def ensure_db_staged() -> str:
     with _stage_lock:
         if _staged:                     # another thread won the race
             return DB_PATH
-        if os.path.exists(DB_PATH) and os.path.getsize(DB_PATH) > 0:
+        if _is_registry(DB_PATH):
             _staged = True
+            _stage_sidecars()
             return DB_PATH
+        # A file that is there but is not the registry was created by a connection that
+        # opened the path before staging (sqlite creates on connect). Treating it as
+        # staged left a deployed container running on an empty database. Replace it, and
+        # its journal files with it: a stale -wal beside a new database corrupts it.
+        for stale in (DB_PATH, DB_PATH + "-wal", DB_PATH + "-shm"):
+            try:
+                if os.path.exists(stale):
+                    os.remove(stale)
+                    print(f"[db_path] removed pre-staging file {os.path.basename(stale)}")
+            except OSError as e:
+                print(f"[db_path] could not remove {stale}: {e}")
 
         gz_src = _source_db + ".gz"
         tmp_out = f"{DB_PATH}.staging-{os.getpid()}"
@@ -146,6 +201,7 @@ def ensure_db_staged() -> str:
                   f"({os.path.getsize(DB_PATH) / 1048576:.0f} MB)")
             _staged = True
             _ensure_wal(DB_PATH)
+            _stage_sidecars()
         except Exception as e:
             print(f"[db_path] Failed to stage DB: {e}")
             try:

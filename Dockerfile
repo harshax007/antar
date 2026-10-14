@@ -35,6 +35,15 @@ RUN pip install --no-cache-dir \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# -- Not root ------------------------------------------------------------------
+# The service needs no privilege: it listens on a high port and writes only to /tmp
+# (the staged database) and its own folder. Created here, after the system-wide pip
+# install and before the models are cached, so the cache is owned by the user that
+# reads it and no later layer has to re-own 300 MB.
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin antar \
+    && chown antar:antar /app
+USER antar
+
 # ── 3. Bake the Second Brain models into the image ────────────────────────────
 # main.py sets HF_HUB_OFFLINE=1 so the container never blocks startup on a network
 # fetch. That means the weights have to already be present, otherwise load_embedder()
@@ -63,7 +72,7 @@ print('second brain models cached')"
 # to the keyword classifier, which is what has been running in production all along.
 
 # ── 4. Application code ───────────────────────────────────────────────────────
-COPY . /app
+COPY --chown=antar:antar . /app
 
 # Catalyst AppSail injects the port at runtime; run.py reads X_ZOHO_CATALYST_LISTEN_PORT.
 EXPOSE 9000

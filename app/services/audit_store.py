@@ -461,7 +461,10 @@ def verify_chain_report() -> dict:
         "note": (
             f"{legacy} entr{'y predates' if legacy == 1 else 'ies predate'} the verifiable "
             "format and cannot be checked; 'ok' covers the verifiable entries only."
-            if legacy else "every entry in the ledger was verified."
+            if legacy else
+            ("every entry in the ledger was verified." if broken_at is None else
+             f"{verified} of {total} entries verified; the chain breaks at entry {broken_at} "
+             "and nothing after it was checked.")
         ),
     }
 
