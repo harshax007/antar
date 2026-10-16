@@ -175,200 +175,103 @@ const STAGE_MASCOTS = {
   },
 };
 
-function AnimSlot({ stage, isActive, isDone }) {
+function AnimSlot({ stage, isActive, isDone, infoText }) {
   const cfg = STAGES.find((s) => s.key === stage) || STAGES[0];
   const mascotInfo = STAGE_MASCOTS[stage] || STAGE_MASCOTS.think;
 
   return (
-    <div id={`anim-slot-${stage}`} data-stage={stage} data-active={String(isActive)} data-done={String(isDone)}
+    <div
+      id={`anim-slot-${stage}`}
+      data-stage={stage}
+      data-active={String(isActive)}
+      data-done={String(isDone)}
       style={{
         position: "relative",
         borderRadius: "10px",
-        border: `1px solid ${cfg.color}${isDone ? "40" : isActive ? "30" : "12"}`,
-        background: `radial-gradient(ellipse at 50% 35%, ${cfg.color}${isDone ? "10" : isActive ? "0c" : "04"} 0%, rgba(2,4,9,0.95) 75%)`,
+        border: `1px solid rgba(255, 255, 255, 0.08)`,
+        background: "rgba(3, 5, 12, 0.9)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
-        transition: "border-color 0.6s, background 0.6s",
         flex: 1,
         minHeight: "155px",
-        padding: "12px 16px",
+        padding: "14px 16px",
       }}
     >
-      {/* HUD corner brackets */}
-      {[["top:8px;left:8px;border-top-width:1.5px;border-left-width:1.5px","tl"],["top:8px;right:8px;border-top-width:1.5px;border-right-width:1.5px","tr"],["bottom:8px;left:8px;border-bottom-width:1.5px;border-left-width:1.5px","bl"],["bottom:8px;right:8px;border-bottom-width:1.5px;border-right-width:1.5px","br"]].map(([sty,k]) => {
-        const s = {};
-        sty.split(";").filter(Boolean).forEach((p) => { const [prop,val] = p.split(":"); s[prop.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())] = val; });
-        return <span key={k} style={{ position:"absolute", width:"9px", height:"9px", borderColor:`${cfg.color}${isDone?"50":isActive?"35":"18"}`, borderStyle:"solid", borderWidth:0, transition:"border-color 0.5s", ...s }} />;
-      })}
-
-      {/* Cyber Grid & Scanline Background */}
-      <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)`, backgroundSize: "24px 24px", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 4px)", pointerEvents: "none" }} />
-
       {/* Engine Status Header Bar */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        width: "100%",
-        marginBottom: "8px",
-        zIndex: 2,
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: "8.5px",
-        letterSpacing: "0.12em",
-        color: `${cfg.color}90`,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <motion.span
-            animate={isActive ? { opacity: [1, 0.2, 1] } : { opacity: 1 }}
-            transition={{ repeat: Infinity, duration: 1.2 }}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          width: "100%",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: "9.5px",
+          letterSpacing: "0.08em",
+          color: `${cfg.color}cc`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+          <span
             style={{
-              width: "5px",
-              height: "5px",
+              width: "6px",
+              height: "6px",
               borderRadius: "50%",
-              background: isDone ? "#10B981" : isActive ? cfg.color : `${cfg.color}50`,
-              boxShadow: `0 0 8px ${isDone ? "#10B981" : cfg.color}`,
+              background: isDone ? "#10B981" : isActive ? cfg.color : "rgba(255,255,255,0.25)",
               display: "inline-block",
             }}
           />
           <span style={{ fontWeight: 600 }}>{mascotInfo.engine}</span>
         </div>
-        <span style={{ color: isDone ? "#10B981" : isActive ? cfg.color : "#475569", fontWeight: 600 }}>
-          {isDone ? "[LOCKED: VERIFIED]" : isActive ? "[ACTIVE SYNTHESIS]" : "[STANDBY READY]"}
-        </span>
       </div>
 
-      {/* Reasoning Core Center Chamber */}
-      <div style={{
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        padding: "4px 0",
-        zIndex: 2,
-      }}>
-        {/* Hologram Aperture Frame */}
-        <div style={{
-          position: "relative",
-          width: "90px",
-          height: "82px",
+      {/* Center Mascot with Simple, Clean Animation */}
+      <div
+        style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-        }}>
-          {/* Active Laser Scan Line Sweeping across the mascot */}
-          <motion.div
-            animate={isActive ? { y: [-36, 36, -36], opacity: [0.3, 0.85, 0.3] } : { opacity: 0 }}
-            transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
-            style={{
-              position: "absolute",
-              left: "-12px",
-              right: "-12px",
-              height: "2px",
-              background: `linear-gradient(90deg, transparent, ${cfg.color}, #FFFFFF, ${cfg.color}, transparent)`,
-              boxShadow: `0 0 10px ${cfg.color}, 0 0 4px #FFFFFF`,
-              zIndex: 4,
-              pointerEvents: "none",
-            }}
+          width: "100%",
+          padding: "8px 0 6px",
+        }}
+      >
+        <motion.div
+          animate={isActive ? { y: [-3, 3, -3] } : { y: 0 }}
+          transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+          style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <Mascot
+            size={74}
+            label={`${mascotInfo.name} Core`}
+            directions={`/mascots/sm/${mascotInfo.face}-directions.webp`}
+            reactions={`/mascots/sm/${mascotInfo.face}-reactions.webp`}
           />
-
-          {/* Aperture Frame Glow Backdrop */}
-          <div style={{
-            position: "absolute",
-            inset: "4px",
-            borderRadius: "14px",
-            border: `1px solid ${cfg.color}${isActive ? "35" : isDone ? "25" : "10"}`,
-            background: `radial-gradient(circle, ${cfg.color}${isActive ? "15" : isDone ? "10" : "05"} 0%, transparent 70%)`,
-            boxShadow: isActive ? `inset 0 0 16px ${cfg.color}25` : "none",
-            pointerEvents: "none",
-          }} />
-
-          {/* Interactive Mascot Core */}
-          <div style={{
-            position: "relative",
-            zIndex: 3,
-            filter: isActive
-              ? `drop-shadow(0 0 14px ${cfg.color}80)`
-              : isDone
-              ? `drop-shadow(0 0 10px ${cfg.color}50)`
-              : `drop-shadow(0 0 4px ${cfg.color}25)`,
-            transition: "filter 0.4s ease",
-            cursor: "pointer",
-          }}>
-            <Mascot
-              size={66}
-              label={`${mascotInfo.name} Core`}
-              directions={`/mascots/sm/${mascotInfo.face}-directions.webp`}
-              reactions={`/mascots/sm/${mascotInfo.face}-reactions.webp`}
-            />
-          </div>
-        </div>
-
-        {/* Live Reasoning Telemetry Stream */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "8px",
-          marginTop: "6px",
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: "8.5px",
-          color: `${cfg.color}aa`,
-          letterSpacing: "0.06em",
-        }}>
-          {mascotInfo.telemetry.map((t, idx) => (
-            <span key={idx} style={{
-              background: "rgba(255,255,255,0.02)",
-              border: `1px solid ${cfg.color}20`,
-              padding: "2px 6px",
-              borderRadius: "4px",
-              whiteSpace: "nowrap",
-            }}>
-              {t}
-            </span>
-          ))}
-        </div>
-
-        {/* Neural Waveform Equalizer Bars */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "3px",
-          marginTop: "6px",
-          height: "12px",
-        }}>
-          {[0.4, 0.8, 0.6, 1.0, 0.5, 0.9, 0.3, 0.7].map((h, i) => (
-            <motion.div
-              key={i}
-              animate={isActive ? { scaleY: [0.3, 1.4, 0.5, 1.2, 0.3] } : { scaleY: isDone ? 0.7 : 0.35 }}
-              transition={{ repeat: Infinity, duration: 0.8 + (i * 0.12), ease: "easeInOut" }}
-              style={{
-                width: "2px",
-                height: "10px",
-                borderRadius: "1px",
-                background: isDone ? "#10B981" : cfg.color,
-                opacity: isDone ? 0.8 : isActive ? 0.9 : 0.35,
-                transformOrigin: "bottom",
-              }}
-            />
-          ))}
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: "10.5px",
-            fontWeight: 600,
-            color: cfg.color,
-            letterSpacing: "0.08em",
-            marginLeft: "6px",
-          }}>
-            /{stage}
-          </span>
-        </div>
+        </motion.div>
       </div>
+
+      {/* Agent Info Callout Below Agent Mascot */}
+      {infoText && (
+        <div
+          style={{
+            width: "100%",
+            marginTop: "6px",
+            background: `${cfg.color}0d`,
+            border: `1px solid ${cfg.color}25`,
+            borderRadius: "6px",
+            padding: "5px 9px",
+            fontFamily: "'Inter', sans-serif",
+            fontSize: "9.5px",
+            fontWeight: 450,
+            color: "#E2E8F0",
+            lineHeight: 1.4,
+            textAlign: "center",
+          }}
+        >
+          {infoText}
+        </div>
+      )}
     </div>
   );
 }
@@ -594,7 +497,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
               
               {/* Right: 3D Slot + Response */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                 <AnimSlot stage={stage} isActive={status === "running"} isDone={status === "done" || status === "offline"} />
+                 <AnimSlot stage={stage} isActive={status === "running"} isDone={status === "done" || status === "offline"} infoText={oneLineAnswer} />
                  
                  {/* Specific Response directly from this agent */}
                  <div style={{ 
@@ -615,7 +518,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
                         borderLeft: `3px solid ${cfg.color}`,
                         padding: "8px 12px",
                         borderRadius: "6px",
-                        marginBottom: "10px",
+                        marginBottom: status === "done" && run?.msg?.text ? "12px" : "4px",
                         color: "#E2E8F0",
                         fontSize: "11px",
                         fontStyle: "italic",
@@ -624,32 +527,9 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
                         "{activeQ}"
                       </div>
                     )}
-
-                    {/* Relevant Agent Response in One Line */}
-                    <div style={{
-                      background: `${cfg.color}0d`,
-                      border: `1px solid ${cfg.color}30`,
-                      borderRadius: "8px",
-                      padding: "10px 14px",
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "10px",
-                      marginBottom: status === "done" && run?.msg?.text ? "12px" : "4px"
-                    }}>
-                      <span style={{ color: cfg.color, fontSize: "12px", lineHeight: "17px", flexShrink: 0 }}>⚡</span>
-                      <div style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        color: "#F8FAFC",
-                        lineHeight: 1.5,
-                      }}>
-                        {oneLineAnswer}
-                      </div>
-                    </div>
                     
                     {status === "done" && run?.msg?.text && (
-                      <div style={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.6, overflowY: "auto", maxHeight: "150px", fontFamily: "'Inter', sans-serif", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "10px" }}>
+                      <div style={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.6, overflowY: "auto", maxHeight: "180px", fontFamily: "'Inter', sans-serif", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "10px" }}>
                         <FormattedResponse text={clean(run.msg.text)} />
                       </div>
                     )}
@@ -717,38 +597,38 @@ function FormattedResponse({ text }) {
   const [head, ...rest] = segs;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* headline */}
       <div style={{
-        color: "#FFFFFF", fontSize: "14px", fontWeight: 500, lineHeight: 1.6,
-        borderLeft: "3px solid #22E6F0", padding: "12px 16px",
+        color: "#FFFFFF", fontSize: "12.5px", fontWeight: 500, lineHeight: 1.55,
+        borderLeft: "3px solid #22E6F0", padding: "10px 14px",
         background: "linear-gradient(90deg, rgba(34,230,240,0.12) 0%, rgba(34,230,240,0.01) 100%)",
-        borderRadius: "0 8px 8px 0",
+        borderRadius: "0 6px 6px 0",
         boxShadow: "inset 1px 0 0 rgba(255,255,255,0.05)"
       }}>
         {verified && (
           <span style={{
-            display: "inline-block", fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.08em",
-            color: "#0a0e14", background: "#22E6F0", borderRadius: "4px", padding: "1px 6px",
-            marginRight: "8px", verticalAlign: "middle", fontFamily: "'JetBrains Mono', monospace",
+            display: "inline-block", fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.08em",
+            color: "#0a0e14", background: "#22E6F0", borderRadius: "3px", padding: "1px 5px",
+            marginRight: "7px", verticalAlign: "middle", fontFamily: "'JetBrains Mono', monospace",
           }}>VERIFIED</span>
         )}
         {frInline(head)}
       </div>
 
       {/* labeled sections + bullets */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "2px" }}>
         {rest.map((seg, i) => {
           const m = seg.match(/^([A-Za-z][A-Za-z\- ]+?):\s*([\s\S]*)$/);
           const isLabel = m && FR_LABELS.includes(m[1].trim());
           if (isLabel) {
             return (
-              <div key={i} style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "8px" }}>
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "6px" }}>
                 <span style={{
-                  fontSize: "10px", fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase",
+                  fontSize: "9px", fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase",
                   color: "#22E6F0", fontFamily: "'Chakra Petch', sans-serif",
                 }}>{m[1].trim()}</span>
-                <span style={{ color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, paddingLeft: "2px" }}>
+                <span style={{ color: "#CBD5E1", fontSize: "11.5px", lineHeight: 1.55, paddingLeft: "2px" }}>
                   {frInline(m[2])}
                 </span>
               </div>
@@ -759,9 +639,9 @@ function FormattedResponse({ text }) {
           if (numMatch) {
             return (
               <div key={i} style={{
-                color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, display: "flex", gap: "10px", paddingLeft: "16px",
+                color: "#CBD5E1", fontSize: "11.5px", lineHeight: 1.55, display: "flex", gap: "8px", paddingLeft: "12px",
               }}>
-                <span style={{ color: "#22E6F0", flexShrink: 0, fontWeight: 600, width: "18px", textAlign: "right" }}>{numMatch[1]}</span>
+                <span style={{ color: "#22E6F0", flexShrink: 0, fontWeight: 600, width: "16px", textAlign: "right" }}>{numMatch[1]}</span>
                 <span style={{ flex: 1 }}>{frInline(numMatch[2])}</span>
               </div>
             );
@@ -771,7 +651,7 @@ function FormattedResponse({ text }) {
           if (isSubhead) {
             return (
               <div key={i} style={{
-                color: "#F8FAFC", fontSize: "13px", lineHeight: 1.6, display: "flex", marginTop: "6px", fontWeight: 500
+                color: "#F8FAFC", fontSize: "11.5px", lineHeight: 1.55, display: "flex", marginTop: "4px", fontWeight: 500
               }}>
                 <span>{frInline(seg)}</span>
               </div>
@@ -781,9 +661,9 @@ function FormattedResponse({ text }) {
           let cleanSeg = seg.replace(/^[-*•]\s*/, "");
           return (
             <div key={i} style={{
-              color: "#CBD5E1", fontSize: "13px", lineHeight: 1.6, display: "flex", gap: "10px", paddingLeft: "4px"
+              color: "#CBD5E1", fontSize: "11.5px", lineHeight: 1.55, display: "flex", gap: "8px", paddingLeft: "4px"
             }}>
-              <span style={{ color: "#22E6F0", flexShrink: 0, fontSize: "14px", lineHeight: "1.4" }}>•</span>
+              <span style={{ color: "#22E6F0", flexShrink: 0, fontSize: "12px", lineHeight: "1.4" }}>•</span>
               <span style={{ flex: 1 }}>{frInline(cleanSeg)}</span>
             </div>
           );
@@ -1400,7 +1280,7 @@ function DocsFull() {
                   <motion.div initial={{ opacity: 0, filter: "blur(4px)" }} animate={{ opacity: 1, filter: "blur(0px)" }} transition={{ duration: 0.6, delay: 0.1 }}
                     style={{ padding: "24px", position: "relative" }}>
 
-                    <div style={{ fontFamily: "'Inter', sans-serif", width: "100%", color: "#e2e8f0", fontSize: "14px", lineHeight: 1.7 }}>
+                    <div style={{ fontFamily: "'Inter', sans-serif", width: "100%", color: "#e2e8f0", fontSize: "12.5px", lineHeight: 1.6 }}>
                       <FormattedResponse text={clean(mainThinkRun.msg.text).replace(/\[COMPUTED\]\s*/gi, '').replace(/PATTERNS/g, 'Patterns')} />
                     </div>
                   </motion.div>

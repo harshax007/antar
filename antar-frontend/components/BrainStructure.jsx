@@ -378,9 +378,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     setThinkOpen(false);
     setCopied(false);
     setThink({ phase: "run", at: 0 });
-    // The agents' flight through the brain is the progress indicator - its duration
-    // matches the staged reveal below so the two finish together.
-    controlRef.current?.think?.(2600);
+    // Fast Run flight indicator matches the agent stagger
+    controlRef.current?.think?.(1200);
 
     // Counted from the records in view - see lib/fastRun.js for what each finding claims.
     const findings = fastRun(filtered);
@@ -398,11 +397,10 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       });
     }).catch(() => {});
 
-    // Short reveal stagger only - this is a UI transition, NOT simulated compute time.
-    // The local passes are instant; the only real latency is the live backend fetch below.
+    // Fast, crisp agent scan reveal stagger (120ms instead of sluggish 300ms)
     for (let i = 0; i < AGENTS.length; i++) {
       setThink({ phase: "run", at: i });
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 120));
     }
     await live;
 

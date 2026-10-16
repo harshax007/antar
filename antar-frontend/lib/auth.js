@@ -122,7 +122,10 @@ function backendPath(input) {
   try {
     const url = new URL(typeof input === "string" ? input : input.url, window.location.href);
     const origin = API_BASE ? new URL(API_BASE, window.location.href).origin : window.location.origin;
-    return url.origin === origin && GUARDED.test(url.pathname) ? url.pathname : null;
+    const norm = (s) => (s || "").replace("localhost", "127.0.0.1");
+    const isBackend = url.origin === origin || url.origin === window.location.origin ||
+      norm(url.origin) === norm(origin) || norm(url.origin) === norm(window.location.origin);
+    return isBackend && GUARDED.test(url.pathname) ? url.pathname : null;
   } catch { return null; }
 }
 

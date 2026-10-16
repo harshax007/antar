@@ -436,7 +436,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
 
   // Think-flight: agent hubs leave their shell, spiral through the data
   // (satellites trail behind via the link force), then glide home.
-  function flyAgents(duration = 3400) {
+  function flyAgents(duration = 1400) {
     const fg = fgRef.current;
     if (!fg || !dataRef.current) return;
     if (flightRef.current) cancelAnimationFrame(flightRef.current);
@@ -444,7 +444,6 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
     if (!hubs.length) return;
     const home = hubs.map((h) => ({ h, a0: Math.atan2(h.y, h.x), r0: Math.hypot(h.x, h.y) || h.ring }));
     const t0 = performance.now();
-    let lastHeat = 0;
     const tick = (now) => {
       const t = Math.min(1, (now - t0) / duration);
       // radius dips into the core and back (sin envelope); two orbits on the way
@@ -454,11 +453,10 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
         h.fx = Math.cos(a) * r;
         h.fy = Math.sin(a) * r;
       });
-      if (now - lastHeat > 400) { fg.d3ReheatSimulation(); lastHeat = now; }
-      if (t < 1) flightRef.current = requestAnimationFrame(tick);
-      else {
+      if (t < 1) {
+        flightRef.current = requestAnimationFrame(tick);
+      } else {
         home.forEach(({ h }) => { delete h.fx; delete h.fy; });
-        fg.d3ReheatSimulation();
         flightRef.current = null;
       }
     };

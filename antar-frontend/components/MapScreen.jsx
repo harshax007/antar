@@ -141,9 +141,9 @@ function ZoomButtons({ geo, onReset }) {
   return (
     <div className="mx-zoom mx-panel" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
       <button onClick={() => { 
-        if (geo) map.flyToBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0] });
+        if (geo) map.flyToBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0], duration: 0.6 });
         if (onReset) onReset();
-      }} aria-label="Reset View" title="Reset Map" style={{ fontSize: "14px", lineHeight: 1 }}>?</button>
+      }} aria-label="Reset View" title="Reset Map" style={{ fontSize: "14px", lineHeight: 1 }}>↺</button>
       <button onClick={() => map.zoomIn()} aria-label="Zoom in">+</button>
       <button onClick={() => map.zoomOut()} aria-label="Zoom out">&minus;</button>
     </div>
@@ -170,9 +170,10 @@ function FlyTo({ bounds }) {
   return null;
 }
 
-function FitToKarnataka({ geo, selectedDistrict }) {
+function FitToKarnataka({ geo, selectedDistrict, resetTrigger }) {
   const map = useMap();
-  const [prevDistrict, setPrevDistrict] = useState(null);
+  const prevDistrictRef = useRef(null);
+  const prevTriggerRef = useRef(resetTrigger);
   // First load: fill the map frame with the state rather than a fixed centre/zoom, which
   // left Karnataka small in a sea of empty tiles.
   const fitted = useRef(false);
@@ -181,18 +182,22 @@ function FitToKarnataka({ geo, selectedDistrict }) {
     fitted.current = true;
     requestAnimationFrame(() => {
       map.invalidateSize();
-      map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0] });
+      map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0], animate: false });
     });
   }, [geo, map]);
+
   useEffect(() => {
     if (!geo) return;
-    // Only fly back to state bounds if we are deselecting a district
-    if (!selectedDistrict && prevDistrict) {
+    const triggerFired = resetTrigger !== prevTriggerRef.current && resetTrigger > 0;
+    const districtClosed = !selectedDistrict && prevDistrictRef.current;
+    // When a district is closed/deselected or reset triggered, return to default Karnataka state view
+    if (triggerFired || districtClosed) {
       const layer = L.geoJSON(geo);
-      map.flyToBounds(layer.getBounds(), { padding: [20, 20], duration: 0.5 });
+      map.flyToBounds(layer.getBounds(), { padding: [0, 0], duration: 0.6 });
     }
-    setPrevDistrict(selectedDistrict);
-  }, [geo, map, selectedDistrict]);
+    prevDistrictRef.current = selectedDistrict;
+    prevTriggerRef.current = resetTrigger;
+  }, [geo, map, selectedDistrict, resetTrigger]);
   return null;
 }
 
@@ -421,6 +426,15 @@ export default function MapScreen() {
   function openDistrict(gadmName, bounds) {
     setSelectedDistrict(gadmName);
     setFlyBounds(bounds);
+  }
+
+  const [resetMapTrigger, setResetMapTrigger] = useState(0);
+
+  function closeDistrict() {
+    setSelectedDistrict(null);
+    setDistrictDetail(null);
+    setFlyBounds(null);
+    setResetMapTrigger((v) => v + 1);
   }
 
   // The district card follows the calendar and the crime filter: it is read again for the
@@ -828,8 +842,8 @@ export default function MapScreen() {
             <GeoJSON key="ka-edge" data={stateOutline} style={stateEdgeStyle} interactive={false} />
           )}
 
-          {/* Permanent District Labels */}
-          {Object.entries(GADM_CENTROIDS).map(([name, coords]) => (
+          {/* Permanent District Labels - rendered when geo bounds are ready so they do not jump */}
+          {geo && Object.entries(GADM_CENTROIDS).map(([name, coords]) => (
             <CircleMarker key={"lbl-"+name} center={coords} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
               <Tooltip permanent direction="center" className="mx-district-lbl">
                 {name}
@@ -837,21 +851,21 @@ export default function MapScreen() {
             </CircleMarker>
           ))}
 
-          {fc.clustersOn && !fc.on && topGiZones.map((z, i) => (
-            <CircleMarker key={"heat" + i} center={[z.lat, z.lon]} radius={6 + Math.sqrt(Math.max(z.observed, 1)) * 1.2}
+          {geo && fc.clustersOn && !fc.on && topGiZones.map((z, i) => (
+            <CircleMarker key={"heat" + (z.zone || i)} center={[z.lat, z.lon]} radius={6 + Math.sqrt(Math.max(z.observed, 1)) * 1.2}
               pathOptions={{ stroke: false, fillColor: z.is_hotspot ? "#E14038" : "#22E6F0", fillOpacity: 0.12 }} />
           ))}
 
           {/* Under the forecast, Gi* is drawn as what it is - a significance test: a ring
               round each CONFIRMED cluster only, not a second set of blobs. */}
-          {fc.clustersOn && fc.on && topGiZones.filter((z) => z.is_hotspot).map((z, i) => (
-            <CircleMarker key={"gir" + i} center={[z.lat, z.lon]} radius={16} interactive
+          {geo && fc.clustersOn && fc.on && topGiZones.filter((z) => z.is_hotspot).map((z, i) => (
+            <CircleMarker key={"gir" + (z.zone || i)} center={[z.lat, z.lon]} radius={16} interactive
               pathOptions={{ color: "#22E6F0", weight: 1.6, opacity: 0.9, dashArray: "4 4", fill: false }}>
               <Tooltip className="mx-hs" sticky>{z.zone} · Gi* confirmed cluster (z={z.gi_stat.toFixed(2)}, {z.observed} FIRs in 30 days)</Tooltip>
             </CircleMarker>
           ))}
-          {fc.clustersOn && !fc.on && topGiZones.map((z, i) => (
-            <CircleMarker key={"hs" + i} center={[z.lat, z.lon]} radius={2 + Math.sqrt(Math.max(z.observed, 1)) * 0.6}
+          {geo && fc.clustersOn && !fc.on && topGiZones.map((z, i) => (
+            <CircleMarker key={"hs" + (z.zone || i)} center={[z.lat, z.lon]} radius={2 + Math.sqrt(Math.max(z.observed, 1)) * 0.6}
               pathOptions={{ color: z.is_hotspot ? "#ff5a5a" : "#5d6b80", weight: 1.4, fillColor: z.is_hotspot ? "#ff2f2f" : "#7a8aa3", fillOpacity: 0.55 }}>
               <Tooltip className="mx-hs" sticky>{z.zone} · z={z.gi_stat.toFixed(2)} · {z.observed} incidents{z.is_hotspot ? " · confirmed hotspot" : ""}</Tooltip>
             </CircleMarker>
@@ -930,15 +944,15 @@ export default function MapScreen() {
           <AutoResize />
           <FlyTo bounds={flyBounds} />
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
-          <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} />
-          <ZoomButtons geo={geo} onReset={() => { setSelectedDistrict(null); setDistrictDetail(null); }} />
+          <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} />
+          <ZoomButtons geo={geo} onReset={closeDistrict} />
         
           
 
         </MapContainer></div>
         {/* inside the map frame, so it sits on the map, not on the page grid */}
       {selectedDistrict && (
-        <button className="mx-breadcrumb" onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }}>
+        <button className="mx-breadcrumb" onClick={closeDistrict}>
           {kn ? "‹ ಕರ್ನಾಟಕ" : "‹ Karnataka"} &middot; {selectedDistrict}
         </button>
       )}
@@ -1214,7 +1228,7 @@ export default function MapScreen() {
               <div inert={reportOpen || showDossier ? "" : undefined} className={`mx-dcard mx-panel mx-dc${dcardBusy ? " is-busy" : ""}`} aria-busy={dcardBusy}>
                 <div className="mx-dcard-head">
                   <span>{d.zone}<em>{dated ? nice(d.as_of) : nice(endDate)} · {crimeLabel}</em></span>
-                  <button onClick={() => { setSelectedDistrict(null); setDistrictDetail(null); }} title={kn ? "ಮುಚ್ಚಿ" : "Close"} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close district card"}><X size={16} /></button>
+                  <button onClick={closeDistrict} title={kn ? "ಮುಚ್ಚಿ" : "Close"} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close district card"}><X size={16} /></button>
                 </div>
                 <div className="mx-dcard-body">
                   {d.empty && <p className="mx-dcard-none">{kn ? "ಈ ಜಿಲ್ಲೆಗೆ ದಾಖಲೆಗಳಿಲ್ಲ" : "No records are held for this district."}</p>}

@@ -14,12 +14,26 @@ import { SLASH_COMMANDS as SLASH_HINTS } from "@/lib/chatStream";
 import { WhisperMicButton, WhisperWaveform } from "@/components/WhisperMic";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { asset } from "@/lib/assets";
-import { openReport } from "@/lib/auth";
+import { openReport, readSession } from "@/lib/auth";
 import AgentStrip, { AGENTS as STRIP_AGENTS, LENS } from "@/components/AgentStrip";
 import YearQuestions, { yearQuestions } from "@/components/YearQuestions";
 import { FACE as AGENT_FACE } from "@/components/WorkspaceAgents";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
+
+function getAuthHeaders() {
+  const headers = {
+    "Content-Type": "application/json",
+    "X-Officer": getActiveOfficerId(),
+  };
+  try {
+    const session = readSession();
+    if (session?.token) {
+      headers["Authorization"] = `Bearer ${session.token}`;
+    }
+  } catch {}
+  return headers;
+}
 
 // Questions offered by ROLE, beside the data-checked "Related" follow-ups the backend
 // returns. Operations (Admin / Inspector) works cases and proposes real-world action;
@@ -1147,8 +1161,12 @@ const MessageRow = memo(({
                         )}
                         {/* User pressed Stop: partial output kept, clearly marked, one clear next move. */}
                         {m.stopped && (
-                          <div className="cx-stopped">
-                            <span className="lab">{kn ? "ನಿಲ್ಲಿಸಲಾಗಿದೆ - ಭಾಗಶಃ ಉತ್ತರ" : "Stopped - partial answer"}</span>
+                          <div className="cx-stopped" style={{ marginTop: (!m.text && !m.layout) ? "6px" : undefined }}>
+                            <span className="lab">
+                              {!m.text
+                                ? (kn ? "ಉತ್ತರ ರಚನೆ ನಿಲ್ಲಿಸಲಾಗಿದೆ" : "Stopped before answer generated")
+                                : (kn ? "ನಿಲ್ಲಿಸಲಾಗಿದೆ - ಭಾಗಶಃ ಉತ್ತರ" : "Stopped - partial answer")}
+                            </span>
                             {m.retryText && (
                               <button className="cx-act" onClick={() => send(m.retryText)}>
                                 ↻ {kn ? "ಮತ್ತೆ ರಚಿಸಿ" : "Regenerate"}
@@ -1671,7 +1689,7 @@ export default function ChatPage() {
   async function sendNonStream(q) {
     const res = await fetch(`${API}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Officer": getActiveOfficerId() },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ text: q, lang, session_id: sessionId, deep_think: deepThink }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1754,7 +1772,7 @@ export default function ChatPage() {
     try {
       const vRes = await fetch(`${API}/api/vigil/scan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Officer": getActiveOfficerId() },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ query: q, officer: getActiveOfficerId() })
       });
       if (vRes.ok) {
@@ -1772,7 +1790,7 @@ export default function ChatPage() {
       abortControllerRef.current = new AbortController();
       const res = await fetch(`${API}/api/chat/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Officer": getActiveOfficerId() },
+        headers: getAuthHeaders(),
         // With an agent picked on the landing screen, the first question is asked through
         // that agent's mode. Later questions are asked as typed.
         body: JSON.stringify({ text: (lens && messages.length === 0 && !q.startsWith("/")) ? `${LENS[lens]} ${q}` : q, lang, session_id: sessionId, deep_think: deepThink }),
@@ -2337,29 +2355,39 @@ export default function ChatPage() {
           onClick={newSession}
           style={{
             position: "fixed",
-            top: "80px",
-            left: "24px",
+            top: "76px",
+            left: "max(24px, calc((100vw - 1040px) / 2))",
             zIndex: 10000,
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
-            gap: "6px",
-            background: "rgba(15, 20, 30, 0.6)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            gap: "7px",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            background: "rgba(15, 20, 30, 0.75)",
+            border: "1px solid rgba(255, 255, 255, 0.16)",
             borderRadius: "9999px",
-            padding: "7px 15px",
+            padding: "7px 16px",
             color: "#FFFFFF",
             fontSize: "12.5px",
             fontWeight: 500,
             fontFamily: "'Inter', sans-serif",
             cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
+            boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
             transition: "all 0.2s ease"
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = "rgba(30, 41, 59, 0.85)";
+            e.currentTarget.style.borderColor = "rgba(34, 230, 240, 0.4)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = "rgba(15, 20, 30, 0.75)";
+            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.16)";
           }}
           title={kn ? "ಹೊಸ ತನಿಖಾ ಚಾಟ್ ಪ್ರಾರಂಭಿಸಿ" : "Start a new intelligence investigation session"}
         >
-          <span style={{ fontSize: "15px", lineHeight: 1, color: "rgba(255,255,255,0.6)" }}>+</span>
+          <span style={{ fontSize: "16px", lineHeight: 1, color: "var(--cyan, #22E6F0)", fontWeight: 400 }}>+</span>
           <span>{kn ? "ಹೊಸ ಸೆಶನ್" : "New Session"}</span>
         </button>
       )}

@@ -56,12 +56,23 @@ function nodeTooltip(n) {
     </div>`;
 }
 
+// Cache for label sprites so we don't recreate Three.js CanvasTextures on every frame/selection
+const spriteCache = new Map();
+
+function getCachedLabelSprite(THREE, text, sub, color) {
+  const key = `${text}|${sub || ""}|${color || ""}`;
+  if (spriteCache.has(key)) return spriteCache.get(key).clone();
+  const sprite = makeLabelSprite(THREE, text, sub, color);
+  spriteCache.set(key, sprite);
+  return sprite.clone();
+}
+
 // Floating text label as a camera-facing sprite (three CanvasTexture).
 function makeLabelSprite(THREE, text, sub, color) {
-  const dpr = 2;
-  const padX = 16 * dpr;
-  const padY = 8 * dpr;
-  const fs = 22 * dpr, subFs = 16 * dpr;
+  const dpr = 1.5;
+  const padX = 14 * dpr;
+  const padY = 7 * dpr;
+  const fs = 18 * dpr, subFs = 13 * dpr;
   const cvs = document.createElement("canvas");
   const ctx = cvs.getContext("2d");
   
@@ -71,21 +82,20 @@ function makeLabelSprite(THREE, text, sub, color) {
   const w2 = sub ? ctx.measureText(`[${sub}]`).width : 0;
   
   const w = Math.max(w1, w2) + padX * 2;
-  const h = (sub ? fs + subFs + 8 * dpr : fs) + padY * 2;
+  const h = (sub ? fs + subFs + 6 * dpr : fs) + padY * 2;
   cvs.width = w; cvs.height = h;
   
-  ctx.fillStyle = "rgba(4, 7, 14, 0.85)";
+  ctx.fillStyle = "rgba(4, 7, 14, 0.88)";
   ctx.beginPath();
-  ctx.roundRect(0, 0, w, h, 12 * dpr);
+  if (ctx.roundRect) ctx.roundRect(0, 0, w, h, 8 * dpr);
+  else ctx.rect(0, 0, w, h);
   ctx.fill();
-  ctx.strokeStyle = "rgba(34, 230, 240, 0.3)";
+  ctx.strokeStyle = "rgba(34, 230, 240, 0.35)";
   ctx.lineWidth = 1 * dpr;
   ctx.stroke();
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.shadowColor = "rgba(0,0,0,0.8)";
-  ctx.shadowBlur = 4 * dpr;
   
   ctx.font = `600 ${fs}px Inter, sans-serif`;
   ctx.fillStyle = color || "#FFFFFF";
@@ -106,7 +116,7 @@ function makeLabelSprite(THREE, text, sub, color) {
   return sprite;
 }
 
-const INTRO_MS = 4600;      // length of the opening zoom-in
+const INTRO_MS = 3200;      // length of the opening zoom-in
 
 export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
   const containerRef = useRef(null);
@@ -202,7 +212,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     fgRef.current?.cameraPosition({ x: 0, y: 0, z: 980 }, { x: 0, y: 0, z: 0 }, 800);
   }
 
-  function flyAgents(duration = 3400) {
+  function flyAgents(duration = 1400) {
     const fg = fgRef.current;
     if (!fg || !dataRef.current) return;
     if (flightRef.current) cancelAnimationFrame(flightRef.current);
@@ -210,7 +220,6 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     if (!hubs.length) return;
     const home = hubs.map((h) => ({ h, r0: Math.hypot(h.x || 0, h.y || 0, h.z || 0) || h.ring, a0: Math.atan2(h.y || 0, h.x || 0), e0: Math.asin((h.z || 0) / (Math.hypot(h.x || 0, h.y || 0, h.z || 0) || 1)) }));
     const t0 = performance.now();
-    let lastHeat = 0;
     const tick = (now) => {
       const t = Math.min(1, (now - t0) / duration);
       home.forEach(({ h, r0, a0, e0 }, i) => {
@@ -220,9 +229,12 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         h.fy = Math.sin(a) * Math.cos(e0) * r;
         h.fz = Math.sin(e0) * r;
       });
-      if (now - lastHeat > 400) { fg.d3ReheatSimulation(); lastHeat = now; }
-      if (t < 1) flightRef.current = requestAnimationFrame(tick);
-      else { home.forEach(({ h }) => { delete h.fx; delete h.fy; delete h.fz; }); fg.d3ReheatSimulation(); flightRef.current = null; }
+      if (t < 1) {
+        flightRef.current = requestAnimationFrame(tick);
+      } else {
+        home.forEach(({ h }) => { delete h.fx; delete h.fy; delete h.fz; });
+        flightRef.current = null;
+      }
     };
     flightRef.current = requestAnimationFrame(tick);
   }
@@ -265,7 +277,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
             color = n.role === "top" ? "#34EEB6" : "#FFFFFF";
           }
           if (!text) return null;
-          const sprite = makeLabelSprite(THREE, text, sub, color);
+          const sprite = getCachedLabelSprite(THREE, text, sub, color);
           sprite.position.set(0, (n.vsize || 2) + 6, 0);
           return sprite;
         })
@@ -273,18 +285,18 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         .linkVisibility(linkVisible)
         .linkWidth((l) => (l.kind === "agent" ? 0.5 : l.kind === "inferred" || l.kind === "unsub" ? 0.6 : 0.8))
         .linkOpacity(0.55)
-        .linkDirectionalParticles((l) => l.kind === "agent" ? 2 : (l.kind === "unsub" || l.kind === "inferred") ? 0 : 1)
-        .linkDirectionalParticleSpeed((l) => l.kind === "agent" ? 0.015 : 0.006)
-        .linkDirectionalParticleWidth(1.8)
-        .linkDirectionalParticleColor(() => "rgba(255,255,255,0.9)")
+        .linkDirectionalParticles((l) => l.kind === "agent" ? 1 : 0)
+        .linkDirectionalParticleSpeed(0.012)
+        .linkDirectionalParticleWidth(1.4)
+        .linkDirectionalParticleColor(() => "rgba(255,255,255,0.85)")
         .linkLabel((l) => `<div style="background:rgba(6,11,18,0.94); border:1px solid rgba(255,140,66,0.4); padding:5px 9px; border-radius:6px; font:11px 'JetBrains Mono', monospace; color:#FFB020; box-shadow:0 6px 16px rgba(0,0,0,0.85);">${linkWhy(l)}</div>`)
         .onNodeClick((n) => {
           if (n.kind === "agent") { onAgent?.(n.agent); return; }
           focusComponent(n);
         })
         .onBackgroundClick(() => { if (focusRef.current) clearFocus(); })
-        .warmupTicks(60)
-        .cooldownTime(9000);
+        .warmupTicks(30)
+        .cooldownTime(4000);
 
       fg.d3Force("charge").strength(-45);
       const linkForce = fg.d3Force("link");
