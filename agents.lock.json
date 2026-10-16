@@ -54,7 +54,7 @@
     },
     "query": {
       "path": "app/agents/query_agent.py",
-      "sha256": "21f71ea431532efb7ab5351294a92d32ec4e67b654c80315a154eb0a56b5ae4d"
+      "sha256": "9f46c1ec6b99bd8ce40c284a94cc4b7a9b756e11513d6c1836dbfd4ce02de7f7"
     },
     "research": {
       "path": "app/agents/graph.py",

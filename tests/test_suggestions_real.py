@@ -156,3 +156,35 @@ def test_each_year_question_is_answered_for_that_year(lang, year, question):
     rows, _ = run_template(tid, dict(p))
     assert rows, question
     assert not question.lower().startswith("how many")
+
+
+# ── answers about a period after the real record say they are demonstration data ──
+@pytest.mark.parametrize("lang,q,label", [
+    ("en", "Which districts had the most theft in 2026?", "these are demonstration records"),
+    ("en", "Peak month for cybercrime in 2025?", "these are demonstration records"),
+    ("kn", "2025 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಶಿಕ್ಷೆ ಪ್ರಮಾಣ", "ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆಗಳು"),
+    ("en", "IPC/BNS vs SLL split for 2024?", "rows after 10 Mar 2024 are demonstration records"),
+])
+def test_a_seeded_period_is_labelled(lang, q, label):
+    _tid, _p, text = _answer(q, lang)
+    assert label in text.split("\n")[1], text[:300]
+
+
+@pytest.mark.parametrize("q", ["Which districts had the most theft in 2022?", "IPC/BNS vs SLL split for 2019?"])
+def test_a_real_record_period_is_not(q):
+    _tid, _p, text = _answer(q)
+    assert "demonstration" not in text
+
+
+def test_the_label_stays_beside_the_bottom_line():
+    from app.core.antar_identity import present
+    _tid, _p, text = _answer("Which districts had the most theft in 2026?")
+    assert "demonstration records" in present(text, {}, "en")["sections"]["context"][0]
+
+
+def test_a_model_worded_answer_about_2026_gets_the_label_too():
+    from app.agents.query_agent import _with_seeded_note
+    p = {"date_from": "2026-01-01", "date_to": "2026-12-31"}
+    out = _with_seeded_note("Bengaluru City leads with 598 theft cases.", p, "T11", "en")
+    assert out.endswith("The real KSP record ends on 10 Mar 2024.")
+    assert _with_seeded_note("x", {"date_from": "2022-01-01", "date_to": "2022-12-31"}, "T11", "en") == "x"

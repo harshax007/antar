@@ -2157,3 +2157,9 @@ Measured every page-load endpoint against the running backend (`/api/*`, cold th
 * Each year carries one line on what its data can bear: 2016-2022 about a third of each year held (read shares and rankings); 2023 complete but 85,264 duplicated rows; 2024 real to 10 March with 14,736 duplicates, the rest demonstration data; 2025 and 2026 demonstration data, 2026 still in progress.
 * `tests/test_suggestions_real.py` runs all 110 (11 years, 5 questions, 2 languages): each routes to that year and returns rows; none asks for a raw count.
 * Not done: an answer about 2025 or 2026 does not itself say it is demonstration data; only the line above the questions does.
+
+## Answers about 2025-26 say they are demonstration data - 2026-10-16
+
+* An answer whose period lies wholly after the real record (10 March 2024) now says, on its second line: "these are demonstration records, not registered FIRs. The real KSP record ends on 10 Mar 2024." A period that crosses the end (2024, or "last 12 months" when that reaches back) says rows after that date are demonstration records. No period named: nothing added. Real-record years are unchanged.
+* Covers every template the writer answers (counts, rankings, trends, rates, yearly totals, "last 3 months") in English and Kannada, and is shown beside the bottom line, not under Limits. Model-worded answers get the same line appended (`query_agent._with_seeded_note`).
+* Tests in `tests/test_suggestions_real.py`.

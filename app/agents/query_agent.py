@@ -935,6 +935,19 @@ def _fenced_rows(rows: list[dict], template_id: str = "") -> str:
                                          ensure_ascii=False, default=str), max_len=24000)
 
 
+def _with_seeded_note(text: str, params: Optional[dict], template_id: str, lang: str) -> str:
+    """A model-worded answer about a period after the real record still says it is
+    demonstration data (answer_writer._seeded_window_note): the model is not trusted to."""
+    try:
+        from app.agents.answer_writer import _seeded_window_note
+        note = _seeded_window_note(dict(params or {}), template_id, lang == "kn")
+    except Exception:
+        note = None
+    if not note or "demonstration" in text or "ಪ್ರಾತ್ಯಕ್ಷಿಕೆ" in text:
+        return text
+    return f"{text}\n{note}"
+
+
 async def compose_answer(user_text: str, rows: list[dict], lang: str,
                          template_id: str, llm: Optional[LLM],
                          params: Optional[dict] = None) -> tuple[str, bool, list[str]]:
@@ -981,9 +994,9 @@ async def compose_answer(user_text: str, rows: list[dict], lang: str,
             ans = g["answer"]
             ans = re.sub(r' (\|[-\s:|]+?\|) ', r'\n\1\n', ans)  # divider row
             ans = re.sub(r' (\|[a-zA-Z0-9\s,.-]+?\|) ', r'\n\1\n', ans)  # data rows
-            return ans.strip(), True, g["violations"]
+            return _with_seeded_note(ans.strip(), params, template_id, lang), True, g["violations"]
             
-        return g["answer"], True, g["violations"]
+        return _with_seeded_note(g["answer"], params, template_id, lang), True, g["violations"]
     except Exception as e:
         # Falling back is right, but doing it SILENTLY hid a real defect: any error in the
         # compose path (timeout, guardrail crash, bad LLM signature) looked identical to

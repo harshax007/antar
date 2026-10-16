@@ -1450,6 +1450,35 @@ _WRITERS = {
 }
 
 
+def _seeded_window_note(p: dict, template_id: str, kn: bool) -> str | None:
+    """Say so when the period asked about lies after the real KSP record.
+
+    The registry carries seeded demonstration rows after the real record ends (10 March
+    2024). An answer about 2025 or 2026 read like any other: "Bengaluru City has the most
+    theft cases - 598 FIRs". Wholly after the end: the whole answer is demonstration data.
+    Across the end (2024): the part after it is. No period named: nothing is said here.
+    """
+    try:
+        from app.services.zcql_repo import _date_range, real_data_today
+        if template_id == "T16" and p.get("year"):
+            df, dt = f"{int(p['year'])}-01-01", f"{int(p['year'])}-12-31"
+        else:
+            df, dt = _date_range(p.get("date_from"), p.get("date_to"), p.get("period"))
+        if not df:
+            return None
+        end = real_data_today()
+    except Exception:
+        return None
+    end_s = f"{end.day} {_mon(end.strftime('%Y-%m'), kn)}"
+    if df > end.isoformat():
+        return (f"• ಗಮನಿಸಿ: ಇವು ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆಗಳು, ನೋಂದಾಯಿತ FIR ಗಳಲ್ಲ — ನೈಜ KSP ದಾಖಲೆ {end_s} ರಂದು ಕೊನೆಗೊಳ್ಳುತ್ತದೆ." if kn else
+                f"• Note: these are demonstration records, not registered FIRs. The real KSP record ends on {end_s}.")
+    if dt and dt > end.isoformat():
+        return (f"• ಗಮನಿಸಿ: {end_s} ರ ನಂತರದ ಸಾಲುಗಳು ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆಗಳು, ನೋಂದಾಯಿತ FIR ಗಳಲ್ಲ." if kn else
+                f"• Note: rows after {end_s} are demonstration records, not registered FIRs; the real KSP record ends there.")
+    return None
+
+
 def write_answer(rows: list[dict], template_id: str, lang: str = "en",
                  params: dict | None = None, user_text: str = "") -> str | None:
     """Direct answer for `rows`, or None when this template has no writer."""
@@ -1484,6 +1513,11 @@ def write_answer(rows: list[dict], template_id: str, lang: str = "en",
         lines.insert(1, f"• ಗಮನಿಸಿ: ನೈಜ KSP ದಾಖಲೆಯಲ್ಲಿ “{names}” ಎಂಬ ಪ್ರತ್ಯೇಕ ಶೀರ್ಷಿಕೆ ಇಲ್ಲ. ಈ ಎಣಿಕೆ ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆಗಳದ್ದು, ನೋಂದಾಯಿತ FIR ಗಳದ್ದಲ್ಲ." if kn else
                         f"• Note: the real KSP register has no separate head for {names}. These are demonstration records, not registered FIRs; "
                         f"the register files such cases under a broader head such as Theft.")
+    if not demo:
+        seeded = _seeded_window_note(p, template_id, kn)
+        if seeded:
+            lines = list(lines)
+            lines.insert(1, seeded)
     up = p.get("unknown_place")
     if up and not p.get("unapplied"):          # otherwise it is said in the lead, below
         lines = list(lines)
