@@ -2662,110 +2662,45 @@ export default function ChatPage() {
 
 
 
-            {/* NEO quick-start chips - real, answerable starter questions */}
+            {/* Suggested questions: one quiet line of three, a refresh, and the year row */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.5 }}
-              style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", marginTop: "18px", maxWidth: "760px" }}
+              transition={{ delay: 0.25, duration: 0.4 }}
+              className="sq-wrap"
             >
               {(() => {
                 // A year picked below replaces these with that year's questions.
-                const rotated = askYear ? yearQuestions(askYear, lang)
-                  : [...rotatorStarters.slice(starterOffset), ...rotatorStarters.slice(0, starterOffset)];
+                const list = askYear ? yearQuestions(askYear, lang) : rotatorStarters;
+                const off = list.length ? starterOffset % list.length : 0;
+                const shown = [...list.slice(off), ...list.slice(0, off)].slice(0, 3);
                 return (
-                  <>
-                    <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
-                      {rotated.slice(0, 3).map((s, j) => {
-                        return (
-                          <button 
-                            key={j} 
-                            type="button" 
-                            onClick={() => send(s)}
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              color: "rgba(255, 255, 255, 0.65)",
-                              fontSize: "13px",
-                              lineHeight: 1.4,
-                              cursor: "pointer",
-                              padding: "4px 8px",
-                              transition: "color 0.2s ease",
-                              fontFamily: "'Inter', sans-serif",
-                              textAlign: "left",
-                              maxWidth: "350px",
-                              whiteSpace: "normal"
-                            }}
-                            onMouseOver={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-                            onMouseOut={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.65)")}
-                          >
-                            {s}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap", alignItems: "center", marginTop: "4px" }}>
-                      {rotated.slice(3, 6).map((s, j) => {
-                        return (
-                          <button 
-                            key={j + 3} 
-                            type="button" 
-                            onClick={() => send(s)}
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              color: "rgba(255, 255, 255, 0.65)",
-                              fontSize: "13px",
-                              lineHeight: 1.4,
-                              cursor: "pointer",
-                              padding: "4px 8px",
-                              transition: "color 0.2s ease",
-                              fontFamily: "'Inter', sans-serif",
-                              textAlign: "left",
-                              maxWidth: "350px",
-                              whiteSpace: "normal"
-                            }}
-                            onMouseOver={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-                            onMouseOut={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.65)")}
-                          >
-                            {s}
-                          </button>
-                        );
-                      })}
-                      <button 
-                        type="button" 
-                        onClick={() => { setAskYear(null); setStarterOffset(s => (s + 6) % rotatorStarters.length); }}
-                        title={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}
-                        style={{ 
-                          width: "28px", 
-                          height: "28px", 
-                          padding: 0, 
-                          display: "flex", 
-                          alignItems: "center", 
-                          justifyContent: "center", 
-                          borderRadius: "50%",
-                          background: "rgba(255, 255, 255, 0.05)",
-                          border: "none",
-                          color: "rgba(255, 255, 255, 0.7)",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease"
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-                          e.currentTarget.style.color = "#FFFFFF";
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                          e.currentTarget.style.color = "rgba(255, 255, 255, 0.7)";
-                        }}
-                      >
-                        <RefreshCw size={13} />
+                  <div className="sq-row">
+                    {shown.map((s) => (
+                      <button key={s} type="button" className="sq-q" title={s} onClick={() => send(s)}>{s}</button>
+                    ))}
+                    {list.length > 3 && (
+                      <button type="button" className="sq-more" onClick={() => setStarterOffset((o) => o + 3)}
+                              title={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}
+                              aria-label={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}>
+                        <RefreshCw size={11} />
                       </button>
-                    </div>
-                  </>
+                    )}
+                  </div>
                 );
               })()}
-              <YearQuestions lang={lang} year={askYear} onYear={setAskYear} />
+              <YearQuestions lang={lang} year={askYear} onYear={(y) => { setAskYear(y); setStarterOffset(0); }} />
+              <style jsx>{`
+                .sq-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 12px; max-width: 760px; width: 100%; }
+                .sq-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; max-width: 100%; }
+                .sq-q { max-width: 290px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent;
+                  border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 9999px; padding: 3px 10px; cursor: pointer;
+                  font: 400 11.5px/1.4 'Inter', sans-serif; color: rgba(255, 255, 255, 0.55); transition: color 0.15s, border-color 0.15s; }
+                .sq-q:hover { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
+                .sq-more { width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+                  border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.5); cursor: pointer; }
+                .sq-more:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+              `}</style>
             </motion.div>
 
             {/* Professional tiny footer note below prompt box */}
@@ -2774,8 +2709,8 @@ export default function ChatPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
               style={{
-                marginTop: "14px",
-                fontSize: "11px",
+                marginTop: "8px",
+                fontSize: "10px",
                 color: docsMode ? "#60A5FA" : "rgba(255, 255, 255, 0.42)",
                 display: "flex",
                 alignItems: "center",
@@ -2783,7 +2718,7 @@ export default function ChatPage() {
                 gap: "6px",
                 fontFamily: "'Inter', sans-serif",
                 cursor: "pointer",
-                padding: "4px 12px",
+                padding: "2px 10px",
                 borderRadius: "9999px",
                 background: docsMode ? "rgba(59, 130, 246, 0.1)" : "transparent",
                 border: docsMode ? "1px solid rgba(59, 130, 246, 0.2)" : "1px solid transparent",
