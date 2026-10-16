@@ -2150,3 +2150,10 @@ Measured every page-load endpoint against the running backend (`/api/*`, cold th
 * The yearly answer called 2016-2022 a "1:100 representative sample"; it is about one in three of each year, and now says so.
 * `tests/test_suggestions_real.py` covers all four in both languages.
 * **Test entries in the live audit ledger:** `tests/test_slash_commands.py` and `tests/test_layout_composer.py` run the chat stream, which writes an audit entry and a trace per answer. Run without `tests/conftest.py` (as I ran them on 2026-10-14 and 2026-10-16) they wrote into the live ledger: 28 entries by officer "OF-stream", and 14 test sessions on the Trace page. The chain is intact; the entries were not removed. Both files now write to their own temporary files.
+
+## Questions by year, 2016 to 2026 - 2026-10-16
+
+* A "By year" row under the chat chips (`components/YearQuestions.jsx`): pick 2016 to 2026 and five questions for that year appear (most theft by district, IPC/BNS vs SLL split, peak month for cybercrime, conviction rate by district, crimes against women by district), in English or Kannada.
+* Each year carries one line on what its data can bear: 2016-2022 about a third of each year held (read shares and rankings); 2023 complete but 85,264 duplicated rows; 2024 real to 10 March with 14,736 duplicates, the rest demonstration data; 2025 and 2026 demonstration data, 2026 still in progress.
+* `tests/test_suggestions_real.py` runs all 110 (11 years, 5 questions, 2 languages): each routes to that year and returns rows; none asks for a raw count.
+* Not done: an answer about 2025 or 2026 does not itself say it is demonstration data; only the line above the questions does.

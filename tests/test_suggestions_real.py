@@ -122,3 +122,37 @@ def test_peak_month_names_a_month_of_that_year(lang, q, word):
 def test_the_chargesheet_question_gets_the_chargesheet_rate_in_both_languages(lang, q):
     tid, _p, text = _answer(q, lang)
     assert tid == "T22" and "89%" in text.split("\n")[0]
+
+
+# ── questions by year, 2016-2026 (components/YearQuestions.jsx) ──────────────
+YQ = Path(__file__).resolve().parents[1] / "antar-frontend" / "components" / "YearQuestions.jsx"
+
+
+def _year_questions():
+    src = YQ.read_text(encoding="utf-8")
+    years = [int(y) for y in re.findall(r"\b(20[12]\d)\b", src[src.index("export const YEARS"): src.index("];", src.index("export const YEARS"))])]
+    body = src[src.index("export const TEMPLATES"): src.index("};", src.index("export const TEMPLATES"))]
+    out = []
+    for lang, items in re.findall(r"\b(en|kn): \[(.*?)\]", body, re.S):
+        for t in re.findall(r'"([^"]+)"', items):
+            out += [(lang, y, t.replace("{y}", str(y))) for y in years]
+    return years, out
+
+
+YEARS, YEAR_QS = _year_questions()
+
+
+def test_every_year_from_2016_to_2026_is_offered():
+    assert YEARS == list(range(2016, 2027)) and len(YEAR_QS) == 11 * 10
+
+
+@pytest.mark.parametrize("lang,year,question", YEAR_QS)
+def test_each_year_question_is_answered_for_that_year(lang, year, question):
+    from app.agents import heuristics as H
+    from app.agents.query_agent import run_template
+    r = asyncio.run(H.heuristic_select(question, lang, {}))
+    tid, p = r["template_id"], r.get("params") or {}
+    assert tid not in ("CLARIFY", "NONE") and str(p.get("date_from", "")).startswith(str(year)), (tid, p)
+    rows, _ = run_template(tid, dict(p))
+    assert rows, question
+    assert not question.lower().startswith("how many")

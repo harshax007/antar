@@ -16,6 +16,7 @@ import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { asset } from "@/lib/assets";
 import { openReport } from "@/lib/auth";
 import AgentStrip, { AGENTS as STRIP_AGENTS, LENS } from "@/components/AgentStrip";
+import YearQuestions from "@/components/YearQuestions";
 import { FACE as AGENT_FACE } from "@/components/WorkspaceAgents";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -2761,6 +2762,7 @@ export default function ChatPage() {
                   </>
                 );
               })()}
+              <YearQuestions lang={lang} onAsk={(q) => send(q)} />
             </motion.div>
 
             {/* Professional tiny footer note below prompt box */}
