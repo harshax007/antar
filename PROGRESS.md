@@ -2143,7 +2143,7 @@ Measured every page-load endpoint against the running backend (`/api/*`, cold th
 
 ## Four documented questions answered as asked - 2026-10-16
 
-* **"Cognizable FIRs registered in Karnataka in 2022?"** gave the total only. It now gives the official total and, beside it, the cognizable share of the year's real-record rows (91%, 65,688 of 70,451 held), saying the registry holds part of the year so the share is the figure to read (`zcql_local.year_cognizable`, a fixed query: the `crimes` view has no cognizable column).
+* **"Cognizable FIRs registered in Karnataka in 2022?"** gave the total only. It now gives the official total and, beside it, the cognizable share of the year's real-record rows (91%, 63,925 of 70,451 held), saying the registry holds part of the year so the share is the figure to read (`zcql_local.year_cognizable`, a fixed query: the `crimes` view has no cognizable column).
 * **"Top 10 stations by FIR volume 2022?"** asked which crime type. "By FIR volume", "most FIRs", "busiest" and "ಪ್ರಮಾಣದ ಪ್ರಕಾರ" now rank all crime (`heuristics._volume_q`).
 * **"Peak month for cybercrime in 2022?"** listed cases. A peak-month question is now a monthly series over the span asked (T3 takes `date_from`/`date_to`), led by the month: July 2022, 324 cases, 18% above the monthly average.
 * **Kannada charge-sheet question** returned the conviction rate: the writer knew "ದೋಷಾರೋಪ" but not "ಚಾರ್ಜ್‌ಶೀಟ್" (which carries a zero-width joiner). Both now give 89%.
