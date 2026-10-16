@@ -430,6 +430,9 @@ def _w_types(rows, kn, params, template_id):
     return lines
 
 
+_PEAK_RE = re.compile(r"\b(peak|busiest|worst|highest)\s+month\b|\bwhich month\b|\bmonth (?:with|had) the most\b", re.I)
+
+
 def _w_trend(rows, kn, params, template_id):
     """T3 — "is theft rising?"."""
     series = [(str(r.get("month")), int(r.get("n") or 0)) for r in rows if r.get("month")]
@@ -442,6 +445,19 @@ def _w_trend(rows, kn, params, template_id):
     where = ", ".join(zones) if zones else ("ಕರ್ನಾಟಕ" if kn else "Karnataka")
     d = _direction(done)
     lines = []
+    q = str(params.get("_q") or "")
+    if done and (_PEAK_RE.search(q) or "ಗರಿಷ್ಠ ತಿಂಗಳು" in q or "ಯಾವ ತಿಂಗಳು" in q):
+        # "peak month for cybercrime in 2022" asks for a month: lead with it.
+        pm, pn = max(done, key=lambda x: x[1])
+        avg = sum(n for _, n in done) / len(done)
+        above = round(100 * (pn - avg) / avg) if avg else 0
+        lines.append(f"[COMPUTED] {_in_loc(where, True)} {what} ಪ್ರಕರಣಗಳು **{_mon(pm, kn)}** ರಲ್ಲಿ ಗರಿಷ್ಠ — "
+                     f"**{_fmt(pn)}**, ಮಾಸಿಕ ಸರಾಸರಿಗಿಂತ {above}% ಹೆಚ್ಚು." if kn else
+                     f"[COMPUTED] {what.capitalize()} cases in {where} peaked in **{_mon(pm, kn)}** — "
+                     f"**{_fmt(pn)}**, {above}% above the monthly average of {_fmt(round(avg))}.")
+        for m, n in done[-12:]:
+            lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {'ಪ್ರಕರಣಗಳು' if kn else 'cases'}")
+        return lines
     if d:
         span = f"{_win(d['to'], kn)} vs {_win(d['from'], kn)}"
         if kn:
@@ -738,6 +754,27 @@ def _w_year(rows, kn, params, template_id):
     lead = (f"[VERIFIED] {yr} ರಲ್ಲಿ ಕರ್ನಾಟಕದಲ್ಲಿ **{_fmt(n)}** FIR ಗಳು ದಾಖಲಾಗಿವೆ." if kn else
             f"[VERIFIED] Karnataka registered **{_fmt(n)}** FIRs in {yr}.")
     lines = [lead]
+    q = str(params.get("_q") or "")
+    if re.search(r"cogni[sz]able", q, re.I) or "ಸಂಜ್ಞೇಯ" in q:
+        # The official total does not split cognizable from non-cognizable. The registry's
+        # rows for the year carry the flag; when the year is only partly held, the SHARE is
+        # the figure to read, not the count of rows.
+        try:
+            from app.services.zcql_local import year_cognizable
+            cog, held = year_cognizable(yr)
+        except Exception:
+            cog, held = 0, 0
+        if held:
+            pct = round(100 * cog / held)
+            partial = held < 0.9 * n
+            if kn:
+                lines.append(f"• ಸಂಜ್ಞೇಯ: ದಾಖಲೆಯಲ್ಲಿರುವ {yr} ರ FIR ಗಳಲ್ಲಿ **{pct}%** ಸಂಜ್ಞೇಯ ({_fmt(cog)} / {_fmt(held)})."
+                             + (" ದಾಖಲೆಯಲ್ಲಿ ಆ ವರ್ಷದ ಒಂದು ಭಾಗ ಮಾತ್ರ ಇದೆ; ಪಾಲನ್ನು ಓದಿ, ಸಾಲುಗಳ ಎಣಿಕೆಯನ್ನಲ್ಲ." if partial else ""))
+            else:
+                lines.append(f"• Cognizable: **{pct}%** of the {yr} FIRs held in the registry are cognizable "
+                             f"({_fmt(cog)} of {_fmt(held)})."
+                             + (" The registry holds only part of that year, so read the share, not the row count; "
+                                "the official total does not split the two." if partial else ""))
     prev = _yi(yr - 1)
     if _comparable(r0) and _comparable(prev) and prev.get("fir_count"):
         pn = int(prev["fir_count"])
@@ -746,7 +783,7 @@ def _w_year(rows, kn, params, template_id):
     cats = _cats(r0.get("top_categories"))
     if cats:
         lines.append(f"{yr} ರ ಪ್ರಮುಖ ಅಪರಾಧ ಗುಂಪುಗಳು:" if kn else f"Top crime groups in {yr}:")
-        sample = yr <= 2022        # 2016–2022 category counts are a 1:100 representative sample
+        sample = yr <= 2022        # 2016-2022 rows are a partial extract (about a third of each year)
         for i, (name, c) in enumerate(cats[:5], 1):
             label = _crime_word(name, True) if kn else _crime_en(name)
             lines.append(f"{i}. {label}" + ("" if sample else f" — {_fmt(c)}"))
@@ -794,9 +831,10 @@ def _w_compare(y1, y2, kn):
             lines.append(f"{i}. {label} — {sa[t]:.1f}% → {sb[t]:.1f}% "
                          f"({sb[t] - sa[t]:+.1f} {'ಅಂಕ' if kn else 'pts'})")
         if y1 <= 2022:
-            lines.append("ಪಾಲು ಹೋಲಿಸಲಾಗಿದೆ: 2016–2022 ರ FIR ಸಾಲುಗಳು 1:100 ಮಾದರಿ; ಮೇಲಿನ ಒಟ್ಟು ಅಂಕಿಅಂಶಗಳು ಅಧಿಕೃತ ವಾರ್ಷಿಕ ಸಂಖ್ಯೆಗಳು." if kn else
-                         "Shares are compared because 2016–2022 FIR rows are a 1:100 representative sample; "
-                         "the totals above are the official annual figures.")
+            lines.append("ಪಾಲು ಹೋಲಿಸಲಾಗಿದೆ: 2016–2022 ರ FIR ಸಾಲುಗಳು ಪ್ರತಿ ವರ್ಷದ ಸುಮಾರು ಮೂರನೇ ಒಂದು ಭಾಗ ಮಾತ್ರ; "
+                         "ಮೇಲಿನ ಒಟ್ಟು ಅಂಕಿಅಂಶಗಳು ಅಧಿಕೃತ ವಾರ್ಷಿಕ ಸಂಖ್ಯೆಗಳು." if kn else
+                         "Shares are compared because the registry holds only part of each year from 2016 to 2022 "
+                         "(about a third); the totals above are the official annual figures.")
     return lines
 
 
@@ -1157,7 +1195,9 @@ _BASE_LABEL = {"chargesheeted": ("charge-sheeted accused", "ದೋಷಾರೋ�
 def _outcome_metric(q: str) -> str:
     """The rate the officer asked about; the answer leads with it and ranks by it."""
     low = (q or "").lower()
-    if re.search(r"charge[- ]?sheet|chargesheet", low) or "ದೋಷಾರೋಪ" in (q or ""):
+    kq = re.sub(r"[\u200b-\u200d\ufeff]", "", q or "")      # "ಚಾರ್ಜ್‌ಶೀಟ್" carries a zero-width joiner
+    if re.search(r"charge[- ]?sheet|chargesheet", low) or "ದೋಷಾರೋಪ" in kq or "ಚಾರ್ಜ್ಶೀಟ್" in kq \
+            or "ಆರೋಪಪಟ್ಟಿ" in kq:
         return "chargesheet"
     if re.search(r"\barrest", low) or "ಬಂಧನ" in (q or ""):
         return "arrest"

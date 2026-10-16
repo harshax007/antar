@@ -80,3 +80,45 @@ def test_the_documented_bank_names_no_2023_and_no_raw_count():
     for en, kn in rows:
         assert "2023" not in (en or "") + (kn or "")
     assert not any((en or "").lower().startswith(("statewide murders", "cybercrime firs in")) for en, _ in rows)
+
+
+# ── the four documented questions that used to answer something else ─────────
+def _answer(question, lang="en"):
+    from app.agents import heuristics as H
+    from app.agents.answer_writer import write_answer
+    from app.agents.query_agent import run_template
+    r = asyncio.run(H.heuristic_select(question, lang, {}))
+    rows, _ = run_template(r["template_id"], dict(r["params"]))
+    return r["template_id"], r["params"], write_answer(rows, r["template_id"], lang, r["params"], question) or ""
+
+
+@pytest.mark.parametrize("lang,q", [("en", "Cognizable FIRs registered in Karnataka in 2022?"),
+                                    ("kn", "2022ರಲ್ಲಿ ಕರ್ನಾಟಕದಲ್ಲಿ ದಾಖಲಾದ ಸಂಜ್ಞೇಯ FIRಗಳು?")])
+def test_cognizable_is_answered_as_a_share_beside_the_official_total(lang, q):
+    tid, _p, text = _answer(q, lang)
+    assert tid == "T16" and "195,170" in text
+    assert ("Cognizable:" in text or "ಸಂಜ್ಞೇಯ:" in text) and "%" in text.split("\n")[1]
+
+
+@pytest.mark.parametrize("lang,q", [("en", "Top 10 stations by FIR volume 2022?"),
+                                    ("kn", "2022ರಲ್ಲಿ FIR ಪ್ರಮಾಣದ ಪ್ರಕಾರ ಟಾಪ್ 10 ಠಾಣೆಗಳು?")])
+def test_stations_by_fir_volume_rank_all_crime(lang, q):
+    tid, p, text = _answer(q, lang)
+    assert tid == "T11" and p["dimension"] == "station_code" and not p.get("crime_types")
+    assert p["date_from"] == "2022-01-01" and text
+
+
+@pytest.mark.parametrize("lang,q,word", [("en", "Peak month for cybercrime in 2022?", "peaked in"),
+                                         ("kn", "2022ರಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧದ ಗರಿಷ್ಠ ತಿಂಗಳು?", "ಗರಿಷ್ಠ")])
+def test_peak_month_names_a_month_of_that_year(lang, q, word):
+    tid, p, text = _answer(q, lang)
+    first = text.split("\n")[0]
+    assert tid == "T3" and p["date_from"] == "2022-01-01" and word in first and "2022" in first
+    assert text.count("\n") == 12                       # the lead and the twelve months
+
+
+@pytest.mark.parametrize("lang,q", [("en", "Share of 2022 FIRs that reached chargesheet?"),
+                                    ("kn", "2022ರ FIRಗಳಲ್ಲಿ ಚಾರ್ಜ್\u200cಶೀಟ್ ತಲುಪಿದ ಪಾಲು?")])
+def test_the_chargesheet_question_gets_the_chargesheet_rate_in_both_languages(lang, q):
+    tid, _p, text = _answer(q, lang)
+    assert tid == "T22" and "89%" in text.split("\n")[0]

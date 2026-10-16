@@ -24,6 +24,21 @@ QUERY = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _own_ledger_and_traces(tmp_path, monkeypatch):
+    """These tests run the chat stream, which writes an audit entry and a trace per answer.
+    tests/conftest.py redirects the audit store for a full run, but run on their own
+    (pytest --noconftest) they wrote into the live ledger and the Trace page: 28 "OF-stream"
+    entries by 2026-10-16. Each test now writes to its own files."""
+    from app.obs import store as obs_store
+    from app.services import audit_store
+    monkeypatch.setattr(audit_store, "DB_PATH", str(tmp_path / "audit.db"))
+    monkeypatch.setattr(audit_store, "_sync_to_catalyst_placeholder", lambda entry: None)
+    audit_store.init_db()
+    monkeypatch.setattr(obs_store, "DB_PATH", tmp_path / "obs.db")
+    monkeypatch.setattr(obs_store, "_schema_ready", False)
+
+
 class TestBuildLayout:
     def test_headline_is_first_sentence(self):
         lay = build_layout(ANSWER, QUERY)

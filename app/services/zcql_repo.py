@@ -862,6 +862,9 @@ class TrendByMonth(BaseModel):
     crime_types: CrimeTypeList = Field(default_factory=list)
     zones: StrList = Field(default_factory=list)
     months: Months = 12
+    # A named span ("peak month for cybercrime in 2022") replaces the rolling window.
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
     # Restrict the series to the real KSP extract and anchor it to where that record
     # actually ends. run_template() tries this first for every trend and only falls back
     # to the full registry when the filter has no real rows at all (the seeded demo
@@ -888,9 +891,12 @@ def _t3(p: TrendByMonth) -> QuerySpec:
     # other templates do via _date_range / resolve_period.
     if p.real_only:
         filters.append(Filter("is_synthetic_row", "=", 0))
-        today = real_data_today()
-    else:
-        today = data_today()
+    df, dt = _date_range(p.date_from, p.date_to, None)
+    if df and dt:
+        filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))
+        return QuerySpec(table="crimes", select=["month"], aggregates=[Aggregate("count", "crime_id", "n")],
+                         filters=filters, group_by=["month"], order_by=("month", "asc"), limit=36, olap=True)
+    today = real_data_today() if p.real_only else data_today()
     m, y = today.month - (p.months - 1), today.year
     while m <= 0:
         m += 12

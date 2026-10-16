@@ -320,6 +320,19 @@ def _connect_ro() -> sqlite3.Connection:
         return sqlite3.connect(DB_PATH)      # a path a URI cannot express (tests, odd mounts)
 
 
+def year_cognizable(year: int) -> tuple[int, int]:
+    """(cognizable, all) real-record FIRs held in the registry for one calendar year. A fixed query on
+    a validated integer, not a template: the `crimes` view does not carry the flag."""
+    y = int(year)
+    con = _connect_ro()
+    try:
+        row = con.execute("SELECT COALESCE(SUM(is_cognizable = 1), 0), COUNT(*) FROM FIRs "
+                          "WHERE is_synthetic_row = 0 AND date >= ? AND date <= ?", (f"{y}-01-01", f"{y}-12-31")).fetchone()
+    finally:
+        con.close()
+    return int(row[0] or 0), int(row[1] or 0)
+
+
 def run_local(spec: QuerySpec) -> list[dict]:
     rows = _run_local(spec)
     rn = getattr(spec, "rename", None)

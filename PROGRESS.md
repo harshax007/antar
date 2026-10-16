@@ -2140,3 +2140,13 @@ Measured every page-load endpoint against the running backend (`/api/*`, cold th
 * **Kannada years were being dropped.** "2022ರಲ್ಲಿ" fuses the case suffix onto the year, so the date parser never saw it and the question was answered for every year on record (the old 2023 Kannada bank questions had the same fault). The seam is now split before the date is read (`heuristics.extract_entities`).
 * Records-only routing gaps in the bank, unchanged and not caused by the year: "Cognizable FIRs" answers the total FIRs, "Top 10 stations by FIR volume" asks for a crime type, "Peak month for cybercrime" lists cases instead of a month, and the Kannada charge-sheet question returns the conviction rate. With the language model connected the selector may route these differently; not verified.
 * Docs: the pitch script's three 2023 lines now use the 2022 answers; the product guide example moved to 2022.
+
+## Four documented questions answered as asked - 2026-10-16
+
+* **"Cognizable FIRs registered in Karnataka in 2022?"** gave the total only. It now gives the official total and, beside it, the cognizable share of the year's real-record rows (91%, 65,688 of 70,451 held), saying the registry holds part of the year so the share is the figure to read (`zcql_local.year_cognizable`, a fixed query: the `crimes` view has no cognizable column).
+* **"Top 10 stations by FIR volume 2022?"** asked which crime type. "By FIR volume", "most FIRs", "busiest" and "ಪ್ರಮಾಣದ ಪ್ರಕಾರ" now rank all crime (`heuristics._volume_q`).
+* **"Peak month for cybercrime in 2022?"** listed cases. A peak-month question is now a monthly series over the span asked (T3 takes `date_from`/`date_to`), led by the month: July 2022, 324 cases, 18% above the monthly average.
+* **Kannada charge-sheet question** returned the conviction rate: the writer knew "ದೋಷಾರೋಪ" but not "ಚಾರ್ಜ್‌ಶೀಟ್" (which carries a zero-width joiner). Both now give 89%.
+* The yearly answer called 2016-2022 a "1:100 representative sample"; it is about one in three of each year, and now says so.
+* `tests/test_suggestions_real.py` covers all four in both languages.
+* **Test entries in the live audit ledger:** `tests/test_slash_commands.py` and `tests/test_layout_composer.py` run the chat stream, which writes an audit entry and a trace per answer. Run without `tests/conftest.py` (as I ran them on 2026-10-14 and 2026-10-16) they wrote into the live ledger: 28 entries by officer "OF-stream", and 14 test sessions on the Trace page. The chain is intact; the entries were not removed. Both files now write to their own temporary files.

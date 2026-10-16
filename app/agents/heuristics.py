@@ -301,6 +301,12 @@ def _match_crime_terms(low: str) -> list[str]:
     return found
 
 
+def _volume_q(low: str) -> bool:
+    """A ranking of ALL crime: "by FIR volume", "most FIRs", "busiest stations"."""
+    return bool(re.search(r"\b(fir volume|by volume|volume of firs?|most firs|by firs?|busiest)\b", low)
+                or "ಪ್ರಮಾಣದ ಪ್ರಕಾರ" in low)
+
+
 def extract_entities(text: str, history: list[dict] | None = None) -> dict:
     """Pull crime_types, zones (incl. regions), months hint, geo dimensions, limits, and date ranges from EN or KN text.
     Carries over missing entities from the immediate previous user turn if history is provided."""
@@ -558,6 +564,11 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         return choice("T23", {"zones": zones, "crime_types": ct, "dimension": "beat" if _beat else "area",
                               "order": "asc" if re.search(r"\b(least|lowest|fewest|quietest|safest)\b", low) else "desc",
                               "limit": limit_val, **dates})
+    # Peak month — "peak month for cybercrime in 2022": a monthly series over the span asked.
+    if re.search(r"\b(peak|busiest|worst|highest)\s+month\b|\bwhich month\b|\bmonth (?:with|had) the most\b", low) \
+            or "ಗರಿಷ್ಠ ತಿಂಗಳು" in low or "ಯಾವ ತಿಂಗಳು" in low:
+        return choice("T3", {"crime_types": ct, "zones": zones, "months": 12,
+                             "date_from": date_from, "date_to": date_to})
     # Law split — "IPC/BNS vs SLL split for 2023?"
     if re.search(r"\b(ipc|bns|sll)\b", low) or "special and local" in low or "special & local" in low:
         return choice("T17", {"zones": zones, **dates})
@@ -612,6 +623,10 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     if not (zones and not rank_q) and any(w in low for w in ["hotspot", "where", "patrol", "which zone", "which area", "which station", "top", "cities", "city", "district", "districts", "stations", "station", "officers", "officer", "across", "distribution",
                               "ಹಾಟ್ಸ್ಪಾಟ್", "ಪ್ರಮುಖ ಸ್ಥಳ", "ಎಲ್ಲಿ", "ಯಾವ ಪ್ರದೇಶ", "ಯಾವ ವಲಯ",
                               "ಯಾವ ಊರ", "ಜಾಸ್ತಿ ಇದೆ", "ಹೆಚ್ಚು ಇದೆ", "ಯಾವ ಊರಿನಲ್ಲಿ", "ಎಲ್ಲಿವೆ", "ಜಿಲ್ಲೆ", "ಠಾಣೆ"]) and any(w in low for w in ["crime", "crimes", "case", "cases", "theft", "robbery", "hotspot", "top", "most", "highest", "in", "how many", "total", "count", "active", "summary", "across", "distribution", "reported", "ಅಪರಾಧ", "ಕಳ್ಳತನ", "ಕಲ್ಲತನ", "ದರೋಡೆ", "ಪ್ರಕರಣ", "ಹಾಟ್ಸ್ಪಾಟ್", "ಜಾಸ್ತಿ", "ಹೆಚ್ಚು"]):
+        # "Top 10 stations by FIR volume" names no crime because it means all of them.
+        if not ct and _volume_q(low):
+            return choice("T11", {"crime_types": [], "limit": limit_val, "dimension": geo_dim,
+                                  "date_from": date_from, "date_to": date_to, "period": period})
         if not ct and not any(w in low for w in ["top cities", "vehicle theft", "top suspects"]):
             # A place IS named ("most crimes in Bengaluru City", "which crime is most
             # common in Mysuru City") — that has a direct answer: the crime mix for that
@@ -653,6 +668,9 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     # default: list crimes or top rankings if any crime/geo/police/summary terms present
     if ct or zones or any(w in low for w in ["crime", "crimes", "case", "cases", "incidents", "fir", "firs", "records", "top", "officer", "officers", "station", "stations", "active", "total", "count", "breakdown", "activity", "summary", "ಅಪರಾಧ", "ಕಳ್ಳತನ", "ಕಲ್ಲತನ", "ದರೋಡೆ", "ಪ್ರಕರಣ"]):
         if not (zones and not rank_q) and any(w in low for w in ("city", "cities", "district", "districts", "zone", "zones", "station", "stations", "area", "areas", "ಊರ", "ಪ್ರದೇಶ", "ವಲಯ", "ಜಿಲ್ಲೆ", "ಠಾಣೆ", "ಎಲ್ಲಿ")):
+            if not ct and _volume_q(low):
+                return choice("T11", {"crime_types": [], "limit": limit_val, "dimension": geo_dim,
+                                      "date_from": date_from, "date_to": date_to, "period": period})
             if not ct:
                 if zones:                      # see the note on the hotspots branch above
                     return choice("T13", {"zones": zones, "date_from": date_from,
