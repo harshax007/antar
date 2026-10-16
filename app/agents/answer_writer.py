@@ -1430,7 +1430,12 @@ def write_answer(rows: list[dict], template_id: str, lang: str = "en",
         return None
     try:
         from app.services.zcql_repo import demo_only_crime_types
-        demo = demo_only_crime_types(p.get("crime_types") or [])
+        named = p.get("crime_types") or []
+        demo = demo_only_crime_types(named)
+        # Only when the WHOLE count is demonstration data. "Crimes against women" carries
+        # one seeded spelling (domestic_violence) beside ten real heads; the count is real.
+        if len(set(demo)) < len(set(named)):
+            demo = []
     except Exception:
         demo = []
     if demo:

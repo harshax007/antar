@@ -2124,3 +2124,10 @@ Measured every page-load endpoint against the running backend (`/api/*`, cold th
 * Also: a count of demonstration records is now shown beside the bottom line, not folded under Limits.
 * `tests/test_speed_fixes.py` (8).
 * Not caused by this work, found while testing: `tests/test_hypothesis_gate.py` and two `tests/test_hitl.py` tests fail with 401 when run without `tests/conftest.py` (it turns signed tokens off).
+
+## Chat suggestions from the real record - 2026-10-16
+
+* The empty-chat starters named people, vehicles and localities that exist only in seeded demo rows ("background check for Ravi living in Jayanagar", "KA-02-M-2093", "Bheema the Butcher", "South Bengaluru"). They, the role chips and the server's starters (`followup_agent._STARTER_CANDIDATES`) are now questions answered from the real KSP record, in English and Kannada. The year asked about is 2022, before the duplicated 2023-24 rows.
+* Removed because the answer was to a different question: "Which districts have the most vehicle theft?" and "Chain snatching trend" (demo-only types), "Which stations have the most pending investigations?" (ignored "pending"), "Which act-sections have the lowest conviction rate?" (gave the statewide rate), "How many cases are still pending investigation?" (gave a status breakdown).
+* The demonstration-records note now appears only when the whole count is demonstration data. "Crimes against women" carries one seeded spelling beside ten real heads and was wrongly labelled.
+* `tests/test_suggestions_real.py` runs every offered question through the router and the answer writer: rows found, nothing broadened, no demonstration count, no seeded name. The documented question bank behind Docs mode (`intelligent.db`) is unchanged.

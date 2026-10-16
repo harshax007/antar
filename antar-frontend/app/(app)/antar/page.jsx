@@ -28,58 +28,63 @@ const API = (process.env.NEXT_PUBLIC_API_URL || "");
 const ROLE_QUESTIONS = {
   operations: {
     en: [
-      "Show me all unsolved burglary cases from last month",
-      "Which districts have the most vehicle theft?",
-      "Who are the repeat offenders in Bengaluru City?",
-      "Which stations have the most pending investigations?",
-      "Chain snatching trend in Bengaluru City over the last 3 months",
+      "Which districts had the most theft in 2022?",
+      "Which police stations recorded the most cybercrime in 2022?",
+      "Top beats for burglary in Bengaluru City",
+      "Top areas for theft in Mysuru City",
+      "How many murder cases were registered in 2022?",
     ],
     kn: [
-      "ಕಳೆದ ತಿಂಗಳ ಬಗೆಹರಿಯದ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ",
-      "ವಾಹನ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಜಿಲ್ಲೆಗಳು ಯಾವುವು?",
-      "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧಿಗಳು ಯಾರು?",
-      "ಯಾವ ಠಾಣೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ತನಿಖೆಗಳು ಬಾಕಿ ಇವೆ?",
-      "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಕಳೆದ 3 ತಿಂಗಳ ಚೈನ್ ಸ್ನ್ಯಾಚಿಂಗ್ ಪ್ರವೃತ್ತಿ",
+      "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
+      "2022 ರಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧ ಹೆಚ್ಚು ದಾಖಲಾದ ಠಾಣೆಗಳು",
+      "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು",
+      "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
+      "2022 ರಲ್ಲಿ ಎಷ್ಟು ಕೊಲೆ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
     ],
   },
   approver: {
     en: [
-      "Conviction rate by district in 2023",
-      "What share of 2023 FIRs reached chargesheet?",
-      "Which act-sections have the lowest conviction rate?",
-      "Which districts have the most crimes against women?",
-      "How many cases are still pending investigation?",
+      "Conviction rate by district in 2022",
+      "What share of 2022 FIRs reached chargesheet?",
+      "Crimes against women by district in 2022",
+      "IPC/BNS vs SLL split for 2022?",
+      "How many murder cases were registered in 2022?",
     ],
     kn: [
-      "2023 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಶಿಕ್ಷೆ ಪ್ರಮಾಣ",
-      "2023 ರ ಎಷ್ಟು ಎಫ್‌ಐಆರ್‌ಗಳು ದೋಷಾರೋಪ ಪಟ್ಟಿ ತಲುಪಿದವು?",
-      "ಯಾವ ಕಾಯ್ದೆ-ಸೆಕ್ಷನ್‌ಗಳಲ್ಲಿ ಶಿಕ್ಷೆ ಪ್ರಮಾಣ ಅತಿ ಕಡಿಮೆ?",
-      "ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧ ಹೆಚ್ಚು ಇರುವ ಜಿಲ್ಲೆಗಳು ಯಾವುವು?",
-      "ಎಷ್ಟು ಪ್ರಕರಣಗಳು ಇನ್ನೂ ತನಿಖೆಯಲ್ಲಿವೆ?",
+      "2022 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಶಿಕ್ಷೆ ಪ್ರಮಾಣ",
+      "2022 ರ ಎಷ್ಟು ಎಫ್‌ಐಆರ್‌ಗಳು ದೋಷಾರೋಪ ಪಟ್ಟಿ ತಲುಪಿದವು?",
+      "2022 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧ",
+      "2022 ರ IPC/BNS ಮತ್ತು SLL ಹಂಚಿಕೆ",
+      "2022 ರಲ್ಲಿ ಎಷ್ಟು ಕೊಲೆ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
     ],
   },
 };
 
+// Starters on the empty chat. Each one is answered from the real KSP record and was run
+// through the router and the answer writer before it was put here (2026-10-16). They used
+// to name people, vehicles and localities that exist only in seeded demo rows ("Ravi living
+// in Jayanagar", "KA-02-M-2093", "Bheema the Butcher"). The year is 2022, not 2023: the
+// 2023-24 part of the registry holds 100,000 duplicated rows (PROGRESS.md, open risks).
 const STARTERS = {
   en: [
-    "Check if vehicle KA-02-M-2093 has any pending challans or FIRs",
-    "Show me the list of absconding criminals in Indiranagar",
-    "What are the common hotspots for vehicle theft in South Bengaluru?",
-    "Give me the background check for Ravi living in Jayanagar",
-    "Show me all unsolved burglary cases from last month in my jurisdiction",
-    "Give me a quick summary of yesterday's major incidents",
-    "Find suspect Raju K. in Rajajinagar and check his aliases",
-    "Who is Bheema the Butcher? Show his dacoity network",
-    "Is Rajajinagar seeing a spike in chain-snatching this week?"
+    "Which districts had the most theft in 2022?",
+    "How many murder cases were registered in 2022?",
+    "Which police stations recorded the most cybercrime in 2022?",
+    "Crimes against women by district in 2022",
+    "Top areas for theft in Mysuru City",
+    "Which district had the most road accident cases in 2022?",
+    "IPC/BNS vs SLL split for 2022?",
+    "Conviction rate by district in 2022",
+    "Top beats for burglary in Bengaluru City",
   ],
   kn: [
-    "KA-02-M-2093 ವಾಹನದ ಮೇಲೆ ಯಾವುದೇ ಬಾಕಿ ಇರುವ ಚಲನ್ ಅಥವಾ FIR ಇದೆಯೇ?",
-    "ನನ್ನ ವ್ಯಾಪ್ತಿಯಲ್ಲಿ ಕಳೆದ ತಿಂಗಳಿನಿಂದ ಬಗೆಹರಿಯದ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ",
-    "ಜಯನಗರದ ರವಿಗೆ ಸಂಬಂಧಿಸಿದ ಯಾವುದೇ ಪರಿಚಿತ ವ್ಯಕ್ತಿಗಳಿದ್ದಾರೆಯೇ?",
-    "ದಕ್ಷಿಣ ಬೆಂಗಳೂರಿನಲ್ಲಿ ವಾಹನ ಕಳ್ಳತನಕ್ಕೆ ಸಾಮಾನ್ಯ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಯಾವುವು?",
-    "ನಿನ್ನೆಯ ಪ್ರಮುಖ ಘಟನೆಗಳ ತ್ವರಿತ ಸಾರಾಂಶವನ್ನು ನೀಡಿ",
-    "ರಾಜಾಜಿನಗರದಲ್ಲಿ ಈ ವಾರ ಚೈನ್ ಕಸಿಯುವ ಘಟನೆಗಳ ಹೆಚ್ಚಳ ಕಾಣುತ್ತಿದೆಯೇ?",
-    "ಬಾಗಲಕೋಟ ಜಿಲ್ಲೆಯಲ್ಲಿ ಸೈಬರ್ ವಂಚನೆ ಮಾಡುವ ಆರೋಪಿಗಳ ಪಟ್ಟಿ ತೋರಿಸಿ"
+    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
+    "2022 ರಲ್ಲಿ ಎಷ್ಟು ಕೊಲೆ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
+    "2022 ರಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧ ಹೆಚ್ಚು ದಾಖಲಾದ ಠಾಣೆಗಳು",
+    "2022 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧ",
+    "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು",
+    "2022 ರ IPC/BNS ಮತ್ತು SLL ಹಂಚಿಕೆ",
   ],
 };
 

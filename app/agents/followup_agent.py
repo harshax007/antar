@@ -105,16 +105,18 @@ def grounded_followups(template_id: str, params: dict, rows: list[dict],
     return out
 
 
+# Answered from the real record. "Bengaluru North", the repeat-offender list and "this
+# month" all read seeded demo rows only.
 _STARTER_CANDIDATES: list[tuple[str, str, str, dict]] = [
-    ("Show robbery trends in Bengaluru North last 3 months",
-     "ಬೆಂಗಳೂರು ನಾರ್ತ್‌ನಲ್ಲಿ ಕಳೆದ 3 ತಿಂಗಳ ದರೋಡೆ ಪ್ರವೃತ್ತಿ",
-     "T3", {"crime_types": ["robbery"], "zones": ["Bengaluru North"], "months": 3}),
-    ("Who are the repeat offenders?",
-     "ಪುನರಾವರ್ತಿತ ಅಪರಾಧಿಗಳು ಯಾರು?",
-     "T5", {"min_priors": 2, "limit": 10}),
-    ("Where are the theft hotspots this month?",
-     "ಈ ತಿಂಗಳು ಕಳ್ಳತನ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಎಲ್ಲಿ?",
-     "T11", {"crime_types": ["theft"]}),
+    ("Which districts had the most theft in 2022?",
+     "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
+     "T11", {"crime_types": ["THEFT"], "date_from": "2022-01-01", "date_to": "2022-12-31"}),
+    ("How many murder cases were registered in 2022?",
+     "2022 ರಲ್ಲಿ ಎಷ್ಟು ಕೊಲೆ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
+     "T1", {"crime_types": ["MURDER"], "date_from": "2022-01-01", "date_to": "2022-12-31"}),
+    ("Top areas for theft in Mysuru City",
+     "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
+     "T23", {"zones": ["Mysuru City"], "crime_types": ["THEFT"], "dimension": "area"}),
     ("Breakdown of crimes by type",
      "ಅಪರಾಧಗಳ ಪ್ರಕಾರವಾರು ವಿಂಗಡಣೆ",
      "T13", {}),
