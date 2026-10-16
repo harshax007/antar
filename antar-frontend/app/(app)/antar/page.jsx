@@ -2788,7 +2788,7 @@ export default function ChatPage() {
             >
               <span>
                 {docsMode
-                  ? "Question will be answared through docs. can be switched off"
+                  ? "Questions are answered through Docs. Click to switch it off."
                   : "Direct Chat mode active. Click to enable Docs mode."}
               </span>
             </motion.div>
