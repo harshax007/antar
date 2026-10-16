@@ -2426,9 +2426,9 @@ export default function ChatPage() {
                 fontFamily: kn ? "'Noto Sans Kannada', sans-serif" : "'Inter', sans-serif"
               }}>
                 {kn ? (
-                  <>10,00,000+ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳನ್ನು ಓದುವ ಏಜೆಂಟ್‌ಗಳು: ಪ್ರತಿ ಉತ್ತರಕ್ಕೂ ಸಾಕ್ಷ್ಯ, ಪ್ರತಿ ಮುನ್ಸೂಚನೆಯೂ ನಡೆದದ್ದರ ವಿರುದ್ಧ ಪರಿಶೀಲಿತ.</>
+                  <>ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ ಕೇಳಿ. ಉತ್ತರಗಳು ಹತ್ತು ಲಕ್ಷ ಸಾಲುಗಳ FIR ದಾಖಲೆಯಿಂದ ಬರುತ್ತವೆ, ಪ್ರತಿ ಅಂಕಿಯ ಹಿಂದಿನ ದಾಖಲೆಗಳೊಂದಿಗೆ.</>
                 ) : (
-                  <>Agents that read 10,00,000+ FIR records, show the evidence for every answer, and grade every forecast against what happened.</>
+                  <>Ask in English or Kannada. Answers come from a million-row FIR registry, with the records behind every figure.</>
                 )}
               </p>
             </motion.div>
