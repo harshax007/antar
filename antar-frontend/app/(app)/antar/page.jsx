@@ -2662,7 +2662,7 @@ export default function ChatPage() {
 
 
 
-            {/* Suggested questions: one quiet line of three, a refresh, and the year row */}
+            {/* Suggested questions: six small pills in two lines, a refresh, and the year row */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2673,14 +2673,16 @@ export default function ChatPage() {
                 // A year picked below replaces these with that year's questions.
                 const list = askYear ? yearQuestions(askYear, lang) : rotatorStarters;
                 const off = list.length ? starterOffset % list.length : 0;
-                const shown = [...list.slice(off), ...list.slice(0, off)].slice(0, 3);
+                const shown = [...list.slice(off), ...list.slice(0, off)].slice(0, 6);
                 return (
                   <div className="sq-row">
-                    {shown.map((s) => (
-                      <button key={s} type="button" className="sq-q" title={s} onClick={() => send(s)}>{s}</button>
-                    ))}
-                    {list.length > 3 && (
-                      <button type="button" className="sq-more" onClick={() => setStarterOffset((o) => o + 3)}
+                    <div className="sq-grid">
+                      {shown.map((s) => (
+                        <button key={s} type="button" className="sq-q" title={s} onClick={() => send(s)}>{s}</button>
+                      ))}
+                    </div>
+                    {list.length > 6 && (
+                      <button type="button" className="sq-more" onClick={() => setStarterOffset((o) => o + 6)}
                               title={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}
                               aria-label={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}>
                         <RefreshCw size={11} />
@@ -2692,10 +2694,13 @@ export default function ChatPage() {
               <YearQuestions lang={lang} year={askYear} onYear={(y) => { setAskYear(y); setStarterOffset(0); }} />
               <style jsx>{`
                 .sq-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 12px; max-width: 760px; width: 100%; }
-                .sq-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; max-width: 100%; }
-                .sq-q { max-width: 290px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent;
-                  border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 9999px; padding: 3px 10px; cursor: pointer;
-                  font: 400 11.5px/1.4 'Inter', sans-serif; color: rgba(255, 255, 255, 0.55); transition: color 0.15s, border-color 0.15s; }
+                .sq-row { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; max-width: 740px; }
+                .sq-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px 6px; flex: 1; min-width: 0; }
+                @media (max-width: 640px) { .sq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+                .sq-q { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+                  white-space: normal; text-align: center; background: transparent;
+                  border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 4px 9px; cursor: pointer;
+                  font: 400 11px/1.35 'Inter', sans-serif; color: rgba(255, 255, 255, 0.55); transition: color 0.15s, border-color 0.15s; }
                 .sq-q:hover { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
                 .sq-more { width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
                   border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.5); cursor: pointer; }
