@@ -211,9 +211,11 @@ All four are suggestion buttons on the home screen.
 
 | Question | What it shows | One line to say |
 |---|---|---|
-| `Fastest-growing crime groups 2022 to 2023?` | 2023: 2,31,326 FIRs, up 19%. Cyber crime share 8.0% → 12.2% | **"Cyber crime's share grew by half in one year."** |
-| `IPC/BNS vs SLL split for 2023?` | 76% IPC/BNS, 24% special & local laws | **"One in four FIRs is a special or local law."** |
-| `Crimes against women 2023 + top districts?` | Bengaluru City 7,160 FIRs, 34% | **"A question a senior officer really asks — answered with a ranked list."** |
+| `Fastest-growing crime groups 2021 to 2022?` | 2022: 1,95,170 FIRs (official total), up 11%. Cyber crime share 3.5% → 4.8% | **"Cyber crime's share grew by more than a third in one year."** |
+| `IPC/BNS vs SLL split for 2022?` | 78% IPC/BNS, 22% special & local laws | **"More than one in five FIRs is a special or local law."** |
+| `Crimes against women 2022 + top districts?` | Bengaluru City first, 21% of the state's cases | **"A question a senior officer really asks — answered with a ranked list."** |
+
+Years: the demo asks about 2022 and reads shares and rankings, not raw counts. 2016-2022 rows are a partial extract (about a third of each year), and 2023-24 holds 100,000 duplicated rows (see `PROGRESS.md`, open risks). A yearly total quoted on screen is the official annual figure.
 | `how many murders in Bengaluru City?` | 531 murder cases | **"Ask 'how many', and the number comes first."** |
 
 ---

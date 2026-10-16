@@ -374,7 +374,9 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
     period_label, span_kind = None, None
     from app.agents.timespan import find_span
     from app.services.zcql_repo import data_first_year, data_today
-    span = find_span(low, data_today(), data_first_year())
+    # Kannada fuses its case suffix onto the year ("2022ರಲ್ಲಿ"); split the seam first or
+    # \b never matches and the question is answered for every year on record.
+    span = find_span(_SCRIPT_SEAM.sub(" ", low), data_today(), data_first_year())
     if span:
         date_from, date_to = span.date_from, span.date_to
         period_label, span_kind = span.label, span.kind
@@ -574,7 +576,7 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     _compare = bool(re.search(r"\b(compare|comparison|vs|versus|growth|growing|grew|change)\b", low))
     if years and (_compare or (len(years) >= 2 and span_kind != "years")):
         return choice("T16", {"year": int(years[-1])})
-    # A year's total — "Cognizable FIRs registered in Karnataka in 2023?" A month or a
+    # A year's total — "Cognizable FIRs registered in Karnataka in 2022?" A month or a
     # quarter of that year is not the year: it goes on to the count below, with its dates.
     if years and span_kind in (None, "year") and not ct and not zones and not rank_q and not status_q \
             and re.search(r"\b(firs?|registered|cogni[sz]able|summary|what happened|overall|total|how many)\b", low):

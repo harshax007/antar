@@ -239,7 +239,7 @@ Reading top to bottom:
 | A person's cases | "what crimes is S0001 linked to?" | All linked FIRs |
 | Top suspects in an area | "top suspects in Rajajinagar" | People linked to the most cases there |
 | Demographics | "victim gender breakdown" | Aggregate breakdown with a fairness note |
-| A year | "Cognizable FIRs registered in Karnataka in 2023?" | Year total and highlights, or year-on-year comparison |
+| A year | "Cognizable FIRs registered in Karnataka in 2022?" | Year total and highlights, or year-on-year comparison |
 | Law split | "IPC/BNS vs SLL split for 2023?" | Cases by type of law |
 | A vehicle | "check if vehicle KA-02-M-2093 has any FIRs" | Every FIR naming it, or "not on record" |
 | Money or devices across districts | "which UPI IDs are used in more than one district?" | UPI IDs/IPs/vehicles/accused spanning several districts |

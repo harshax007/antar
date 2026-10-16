@@ -52,3 +52,31 @@ def test_no_seeded_names_are_offered():
 def test_the_server_starters_have_rows():
     from app.agents.followup_agent import grounded_starters
     assert len(grounded_starters(max_out=4)) >= 3
+
+
+def test_no_offered_question_headlines_a_raw_count():
+    """2016-2022 is a partial extract: its counts are low, its rankings and shares hold."""
+    for _lang, q in OFFERED:
+        # "ಎಷ್ಟು" alone also asks for a share ("what share reached chargesheet"); a count of cases is "ಎಷ್ಟು … ಪ್ರಕರಣ".
+        assert not q.lower().startswith("how many") and not ("ಎಷ್ಟು" in q and "ಪ್ರಕರಣ" in q), q
+
+
+@pytest.mark.parametrize("text", ["2022ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕೊಲೆಗಳು ದಾಖಲಾಗಿವೆ?", "2022ರ IPC/BNS ವಿರುದ್ಧ SLL ವಿಭಜನೆ?"])
+def test_a_year_fused_to_a_kannada_suffix_is_applied(text):
+    from app.agents.heuristics import extract_entities
+    e = extract_entities(text)
+    assert e.get("date_from") == "2022-01-01" and e.get("date_to") == "2022-12-31", e
+
+
+BANK = Path(__file__).resolve().parents[1] / "intelligent.db"
+
+
+@pytest.mark.skipif(not BANK.exists(), reason="intelligent.db is not in git")
+def test_the_documented_bank_names_no_2023_and_no_raw_count():
+    import sqlite3
+    con = sqlite3.connect(f"file:{BANK}?mode=ro", uri=True)
+    rows = con.execute("SELECT question_en, question_kn FROM question_bank").fetchall()
+    con.close()
+    for en, kn in rows:
+        assert "2023" not in (en or "") + (kn or "")
+    assert not any((en or "").lower().startswith(("statewide murders", "cybercrime firs in")) for en, _ in rows)

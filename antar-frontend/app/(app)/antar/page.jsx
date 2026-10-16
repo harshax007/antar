@@ -32,14 +32,14 @@ const ROLE_QUESTIONS = {
       "Which police stations recorded the most cybercrime in 2022?",
       "Top beats for burglary in Bengaluru City",
       "Top areas for theft in Mysuru City",
-      "How many murder cases were registered in 2022?",
+      "Which districts had the most murders in 2022?",
     ],
     kn: [
       "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
       "2022 ರಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧ ಹೆಚ್ಚು ದಾಖಲಾದ ಠಾಣೆಗಳು",
       "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು",
       "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
-      "2022 ರಲ್ಲಿ ಎಷ್ಟು ಕೊಲೆ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
+      "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕೊಲೆಗಳು ದಾಖಲಾಗಿವೆ?",
     ],
   },
   approver: {
@@ -48,14 +48,14 @@ const ROLE_QUESTIONS = {
       "What share of 2022 FIRs reached chargesheet?",
       "Crimes against women by district in 2022",
       "IPC/BNS vs SLL split for 2022?",
-      "How many murder cases were registered in 2022?",
+      "Which districts had the most murders in 2022?",
     ],
     kn: [
       "2022 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಶಿಕ್ಷೆ ಪ್ರಮಾಣ",
       "2022 ರ ಎಷ್ಟು ಎಫ್‌ಐಆರ್‌ಗಳು ದೋಷಾರೋಪ ಪಟ್ಟಿ ತಲುಪಿದವು?",
       "2022 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧ",
       "2022 ರ IPC/BNS ಮತ್ತು SLL ಹಂಚಿಕೆ",
-      "2022 ರಲ್ಲಿ ಎಷ್ಟು ಕೊಲೆ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
+      "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕೊಲೆಗಳು ದಾಖಲಾಗಿವೆ?",
     ],
   },
 };
@@ -63,12 +63,14 @@ const ROLE_QUESTIONS = {
 // Starters on the empty chat. Each one is answered from the real KSP record and was run
 // through the router and the answer writer before it was put here (2026-10-16). They used
 // to name people, vehicles and localities that exist only in seeded demo rows ("Ravi living
-// in Jayanagar", "KA-02-M-2093", "Bheema the Butcher"). The year is 2022, not 2023: the
-// 2023-24 part of the registry holds 100,000 duplicated rows (PROGRESS.md, open risks).
+// in Jayanagar", "KA-02-M-2093", "Bheema the Butcher"). They rank, compare and rate; none
+// headlines a raw count. 2016-2022 is a partial extract (about a third of each year), so its
+// counts are low while its shares and rankings hold; 2023-24 holds 100,000 duplicated rows
+// (PROGRESS.md, open risks).
 const STARTERS = {
   en: [
     "Which districts had the most theft in 2022?",
-    "How many murder cases were registered in 2022?",
+    "Which districts had the most murders in 2022?",
     "Which police stations recorded the most cybercrime in 2022?",
     "Crimes against women by district in 2022",
     "Top areas for theft in Mysuru City",
@@ -79,7 +81,7 @@ const STARTERS = {
   ],
   kn: [
     "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
-    "2022 ರಲ್ಲಿ ಎಷ್ಟು ಕೊಲೆ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
+    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕೊಲೆಗಳು ದಾಖಲಾಗಿವೆ?",
     "2022 ರಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧ ಹೆಚ್ಚು ದಾಖಲಾದ ಠಾಣೆಗಳು",
     "2022 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧ",
     "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
