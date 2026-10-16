@@ -2153,8 +2153,8 @@ Measured every page-load endpoint against the running backend (`/api/*`, cold th
 
 ## Questions by year, 2016 to 2026 - 2026-10-16
 
-* A "By year" row under the chat chips (`components/YearQuestions.jsx`): pick 2016 to 2026 and five questions for that year appear (most theft by district, IPC/BNS vs SLL split, peak month for cybercrime, conviction rate by district, crimes against women by district), in English or Kannada.
-* Each year carries one line on what its data can bear: 2016-2022 about a third of each year held (read shares and rankings); 2023 complete but 85,264 duplicated rows; 2024 real to 10 March with 14,736 duplicates, the rest demonstration data; 2025 and 2026 demonstration data, 2026 still in progress.
+* A "By year" row under the chat chips (`components/YearQuestions.jsx`): pick 2016 to 2026 and the suggested questions above are replaced by five for that year (picking it again, or the refresh button, brings the usual ones back) (most theft by district, IPC/BNS vs SLL split, peak month for cybercrime, conviction rate by district, crimes against women by district), in English or Kannada.
+* (Removed 2026-10-16 at the owner's request: the line under the pills on what each year's data can bear. Answers about 2024-26 carry their own demonstration label.) It read: 2016-2022 about a third of each year held (read shares and rankings); 2023 complete but 85,264 duplicated rows; 2024 real to 10 March with 14,736 duplicates, the rest demonstration data; 2025 and 2026 demonstration data, 2026 still in progress.
 * `tests/test_suggestions_real.py` runs all 110 (11 years, 5 questions, 2 languages): each routes to that year and returns rows; none asks for a raw count.
 * Not done: an answer about 2025 or 2026 does not itself say it is demonstration data; only the line above the questions does.
 

@@ -16,7 +16,7 @@ import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { asset } from "@/lib/assets";
 import { openReport } from "@/lib/auth";
 import AgentStrip, { AGENTS as STRIP_AGENTS, LENS } from "@/components/AgentStrip";
-import YearQuestions from "@/components/YearQuestions";
+import YearQuestions, { yearQuestions } from "@/components/YearQuestions";
 import { FACE as AGENT_FACE } from "@/components/WorkspaceAgents";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -1330,6 +1330,7 @@ export default function ChatPage() {
   const [atBottom, setAtBottom] = useState(true);   // scroll discipline (see effect below)
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [askYear, setAskYear] = useState(null);      // year picked under the suggested questions
   const [mode, setMode] = useState(null);
   const [recording, setRecording] = useState(false);
   const [voiceOk, setVoiceOk] = useState(false);
@@ -2669,7 +2670,9 @@ export default function ChatPage() {
               style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", marginTop: "18px", maxWidth: "760px" }}
             >
               {(() => {
-                const rotated = [...rotatorStarters.slice(starterOffset), ...rotatorStarters.slice(0, starterOffset)];
+                // A year picked below replaces these with that year's questions.
+                const rotated = askYear ? yearQuestions(askYear, lang)
+                  : [...rotatorStarters.slice(starterOffset), ...rotatorStarters.slice(0, starterOffset)];
                 return (
                   <>
                     <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
@@ -2731,7 +2734,7 @@ export default function ChatPage() {
                       })}
                       <button 
                         type="button" 
-                        onClick={() => setStarterOffset(s => (s + 6) % rotatorStarters.length)}
+                        onClick={() => { setAskYear(null); setStarterOffset(s => (s + 6) % rotatorStarters.length); }}
                         title={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}
                         style={{ 
                           width: "28px", 
@@ -2762,7 +2765,7 @@ export default function ChatPage() {
                   </>
                 );
               })()}
-              <YearQuestions lang={lang} onAsk={(q) => send(q)} />
+              <YearQuestions lang={lang} year={askYear} onYear={setAskYear} />
             </motion.div>
 
             {/* Professional tiny footer note below prompt box */}
