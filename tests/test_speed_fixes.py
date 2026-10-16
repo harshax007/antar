@@ -130,3 +130,12 @@ def test_a_demonstration_count_is_context_not_a_folded_limit():
     assert s["context"][0].startswith("The real KSP register has no separate head")
     assert not any("demonstration" in l for l in s["limits"])
     assert any("still in progress" in l for l in s["limits"])
+
+
+def test_cors_preflight_is_not_written_to_the_audit_ledger(tmp_path, monkeypatch):
+    """A browser's OPTIONS pre-flight carries no credentials by design; recorded, it read
+    as anonymous access. The real request after it is still recorded."""
+    import inspect
+    import main
+    src = inspect.getsource(main._audit)
+    assert 'request.method != "OPTIONS"' in src

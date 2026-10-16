@@ -441,7 +441,10 @@ async def _audit(request, call_next):
     finally:
         security_context.end(token)
     response.headers["x-call-chain-id"] = ctx.call_chain_id
-    if path.startswith("/api/") and not path.startswith("/api/health"):
+    # Not recorded: health probes, and CORS pre-flight checks. A browser sends an OPTIONS
+    # request, without credentials by design, before each cross-origin call; recorded,
+    # they filled the ledger with "anonymous" rows that read like unauthenticated access.
+    if path.startswith("/api/") and not path.startswith("/api/health") and request.method != "OPTIONS":
         audit_store.record(officer, role, request.method, path, response.status_code, extra=ctx.for_audit())
     return response
 
