@@ -2667,7 +2667,10 @@ export default function ChatPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.4 }}
-              className="sq-wrap"
+              // Inline, not in the scoped <style jsx> below: styled-jsx does not reach the
+              // element a motion component renders, so its margin and gap were 0.
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px",
+                       marginTop: "22px", maxWidth: "760px", width: "100%" }}
             >
               {(() => {
                 // A year picked below replaces these with that year's questions.
@@ -2693,14 +2696,13 @@ export default function ChatPage() {
               })()}
               <YearQuestions lang={lang} year={askYear} onYear={(y) => { setAskYear(y); setStarterOffset(0); }} />
               <style jsx>{`
-                .sq-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 12px; max-width: 760px; width: 100%; }
-                .sq-row { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; max-width: 740px; }
-                .sq-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px 6px; flex: 1; min-width: 0; }
+                .sq-row { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 740px; }
+                .sq-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; flex: 1; min-width: 0; }
                 @media (max-width: 640px) { .sq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
                 .sq-q { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
                   white-space: normal; text-align: center; background: transparent;
-                  border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 4px 9px; cursor: pointer;
-                  font: 400 11px/1.35 'Inter', sans-serif; color: rgba(255, 255, 255, 0.55); transition: color 0.15s, border-color 0.15s; }
+                  border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 8px 12px; cursor: pointer; min-height: 44px; align-content: center;
+                  font: 400 11.5px/1.4 'Inter', sans-serif; color: rgba(255, 255, 255, 0.55); transition: color 0.15s, border-color 0.15s; }
                 .sq-q:hover { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
                 .sq-more { width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
                   border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.5); cursor: pointer; }
@@ -2714,7 +2716,7 @@ export default function ChatPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
               style={{
-                marginTop: "8px",
+                marginTop: "16px",
                 fontSize: "10px",
                 color: docsMode ? "#60A5FA" : "rgba(255, 255, 255, 0.42)",
                 display: "flex",

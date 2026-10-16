@@ -38,10 +38,10 @@ export default function YearQuestions({ lang = "en", year = null, onYear }) {
                 onClick={() => onYear?.(y === year ? null : y)}>{y}</button>
       ))}
       <style jsx>{`
-        .yq-years { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; max-width: 760px; }
+        .yq-years { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; max-width: 760px; }
         .yq-lbl { font-size: 10px; color: rgba(255, 255, 255, 0.35); margin-right: 2px; font-family: 'Inter', sans-serif; }
         .yq-years button { font: 500 10px 'Inter', sans-serif; color: rgba(255, 255, 255, 0.45); background: transparent;
-          border: 1px solid transparent; border-radius: 9999px; padding: 1px 6px; cursor: pointer; transition: all 0.15s; }
+          border: 1px solid transparent; border-radius: 9999px; padding: 3px 8px; cursor: pointer; transition: all 0.15s; }
         .yq-years button:hover { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
         .yq-years button.on { color: #fff; background: rgba(96, 165, 250, 0.16); border-color: rgba(96, 165, 250, 0.45); }
       `}</style>
