@@ -69,7 +69,7 @@ class BrainIndex:
         Each row must have: row_id, vector_b64, kind, summary_text, …
         """
         if not rows:
-            print("  ⚠️  Second Brain index empty — no rows in Data Store yet")
+            print("  Second Brain index empty — no rows in Data Store yet")
             self._matrix      = np.empty((0, _DIM), dtype=np.float32)
             self._row_ids     = []
             self._metadata    = []
@@ -101,7 +101,7 @@ class BrainIndex:
                     "created_at":          row.get("created_at"),
                 })
             except Exception as e:
-                print(f"  ⚠️  Skipping malformed brain row {row.get('row_id')}: {e}")
+                print(f"  Skipping malformed brain row {row.get('row_id')}: {e}")
 
         if vectors:
             self._matrix   = np.vstack(vectors).astype(np.float32)
@@ -109,7 +109,7 @@ class BrainIndex:
             self._metadata = metadata
             self._build_faiss_index()
             self._build_bm25_index()
-            print(f"  ✅ Brain index rebuilt: {len(vectors)} vectors, shape {self._matrix.shape}"
+            print(f"  Brain index rebuilt: {len(vectors)} vectors, shape {self._matrix.shape}"
                   f" | search: {'HNSW+BM25 Hybrid' if _FAISS_OK else 'NumPy+BM25 Hybrid'}")
         else:
             self._matrix      = np.empty((0, _DIM), dtype=np.float32)

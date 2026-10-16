@@ -1,7 +1,7 @@
 """
 Antar — Brain API (Second Brain · M2)
 ==========================================
-GET  /api/brain/related ?suspect_ids=S0001[,S0002] → cross-case links + ⚡ banner  [Inspector+]
+GET  /api/brain/related ?suspect_ids=S0001[,S0002] → cross-case links + banner  [Inspector+]
 POST /api/brain/seed                                → seed planted summaries (dev)  [Admin]
 
 Cross-case discovery is DATA-driven (shared phone_hash + common contacts), so it works

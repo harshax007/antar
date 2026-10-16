@@ -143,7 +143,7 @@ async def chat(req: ChatRequest, request: Request) -> dict:
             query = result.get("results", {}).get("query", {})
             actual_mode = "llm" if query.get("llm_answer") else "offline"
         except Exception as e:
-            print(f"⚠️  LLM path failed ({e}); falling back to offline for this turn")
+            print(f"LLM path failed ({e}); falling back to offline for this turn")
             result = None
     if result is None:
         initial_state = {

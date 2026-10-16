@@ -253,7 +253,7 @@ def semantic_recall(
         return candidates
     except Exception as e:
         import traceback
-        print(f"  ⚠️  semantic_recall error: {e}")
+        print(f"  semantic_recall error: {e}")
         traceback.print_exc()
         return []
 
@@ -290,7 +290,7 @@ def corpus_recall(query_text: str, k: int = 10, *, min_score: float = 0.25,
         # would not be comparable to these 384-dim rows.
         qvec = embedder.embed([query_text])[0]
     except Exception as e:                       # recall is an enhancement, never a 500
-        print(f"  ⚠️  corpus recall unavailable: {e}")
+        print(f"  corpus recall unavailable: {e}")
         return []
 
     # Over-fetch before filtering so a district/crime filter cannot empty the result.

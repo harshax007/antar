@@ -3,7 +3,7 @@ Antar — Network Agent (M2, M7)
 ===================================
 Builds a criminal network graph around a suspect: BFS over the `relationships`
 table (depth-limited, node-capped), connected components, and — the differentiator —
-Second-Brain cross-case links drawn as distinct edges with a ⚡ banner (WOW 2).
+Second-Brain cross-case links drawn as distinct edges with a banner (WOW 2).
 
 No LLM on the hot path: pure graph algorithms over the data. Fully offline-testable.
 Output is a vis-network-ready payload {nodes, edges, components, brain_banner, brain_links}.

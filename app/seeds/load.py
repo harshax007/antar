@@ -155,7 +155,7 @@ def push_to_datastore(world: dict[str, list[dict]], reset: bool) -> None:
             table.insert_rows(rows[i:i + CHUNK])     # bulk insert (max ~CHUNK per call)
             inserted += len(rows[i:i + CHUNK])
             time.sleep(0.4)                          # rate-limit courtesy [VERIFY actual limit]
-        print(f"  ✓ pushed {inserted:>5} rows → {table_name}")
+        print(f"  pushed {inserted:>5} rows → {table_name}")
 
 
 def _truncate_table(table, table_name: str) -> None:
@@ -202,13 +202,13 @@ def spot_check() -> None:
          "SELECT zone, COUNT(crime_id) AS n FROM crimes WHERE crime_type = 'theft' "
          "GROUP BY zone ORDER BY n DESC", True),
     ]
-    print("\n🔎 ZCQL spot-checks against Data Store:")
+    print("\nZCQL spot-checks against Data Store:")
     for label, q, olap in checks:
         try:
             rows = zcql_query(q, olap=olap)
-            print(f"   ✓ {label}: {rows[:3]}")
+            print(f"   {label}: {rows[:3]}")
         except Exception as e:
-            print(f"   ✗ {label}: {e}")
+            print(f"   {label}: {e}")
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
@@ -222,15 +222,15 @@ def main() -> None:
     ap.add_argument("--reset", action="store_true", help="wipe tables before push")
     args = ap.parse_args()
 
-    print(f"🌱 Generating world  (SEED={SEED}, now={args.now}) …")
+    print(f"Generating world  (SEED={SEED}, now={args.now}) …")
     world = build_world(args.now)
 
     failures, stats = validate(world, args.now)
-    print("\n📊 World summary")
+    print("\nWorld summary")
     for t in ["stations", "officers", "suspects", "victims", "crimes",
               "crime_suspects", "relationships", "financial_links", "property"]:
         print(f"   {t:<16} {len(world[t]):>6} rows")
-    print(f"\n🎯 Planted-pattern check")
+    print(f"\nPlanted-pattern check")
     print(f"   P2 trailing weekly: {stats['p2_series']}")
     print(f"   P2 μ={stats['p2_mu']}  σ={stats['p2_sigma']}  demo-week={stats['p2_demo_count']}"
           f"  →  z = {stats['p2_z']}")
@@ -238,11 +238,11 @@ def main() -> None:
           f" vs elsewhere {stats['p3_cold_evening']:.0%}")
 
     if failures:
-        print("\n❌ VALIDATION FAILED — demo guarantees broken:")
+        print("\nVALIDATION FAILED — demo guarantees broken:")
         for f in failures:
-            print(f"   ✗ {f}")
+            print(f"   {f}")
         sys.exit(1)
-    print("\n✅ All planted patterns hold (P1 Yellappa link · P2 z-spike · P3 clusters)")
+    print("\nAll planted patterns hold (P1 Yellappa link · P2 z-spike · P3 clusters)")
 
     args.out.mkdir(parents=True, exist_ok=True)
     for table, rows in world.items():
@@ -255,13 +255,13 @@ def main() -> None:
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "rows": {t: len(r) for t, r in world.items()}, "pattern_stats": stats,
     }, indent=2), encoding="utf-8")
-    print(f"💾 JSON written → {args.out}")
+    print(f"JSON written → {args.out}")
 
     if args.push:
-        print("\n☁️  Pushing to Catalyst Data Store …")
+        print("\nPushing to Catalyst Data Store …")
         push_to_datastore(world, args.reset)
         spot_check()
-        print("\n✅ Push complete.")
+        print("\nPush complete.")
 
 
 if __name__ == "__main__":

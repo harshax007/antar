@@ -76,4 +76,4 @@ async def run_evaluation_suite(run_id: str) -> None:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (run_id, getattr(settings, "PROMPT_VERSION", "v1"), settings.QUICKML_CHAT_MODEL, ts, len(cases), pass_rate, avg_grounded, p95_ms))
         
-    print(f"\n✅ Eval Run Complete: {pass_rate*100:.1f}% pass | Avg Grounded: {avg_grounded:.2f} | P95: {p95_ms}ms")
+    print(f"\nEval Run Complete: {pass_rate*100:.1f}% pass | Avg Grounded: {avg_grounded:.2f} | P95: {p95_ms}ms")

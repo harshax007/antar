@@ -26,10 +26,10 @@ OUT_DIR = Path(__file__).parent / "out"
 
 def load_into_sqlite(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
     if not db_path.exists():
-        print(f"❌ Database not found at {db_path}")
+        print(f"Database not found at {db_path}")
         return
     if not out_dir.exists():
-        print(f"❌ Seeds directory not found at {out_dir}")
+        print(f"Seeds directory not found at {out_dir}")
         return
 
     conn = sqlite3.connect(str(db_path))
@@ -45,26 +45,26 @@ def load_into_sqlite(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
         "stations",
         "officers",
     ]
-    print(f"🌱 Loading seed JSONs from {out_dir} into {db_path.name} ...\n")
+    print(f"Loading seed JSONs from {out_dir} into {db_path.name} ...\n")
 
     for table in tables:
         json_path = out_dir / f"{table}.json"
         if not json_path.exists():
-            print(f"  ⚠️  Skipping {table}: {json_path.name} not found")
+            print(f"  Skipping {table}: {json_path.name} not found")
             continue
 
         with open(json_path, "r", encoding="utf-8") as f:
             records = json.load(f)
 
         if not records:
-            print(f"  ⚠️  Skipping {table}: empty JSON")
+            print(f"  Skipping {table}: empty JSON")
             continue
 
         # Get column names from SQLite pragma
         cur.execute(f"PRAGMA table_info({table})")
         cols_info = cur.fetchall()
         if not cols_info:
-            print(f"  ⚠️  Skipping {table}: table does not exist in DB")
+            print(f"  Skipping {table}: table does not exist in DB")
             continue
 
         cols = [c[1] for c in cols_info]
@@ -81,7 +81,7 @@ def load_into_sqlite(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
         sql = f"INSERT INTO {table} ({','.join(cols)}) VALUES ({placeholders})"
         cur.executemany(sql, rows)
         conn.commit()
-        print(f"  ✅ Loaded {len(rows):>6} rows -> {table:<16}")
+        print(f"  Loaded {len(rows):>6} rows -> {table:<16}")
 
     # ── Update FIRs table with synthetic crimes ──
     crimes_path = out_dir / "crimes.json"
@@ -97,11 +97,11 @@ def load_into_sqlite(db_path: Path = DB_PATH, out_dir: Path = OUT_DIR) -> None:
             conn.close()
             from app.services.zcql_local import insert_crimes
             insert_crimes(crimes)
-            print(f"  ✅ Updated {len(crimes):>6} rows -> FIRs (crimes view)")
+            print(f"  Updated {len(crimes):>6} rows -> FIRs (crimes view)")
     else:
         conn.close()
 
-    print("\n🎯 SQLite database enrichment complete!")
+    print("\nSQLite database enrichment complete!")
 
 
 if __name__ == "__main__":

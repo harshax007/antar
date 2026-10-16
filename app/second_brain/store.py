@@ -46,7 +46,7 @@ def _local_curated_rows() -> list[dict]:
             rows.extend(vec_store.all_rows(kind=kind))
         return rows
     except Exception as e:                                  # never block boot on the store
-        print(f"  ⚠️  local brain store unavailable ({e})")
+        print(f"  local brain store unavailable ({e})")
         return []
 
 
@@ -62,7 +62,7 @@ async def load_all_embeddings_from_store() -> list[dict]:
     """
     local = _local_curated_rows()
     if local:
-        print(f"  🧠 Brain: {len(local)} curated row(s) from the local store")
+        print(f"  Brain: {len(local)} curated row(s) from the local store")
         return local
 
     # An EMPTY curated tier is not the same as an absent store, and conflating the two
@@ -80,7 +80,7 @@ async def load_all_embeddings_from_store() -> list[dict]:
     try:
         from app.second_brain import vec_store
         if vec_store.count() > 0:
-            print("  🧠 Brain: local store present, curated tier empty — "
+            print("  Brain: local store present, curated tier empty — "
                   "skipping the remote fetch")
             return []
     except Exception:                       # noqa: BLE001 — fall through to the remote
@@ -105,10 +105,10 @@ async def load_all_embeddings_from_store() -> list[dict]:
             timeout=20.0,
         )
     except asyncio.TimeoutError:
-        print("  ⚠️  brain store load timed out after 20s — booting with empty index")
+        print("  brain store load timed out after 20s — booting with empty index")
         return []
     except Exception as e:  # pragma: no cover
-        print(f"  ⚠️  brain store load failed ({e}) — booting with empty index")
+        print(f"  brain store load failed ({e}) — booting with empty index")
         return []
 
 

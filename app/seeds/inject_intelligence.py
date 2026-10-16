@@ -35,7 +35,7 @@ def get_week_dates(week_idx: int) -> list[datetime.date]:
 
 def inject():
     if not DB_PATH.exists():
-        print(f"❌ DB not found at {DB_PATH}")
+        print(f"DB not found at {DB_PATH}")
         return
 
     conn = sqlite3.connect(str(DB_PATH))
@@ -107,7 +107,7 @@ def inject():
         }
     ]
 
-    print("🚀 Starting Intelligence Data Injection...")
+    print("Starting Intelligence Data Injection...")
 
     # Get FIRs column headers
     cur.execute("PRAGMA table_info(FIRs)")
@@ -237,7 +237,7 @@ def inject():
             csv_rows.append(",".join(csv_row))
 
     # 2. Inject Suspects, Financial Links, Property, and Crime-Suspects for 360 intelligence
-    print("🧠 Injecting supporting intelligence links (Suspects, Financial Links, Property)...")
+    print("Injecting supporting intelligence links (Suspects, Financial Links, Property)...")
     
     cur.execute("DELETE FROM suspects WHERE suspect_id IN ('S0901', 'S0902', 'S0904', 'S0905', 'S0908')")
     new_suspects = [
@@ -303,7 +303,7 @@ def inject():
     conn.commit()
     conn.close()
 
-    print(f"✅ Successfully inserted {new_crimes_count} crime/FIR records and supporting intelligence into antar.db!")
+    print(f"Successfully inserted {new_crimes_count} crime/FIR records and supporting intelligence into antar.db!")
 
     # 3. Append to fir_synthetic.csv
     if CSV_PATH.exists() and csv_rows:
@@ -312,17 +312,17 @@ def inject():
             with open(CSV_PATH, "a", encoding="utf-8") as f:
                 for line in csv_rows:
                     f.write("\n" + line)
-            print(f"✅ Appended {len(csv_rows)} Week-0 spike records to {CSV_PATH.name} for 3D Brain visualization!")
+            print(f"Appended {len(csv_rows)} Week-0 spike records to {CSV_PATH.name} for 3D Brain visualization!")
         else:
-            print(f"ℹ️ Week-0 records already present in {CSV_PATH.name}, skipping CSV append.")
+            print(f"ℹWeek-0 records already present in {CSV_PATH.name}, skipping CSV append.")
 
     # 4. Trigger scan and verify predictions
-    print("\n📊 Running Forecast Agent scan to verify exact alert distribution...")
+    print("\nRunning Forecast Agent scan to verify exact alert distribution...")
     from app.agents.forecast_agent import scan
     res = scan(session_id="inject_verify")
     alerts = res.get("alerts", [])
     
-    print(f"\n🎯 Total Active Alerts: {len(alerts)}")
+    print(f"\nTotal Active Alerts: {len(alerts)}")
     print("--------------------------------------------------------------------------------")
     for a in alerts:
         z = a.get("z_score", 0)

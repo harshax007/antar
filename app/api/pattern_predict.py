@@ -11,11 +11,28 @@ from collections import Counter
 
 from fastapi import APIRouter
 from app.services.zcql_local import scan_rows as _scan_rows, _world
+from app.services import product_store
 from app.services.patterns import find_clusters, predict_risk
 
 router = APIRouter()
 
 _RISK_UI = {"Critical": "HIGH", "High": "HIGH", "Elevated": "MEDIUM", "Low": "LOW"}
+
+_PREDICT_TTL = 300
+
+
+def _cached_call(key: str, build):
+    """Serve a deterministic predict product from product_store, computing on a miss."""
+    hit = product_store.get_product(key)
+    if hit is not None:
+        return hit
+    out = build()
+    try:
+        product_store.put_product(key, out, ttl=_PREDICT_TTL)
+    except Exception:
+        pass   # a cache that will not store must never fail the request
+    return out
+
 
 @router.get("/pattern")
 async def pattern(crime_type: str | None = None, period: str | None = None) -> dict:
@@ -260,7 +277,7 @@ async def predict_engine() -> dict:
     its reasons - so "Moderate" can be argued with.
     """
     import asyncio
-    return await asyncio.to_thread(_engine)
+    return await asyncio.to_thread(lambda: _cached_call("predict:engine", _engine))
 
 
 def _engine() -> dict:
@@ -368,7 +385,10 @@ def _engine() -> dict:
 async def predict_board(limit: int = 0, force: bool = False) -> dict:
     """GET /api/predict/board — computed fresh per request or cached (as_of = today);
     the autonomous loop keeps the compiled product warm between requests."""
-    return compile_board(limit, force=force)
+    if force:
+        return compile_board(limit, force=True)
+    return _cached_call(f"predict:board:{limit}",
+                        lambda: compile_board(limit, force=False))
 
 
 def _pp_date(v):
@@ -398,6 +418,9 @@ async def predict_dashboard(months: int = 5, trend_months: int = 12, top: int = 
     (< 40% of the peak month) are dropped so the "latest" is a representative full month,
     not a partial-month cliff. The third card (Antar Alert) is served by /api/alerts.
     """
+    _hit = product_store.get_product(f"predict:dashboard:{months}:{trend_months}:{top}")
+    if _hit is not None:
+        return _hit
     from collections import Counter, defaultdict
     from app.core.date_guard import redact_future_dates
     from app.services.zcql_repo import build_spec, data_today
@@ -494,10 +517,16 @@ async def predict_dashboard(months: int = 5, trend_months: int = 12, top: int = 
     volume = {"month": _stats(month_series, "incidents/mo"),
               "year": _stats(year_series, "incidents/yr")}
 
-    return redact_future_dates({
+    _out = redact_future_dates({
         "as_of": as_of, "window_months": months,
         "activity": activity, "volume": volume,
     })
+    try:
+        product_store.put_product(f"predict:dashboard:{months}:{trend_months}:{top}",
+                                  _out, ttl=_PREDICT_TTL)
+    except Exception:
+        pass
+    return _out
 
 
 def _plain_crime(ct: str | None) -> str:
@@ -626,6 +655,9 @@ async def predict_briefing() -> dict:
     carries a number the facts do not is discarded rather than shown - the screen then
     keeps its own counted briefing, which never depends on the model.
     """
+    _hit = product_store.get_product("predict:briefing")
+    if _hit is not None:
+        return _hit
     import json
     import re
     from app.core.date_guard import redact_future_dates
@@ -666,7 +698,12 @@ async def predict_briefing() -> dict:
         _BRIEFING[key] = reading
     else:
         _BRIEFING_RETRY_AT["t"] = _time.time() + 600
-    return {"facts": facts, "reading": reading}
+    out = {"facts": facts, "reading": reading}
+    try:
+        product_store.put_product("predict:briefing", out, ttl=_PREDICT_TTL)
+    except Exception:
+        pass
+    return out
 
 
 @router.get("/predict/{zone}/scenario")
@@ -845,4 +882,4 @@ async def predict_model_card() -> dict:
             return card.build(con)
         finally:
             con.close()
-    return await asyncio.to_thread(_build)
+    return await asyncio.to_thread(lambda: _cached_call("predict:model_card", _build))

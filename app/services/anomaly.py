@@ -505,7 +505,7 @@ def scan(threshold: float = Z_THRESHOLD, min_observed: int = 4) -> list[dict]:
                     "step": "③ Forecast",
                     "description": (
                         f"Gi* stat = {gi_stat:.2f} (p = {p_val:.3f}) — "
-                        f"spatial hotspot {'confirmed ✓' if is_hotspot else 'not confirmed'}. "
+                        f"spatial hotspot {'confirmed ' if is_hotspot else 'not confirmed'}. "
                         f"90% conformal band: [{lo} – {hi}] incidents next week. "
                         f"Combined score: {anomaly_score}/10 | "
                         f"Calibrated confidence: {confidence*100:.0f}%."

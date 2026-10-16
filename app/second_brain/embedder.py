@@ -201,7 +201,7 @@ async def get_visual_description(image_urls: list[str]) -> str:
         desc = await quickml_vision_generate(system=system, user=user, images=image_urls)
         return desc
     except Exception as e:
-        print(f"  ⚠️  Vision API error: {e}")
+        print(f"  Vision API error: {e}")
         return ""
 
 

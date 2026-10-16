@@ -18,14 +18,34 @@ export default function PillNav() {
   // Pending human-in-the-loop decisions, for the APPROVALS badge. Polled lightly, and
   // refreshed instantly when the Approvals screen reports a change.
   const [hitlPending, setHitlPending] = useState(0);
+  // This nav is mounted on every screen, so the poll ran on all of them, forever, even
+  // with the tab in the background - 240 requests an hour for a badge that changes a
+  // handful of times a day. It now sleeps while the tab is hidden and catches up on the
+  // way back, and the `antar-hitl` event still updates it instantly when Approvals acts,
+  // which is what actually keeps the number honest.
   useEffect(() => {
     let alive = true;
-    const pull = () => fetchAPI("/api/hitl/stats").then((s) => { if (alive) setHitlPending(s?.pending || 0); }).catch(() => {});
+    let t = null;
+    const pull = () => {
+      if (!alive || document.hidden) return;
+      fetchAPI("/api/hitl/stats")
+        .then((s) => { if (alive) setHitlPending(s?.pending || 0); })
+        .catch(() => {});
+    };
+    const start = () => { if (t === null) t = setInterval(pull, 60000); };
+    const stop = () => { if (t !== null) { clearInterval(t); t = null; } };
+    const onVis = () => { if (document.hidden) stop(); else { pull(); start(); } };
+
     pull();
-    const t = setInterval(pull, 15000);
+    start();
     const onUpdate = (e) => setHitlPending(e.detail?.pending || 0);
     window.addEventListener("antar-hitl", onUpdate);
-    return () => { alive = false; clearInterval(t); window.removeEventListener("antar-hitl", onUpdate); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      alive = false; stop();
+      window.removeEventListener("antar-hitl", onUpdate);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   if (path === "/docs" || path?.startsWith("/docs/") || path === "/app/docs" || path?.startsWith("/app/docs/") || path?.includes("/docs")) {

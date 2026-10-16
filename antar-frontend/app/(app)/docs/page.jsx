@@ -8,6 +8,7 @@ import { newAssistantMsg, applyEvent, streamChat } from "@/lib/chatStream";
 import { asset } from "@/lib/assets";
 import AgentDoc from "@/components/AgentDoc";
 import { Mascot } from "page-mascot";
+import { ChevronDown } from "lucide-react";
 
 const ANTAR_ASCII = ` █████ ███   ██║███████ █████ ██████ 
 ██╔══██╗████║ ██║╔══██╔══╗██╔══██╗
@@ -61,6 +62,9 @@ const UNWANTED_SUFFIXES = [
 
 const clean = (s) => {
   let str = String(s || "");
+
+  // Strip emojis (AI slop)
+  str = str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}-\u{2B59}\u{200D}\u{FE0E}\u{FE0F}]/gu, '');
 
   // Apply typography cleanups globally to all streams
   str = str.replace(/\[(?:COMPUTED|VERIFIED|PATTERN|INFERRED)\]\s*/gi, '');
@@ -473,9 +477,9 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
           </motion.div>
           <motion.div 
             animate={{ rotate: isExpanded ? 180 : 0 }} 
-            style={{ color: "#475569", marginLeft: "6px", fontSize: "10px" }}
+            style={{ color: "#475569", marginLeft: "6px", display: "flex", alignItems: "center" }}
           >
-            ▼
+            <ChevronDown size={14} />
           </motion.div>
         </div>
       </motion.div>
@@ -580,7 +584,7 @@ function frInline(t) {
 
 function FormattedResponse({ text }) {
   if (!text) return null;
-  let cleaned = text;
+  let cleaned = String(text).replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}-\u{2B59}\u{200D}\u{FE0E}\u{FE0F}]/gu, '');
   for (const marker of ["[VERIFIED] Multi-Agent Synthesis", "— Reasoning trail —", "- Reasoning trail -", "Reasoning trail"]) {
     const i = cleaned.indexOf(marker);
     if (i !== -1) { cleaned = cleaned.substring(0, i).trim(); break; }

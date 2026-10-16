@@ -241,7 +241,7 @@ function normalizeAnswerText(raw) {
   let s = String(raw);
 
   // Strip emojis (AI slop)
-  s = s.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2300}-\u{23FF}]/gu, '');
+  s = s.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}-\u{2B59}\u{200D}\u{FE0E}\u{FE0F}]/gu, '');
   
   // Strip common conversational AI slop from the beginning of the string
   s = s.replace(/^(?:(?:Certainly!?|Sure,?|Yes,?)\s*)+(?:Here is the (?:information|analysis)[^:]*:|Based on the (?:records|data|analysis)[^,]*,\s*)?/gi, "");
@@ -701,8 +701,8 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
         return (
           <p className="cx-think-check">
             {who.map((a) => <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(/mascots/sm/${AGENT_FACE[a]}-directions.webp)` }} />)}
-            <span>{kn ? `${who.length} ಏಜೆಂಟ್‌ಗಳು ಕೆಲಸ ಮಾಡಿವೆ · ಸಂಖ್ಯೆಗಳನ್ನು ದಾಖಲೆಗಳೊಂದಿಗೆ ಪರಿಶೀಲಿಸಲಾಗಿದೆ`
-              : `${who.length} ${who.length === 1 ? "agent" : "agents"} worked on this · figures checked against the records before showing`}</span>
+            <span>{kn ? `${who.length} ಏಜೆಂಟ್‌ಗಳು ಕೆಲಸ ಮಾಡಿವೆ`
+              : `${who.length} ${who.length === 1 ? "agent" : "agents"} worked on this`}</span>
           </p>
         );
       })()}

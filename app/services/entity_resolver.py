@@ -86,8 +86,8 @@ def soundex(name: str) -> str:
     """American Soundex code — first letter + up to 3 consonant-group digits.
     Vowels between same-coded consonants reset adjacency so distinct codes are kept.
 
-    Yellappa → Y410   Yellapa → Y410   (same ✓)
-    Raju     → R200   Raaju   → R200   (same ✓)
+    Yellappa → Y410   Yellapa → Y410   (same )
+    Raju     → R200   Raaju   → R200   (same )
     """
     name = re.sub(r"[^A-Za-z]", "", name).upper()
     if not name:

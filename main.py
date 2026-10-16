@@ -102,7 +102,7 @@ async def background_warmup():
         from app.core.db_path import ensure_db_staged
         await asyncio.to_thread(ensure_db_staged)
     except Exception as e:
-        print(f"  ⚠️  database staging failed: {e}")
+        print(f"  database staging failed: {e}")
 
     # Load BGE-small-en-v1.5. Off the event loop: importing torch + transformers and
     # loading the weights is several seconds of blocking CPU work, and running it inline
@@ -111,74 +111,74 @@ async def background_warmup():
     # Print the model that will ACTUALLY load. This was hardcoded to bge-small while
     # .env overrode BRAIN_EMBEDDING_MODEL to all-MiniLM-L6-v2, so the startup log
     # confidently named a model the process never touched.
-    print(f"🧠 Loading Second Brain embedder ({settings.BRAIN_EMBEDDING_MODEL})...")
+    print(f"Loading Second Brain embedder ({settings.BRAIN_EMBEDDING_MODEL})...")
     try:
         await asyncio.to_thread(load_embedder)
     except Exception as e:
-        print(f"  ⚠️  embedder failed: {e}")
+        print(f"  embedder failed: {e}")
 
     # Rebuild hot in-memory cosine index
-    print("🔄 Rebuilding Second Brain index from Data Store...")
+    print("Rebuilding Second Brain index from Data Store...")
     try:
         rows = await load_all_embeddings_from_store()
         await asyncio.to_thread(brain_index.rebuild, rows)
-        print(f"✅ Second Brain index ready — {len(rows)} embeddings loaded")
+        print(f"Second Brain index ready — {len(rows)} embeddings loaded")
     except Exception as e:
-        print(f"  ⚠️  index rebuild failed: {e}")
+        print(f"  index rebuild failed: {e}")
 
     # Local demo seed
     if brain_index.size == 0:
         try:
             from app.second_brain.ingestion import seed_demo_brain
             _seeded = await asyncio.to_thread(seed_demo_brain)
-            print(f"  🌱 Seeded {_seeded} planted brain summaries (local demo)")
+            print(f"  Seeded {_seeded} planted brain summaries (local demo)")
         except Exception as e:
-            print(f"  ⚠️  brain seed skipped: {e}")
+            print(f"  brain seed skipped: {e}")
 
     # Index MO_Details
     try:
         from app.second_brain.ingestion import index_mo_fields
         mo_count = await asyncio.to_thread(index_mo_fields)
-        print(f"  📝 MO field index: {mo_count} crime narrative(s) added to Brain")
+        print(f"  MO field index: {mo_count} crime narrative(s) added to Brain")
     except Exception as e:
-        print(f"  ⚠️  MO field indexing skipped: {e}")
+        print(f"  MO field indexing skipped: {e}")
 
     # Precompute full-graph metrics
     try:
         from app.services.graph_cache import refresh as refresh_graph
         gc = await asyncio.to_thread(refresh_graph)
         s = gc["stats"]
-        print(f"  📊 Graph cache ready — {s['node_count']} nodes")
+        print(f"  Graph cache ready — {s['node_count']} nodes")
     except Exception as e:
-        print(f"  ⚠️  graph cache skipped: {e}")
+        print(f"  graph cache skipped: {e}")
 
     # Precompute per-district aggregates
     try:
         from app.services.district_cache import refresh as refresh_districts
         dc = await asyncio.to_thread(refresh_districts)
-        print(f"  🗺️  District cache ready — {len(dc)} zones")
+        print(f"  District cache ready — {len(dc)} zones")
     except Exception as e:
-        print(f"  ⚠️  district cache skipped: {e}")
+        print(f"  district cache skipped: {e}")
 
     # Warm Evidence Ledger
     try:
         from app.services.evidence_ledger import refresh as refresh_evidence
         ev = await asyncio.to_thread(refresh_evidence)
-        print(f"  🧾 Evidence ledger ready — {ev['rows']} rows")
+        print(f"  Evidence ledger ready — {ev['rows']} rows")
         from app.services.product_store import setup_default_products
         await asyncio.to_thread(setup_default_products)
         from app.core.memory import init_memory_db
         await asyncio.to_thread(init_memory_db)
     except Exception as e:
-        print(f"  ⚠️  evidence ledger skipped: {e}")
+        print(f"  evidence ledger skipped: {e}")
 
     # Load cross-encoder — off the event loop for the same reason as the embedder.
     try:
         from app.second_brain.reranker import reranker as _brain_reranker
         ok = await asyncio.to_thread(_brain_reranker.load)
-        print(f"  🎯 Brain reranker {'ready' if ok else 'unavailable (rerank degraded)'}")
+        print(f"  Brain reranker {'ready' if ok else 'unavailable (rerank degraded)'}")
     except Exception as e:
-        print(f"  ⚠️  Brain reranker load skipped: {e}")
+        print(f"  Brain reranker load skipped: {e}")
 
     # Pre-warm the unfiltered dataset overview — six unindexed aggregate scans over
     # 425k rows (~10s cold). Doing it here means the Brain screen's first load is
@@ -186,77 +186,77 @@ async def background_warmup():
     try:
         from app.api.dataset import dataset_overview
         _ov = await asyncio.to_thread(lambda: asyncio.run(dataset_overview()))
-        print(f"  📇 Dataset overview cached — {_ov['total']:,} FIRs")
+        print(f"  Dataset overview cached — {_ov['total']:,} FIRs")
     except Exception as e:
-        print(f"  ⚠️  dataset overview warm skipped: {e}")
+        print(f"  dataset overview warm skipped: {e}")
 
     # The Full Data Set tab calls /summary, not /overview — ~6 s of aggregates at 1M FIRs,
     # during which every KPI tile read "0". Warm the unfiltered variant it opens with.
     try:
         from app.api.dataset import dataset_summary
         _sm = await asyncio.to_thread(lambda: asyncio.run(dataset_summary()))
-        print(f"  📇 Dataset summary cached — {_sm['total']:,} FIRs")
+        print(f"  Dataset summary cached — {_sm['total']:,} FIRs")
     except Exception as e:
-        print(f"  ⚠️  dataset summary warm skipped: {e}")
+        print(f"  dataset summary warm skipped: {e}")
 
     # The officer panels on the same tab (deadline clock, outcomes, 24-month trend): one
     # pass over the register, ~17 s cold at 1M FIRs. Filtered variants are sub-2 s.
     try:
         from app.api.dataset import dataset_officer_view
         _ofv = await asyncio.to_thread(lambda: asyncio.run(dataset_officer_view()))
-        print(f"  📇 Officer view cached — {_ofv['deadline']['open_total']:,} open investigations")
+        print(f"  Officer view cached — {_ofv['deadline']['open_total']:,} open investigations")
     except Exception as e:
-        print(f"  ⚠️  officer view warm skipped: {e}")
+        print(f"  officer view warm skipped: {e}")
 
     # Pre-warm the full-dataset Crime Graph cycles (unfiltered). This populates the
     # product_store cache so the Brain screen's Crime Graph loads instantly.
     try:
         from app.api.dataset import dataset_cycles
         _cy = await asyncio.to_thread(lambda: asyncio.run(dataset_cycles()))
-        print(f"  📊 Dataset cycles cached — {_cy['total']:,} FIRs, {len(_cy['groups'])} groups")
+        print(f"  Dataset cycles cached — {_cy['total']:,} FIRs, {len(_cy['groups'])} groups")
         # Every year chip too: a cold year is 1-3s, which on stage reads as a filter that
         # did nothing. ~15s total, in the background, after the port is already bound.
         for _y in [y["year"] for y in _cy.get("years", [])]:
             await asyncio.to_thread(lambda y=_y: asyncio.run(dataset_cycles(y)))
-        print(f"  📊 Crime-graph years cached — {len(_cy.get('years', []))} chips")
+        print(f"  Crime-graph years cached — {len(_cy.get('years', []))} chips")
     except Exception as e:
-        print(f"  ⚠️  dataset cycles warm skipped: {e}")
+        print(f"  dataset cycles warm skipped: {e}")
 
     # Gi* surface warmup
     try:
         from app.services.anomaly import gi_star_surface as _gss
         _gi_zones = await asyncio.to_thread(_gss)
-        print(f"  🔴 Gi* surface ready — {len(_gi_zones)} zones")
+        print(f"  Gi* surface ready — {len(_gi_zones)} zones")
     except Exception as e:
-        print(f"  ⚠️  Gi* surface warmup skipped: {e}")
+        print(f"  Gi* surface warmup skipped: {e}")
 
     # Map forecasting store (geo_ok columns, geo_units, forecast_cube). Current → one
     # signature query; after an ingest or on a fresh deploy it rebuilds (~35 s at 1M FIRs).
     try:
         from app.forecast import store as _fstore
         _fs = await asyncio.to_thread(lambda: _fstore.ensure(check_now=True))
-        print(f"  🗺️  Forecast cube {'rebuilt in ' + str(_fs['seconds']) + 's' if _fs else 'current'}")
+        print(f"  Forecast cube {'rebuilt in ' + str(_fs['seconds']) + 's' if _fs else 'current'}")
         # Forecasts for the configured as-of (ANTAR_FORECAST_AS_OF, default wall clock)
         # and for the end of the real record, which the back-test and model card read.
         # Current → read from forecast_meta; stale → ~70 s each, in the background.
         from app.forecast import run as _frun
         for _spec in (None, "real"):
             _fr = await asyncio.to_thread(lambda s=_spec: _frun.ensure(override=s))
-            print(f"  🔮 Forecasts as of {_fr['as_of']} ({_fr['models']} models, "
+            print(f"  Forecasts as of {_fr['as_of']} ({_fr['models']} models, "
                   f"{_fr['real_share']:.0%} real history)")
         # Gi* for the configured as-of, so /api/forecast/hotspots never waits 2 s for it
         from app.forecast import asof as _fasof, service as _fsvc
         await asyncio.to_thread(_fsvc.warm, _fasof.current().as_of)
     except Exception as e:
-        print(f"  ⚠️  forecast store skipped: {e}")
+        print(f"  forecast store skipped: {e}")
 
     # Forecast scan
     try:
         from app.agents.forecast_agent import scan as _forecast_scan
         _fc = await asyncio.to_thread(lambda: _forecast_scan(session_id='startup'))
-        print(f"  🚨 Forecast scan: {_fc['created']} active alert(s)")
+        print(f"  Forecast scan: {_fc['created']} active alert(s)")
     except Exception as e:
-        print(f"  ⚠️  startup forecast scan skipped: {e}")
+        print(f"  startup forecast scan skipped: {e}")
 
     # Heaviest analytics templates, run once so the first officer question is not the one
     # that pays for a cold page cache. T22 rebuilds one row per FIR and T23 groups beats
@@ -269,14 +269,14 @@ async def background_warmup():
                          ("T23", {"zones": ["Bengaluru City"]}),
                          ("T11", {}), ("T13", {}), ("T17", {})):
             await asyncio.to_thread(_rt, _tid, dict(_p))
-        print(f"  ⚡ Query warm-up done in {_qt.time() - _q0:.1f}s")
+        print(f"  Query warm-up done in {_qt.time() - _q0:.1f}s")
     except Exception as e:
-        print(f"  ⚠️  query warm-up skipped: {e}")
+        print(f"  query warm-up skipped: {e}")
 
     from app.services import llm as _llm
     _llm_on = _llm.available()
     _d = _llm.describe()
-    print(f"🧭 Language model: {_d['provider']}" + (f" · {_d.get('model')} · {_d['where']}" if _llm_on else " · answers come from the records only"))
+    print(f"Language model: {_d['provider']}" + (f" · {_d.get('model')} · {_d['where']}" if _llm_on else " · answers come from the records only"))
 
     if _llm_on and (_llm.provider() == "openai_compatible" or settings.QUICKML_CHAT_ENDPOINT_URL or settings.QUICKML_LLM_ENDPOINT_URL):
         # Deliberately generous: a cold QuickML endpoint takes ~75s on its first call
@@ -287,9 +287,9 @@ async def background_warmup():
         _w0 = _t.time()
         from app.services.quickml import warm_up as _warm_up
         if await _warm_up():
-            print(f"🔥 LLM warm-up OK (chat model) — {_t.time() - _w0:.1f}s")
+            print(f"LLM warm-up OK (chat model) — {_t.time() - _w0:.1f}s")
         else:
-            print(f"  ⚠️  LLM warm-up failed after {_t.time() - _w0:.1f}s — "
+            print(f"  LLM warm-up failed after {_t.time() - _w0:.1f}s — "
                   "answers will use the deterministic path")
 
     # Production orchestration
@@ -297,37 +297,37 @@ async def background_warmup():
         from app.core import orchestrator
         orchestrator.register_default_fleet()
         orchestrator.start_autonomous(interval_s=60)
-        print("🎛️  Orchestrator online")
+        print("Orchestrator online")
     except Exception as e:
-        print(f"  ⚠️  Orchestrator failed: {e}")
+        print(f"  Orchestrator failed: {e}")
 
     if settings.OBS_ENABLED:
         try:
             from app.obs import store
             store.init_db()
-            print("👁️  Observability DB ready")
+            print("Observability DB ready")
         except Exception as e:
-            print(f"  ⚠️  Observability init skipped: {e}")
+            print(f"  Observability init skipped: {e}")
 
-    print("🎉 Background warmup completed successfully!")
+    print("Background warmup completed successfully!")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: Yield immediately to bind port, run heavy loads in background."""
-    print("🚀 Antar starting up...")
+    print("Antar starting up...")
     _posture = security.posture()
-    print(f"🛡️  Security posture: {'production' if _posture['production'] else 'development'}, "
+    print(f"Security posture: {'production' if _posture['production'] else 'development'}, "
           f"identity={_posture['auth_mode']}")
     for _w in _posture["warnings"]:
-        print(f"  ⚠️  SECURITY: {_w}")
+        print(f"  SECURITY: {_w}")
     # What runs must be what was reviewed: agent modules and system prompts against
     # agents.lock.json. A warning in development; in production a mismatch stops here.
     from app.agents import agent_lock
     _lock = agent_lock.enforce(_posture["production"])
-    print(f"🔏 Agents and prompts: {'in step with the lock' if _lock['ok'] else 'DIFFER from agents.lock.json'}"
+    print(f"Agents and prompts: {'in step with the lock' if _lock['ok'] else 'DIFFER from agents.lock.json'}"
           f" (prompt version {_lock.get('prompt_version')})")
     for _c in (_lock.get("changed") or [])[:8]:
-        print(f"  ⚠️  LOCK: {_c}")
+        print(f"  LOCK: {_c}")
     
     # Stage the database BEFORE anything is served. It takes about 3 seconds; done in the
     # background instead, the first request (a health probe, written to the audit log)
@@ -337,19 +337,19 @@ async def lifespan(app: FastAPI):
         from app.core.db_path import ensure_db_staged
         await asyncio.to_thread(ensure_db_staged)
     except Exception as e:
-        print(f"  ⚠️  database staging failed: {e}")
+        print(f"  database staging failed: {e}")
 
     # Start real-time dispatch simulator task in the background
     from app.api.live_stream import start_dispatch_simulator
     simulator_task = asyncio.create_task(start_dispatch_simulator())
-    print("📡 Real-time emergency dispatch simulator started")
+    print("Real-time emergency dispatch simulator started")
     
     # Kick off the heavy warmup in the background so Uvicorn can yield and bind the port instantly
     warmup_task = asyncio.create_task(background_warmup())
     
-    print("✅ Port binding permitted — serving requests")
+    print("Port binding permitted — serving requests")
     yield
-    print("👋 Antar shutting down")
+    print("Antar shutting down")
     from app.core import orchestrator
     orchestrator.stop_autonomous()
     simulator_task.cancel()

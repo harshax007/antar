@@ -66,17 +66,17 @@ class CrossEncoderReranker:
                     self.backend = f"onnx/{self._model.variant}"
                     return True
                 if mode == "onnx":
-                    print(f"  ⚠️  ANTAR_BRAIN_BACKEND=onnx but no export for "
+                    print(f"  ANTAR_BRAIN_BACKEND=onnx but no export for "
                           f"{self.MODEL_NAME} — falling back to torch")
             except Exception as e:
-                print(f"  ⚠️  ONNX reranker unavailable ({e}) — falling back to torch")
+                print(f"  ONNX reranker unavailable ({e}) — falling back to torch")
         try:
             from sentence_transformers import CrossEncoder
             self._model = CrossEncoder(self.MODEL_NAME, max_length=512)
             self.backend = "torch"
             return True
         except Exception as e:
-            print(f"  ⚠️  CrossEncoder load failed (Brain reranking degraded): {e}")
+            print(f"  CrossEncoder load failed (Brain reranking degraded): {e}")
             return False
 
     @property

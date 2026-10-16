@@ -28,13 +28,13 @@ CSV_PATH = Path(__file__).parent.parent.parent.parent / "antar-frontend" / "publ
 
 def inject_evidence():
     if not DB_PATH.exists():
-        print(f"❌ DB not found at {DB_PATH}")
+        print(f"DB not found at {DB_PATH}")
         return
 
     conn = sqlite3.connect(str(DB_PATH))
     cur = conn.cursor()
 
-    print("🚀 Starting Non-Cyber Evidence & Syndicate Injection (6-8 FIRs per ring)...")
+    print("Starting Non-Cyber Evidence & Syndicate Injection (6-8 FIRs per ring)...")
 
     cur.execute("PRAGMA table_info(FIRs)")
     fir_cols = [c[1] for c in cur.fetchall() if c[1] != "id"]
@@ -186,7 +186,7 @@ def inject_evidence():
         ]
         csv_rows.append(",".join(csv_row))
 
-    print(f"✅ Inserted {len(syndicates)} rich non-cyber syndicate FIRs into antar.db!")
+    print(f"Inserted {len(syndicates)} rich non-cyber syndicate FIRs into antar.db!")
 
     # Supporting intelligence
     cur.execute("DELETE FROM suspects WHERE suspect_id IN ('S0801', 'S0802', 'S0803', 'S0804', 'S0805', 'S0806', 'S0807', 'S0808', 'S0809')")
@@ -229,13 +229,13 @@ def inject_evidence():
         lines.extend(csv_rows)
         with open(CSV_PATH, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
-        print(f"✅ Replaced/Appended {len(csv_rows)} rich non-cyber syndicate records to {CSV_PATH.name}!")
+        print(f"Replaced/Appended {len(csv_rows)} rich non-cyber syndicate records to {CSV_PATH.name}!")
 
-    print("\n📊 Verifying live forecast alerts remain exactly 3 HIGH, 1 MEDIUM, 1 LOW...")
+    print("\nVerifying live forecast alerts remain exactly 3 HIGH, 1 MEDIUM, 1 LOW...")
     from app.agents.forecast_agent import scan
     res = scan(session_id="verify_evidence")
     alerts = res.get("alerts", [])
-    print(f"🎯 Total Active Forecast Alerts: {len(alerts)}")
+    print(f"Total Active Forecast Alerts: {len(alerts)}")
     for a in alerts:
         z = a.get("z_score", 0)
         risk = "HIGH" if z >= 4 else "MEDIUM" if z >= 2.5 else "LOW"
