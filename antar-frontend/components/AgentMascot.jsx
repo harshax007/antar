@@ -33,7 +33,11 @@ const FACE = {
   network: "gearbot", profile: "scout", research: "postbot", advocate: "knight", recall: "crt",
   linkage: "cube", forecast: "clockwork", geo: "drone", pattern: "radio",
 };
-const FACE_PX = 60;
+// The agents roam over the brain, so they are competing with the data for the same
+// pixels. 60 made each one a portrait; 42 keeps the character readable while leaving
+// the graph legible underneath. Everything that positions the disc derives from this,
+// so it is the single number to turn.
+const FACE_PX = 42;
 const ICON = {
   network: "M13 9a4 4 0 112 7l-4 4a4 4 0 11-6-6l2-2m13 0l2-2a4 4 0 00-6-6l-4 4a4 4 0 002 7",
   profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0",
@@ -1205,7 +1209,11 @@ const CSS = `
 .bsx-pill.bt-asm { padding: 8px 9px; }
 .bsx-pill.bt-pill:hover, .bsx-pill.bt-pill.on { border-color: rgba(34,230,240,.45); color: #fff; }
 .bsx-pill.bt-pill em { font: 700 9.5px 'JetBrains Mono', monospace; font-style: normal; color: #06121B; background: #22E6F0; border-radius: 999px; padding: 0 5px; min-width: 15px; text-align: center; }
-@media (max-width: 1080px) { .bt-pills { left: auto; right: 16px; top: 104px; } }
+/* The pills belong beside the controls at top-left. They only have to move when the
+   row (336 -> ~556) would actually reach the right-hand panels, which does not happen
+   until well under 1080 - so that breakpoint was relocating them on laptops that had
+   room for them where they were. */
+@media (max-width: 900px) { .bt-pills { left: auto; right: 16px; top: 104px; } }
 
 /* Above the control panels (z-index 7): the agents steer around them, and are never hidden by one. */
 .bt-layer { --c: #22E6F0; position: absolute; inset: 0; z-index: 8; overflow: hidden; pointer-events: none; transition: opacity .25s ease; }

@@ -255,7 +255,9 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         links: constel.links.filter((l) => validNodeIds.has(l.source?.id || l.source) && validNodeIds.has(l.target?.id || l.target)).map((l) => ({ ...l, source: l.source.id || l.source, target: l.target.id || l.target })),
       };
 
-      const fg = ForceGraph3D()(containerRef.current)
+      // Antialiasing is what separates a scatter of specks from a crawling set of
+      // stair-stepped dots, and it costs little at this node count.
+      const fg = ForceGraph3D({ rendererConfig: { antialias: true, powerPreference: "high-performance" } })(containerRef.current)
         .width(containerRef.current.offsetWidth)
         .height(containerRef.current.offsetHeight)
         .backgroundColor("rgba(0,0,0,0)")
@@ -297,6 +299,31 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         .onBackgroundClick(() => { if (focusRef.current) clearFocus(); })
         .warmupTicks(30)
         .cooldownTime(4000);
+
+      // Cap the pixel ratio at 2: past that a 4K/retina panel renders four times the
+      // pixels for a difference nobody can see, and that alone makes rotation choppy.
+      try {
+        const r = fg.renderer?.();
+        if (r?.setPixelRatio) r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      } catch {}
+
+      // Bloom: the hubs and the agent tethers are the only things bright enough to trip
+      // the threshold, so they glow and the thousands of context specks do not. Loaded
+      // lazily so it never enters the first bundle, and the threshold is high enough
+      // that the near-white labels stay crisp instead of wearing a halo.
+      if (!(typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)) {
+        import("three/examples/jsm/postprocessing/UnrealBloomPass.js")
+          .then(({ UnrealBloomPass }) => {
+            if (destroyed || fgRef.current !== fg) return;
+            const el = containerRef.current;
+            const bloom = new UnrealBloomPass(
+              new THREE.Vector2(el?.offsetWidth || 1280, el?.offsetHeight || 720),
+              0.55, 0.80, 0.86,
+            );
+            fg.postProcessingComposer().addPass(bloom);
+          })
+          .catch(() => {});   // a missing post-processing module must never break the graph
+      }
 
       fg.d3Force("charge").strength(-45);
       const linkForce = fg.d3Force("link");
