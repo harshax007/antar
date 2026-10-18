@@ -1085,56 +1085,52 @@ function DocsFull() {
                           >
                             <div style={{ padding: "16px 20px", background: "rgba(3,5,12,0.9)", border: "1px solid rgba(34,230,240,0.15)", borderRadius: "8px", boxShadow: "0 0 20px rgba(0,0,0,0.5)" }}>
                               {expandedDetail === 'features' && (
-                                <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                                  <li style={{ marginBottom: "6px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn" 
-                                      ? "ಸಂಪೂರ್ಣ 360-ಡಿಗ್ರಿ ಗುಪ್ತಚರ ಮಾಹಿತಿಯನ್ನು ನಿಮಗೆ ಒದಗಿಸಲು 15 ವಿಶೇಷ AI ಏಜೆಂಟ್‌ಗಳ ಸಹಯೋಗದ ತಂಡ, ನೆಟ್‌ವರ್ಕ್ ಮ್ಯಾಪಿಂಗ್ ಮತ್ತು ಮನೋವೈಜ್ಞಾನಿಕ ವಿಶ್ಲೇಷಣೆಯಿಂದ OSINT ಮತ್ತು ಮುನ್ಸೂಚಕ ಫೋರೆನ್ಸಿಕ್ಸ್‌ವರೆಗೆ, ಒಟ್ಟಾಗಿ ಕೆಲಸ ಮಾಡುತ್ತದೆ."
-                                      : "A collaborative team of 15 specialized AI agents working together, from network mapping and psychological analysis to OSINT and predictive forensics, to provide you with complete 360-degree intelligence."}
-                                  </li>
-                                  <li style={{ marginBottom: "6px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn"
-                                      ? "ಎನ್‌ಕ್ರಿಪ್ಟ್ ಮಾಡಿದ ಸೆಷನ್ ಮತ್ತು ಪಾತ್ರ-ಆಧಾರಿತ ಪ್ರವೇಶದೊಂದಿಗೆ ತಂಡದ ತನಿಖಾ ಸಹಯೋಗ"
-                                      : "Collaborative Team Workflows with encrypted session persistence & role-based access"}
-                                  </li>
-                                  <li style={{ marginBottom: "6px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn"
-                                      ? "10,00,000+ ಧೃವೀಕೃತ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳ ಆಧಾರದ ಮೇಲೆ K/D/I/U ಡಾಸಿಯರ್‌ಗಳ ಪರಿಶೀಲಿಸಬಹುದಾದ ಸಲ್ಲಿಕೆ"
-                                      : "Verifiable Data Presentation with K/D/I/U dossiers & 10,00,000+ grounded KSP FIR records"}
-                                  </li>
-                                  <li style={{ marginBottom: "6px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn"
-                                      ? "ವಿಸ್ಪರ್ ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಮತ್ತು ಟಿಟಿಎಸ್ ಪ್ಲೇಬ್ಯಾಕ್‌ನೊಂದಿಗೆ ದ್ವಿಭಾಷಾ ಇಂಟರ್‌ಫೇಸ್ (ಇಂಗ್ಲಿಷ್ + ಕನ್ನಡ)"
-                                      : "Natural language interface (English + Kannada) with Whisper voice input & TTS playback"}
-                                  </li>
-                                  <li style={{ marginBottom: "6px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn"
-                                      ? "LLM-as-a-Judge ಗುಣಮಟ್ಟದ ಸ್ಕೋರ್ ಹೊಂದಿರುವ ಸಂಪೂರ್ಣ ಟೆಲಿಮೆಟ್ರಿ ಮತ್ತು ವೀಕ್ಷಣಾ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್"
-                                      : "Full Telemetry & Observability dashboard with LLM-as-a-Judge quality scoring"}
-                                  </li>
-                                  <li style={{ marginBottom: "6px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn"
-                                      ? "3D ಸಂಬಂಧಿತ ನೆಟ್‌ವರ್ಕ್ ವಿಶುವಲೈಸರ್ ಮತ್ತು ಪ್ರಕರಣಗಳ ನಡುವಿನ ಸಂಪರ್ಕ ಪತ್ತೆ"
-                                      : "Interactive 3D force-directed relationship visualizer & cross-case association detection"}
-                                  </li>
-                                  <li style={{ marginBottom: "6px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn"
-                                      ? "Gi* ಹಾಟ್‌ಸ್ಪಾಟ್ ಕ್ಲಸ್ಟರ್‌ಗಳು ಮತ್ತು ANPR ಗಸ್ತು ಮಾರ್ಗ ಮುನ್ಸೂಚನೆಯೊಂದಿಗೆ ಭೌಗೋಳಿಕ ವಿಶ್ಲೇಷಣೆ"
-                                      : "Spatial trend analytics with Gi* hotspot clusters & ANPR corridor prediction"}
-                                  </li>
-                                  <li style={{ marginBottom: "0px" }}>
-                                    <span style={{ color: "#22E6F0", marginRight: "8px" }}>•</span>
-                                    {lang === "kn"
-                                      ? "ಕ್ರಿಪ್ಟೋಗ್ರಾಫಿಕ್ SHA-256 ಹ್ಯಾಶಿಂಗ್‌ನೊಂದಿಗೆ ನ್ಯಾಯಾಲಯಕ್ಕೆ ಸಿದ್ಧವಾಗಿರುವ PDF ವರದಿ ರಫ್ತು"
-                                      : "Cryptographic SHA-256 derivation chain export & court-ready report generation"}
-                                  </li>
-                                </ul>
+                                // Every line names something the product does today and can be shown
+                                // (docs/USP01_02.md). Two USPs first: Secure AI, then Predict.
+                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                  {(lang === "kn" ? [
+                                    { h: "ಸುರಕ್ಷಿತ AI — ಮಾದರಿ ಓದಬಹುದು, ಕ್ರಮ ಕೈಗೊಳ್ಳಲಾಗದು", items: [
+                                      "ಪ್ರತಿ ಏಜೆಂಟ್ ತಾನು ಏನನ್ನು ಮುಟ್ಟಬಹುದು ಮತ್ತು ಯಾವ ಕನಿಷ್ಠ ಹುದ್ದೆ ಅದನ್ನು ಚಲಾಯಿಸಬಹುದು ಎಂದು ಘೋಷಿಸುತ್ತದೆ; ಪ್ರಾರಂಭಕ್ಕೂ ಮುನ್ನ ಪರಿಶೀಲನೆ. ಭದ್ರತಾ ಸ್ಕೋರ್‌ಕಾರ್ಡ್‌ನಲ್ಲಿ 161 ರಲ್ಲಿ 161 ದಾಳಿಗಳು ತಡೆಯಲ್ಪಟ್ಟಿವೆ.",
+                                      "ಯಾವುದೇ ಭಾಷಾ ಮಾದರಿ, ನಿಮ್ಮದೇ ನೆಟ್‌ವರ್ಕ್‌ನಲ್ಲಿರುವುದೂ ಸಹ. ಹೊರಹೋಗುವ ಕರೆಗಳು ಅನುಮತಿ ಪಟ್ಟಿಗೆ ಸೀಮಿತ, ಪ್ರತಿಯೊಂದೂ ದಾಖಲು.",
+                                      "Analyst ಗಿಂತ ಕೆಳಗಿನ ಅಧಿಕಾರಿ ತನ್ನ ಜಿಲ್ಲೆಯ ಪ್ರಕರಣಗಳನ್ನು ಮಾತ್ರ ನೋಡುತ್ತಾರೆ. ಪ್ರತಿ ವಿನಂತಿಯೂ ಹ್ಯಾಶ್-ಸರಪಳಿ ಲೆಕ್ಕಪತ್ರದಲ್ಲಿ; ನೈಜ ಕ್ರಮಕ್ಕೆ ಎರಡನೇ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಬೇಕು.",
+                                    ] },
+                                    { h: "ಮುನ್ಸೂಚನೆ — ಪರಿಶೀಲಿಸಬಹುದಾದ, ಕಾರ್ಯಗತಗೊಳಿಸಬಹುದಾದ", items: [
+                                      "ಪ್ರತಿ ಠಾಣೆ ಮತ್ತು ಬೀಟ್‌ಗೆ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ, ಅದರ ಕಾರಣಗಳೊಂದಿಗೆ; ನೈಜ ದಾಖಲೆಯ 23 ವಾರಗಳ ಮೇಲೆ ಪರೀಕ್ಷಿತ.",
+                                      "ಮುನ್ಸೂಚನೆಯಿಂದ ಕ್ರಮಕ್ಕೆ: ಮುದ್ರಿಸಬಹುದಾದ ಪಾಳಿ ಯೋಜನೆ, ಪ್ರಕರಣ ಸುಳಿವುಗಳು (ಹಂಚಿಕೊಂಡ ವಾಹನ, UPI, IP; ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಆರೋಪಿಗಳು), ಮತ್ತು ನ್ಯಾಯಸಮ್ಮತತೆ ವರದಿ.",
+                                      "ಬಳಕೆಯಿಂದ ಕಲಿಯುತ್ತದೆ: ಮುನ್ಸೂಚನೆಗಳು ನಡೆದದ್ದರ ವಿರುದ್ಧ ಅಂಕಿತವಾಗಿ, ತಪ್ಪಿದಾಗ ತಮ್ಮ ವಿಶ್ವಾಸವನ್ನು ತಾವೇ ಇಳಿಸುತ್ತವೆ; ಅಧಿಕಾರಿಗಳ ರೇಟಿಂಗ್ ಮುಂದಿನ ಉತ್ತರಗಳನ್ನು ರೂಪಿಸುತ್ತದೆ.",
+                                    ] },
+                                    { h: "ಪ್ರತಿ ದಿನದ ಕೆಲಸಕ್ಕೆ", items: [
+                                      "ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ, ಧ್ವನಿ ಅಥವಾ ಬರಹದಲ್ಲಿ ಕೇಳಿ. ಪ್ರತಿ ಅಂಕಿಯೂ ಅದರ FIR ದಾಖಲೆಗಳಿಗೆ ಜೋಡಣೆ, ದಾಖಲಿತ / ಲೆಕ್ಕಾಚಾರ / ಅನುಮಾನಿತ / ಅಜ್ಞಾತ ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ.",
+                                      "ನಕ್ಷೆಯ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು (Gi*), ಸಂಬಂಧ ಜಾಲ ಮತ್ತು ಪ್ರಕರಣಗಳ ನಡುವಿನ ಸಂಪರ್ಕ, ಮತ್ತು ಕೇಳಿದ ಅಧಿಕಾರಿಗೆ ಬದ್ಧವಾದ ನ್ಯಾಯಾಲಯ-ಸಿದ್ಧ ವರದಿಗಳು.",
+                                    ] },
+                                  ] : [
+                                    { h: "Secure AI: the model can read, but it cannot act", items: [
+                                      "Every agent declares what it may touch and the lowest role that may run it, checked before it starts. 161 of 161 injection and misuse attacks stopped in the security scorecard.",
+                                      "Any language model, including one on your own network. Outbound calls are limited to an allow-list, and every one is logged.",
+                                      "Officers below Analyst see case records for their own district only. Every request is on a hash-chained audit log, and a real-world action needs a second officer's approval.",
+                                    ] },
+                                    { h: "Predict: a forecast an officer can check, and act on", items: [
+                                      "A 7-day forecast for every station and beat that shows its reasons, graded on 23 weeks of the real record.",
+                                      "From forecast to action: a printable shift plan, case leads (shared vehicle, UPI or IP keys; accused across districts; a near-repeat check), and a fairness report.",
+                                      "Learns from use: forecasts are scored against what happened and lower their own confidence when they miss; officer ratings shape later answers. Nothing is retrained.",
+                                    ] },
+                                    { h: "For everyday work", items: [
+                                      "Ask in English or Kannada, by voice or text. Every figure links to the FIR records behind it, marked Known, Derived, Inferred or Unknown.",
+                                      "Map hotspots (Gi*), relationship graphs and cross-case links, and court-ready reports bound to the officers who asked.",
+                                    ] },
+                                  ]).map((g) => (
+                                    <div key={g.h}>
+                                      <div style={{ fontSize: "11px", fontWeight: 600, color: "#22E6F0", letterSpacing: "0.02em", marginBottom: "4px" }}>{g.h}</div>
+                                      <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>
+                                        {g.items.map((t, i) => (
+                                          <li key={i} style={{ marginBottom: i === g.items.length - 1 ? 0 : "4px", display: "flex", gap: "8px" }}>
+                                            <span style={{ color: "#22E6F0" }}>•</span><span>{t}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                               {(expandedDetail === 'impact' || expandedDetail === 'usecase') && (
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px 28px" }}>
