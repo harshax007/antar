@@ -104,8 +104,13 @@ export async function openReport(path) {
     const url = URL.createObjectURL(new Blob([await res.text()], { type: "text/html" }));
     if (tab) tab.location.replace(url); else window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } catch {
+  } catch (e) {
     if (tab) tab.close();
+    // It used to close the tab and say nothing, which read as a button that does nothing.
+    const code = String(e?.message || "");
+    window.alert(code === "403" ? "This report belongs to another officer's conversation."
+               : code === "401" ? "Your sign-in has expired. Sign in again to export the report."
+               : "The report could not be opened just now. Try again in a moment.");
   }
 }
 

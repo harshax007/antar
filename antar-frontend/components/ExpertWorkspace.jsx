@@ -505,7 +505,10 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
           <button title="Map"><Map size={13} /></button>
           <button title="Brain"><Cpu size={13} /></button>
           <button title="Search"><Search size={13} /></button>
-          <button onClick={exportReport} disabled={!sessionId} title="Export intelligence report"><Download size={13} /></button>
+          <button onClick={exportReport} disabled={!sessionId}
+                  title={sessionId ? (kn ? "ಗುಪ್ತಚರ ವರದಿ ರಫ್ತು ಮಾಡಿ" : "Export intelligence report")
+                                   : (kn ? "ವರದಿಗಾಗಿ ಮೊದಲು ಒಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ" : "Ask a question first: the report is built from the conversation")}
+                  aria-label={kn ? "ಗುಪ್ತಚರ ವರದಿ ರಫ್ತು ಮಾಡಿ" : "Export intelligence report"}><Download size={13} /></button>
           <button onClick={toggleExpand} title={expanded ? "Restore width" : "Expand console"}>
             {expanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
           </button>

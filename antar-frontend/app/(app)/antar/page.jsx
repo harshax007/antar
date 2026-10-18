@@ -1818,6 +1818,7 @@ export default function ChatPage() {
              gotToken = true;
              fullText += evt.content || "";
           }
+          if (evt.type === "session" && evt.session_id) setSessionId(evt.session_id);
           if (evt.type === "complete") { setSessionId(evt.session_id); setMode(evt.mode); if (evt.lang) lastLang = evt.lang; }
           patchLast((msg) => applyEvent(msg, evt));
         }

@@ -149,6 +149,10 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     use_llm     = _llm_available()
 
     sessions.append_user_turn(session_id, req.text, lang)
+    # The conversation id goes out before anything else. It used to arrive only with the
+    # finished answer, so a first answer that was stopped, failed or cut off by a reload
+    # left the screen with no id: Export and Save stayed disabled with no reason given.
+    await q.emit("session", session_id=session_id)
 
     # ── Slash commands (/think /connect /anticipate) ─────────────────────────
     from app.agents.heuristics import parse_slash_command, SLASH_COMMANDS
