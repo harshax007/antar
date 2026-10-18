@@ -23,7 +23,7 @@ const RULE_LABEL = {
   F2: "Named entity absent from the retrieved rows",
   F3: "Latency or token spike against the rolling baseline",
   F5: "Template returned 0 rows but the answer did not say so",
-  F6: "Language model unavailable, answered from the offline path",
+  F6: "AI model not reachable, so the answer was written from the records alone",
   F7: "Answer guardrail tripped",
 };
 
@@ -145,7 +145,7 @@ export default function TrustDashboard() {
         {/* ── Header ───────────────────────────────────────────────── */}
         <header className="tlm-head">
           <div>
-            <h1>{kn ? "ಟ್ರೇಸ್ & ಟೆಲಿಮೆಟ್ರಿ" : "Trace & Telemetry"}</h1>
+            <h1>{kn ? "ಉತ್ತರಗಳ ಇತಿಹಾಸ" : "Answer History"}</h1>
             <p>{kn
               ? "ಪ್ರತಿ ಸೆಷನ್‌ನ ಪ್ರತಿ ಪ್ರಶ್ನೆಯ ಸಂಪೂರ್ಣ ತಾರ್ಕಿಕ ಜಾಡು"
               : "Every question asked, and how each answer was produced: the query that ran, the FIR rows it read, and the checks it passed."}</p>
@@ -173,12 +173,12 @@ export default function TrustDashboard() {
                sub={kn ? `p95 ${fmtMs(m.p95_latency_ms)}` : `95% answered within ${fmtMs(m.p95_latency_ms)}`} />
           <Kpi title={kn ? "ಉಲ್ಲೇಖಗಳು" : "FIRs cited"} value={fmtNum(m.total_citations)}
                sub={`${fmtNum(m.total_rows_read)} ${kn ? "ಸಾಲುಗಳು" : "rows read"}`} />
-          <Kpi title={kn ? "ಗುಣಮಟ್ಟ" : "Judge score"}
-               value={m.avg_quality == null ? (kn ? "ಇನ್ನೂ ಇಲ್ಲ" : "Not judged yet") : `${m.avg_quality.toFixed(1)} / 5`}
-               sub={m.judged_traces ? `${fmtNum(m.judged_traces)} ${kn ? "ಮೌಲ್ಯಮಾಪನ" : "answers scored"}` : (kn ? "ಜಡ್ಜ್ ನಿಷ್ಕ್ರಿಯ" : "no answer has been scored")}
+          <Kpi title={kn ? "ಗುಣಮಟ್ಟ" : "Quality score"}
+               value={m.avg_quality == null ? (kn ? "ಇನ್ನೂ ಇಲ್ಲ" : "Not scored yet") : `${m.avg_quality.toFixed(1)} / 5`}
+               sub={m.judged_traces ? `${fmtNum(m.judged_traces)} ${kn ? "ಮೌಲ್ಯಮಾಪನ" : "answers scored"}` : (kn ? "ಇನ್ನೂ ಯಾವುದೂ ಅಂಕಿತವಾಗಿಲ್ಲ" : "no answer has been reviewed")}
                quiet={m.avg_quality == null} />
           <Kpi title={kn ? "ಎಂಜಿನ್" : "How answers were written"} value={`${fmtNum(m.llm_turns)} / ${fmtNum(m.offline_turns)}`}
-               sub={kn ? "LLM / ಆಫ್‌ಲೈನ್" : "language model / offline path"} />
+               sub={kn ? "AI ಮಾದರಿ / ದಾಖಲೆಗಳಿಂದ ಮಾತ್ರ" : "by the AI model / from records only"} />
         </div>
 
         {/* Which rules fired - only when something actually did. */}
@@ -321,7 +321,7 @@ function Turn({ t, n, kn, open, detail, onToggle }) {
     `${fmtNum(t.n_rows ?? 0)} ${(t.n_rows ?? 0) === 1 ? "row" : "rows"}`,
     `${fmtNum(t.n_citations ?? 0)} cited`,
     fmtMs(t.latency_ms),
-    t.mode === "llm" ? (t.model || "language model") : t.mode === "offline" ? "offline path" : t.mode,
+    t.mode === "llm" ? (t.model || "AI model") : t.mode === "offline" ? "records only" : t.mode,
     t.lang && t.lang !== "en" && t.lang,
     (t.tokens_in || t.tokens_out) > 0 && `${fmtNum(t.tokens_in)} in, ${fmtNum(t.tokens_out)} out tokens`,
   ].filter(Boolean);
@@ -344,7 +344,7 @@ function Turn({ t, n, kn, open, detail, onToggle }) {
           ))}
           {flags.length === 0 && !t.error && <span className="tlm-tag ok">No flag</span>}
           {t.quality_score != null
-            ? <span className="tlm-tag" title="Judge score for how well the answer is supported, out of 5">Judge {t.quality_score}</span>
+            ? <span className="tlm-tag" title="Quality score: how well the answer is supported by the records, out of 5">Quality {t.quality_score}</span>
             : t.judge_state === "pending" && <span className="tlm-tag" title="Waiting for the language-model judge">Judge pending</span>}
         </span>
       </button>
@@ -459,7 +459,7 @@ function TraceDetail({ d, kn }) {
 
       {/* Judge */}
       {d.scores && (
-        <Section title={kn ? "ಜಡ್ಜ್ ಸ್ಕೋರ್" : "Judge scores"}>
+        <Section title={kn ? "ಗುಣಮಟ್ಟ ಅಂಕಗಳು" : "Quality scores"}>
           <div className="tlm-scores">
             <Score label="Supported by the rows" v={d.scores.groundedness} />
             <Score label="Answered the question" v={d.scores.answered} />
@@ -487,7 +487,7 @@ function TraceDetail({ d, kn }) {
         <Meta k="Record" v={d.trace_id} />
         {d.session_id && <Meta k="Session" v={d.session_id} />}
         <Meta k="Asked from" v={d.surface || "—"} />
-        <Meta k="Written by" v={d.mode === "offline" ? "offline path" : d.mode || "—"} />
+        <Meta k="Written by" v={d.mode === "offline" ? "records only" : d.mode === "llm" ? "AI model" : d.mode || "—"} />
         <Meta k="Model" v={d.model || "none"} />
         {d.prompt_version && <Meta k="Prompt version" v={d.prompt_version} />}
         {d.reasoning_id && <Meta k="Reasoning" v={d.reasoning_id} />}

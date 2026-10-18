@@ -304,7 +304,7 @@ function SearchContent() {
       ["frequency", kn ? "ಆಗಾಗ್ಗೆ ಅಪರಾಧ" : "Frequent offending", null],
       ["recency", kn ? "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ" : "Recent activity", p.raw_factors?.recency_days != null ? (kn ? `${p.raw_factors.recency_days} ದಿನಗಳ ಹಿಂದೆ` : `last FIR ${p.raw_factors.recency_days}d ago`) : null],
       ["severity", kn ? "ಗಂಭೀರ ಅಪರಾಧಗಳು" : "Serious offences", null],
-      ["centrality", kn ? "ಜಾಲದ ಕೇಂದ್ರ" : "Network centrality", null],
+      ["centrality", kn ? "ಇತರರೊಂದಿಗೆ ಸಂಪರ್ಕ" : "Links to others", null],
     ].map(([k, label, detail]) => ({ k, label, detail, pts: Math.round(p.risk_attributions?.[k] ?? (p.factors?.[k] || 0) * 25) })),
     strongMatches: (p.similar_cases || []).filter((c) => (c.score || 0) >= 0.25),
   } : null;
@@ -351,12 +351,12 @@ function SearchContent() {
                   style={{ marginLeft: "auto", color: "var(--osint)", borderColor: "var(--osint)" }}>
                   {profileTab === "osint"
                     ? (kn ? "OSINT ಮುಚ್ಚಿ" : "Close OSINT")
-                    : osintConsentOpen ? (kn ? "OSINT ಸಕ್ರಿಯಗೊಳಿಸಿ" : "Enable OSINT (Preview)") : "OSINT"}
+                    : osintConsentOpen ? (kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ ಸಕ್ರಿಯಗೊಳಿಸಿ" : "Turn on internet search (preview)") : (kn ? "ಇಂಟರ್ನೆಟ್" : "Internet search")}
                 </button>
               )}
             </div>
             <div className="sx-enginehint">
-              {kn ? "ಫಝಿ + ಧ್ವನಿ ಹುಡುಕಾಟ - ಕಾಗುಣಿತ ವ್ಯತ್ಯಾಸ ಸರಿ (Yellappa ≈ Yellapa)" : "Fuzzy + phonetic engine - typos & spelling variants OK (Yellappa ≈ Yellapa ≈ Ylappa)"}
+              {kn ? "ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ ಹೆಸರು ಸಿಗುತ್ತದೆ (Yellappa ≈ Yellapa)" : "Finds names even when spelt differently (Yellappa ≈ Yellapa ≈ Ylappa)"}
             </div>
           </div>
 
@@ -403,7 +403,7 @@ function SearchContent() {
             <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               {results && results.length > 0 && <RefBadge tag="K" />}
               {results
-                ? `${results.length} ${kn ? "ಫಲಿತಾಂಶ" : "results"} · ${isSearch ? (kn ? "ಫಝಿ ಹೊಂದಾಣಿಕೆ" : "fuzzy + phonetic match") : (kn ? "ನೋಂದಣಿ" : "registry")}${isSearch && filterType !== "all" ? ` · ${FILTERS.find((f) => f.key === filterType)?.[kn ? "kn" : "en"]} ${kn ? "ಮಾತ್ರ" : "only"}` : ""}`
+                ? `${results.length} ${kn ? "ಫಲಿತಾಂಶ" : "results"} · ${isSearch ? (kn ? "ಹತ್ತಿರದ ಹೊಂದಾಣಿಕೆ" : "including close spellings") : (kn ? "ದಾಖಲೆ" : "from the records")}${isSearch && filterType !== "all" ? ` · ${FILTERS.find((f) => f.key === filterType)?.[kn ? "kn" : "en"]} ${kn ? "ಮಾತ್ರ" : "only"}` : ""}`
                 : (kn ? "ಲೋಡ್…" : "loading…")}
             </span>
             <span className="sv">{kn ? "ಅಪಾಯ ↓" : "Risk ↓"}</span>
@@ -474,7 +474,7 @@ function SearchContent() {
                       <div className="sx-dossier-head">
                         <div className="sx-dossier-ttl">
                           <ShieldCheck size={13} />
-                          <span>{kn ? "ಸೆಕ್ಷನ್ 91 ಸಾಕ್ಷ್ಯ ಆಡಿಟ್ ಡಾಸಿಯರ್" : "Statutory § 91 Evidentiary Dossier"}</span>
+                          <span>{kn ? "ವ್ಯಕ್ತಿಯ ಸಾರಾಂಶ" : "Profile summary"}</span>
                         </div>
                         <div className="sx-dossier-tag">
                           id: <b style={{ color: "var(--cyan)" }}>{r.suspect_id}</b>
@@ -489,17 +489,17 @@ function SearchContent() {
 
                       <div className="sx-dossier-grid">
                         <div className="sx-dossier-stat">
-                          <div className="sl">{kn ? "ಅಪಾಯ ಸೂಚ್ಯಂಕ" : "Risk Index"}</div>
+                          <div className="sl">{kn ? "ಅಪಾಯ ಅಂಕ" : "Risk score"}</div>
                           <div className="sv" style={{ color: (r.risk_score || 0) >= 70 ? "#F87171" : "var(--cyan)" }}>
                             {typeof r.risk_score === "number" ? r.risk_score.toFixed(1) : "—"}
                           </div>
                         </div>
                         <div className="sx-dossier-stat">
-                          <div className="sl">{kn ? "ಹಿಂದಿನ FIR" : "Prior FIRs"}</div>
+                          <div className="sl">{kn ? "ಹಿಂದಿನ FIR" : "Earlier FIRs"}</div>
                           <div className="sv">{r.prior_count ?? 0}</div>
                         </div>
                         <div className="sx-dossier-stat">
-                          <div className="sl">{kn ? "ವಲಯ" : "Jurisdiction"}</div>
+                          <div className="sl">{kn ? "ವಲಯ" : "Area"}</div>
                           <div className="sv" style={{ fontSize: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {r.address_zone || r.zone || "—"}
                           </div>
@@ -549,13 +549,13 @@ function SearchContent() {
                     </span>
                     <span className={`b r-${tierCls(p.risk_score || 0)}`}>{tier(p.risk_score || 0)} {kn ? "ಅಪಾಯ" : "RISK"}</span>
                     <span className="b id">{p.suspect_id}</span>
-                    {rec?.priors != null && <span className="b priors">{rec.priors} {kn ? "ಮೊದಲಿನ" : "priors"}</span>}
+                    {rec?.priors != null && <span className="b priors">{rec.priors} {kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ" : rec.priors === 1 ? "earlier case" : "earlier cases"}</span>}
                     {rec?.status && <span className="b status">{rec.status}</span>}
                   </div>
                 </div>
                 <div className="sx-hero-risk">
                   <div className="num">{typeof p.risk_score === "number" ? p.risk_score.toFixed(1) : "—"}</div>
-                  <div className="lbl">{kn ? "ಅಪಾಯ ಸೂಚ್ಯಂಕ" : "RISK INDEX"}</div>
+                  <div className="lbl">{kn ? "ಅಪಾಯ ಅಂಕ" : "RISK SCORE"}</div>
                   <div className="bar"><div className="f" style={{ width: `${p.risk_score || 0}%` }} /></div>
                 </div>
               </div>
@@ -575,7 +575,7 @@ function SearchContent() {
                   onClick={() => setProfileTab("osint")}
                 >
                   <Sparkles size={13} />
-                  <span>{kn ? "OSINT (ವೆಬ್ ರೀಕಾನ್)" : "OSINT (WEB RECON)"}</span>
+                  <span>{kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ" : "INTERNET SEARCH"}</span>
                 </button>
               </div>
               
@@ -670,7 +670,7 @@ function SearchContent() {
                 <div className={`sx-anchor-av r-${tierCls(anchor.risk_score || 0)}`}>{initials(anchor.full_name)}</div>
                 <div className="sx-anchor-body">
                   <div className="nm">{anchor.full_name} <span className="vtag"> {kn ? "FIR-ಲಿಂಕ್" : "FIR-Linked"} {anchor.suspect_id}</span></div>
-                  <div className="sub">{anchor.alias ? `alias "${anchor.alias}" · ` : ""}{anchor.address_zone} · {anchor.prior_count} {kn ? "ಮೊದಲಿನ" : "priors"} · {kn ? "ಅಪಾಯ" : "risk"} {anchor.risk_score ?? "—"}</div>
+                  <div className="sub">{anchor.alias ? `alias "${anchor.alias}" · ` : ""}{anchor.address_zone} · {anchor.prior_count} {kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ" : "earlier cases"} · {kn ? "ಅಪಾಯ" : "risk"} {anchor.risk_score ?? "—"}</div>
                 </div>
                 <button className="sx-anchor-btn" onClick={() => router.push(`/antarBrain?suspect=${anchor.suspect_id}`)}>{kn ? "ಮೆದುಳಿನಲ್ಲಿ →" : "Show in Brain →"}</button>
               </div>
@@ -860,7 +860,7 @@ function SearchContent() {
                 {/* Why this risk score - points each factor actually contributed */}
                 {(p.risk_attributions || p.factors) && (
                   <div className="sx-sec sx-sec-full">
-                    <div className="sx-sec-t">{kn ? "ಈ ಅಪಾಯ ಅಂಕ ಏಕೆ" : "Why this risk score"} <span className="cnt">{kn ? "4-ಅಂಶ ಮಾದರಿ" : "4-factor model · points"}</span></div>
+                    <div className="sx-sec-t">{kn ? "ಈ ಅಪಾಯ ಅಂಕ ಏಕೆ" : "Why this risk score"} <span className="cnt">{kn ? "4 ಅಂಶಗಳು" : "4 factors · points"}</span></div>
                     <p className="sx-why-narrative">
                       {(() => {
                         const drivers = rec.contrib.filter((c) => c.pts > 0).sort((a, b) => b.pts - a.pts);
@@ -888,7 +888,7 @@ function SearchContent() {
                 {/* Record - only fields that exist in the data */}
                 <div className="sx-sec">
                   <div className="sx-sec-t">{kn ? "ದಾಖಲೆ" : "Record"}</div>
-                  <div className="sx-field"><span className="k">{kn ? "ಐಡಿ" : "FIR-linked ID"}</span><span className="v mono">{p.suspect_id}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಐಡಿ" : "Suspect ID"}</span><span className="v mono">{p.suspect_id}</span></div>
                   <div className="sx-field"><span className="k">{kn ? "ಹೆಸರು" : "Name"}</span><span className="v">{p.full_name}</span></div>
                   {p.alias && <div className="sx-field"><span className="k">{kn ? "ಅಡ್ಡಹೆಸರು" : "Alias"}</span><span className="v">{p.alias}</span></div>}
                   {rec.zone && <div className="sx-field"><span className="k">{kn ? "ಪ್ರಾಥಮಿಕ ವಲಯ" : "Primary zone"}</span><span className="v">{rec.zone}</span></div>}
@@ -916,7 +916,7 @@ function SearchContent() {
                 {/* Modus operandi */}
                 {rec.moText && (
                   <div className="sx-sec sx-sec-full">
-                    <div className="sx-sec-t">{kn ? "ಕಾರ್ಯ ವಿಧಾನ (MO)" : "Modus operandi"}</div>
+                    <div className="sx-sec-t">{kn ? "ಅಪರಾಧ ವಿಧಾನ (MO)" : "How they operate (MO)"}</div>
                     <div className="sx-mo">{rec.moText}</div>
                   </div>
                 )}

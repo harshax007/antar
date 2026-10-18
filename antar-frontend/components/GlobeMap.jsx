@@ -62,7 +62,7 @@ export default function GlobeMap({
         .pointAltitude((z) => 0.015 + Math.sqrt(Math.max(z.observed, 1)) * 0.004)
         .pointRadius((z) => 0.09 + Math.sqrt(Math.max(z.observed, 1)) * 0.05)
         .pointColor((z) => (z.is_hotspot ? "#ff4040" : "#7a8aa3"))
-        .pointLabel((z) => `<div class="mx-hs">${z.zone} · z=${z.gi_stat?.toFixed?.(2)} · ${z.observed} incidents${z.is_hotspot ? " · confirmed hotspot" : ""}</div>`)
+        .pointLabel((z) => `<div class="mx-hs">${z.zone} · ${z.observed} cases${z.is_hotspot ? " · confirmed hotspot" : ""}</div>`)
         .hexBinPointWeight("observed")
         .hexBinResolution(3)
         .hexAltitude((d) => 0.002 + Math.min(0.05, d.sumWeight * 0.0015))

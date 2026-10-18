@@ -1071,7 +1071,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
             )}
 
             <button className="bsx-scopeall" onClick={resetScope}>{kn ? "ಎಲ್ಲಾ" : "All"}</button>
-            <span className="bsx-scopecnt">{filtered.length.toLocaleString()} {kn ? "FIR ರೆಂಡರ್" : "rendered"}</span>
+            <span className="bsx-scopecnt">{filtered.length.toLocaleString()} {kn ? "FIR ತೋರಿಸಲಾಗಿದೆ" : "shown"}</span>
           </div>}
           </>
         )}
@@ -1111,7 +1111,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       {view === "net" && (
         <div className="bsx-hint" style={{ display: "flex", alignItems: "center", gap: "16px", color: "#F8FAFC", textShadow: "0 0 4px rgba(255,255,255,0.2)", pointerEvents: "auto" }}>
           <div>
-            {kn ? "ಝೂಮ್ ಮಾಡಲು ಸ್ಕ್ರಾಲ್ ಮಾಡಿ · ಗುಂಪನ್ನು ಪರಿಶೀಲಿಸಲು ನೋಡ್ ಕ್ಲಿಕ್ ಮಾಡಿ · ಬಿಡುಗಡೆ ಮಾಡಲು ಖಾಲಿ ಜಾಗವನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ" : "scroll to zoom · click a node to inspect its group · click empty space to release"}
+            {kn ? "ಝೂಮ್ ಮಾಡಲು ಸ್ಕ್ರಾಲ್ ಮಾಡಿ · ಗುಂಪನ್ನು ಪರಿಶೀಲಿಸಲು ನೋಡ್ ಕ್ಲಿಕ್ ಮಾಡಿ · ಬಿಡುಗಡೆ ಮಾಡಲು ಖಾಲಿ ಜಾಗವನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ" : "scroll to zoom · click a dot to see its group · click empty space to go back"}
             {ovStats ? ` · ${ovStats.nodes.toLocaleString()} records` : ""}
           </div>
           <button 

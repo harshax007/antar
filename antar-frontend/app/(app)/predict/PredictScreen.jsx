@@ -67,6 +67,13 @@ const NODE_KIND_STYLE = {
 
 // The server names its reasoning steps after the code that runs them ("forecast_agent").
 // On this page they are shown as what they are: steps of one engine.
+// What the anomaly scan calls each alert, in words an officer uses.
+const ALERT_KIND = {
+  spike: "Sudden rise",
+  seasonal_surge: "Seasonal rise",
+  hotspot: "Hotspot",
+  spatial_spike: "Sudden rise in a hotspot",
+};
 const STEP_KIND = { data: "records", signal: "signal", agent: "step", llm: "weighing", out: "result" };
 const stepName = (t) => {
   const w = String(t || "").replace(/_agent$/i, "").replace(/_/g, " ").trim();
@@ -151,7 +158,7 @@ function sawOf(item) {
     const t = part.trim();
     if (!t) continue;
     let m;
-    if (/^MAD-z/i.test(t)) out.push(`Recent cases are ${levelOf(item).toLowerCase()} for this area (anomaly score ${item.z_score}).`);
+    if (/^MAD-z/i.test(t)) out.push(`Recent cases are ${levelOf(item).toLowerCase()} for this area (unusual-activity score ${item.z_score}; 2 is unusual, 4 is rare).`);
     else if (/hotspot/i.test(t)) out.push("Neighbouring areas are high too, so this is a cluster and not a one-off.");
     else if (/DBSCAN|cluster/i.test(t)) out.push("A group of recent cases sits close together in place and time.");
     else if ((m = /seasonal uplift \+?(\d+)%/i.exec(t))) out.push(`This time of year usually adds about ${m[1]}%.`);
@@ -184,7 +191,7 @@ function alertToPrediction(a) {
   const risk = z >= 4 ? "HIGH" : z >= 2.5 ? "MEDIUM" : "LOW";
   const band = a.conformal_band ? `${a.conformal_band.lo}-${a.conformal_band.hi} incidents` : null;
   const festival_driver = a.seasonal?.factor > 0.3 ? `Seasonal +${Math.round(a.seasonal.factor * 100)}%` : null;
-  const why = [a.anomaly_type?.replace(/_/g, " "), a.trace?.[0]?.description].filter(Boolean).join(" - ");
+  const why = [ALERT_KIND[a.anomaly_type] || a.anomaly_type?.replace(/_/g, " "), a.trace?.[0]?.description].filter(Boolean).join(" - ");
   return {
     zone: a.zone,
     crime_type: a.crime_type,
@@ -276,10 +283,10 @@ function KnownData({ eng }) {
           )}
           {t ? (
             <>
-              <div><dt>Track record</dt><dd><b>{(t.coverage80 * 100).toFixed(1)}%</b> of the 80% ranges held<span>{t.weeks} weeks of the real register, {monthOf(t.from)} to {monthOf(t.to)}; station forecasts</span></dd></div>
-              <div><dt>90% ranges</dt><dd><b>{(t.coverage90 * 100).toFixed(1)}%</b> held</dd></div>
-              <div><dt>Total forecast</dt><dd><b>{num(Math.round(t.forecast_total))}</b> against <b>{num(t.actual_total)}</b> recorded<span>over the graded weeks</span></dd></div>
-              <div><dt>Against a plain average</dt><dd><b>{t.weeks_better} of {t.weeks_ranked}</b> weeks better<span>than ranking stations by their last 4 weeks</span></dd></div>
+              <div><dt>Track record</dt><dd><b>{(t.coverage80 * 100).toFixed(1)}%</b> of weeks fell inside the likely range<span>{t.weeks} weeks of the real register, {monthOf(t.from)} to {monthOf(t.to)}; station forecasts</span></dd></div>
+              <div><dt>Wider range</dt><dd><b>{(t.coverage90 * 100).toFixed(1)}%</b> of weeks inside it</dd></div>
+              <div><dt>Total forecast</dt><dd><b>{num(Math.round(t.forecast_total))}</b> against <b>{num(t.actual_total)}</b> recorded<span>over the weeks tested</span></dd></div>
+              <div><dt>Against a simple guess</dt><dd><b>{t.weeks_better} of {t.weeks_ranked}</b> weeks better<span>than ranking stations by their last 4 weeks</span></dd></div>
             </>
           ) : <div><dt>Track record</dt><dd>Not graded yet</dd></div>}
         </dl>
@@ -294,7 +301,7 @@ function InternetData({ eng, onEvents }) {
   return (
     <div className="pxd-card px-src">
       <div className="pxd-hd pxd-hd2"><div>
-        <span className="pxd-ttl">Internet data <i>event calendar</i></span>
+        <span className="pxd-ttl">Festival calendar <i>from the internet</i></span>
         <span className="pxd-note">Where festival dates come from. What a festival does to crime is never taken from the internet.</span>
       </div></div>
       {!ready ? <div className="pxd-empty">{eng === null ? "Reading…" : "Not loaded. Restart the server."}</div> : (
@@ -1270,12 +1277,12 @@ const avgConf = predictions?.length
                     {kn ? "ಏಕೆ?" : "Why?"}
                   </button>
                 </div>
-                <div className="px-say" title={p.z_score ? `Anomaly score ${p.z_score}` : undefined}>
+                <div className="px-say" title={p.z_score ? `Unusual-activity score ${p.z_score} (2 is unusual, 4 is rare)` : undefined}>
                   <b className={p.direction === "silence" ? "dn" : (Number(p.z_score) || 0) >= 2 ? "up" : ""}>{levelOf(p)}</b>
                   {rangeOf(p) ? <span>{kn ? "ನಿರೀಕ್ಷಿತ" : "Expected"} {rangeOf(p)}</span> : null}
                 </div>
                 {p.scenario && (
-                  <div className="px-scn2">With {p.scenario.event}: <b>{num(p.scenario.lo)} to {num(p.scenario.hi)} cases</b> <i>inferred</i></div>
+                  <div className="px-scn2">With {p.scenario.event}: <b>{num(p.scenario.lo)} to {num(p.scenario.hi)} cases</b> <i>estimate</i></div>
                 )}
                 {p.confidence_level ? (
                   <div className="px-conf2">
@@ -1329,8 +1336,8 @@ const avgConf = predictions?.length
                       <span>{cap(a.crime_type)}</span>
                       <span className={`pxd-sev ${sev}`}>{sevlbl}</span>
                     </div>
-                    <div className="pxd-alert-sub" title={`Anomaly score ${Number(z).toFixed(2)}`}>
-                      {a.zone} · {a.anomaly_type ? cap(a.anomaly_type) : a.direction === "silence" ? (kn ? "ವರದಿ ಮೌನ" : "Reporting drop") : (kn ? "ಅಸಂಗತಿ" : "Unusual activity")}
+                    <div className="pxd-alert-sub" title={`Unusual-activity score ${Number(z).toFixed(2)} (2 is unusual, 4 is rare)`}>
+                      {a.zone} · {a.anomaly_type ? (kn ? cap(a.anomaly_type) : (ALERT_KIND[a.anomaly_type] || cap(a.anomaly_type))) : a.direction === "silence" ? (kn ? "ವರದಿ ಮೌನ" : "Reporting drop") : (kn ? "ಅಸಂಗತಿ" : "Unusual activity")}
                       {z > 0 ? ` · ${levelOf(a).toLowerCase()}` : ` · ${kn ? "ಗಮನದಲ್ಲಿದೆ" : "on watch"}`}
                     </div>
                   </div>
@@ -1405,7 +1412,7 @@ const avgConf = predictions?.length
                       : <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confident"}</span></>}
                     <span className={`px-risk ${RISK_BADGE[focusItem.risk] || ""}`}>{kn ? focusItem.risk?.toLowerCase() : (RISK_WORD[focusItem.risk] || focusItem.risk)}</span>
                     {Number(focusItem.z_score) > 0 && (
-                      <span className="z" title="How far recent cases sit from this area's usual level. 2 is unusual, 4 is rare.">{kn ? "ಅಸಂಗತಿ" : "Anomaly score"} {focusItem.z_score}</span>
+                      <span className="z" title="How far recent cases sit from this area's usual level. 2 is unusual, 4 is rare.">{kn ? "ಅಸಾಮಾನ್ಯತೆ ಅಂಕ" : "Unusual-activity score"} {focusItem.z_score}</span>
                     )}
                   </div>
 
@@ -1472,7 +1479,7 @@ const avgConf = predictions?.length
                 <div>
                   {stations && stations.zone === focusItem.zone && (
                     <div className="px-stn">
-                      <div className="px-stn-hd">Stations to watch in {stations.scope || focusItem.zone}<i>inferred</i></div>
+                      <div className="px-stn-hd">Stations to watch in {stations.scope || focusItem.zone}<i>estimate</i></div>
                       <ol>
                         {stations.items.map((it) => (
                           <li key={it.unit || it.name}>
@@ -1527,9 +1534,9 @@ const avgConf = predictions?.length
                     scenarioBand?.scenario ? (
                       <div className="px-scn">
                         <div className="px-scn-row">
-                          <span className="px-scn-badge">{cap(scenarioBand.scenario.badge || "Inferred")} · {kn ? "ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್" : "scenario range"}</span>
+                          <span className="px-scn-badge">{cap(scenarioBand.scenario.badge === "inferred" || !scenarioBand.scenario.badge ? "Estimate" : scenarioBand.scenario.badge)} · {kn ? "ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್" : "scenario range"}</span>
                           <span className="px-scn-val">{scenarioBand.scenario.lo}–{scenarioBand.scenario.hi} {kn ? "ಘಟನೆಗಳು" : "incidents"}</span>
-                          <span className="px-scn-base">({kn ? "ಬೇಸ್‌ಲೈನ್ ಎದುರು" : "vs baseline"} {scenarioBand.baseline?.lo}–{scenarioBand.baseline?.hi})</span>
+                          <span className="px-scn-base">({kn ? "ಸಾಮಾನ್ಯ ವ್ಯಾಪ್ತಿ" : "usual range"} {scenarioBand.baseline?.lo}–{scenarioBand.baseline?.hi})</span>
                         </div>
                         <div className="px-scn-narr">{scenarioBand.narrative}</div>
                       </div>
@@ -1665,10 +1672,10 @@ const avgConf = predictions?.length
       )}
 
       {/* 4 · Hypotheses: links the record suggests, and the case against each */}
-      <section className="px-hyp" aria-label="Hypotheses">
+      <section className="px-hyp" aria-label="Possible links between accused">
         <header>
           <div>
-            <h3>{kn ? "ಊಹೆಗಳು" : "Hypotheses"}{fZone ? ` · ${fZone}` : ""}</h3>
+            <h3>{kn ? "ಆರೋಪಿಗಳ ನಡುವಿನ ಸಾಧ್ಯ ಸಂಪರ್ಕಗಳು" : "Possible links between accused"}{fZone ? ` · ${fZone}` : ""}</h3>
             <p>Possible links between accused in this district, proposed from what they share in the record. Each one is then tested: how many other pairs in the state would look just as linked by chance?</p>
           </div>
           <button type="button" onClick={runHypotheses} disabled={!fZone || runningHypotheses}>
@@ -1680,7 +1687,7 @@ const avgConf = predictions?.length
         {fZone && !hypothesesList && !runningHypotheses && (
           <p className="px-hyp-empty">Nothing has been run for {fZone} yet.</p>
         )}
-        {runningHypotheses && <p className="px-hyp-empty">Comparing accused in {fZone} and checking each link against its base rate…</p>}
+        {runningHypotheses && <p className="px-hyp-empty">Comparing accused in {fZone} and checking how often each link would turn up by chance…</p>}
         {hypothesesList?.error && !runningHypotheses && (
           <p className="px-hyp-empty">{hypothesesList.error === "restart"
             ? "This needs the server restarted to load it."
@@ -1734,7 +1741,7 @@ const avgConf = predictions?.length
                   </li>
                 ))}
               </ul>
-              <p className="px-hyp-foot">A proposed link is an inference, never a finding. Scored from shared signals in the record, then checked with counted base rates; no language model is involved in either step.</p>
+              <p className="px-hyp-foot">A possible link is a lead, never a finding. It is scored from what the accused share in the record, then checked against how often such a link turns up by chance. No AI model is used in either step.</p>
             </>
           );
         })()}
@@ -1745,7 +1752,7 @@ const avgConf = predictions?.length
       {planFor && <ShiftPlan station={planFor} kn={kn} onClose={() => setPlanFor(null)} />}
 
       <div className="px-footer">
-        {engine ? `${kn ? "ಎಂಜಿನ್" : "engine"}: ${engine} · ` : ""}
+        {engine ? `${engine} · ` : ""}
         {kn ? "ನಿರ್ಧಾರ-ಬೆಂಬಲ ಮಾತ್ರ · ತೀರ್ಪು ಅಲ್ಲ · ಅಧಿಕಾರಿ ತೀರ್ಮಾನ ಕಡ್ಡಾಯ" : "Decision support only. Not a verdict. The officer decides."}
       </div>
 
@@ -1828,11 +1835,11 @@ const avgConf = predictions?.length
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button onClick={() => handleHypothesisAction(derivationModalData.product_id, "confirm")}
                     style={{ background: "rgba(34,230,240,0.14)", color: "#22E6F0", border: "1px solid rgba(34,230,240,0.5)", padding: "6px 12px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
-                     {kn ? "ಖಚಿತಪಡಿಸಿ" : "Confirm Hypothesis"}
+                     {kn ? "ಖಚಿತಪಡಿಸಿ" : "Confirm link"}
                   </button>
                   <button onClick={() => handleHypothesisAction(derivationModalData.product_id, "reject")}
                     style={{ background: "rgba(225,64,56,0.14)", color: "#E14038", border: "1px solid rgba(225,64,56,0.5)", padding: "6px 12px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
-                     {kn ? "ತಿರಸ್ಕರಿಸಿ" : "Reject Hypothesis"}
+                     {kn ? "ತಿರಸ್ಕರಿಸಿ" : "Reject link"}
                   </button>
                 </div>
               </div>

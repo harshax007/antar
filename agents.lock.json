@@ -50,7 +50,7 @@
     },
     "profile": {
       "path": "app/agents/profile_agent.py",
-      "sha256": "3e62985354ecb383feadafb62877214c23136cc453fbd6a8b56790dabaa14705"
+      "sha256": "6d1ddff9f652f503bd620c237c4eba0a4eb03d11e6ea0a4ba27b451d9629e675"
     },
     "query": {
       "path": "app/agents/query_agent.py",

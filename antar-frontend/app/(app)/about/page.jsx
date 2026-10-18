@@ -62,7 +62,7 @@ export default function AboutPage() {
               <Link href="/search" className="ab-tile">
                 <FileSearch size={20} />
                 <h3>Search</h3>
-                <p>See hidden links and OSINT</p>
+                <p>See hidden links between cases and people</p>
               </Link>
               <Link href="/predict" className="ab-tile">
                 <ShieldAlert size={20} />
@@ -109,7 +109,7 @@ export default function AboutPage() {
               <li>Strict guardrails</li>
               <li>Cryptographic audit chain</li>
               <li>Correlation-only demographics</li>
-              <li>OSINT quarantined</li>
+              <li>Internet leads kept separate from FIRs</li>
             </ul>
           </motion.section>
 
@@ -140,14 +140,14 @@ export default function AboutPage() {
                 <div className="ab-principle">
                   <h4><Network size={14} strokeWidth={2} aria-hidden="true" /> 02. {kn ? "ಮಾದರಿ ಗುಪ್ತಚರ" : "PATTERN INTELLIGENCE"}</h4>
                   <p>{kn
-                    ? "ಪ್ರತ್ಯೇಕ FIR ಪಠ್ಯದ ಬದಲು, ವಿಶೇಷ ಏಜೆಂಟ್‌ಗಳು (Core, Sense, Lens, Link) ಸ್ಥಳ-ಕಾಲ ಸಾಂದ್ರತೆ, Gi* ಹಾಟ್‌ಸ್ಪಾಟ್ ರೇಖೆಗಳು ಮತ್ತು ಸಂಬಂಧ ಗ್ರಾಫ್‌ಗಳನ್ನು ಸಕ್ರಿಯ ತಡೆಗಾಗಿ ಸಂಶ್ಲೇಷಿಸುತ್ತವೆ."
-                    : "Instead of isolated FIR text, specialized agents (Core, Sense, Lens, Link) synthesize spatiotemporal density, Gi* hotspot contours, and relationship graphs for proactive prevention."}</p>
+                    ? "ಬಿಡಿ FIR ಗಳ ಬದಲು, ಏಜೆಂಟ್‌ಗಳು ಪ್ರಕರಣಗಳು ಎಲ್ಲಿ ಮತ್ತು ಯಾವಾಗ ಗುಂಪಾಗುತ್ತವೆ, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಮತ್ತು ವ್ಯಕ್ತಿಗಳ ನಡುವಿನ ಸಂಪರ್ಕಗಳನ್ನು ಒಟ್ಟಿಗೆ ತೋರಿಸುತ್ತವೆ, ಮುಂಚಿತವಾಗಿ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು."
+                    : "Instead of reading FIRs one by one, the agents show where and when cases bunch together, the hotspots, and how people are linked, so action can be taken early."}</p>
                 </div>
                 <div className="ab-principle">
                   <h4><Lock size={14} strokeWidth={2} aria-hidden="true" /> 03. {kn ? "ಲೆಕ್ಕಪರಿಶೋಧನೆ ಮತ್ತು ಶೂನ್ಯ-ವಿಶ್ವಾಸ ಭದ್ರತೆ" : "AUDIT & ZERO-TRUST SECURITY"}</h4>
                   <p>{kn
-                    ? "ಪ್ರತಿ ಹಂತದಲ್ಲೂ ಉದ್ಯಮ ಮಟ್ಟದ ಭದ್ರತೆ: ನ್ಯಾಯಾಲಯ ಸಾಕ್ಷ್ಯಕ್ಕಾಗಿ SHA-256 ವ್ಯುತ್ಪತ್ತಿ ದಾಖಲೆಗಳು, ಪಾತ್ರ-ಆಧಾರಿತ ಪ್ರವೇಶ ನಿಯಂತ್ರಣ ಮತ್ತು ಅಧಿಕೃತ ದಾಖಲೆಗಳನ್ನು ರಕ್ಷಿಸುವ ಪ್ರತ್ಯೇಕ OSINT ಪದರ (Scout)."
-                    : "Enterprise security at every tier: SHA-256 derivation logs for court evidence, role-based access control, and a sandboxed OSINT layer (Scout) that protects official records."}</p>
+                    ? "ಪ್ರತಿ ಹಂತದಲ್ಲೂ ಭದ್ರತೆ: ತಿದ್ದಲಾಗದ ಲೆಕ್ಕಪತ್ರ, ಹುದ್ದೆ ಆಧಾರಿತ ಪ್ರವೇಶ, ಮತ್ತು ಇಂಟರ್ನೆಟ್ ಸುಳಿವುಗಳನ್ನು ಅಧಿಕೃತ ದಾಖಲೆಗಳಿಂದ ದೂರ ಇಡಲಾಗುತ್ತದೆ."
+                    : "Security at every step: a tamper-evident log of every request, access by rank and posting, and internet leads kept apart from official records."}</p>
                 </div>
               </div>
             </div>

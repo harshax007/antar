@@ -8,7 +8,7 @@
 import { useState } from "react";
 
 const BADGE = {
-  K: { cls: "cx-badge-k", label: "K · Verified" },
+  K: { cls: "cx-badge-k", label: "From the records" },
   D: { cls: "cx-badge-d", label: "D · Derived" },
   I: { cls: "cx-badge-i", label: "I · Inferred" },
   U: { cls: "cx-badge-u", label: "U · Lead" },

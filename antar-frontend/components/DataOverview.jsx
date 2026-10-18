@@ -287,7 +287,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
           <div className="ov-src">
             <div className="ov-srcseg">
               <button className={!isFull ? "on" : ""} onClick={() => switchSource("sample")}>
-                {kn ? "ಮಾದರಿ (ಬ್ರೈನ್)" : "Intelligent Data"}
+                {kn ? "ಮಾದರಿ (ಬ್ರೈನ್)" : "Linked records"}
               </button>
               <button className={isFull ? "on" : ""} onClick={() => switchSource("full")}>
                 {kn ? "ಪೂರ್ಣ ದತ್ತಾಂಶ" : "Full Data Set"}
@@ -301,10 +301,10 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
                       ? (
                           <span>
                             <b>
-                              {kn ? "ಸಂಪೂರ್ಣ ದತ್ತಾಂಶ ಮೂಲದಿಂದ ನೇರವಾಗಿ ಎಳೆಯಲಾಗಿದೆ" : "Direct connection to the raw dataset."}
+                              {kn ? "ಎಲ್ಲಾ FIR ದಾಖಲೆಗಳು" : "Every FIR record in the registry."}
                             </b>
                             <small>
-                              {kn ? "ಫಿಲ್ಟರ್ ಮಾಡದ, ಸಂಪೂರ್ಣ ಡೇಟಾಬೇಸ್‌ಗೆ ಪ್ರವೇಶ. ಎಲ್ಲಾ ಐತಿಹಾಸಿಕ ದಾಖಲೆಗಳನ್ನು ಯಾವುದೇ ಮಾದರಿಯಿಲ್ಲದೆ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಿದೆ." : "Unfiltered access to the complete database. Historical records are processed entirely without sampling."}
+                              {kn ? "ಫಿಲ್ಟರ್ ಮಾಡದ, ಸಂಪೂರ್ಣ ಡೇಟಾಬೇಸ್‌ಗೆ ಪ್ರವೇಶ. ಎಲ್ಲಾ ಐತಿಹಾಸಿಕ ದಾಖಲೆಗಳನ್ನು ಯಾವುದೇ ಮಾದರಿಯಿಲ್ಲದೆ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಿದೆ." : "Every row is counted, nothing is sampled. Years from 2016 to 2022 hold only part of each year, and rows after March 2024 are demonstration data."}
                             </small>
                           </span>
                         )
@@ -503,7 +503,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
             <tr>
               <th>{kn ? "ದಿನಾಂಕ" : "Date"}</th><th>{kn ? "ಜಿಲ್ಲೆ" : "District"}</th><th>{kn ? "ಠಾಣೆ" : "Station"}</th>
               <th>{kn ? "ಅಪರಾಧ" : "Crime"}</th><th>{kn ? "ವರ್ಗ" : "Category"}</th>
-              <th>ACC</th><th>{kn ? "ಬಂಧಿತ" : "Arr."}</th><th>{kn ? "ಹಂತ" : "Stage"}</th>
+              <th>{kn ? "ಆರೋಪಿ" : "Accused"}</th><th>{kn ? "ಬಂಧಿತ" : "Arrested"}</th><th>{kn ? "ಹಂತ" : "Stage"}</th>
             </tr>
           </thead>
           <tbody>

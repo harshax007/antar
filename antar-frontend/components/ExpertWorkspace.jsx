@@ -131,23 +131,23 @@ function deriveInsights(ranking, kn) {
 // Long-running work an officer can hand off without blocking the chat. Each maps to a
 // real job type in app/api/jobs.py; the evidence class says how far to trust the output.
 const BG_TASKS = [
-  { type: "osint_recon", en: "OSINT search", kn: "OSINT ಹುಡುಕಾಟ", cls: "I", needsTarget: true,
-    hintEn: "Open-web leads on a person, phone, handle or place. Unverified by definition.",
+  { type: "osint_recon", en: "Open-web search", kn: "ಮುಕ್ತ ಜಾಲ ಹುಡುಕಾಟ", cls: "I", needsTarget: true,
+    hintEn: "Leads from the public internet on a person, phone, social-media handle or place. Not verified: check before use.",
     hintKn: "ವ್ಯಕ್ತಿ, ಫೋನ್, ಹ್ಯಾಂಡಲ್ ಅಥವಾ ಸ್ಥಳದ ಬಗ್ಗೆ ಮುಕ್ತ-ಜಾಲ ಸುಳಿವುಗಳು. ಪರಿಶೀಲಿಸದವು." },
-  { type: "ml_forecast", en: "AI/ML forecast", kn: "AI/ML ಮುನ್ಸೂಚನೆ", cls: "I", needsTarget: false,
-    hintEn: "7-day crime forecast (Poisson GLM, 80/90% ranges). Leave target blank for the whole state, or name a district.",
-    hintKn: "7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ (Poisson GLM, 80/90% ವ್ಯಾಪ್ತಿ). ಇಡೀ ರಾಜ್ಯಕ್ಕೆ ಖಾಲಿ ಬಿಡಿ, ಅಥವಾ ಜಿಲ್ಲೆ ನಮೂದಿಸಿ." },
+  { type: "ml_forecast", en: "7-day forecast", kn: "7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ", cls: "I", needsTarget: false,
+    hintEn: "Likely cases in the next 7 days, with a likely and a wider range. Leave the target blank for the whole state, or name a district.",
+    hintKn: "ಮುಂದಿನ 7 ದಿನಗಳ ಸಂಭಾವ್ಯ ಪ್ರಕರಣಗಳು, ಸಂಭಾವ್ಯ ಮತ್ತು ವಿಶಾಲ ವ್ಯಾಪ್ತಿಯೊಂದಿಗೆ. ಇಡೀ ರಾಜ್ಯಕ್ಕೆ ಖಾಲಿ ಬಿಡಿ, ಅಥವಾ ಜಿಲ್ಲೆ ನಮೂದಿಸಿ." },
   { type: "deep_research", en: "Deep research", kn: "ಆಳವಾದ ಸಂಶೋಧನೆ", cls: "D", needsTarget: true,
-    hintEn: "Known / derived / inferred / unknown dossier on a suspect or zone.",
-    hintKn: "ಶಂಕಿತ ಅಥವಾ ವಲಯದ K/D/I/U ಡಾಸಿಯರ್." },
+    hintEn: "A full profile of a suspect or area, with each point marked as from the records, calculated, estimated or not on record.",
+    hintKn: "ಶಂಕಿತ ಅಥವಾ ವಲಯದ ಸಂಪೂರ್ಣ ವಿವರ, ಪ್ರತಿ ಅಂಶದ ಮೂಲದೊಂದಿಗೆ." },
   { type: "network_deep", en: "Network analysis", kn: "ಜಾಲ ವಿಶ್ಲೇಷಣೆ", cls: "D", needsTarget: true,
     hintEn: "Associates and links around a suspect id or name.", hintKn: "ಶಂಕಿತರ ಸುತ್ತಲಿನ ಸಹಚರರು ಮತ್ತು ಕೊಂಡಿಗಳು." },
   { type: "pattern_scan", en: "Pattern scan", kn: "ಮಾದರಿ ಶೋಧ", cls: "D", needsTarget: false,
-    hintEn: "Repeating MO signatures across a zone or crime type.", hintKn: "ವಲಯ ಅಥವಾ ಅಪರಾಧ ಪ್ರಕಾರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ MO." },
+    hintEn: "The same way of committing a crime, repeated across an area or crime type.", hintKn: "ವಲಯ ಅಥವಾ ಅಪರಾಧ ಪ್ರಕಾರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧ ವಿಧಾನ." },
   { type: "threat_assessment", en: "Threat assessment", kn: "ಬೆದರಿಕೆ ಮೌಲ್ಯಮಾಪನ", cls: "I", needsTarget: false,
     hintEn: "Patrol and checkpoint recommendations for a zone.", hintKn: "ವಲಯಕ್ಕೆ ಗಸ್ತು ಮತ್ತು ತಪಾಸಣಾ ಶಿಫಾರಸುಗಳು." },
   { type: "custom", en: "Custom task", kn: "ಕಸ್ಟಮ್ ಕಾರ್ಯ", cls: "D", needsTarget: false,
-    hintEn: "Any question, run in the background through the verified query path.",
+    hintEn: "Any question, answered from the records in the background.",
     hintKn: "ಯಾವುದೇ ಪ್ರಶ್ನೆ, ಪರಿಶೀಲಿತ ಮಾರ್ಗದಲ್ಲಿ ಹಿನ್ನೆಲೆಯಲ್ಲಿ." },
 ];
 
@@ -499,7 +499,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
               <i /> {running} {kn ? "ಚಾಲನೆ" : "running"}
             </span>
           )}
-          <span className="c2-clock" title="UTC">{utc}<small> UTC</small></span>
+          <span className="c2-clock" title="Time now (UTC, the time standard used in the audit log)">{utc}<small> UTC</small></span>
         </div>
         <div className="c2-actions">
           <button title="Map"><Map size={13} /></button>
@@ -518,11 +518,11 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
 
       {/* ── Situation strip ───────────────────────────────────────────────── */}
       <div className="c2-sitrep">
-        <div><span>{kn ? "ಪ್ರಶ್ನೆ ಮಾದರಿ" : "Template"}</span><b>{meta?.template_id || "—"}</b></div>
-        <div><span>{kn ? "ಉಲ್ಲೇಖಗಳು" : "Citations"}</span><b>{citations?.length || 0}</b></div>
-        <div><span>{kn ? "ಸಮಯ" : "Latency"}</span><b>{elapsedS ? `${elapsedS}s` : "—"}</b></div>
-        <div title={meta?.hash || "No audit hash for this answer"}>
-          <span>{kn ? "ಸಮಗ್ರತೆ" : "Integrity"}</span>
+        <div><span>{kn ? "ಪ್ರಶ್ನೆ ಪ್ರಕಾರ" : "Query type"}</span><b>{meta?.template_id || "—"}</b></div>
+        <div><span>{kn ? "ಉಲ್ಲೇಖಗಳು" : "Sources"}</span><b>{citations?.length || 0}</b></div>
+        <div><span>{kn ? "ಸಮಯ" : "Answer time"}</span><b>{elapsedS ? `${elapsedS}s` : "—"}</b></div>
+        <div title={meta?.hash ? `Audit log fingerprint ${meta.hash}` : "This answer has no audit log entry"}>
+          <span>{kn ? "ಲೆಕ್ಕಪತ್ರ" : "Audit log"}</span>
           <b className={meta?.hash ? "ok" : ""}>{meta?.hash ? <><ShieldCheck size={11} aria-hidden="true" /> {meta.hash.slice(0, 8)}</> : "—"}</b>
         </div>
       </div>
@@ -596,7 +596,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                       </div>
                     ))}
                     <div className="c2-cls-key">
-                      <span>K known</span><span>D derived</span><span>I inferred</span><span>U unknown</span>
+                      <span>K from the records</span><span>D calculated</span><span>I estimate</span><span>U not on record</span>
                     </div>
                   </div>
                 )}

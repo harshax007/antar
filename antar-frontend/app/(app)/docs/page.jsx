@@ -47,10 +47,10 @@ const STAGES = [
 const TOOLS = [
   { num: "01", title: "CHAT / ANTAR INTELLIGENCE",  color: "#22E6F0", desc: "Multi-turn investigation workspace. Ask natural language queries in English or Kannada to synthesize cited dossiers from 10,00,000+ live FIR records.", desc_kn: "ಹಲವು-ತಿರುವುಗಳ ತನಿಖಾ ಸ್ಥಳ. ಧ್ವನಿ ಅಥವಾ ಪಠ್ಯದ ಮೂಲಕ 10,00,000+ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳಿಂದ ಪರಿಶೀಲಿಸಿದ ಉತ್ತರಗಳನ್ನು ಪಡೆಯಿರಿ.", href: "/antar?live=1" },
   { num: "02", title: "SECOND BRAIN & LINKAGE",     color: "#F59E0B", desc: "Surfaces hidden entity relationships across disparate cases, such as phone numbers, bank conduits, and criminal syndicate aliases.", desc_kn: "ವಿಭಿನ್ನ ಪ್ರಕರಣಗಳಲ್ಲಿ ದೂರವಾಣಿ ಸಂಖ್ಯೆಗಳು, ಬ್ಯಾಂಕ್ ಖಾತೆಗಳು ಮತ್ತು ಅಪರಾಧ ಜಾಲಗಳ ನಡುವಿನ ಅಡಗಿರುವ ಲಿಂಕ್‌ಗಳನ್ನು ಪತ್ತೆ ಮಾಡುತ್ತದೆ.", href: "/brain" },
-  { num: "03", title: "MAP & SPATIAL CORRIDORS",    color: "#10B981", desc: "Interactive Karnataka GIS with Gi* hotspot clusters, ANPR patrol routes, and temporal shift overlays with statistical significance.", desc_kn: "ಕರ್ನಾಟಕದ ಇಂಟರ್ಯಾಕ್ಟಿವ್ ನಕ್ಷೆ. Gi* ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು, ANPR ಗಸ್ತು ಮಾರ್ಗಗಳು ಮತ್ತು ಸಮಯದ ಶ್ರಿಫ್ಟ್‌ಗಳನ್ನು ವೀಕ್ಷಿಸಿ.", href: "/map" },
-  { num: "04", title: "PREDICT & DERIVATION AUDIT", color: "#EF4444", desc: "Command center for 7-day conformal prediction bands, silence alerts, and SHA-256 cryptographic derivation audits.", desc_kn: "7-ದಿನಗಳ ಊಹಾತ್ಮಕ ಅಪಾಯ ವಲಯಗಳು, ಶೂನ್ಯ-ವರದಿ ಅಧಿಸೂಚನೆಗಳು ಮತ್ತು SHA-256 ಸಾಕ್ಷ್ಯಾಧಾರ ಆಡಿಟ್‌ಗಳ ನಿಯಂತ್ರಣ ಕೇಂದ್ರ.", href: "/predict" },
+  { num: "03", title: "MAP & HOTSPOTS",    color: "#10B981", desc: "A map of Karnataka showing where cases bunch together, which districts lead, and how places link to each other, day by day.", desc_kn: "ಕರ್ನಾಟಕದ ನಕ್ಷೆ: ಪ್ರಕರಣಗಳು ಎಲ್ಲಿ ಹೆಚ್ಚು, ಯಾವ ಜಿಲ್ಲೆ ಮುಂದಿದೆ, ಸ್ಥಳಗಳು ಹೇಗೆ ಸಂಪರ್ಕಿತ, ದಿನದಿಂದ ದಿನಕ್ಕೆ.", href: "/map" },
+  { num: "04", title: "PREDICT", color: "#EF4444", desc: "The next 7 days, area by area: likely cases with the reasons, alerts when reports suddenly drop, and a record of how each forecast was made.", desc_kn: "ಮುಂದಿನ 7 ದಿನಗಳು, ವಲಯವಾರು: ಕಾರಣಗಳೊಂದಿಗೆ ಸಂಭಾವ್ಯ ಪ್ರಕರಣಗಳು, ವರದಿಗಳು ಹಠಾತ್ ಕುಸಿದಾಗ ಎಚ್ಚರಿಕೆ, ಮತ್ತು ಪ್ರತಿ ಮುನ್ಸೂಚನೆಯ ದಾಖಲೆ.", href: "/predict" },
   { num: "05", title: "SEARCH & IDENTITY LINK",     color: "#A855F7", desc: "High-speed fuzzy phonetic search across names, vehicle plates, and cross-source identity hypothesis cards.", desc_kn: "ಹೆಸರುಗಳು, ವಾಹನ ಸಂಖ್ಯೆಗಳು ಮತ್ತು ಶಂಕಿತರ ಗುರುತುಗಳಿಗಾಗಿ ಫಜಿ-ಫೋನೆಟಿಕ್ ವೇಗದ ಹುಡುಕಾಟ.", href: "/search" },
-  { num: "06", title: "MULTIMODAL EVIDENCE OCR",    color: "#38BDF8", desc: "Split-screen forensic workbench for scanned FIR documents and CCTV frames with K/D/I/U dossier tags.", desc_kn: "ಸ್ಕ್ಯಾನ್ ಮಾಡಿದ ಎಫ್‌ಐಆರ್ ದಾಖಲೆಗಳು ಮತ್ತು ಸಿಸಿಟಿವಿ ದೃಶ್ಯಗಳಿಗಾಗಿ K/D/I/U ಟ್ಯಾಗ್‌ಗಳೊಂದಿಗಿನ ಫೋರೆನ್ಸಿಕ್ ತನಿಖಾ ಸ್ಥಳ.", href: "/forensic" },
+  { num: "06", title: "READ SCANNED DOCUMENTS",    color: "#38BDF8", desc: "Reads scanned FIR documents and CCTV stills side by side, and marks each detail as from the record, calculated or estimated.", desc_kn: "ಸ್ಕ್ಯಾನ್ ಮಾಡಿದ FIR ದಾಖಲೆಗಳು ಮತ್ತು CCTV ಚಿತ್ರಗಳನ್ನು ಅಕ್ಕಪಕ್ಕ ಓದಿ, ಪ್ರತಿ ವಿವರದ ಮೂಲವನ್ನು ಗುರುತಿಸುತ್ತದೆ.", href: "/forensic" },
 ];
 
 const UNWANTED_SUFFIXES = [
@@ -163,7 +163,7 @@ const STAGE_MASCOTS = {
     face: "tv",
     name: "Query Intelligence",
     engine: "DETERMINISTIC REASONING ENGINE",
-    telemetry: ["T1-T23 TEMPLATES", "K/D/I/U ATTRIBUTION", "0.0% HALLUCINATION"],
+    telemetry: ["23 QUESTION TYPES", "SOURCE ON EVERY ANSWER", "EVERY NUMBER CHECKED"],
   },
   connect: {
     face: "gearbot",
@@ -175,7 +175,7 @@ const STAGE_MASCOTS = {
     face: "clockwork",
     name: "Risk Forecast",
     engine: "SPATIOTEMPORAL FORECAST ENGINE",
-    telemetry: ["7-DAY CONFORMAL BAND", "PAI@5% 14.2 RATIO", "Gi* HOTSPOT SCAN"],
+    telemetry: ["7-DAY LIKELY RANGE", "TESTED ON 23 REAL WEEKS", "HOTSPOT CHECK"],
   },
 };
 
@@ -292,8 +292,8 @@ const RELEVANT_STAGE_RESPONSES = {
       kn: "ಹಂಚಿಕೆಯ ಫೋನ್ ಹ್ಯಾಶ್‌ಗಳು ಮತ್ತು ವಾಹನ (KA-02-MB-4819) ಮೂಲಕ 6 ದರೋಡೆ ಪ್ರಕರಣಗಳಲ್ಲಿ ರಾಜಾಜಿನಗರ ಜಾಲವನ್ನು ಲಿಂಕ್ ಮಾಡಲಾಗಿದೆ.",
     },
     anticipate: {
-      en: "Conformal 90% risk band projects 8–11 incidents in Rajajinagar over next 7 days (Gi* z=3.48 hotspot cluster).",
-      kn: "ರಾಜಾಜಿನಗರದಲ್ಲಿ ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ 8–11 ಘಟನೆಗಳ 90% ಕಾನ್‌ಫಾರ್ಮಲ್ ಅಪಾಯದ ಬ್ಯಾಂಡ್ ಅಂದಾಜಿಸಲಾಗಿದೆ (Gi* z=3.48 ಹಾಟ್‌ಸ್ಪಾಟ್).",
+      en: "8 to 11 cases are likely in Rajajinagar over the next 7 days; the area is a confirmed hotspot.",
+      kn: "ರಾಜಾಜಿನಗರದಲ್ಲಿ ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ 8 ರಿಂದ 11 ಪ್ರಕರಣಗಳು ಸಂಭವನೀಯ; ಇದು ಖಚಿತ ಹಾಟ್‌ಸ್ಪಾಟ್.",
     },
   },
   robbery_trends: {
@@ -320,8 +320,8 @@ const RELEVANT_STAGE_RESPONSES = {
       kn: "ಹೊಸೂರು ರಸ್ತೆಯ ಸಂಘಟಿತ ಗ್ಯಾರೇಜ್‌ಗಳಿಗೆ 22 ದ್ವಿಚಕ್ರ ವಾಹನ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ಸಾಕ್ಷ್ಯಾಧಾರಗಳು ಲಿಂಕ್ ಮಾಡುತ್ತವೆ.",
     },
     anticipate: {
-      en: "Spatial Gi* statistic isolates KR Puram (z=2.91) and Peenya Industrial Area (z=3.14) as critical high-risk hotspots.",
-      kn: "Gi* ಸಂಖ್ಯಾಶಾಸ್ತ್ರವು ಕೆ.ಆರ್. ಪುರಂ (z=2.91) ಮತ್ತು ಪೀಣ್ಯ (z=3.14) ಪ್ರದೇಶಗಳನ್ನು ತೀವ್ರ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳಾಗಿ ಗುರುತಿಸಿದೆ.",
+      en: "KR Puram and Peenya Industrial Area stand out as hotspots, with clearly more cases than the areas around them.",
+      kn: "ಕೆ.ಆರ್. ಪುರಂ ಮತ್ತು ಪೀಣ್ಯ ಸುತ್ತಲಿನ ಪ್ರದೇಶಗಳಿಗಿಂತ ಸ್ಪಷ್ಟವಾಗಿ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳಿರುವ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳಾಗಿ ಕಾಣುತ್ತವೆ.",
     },
   },
   cybercrime: {
@@ -334,8 +334,8 @@ const RELEVANT_STAGE_RESPONSES = {
       kn: "ವರದಿಯಾದ 64% ಸೈಬರ್ ಪ್ರಕರಣಗಳನ್ನು ಅಂತರ-ರಾಜ್ಯ ಮ್ಯೂಲ್ ಖಾತೆಗಳು ಮತ್ತು ಟೆಲಿಗ್ರಾಂ ಜಾಲಗಳಿಗೆ ಲಿಂಕ್ ಮಾಡಲಾಗಿದೆ.",
     },
     anticipate: {
-      en: "Anomaly detection projects a +24% YoY growth trajectory concentrated in Bengaluru tech corridors.",
-      kn: "ಬೆಂಗಳೂರು ತಂತ್ರಜ್ಞಾನ ವಲಯಗಳಲ್ಲಿ +24% ವಾರ್ಷಿಕ ಬೆಳವಣಿಗೆಯ ಅಪಾಯವನ್ನು ಅನಾಮಲಿ ಪತ್ತೆ ವ್ಯವಸ್ಥೆ ಊಹಿಸಿದೆ.",
+      en: "Cases are up 24% on last year, mostly in Bengaluru's technology parks.",
+      kn: "ಕಳೆದ ವರ್ಷಕ್ಕಿಂತ ಪ್ರಕರಣಗಳು 24% ಹೆಚ್ಚು, ಹೆಚ್ಚಾಗಿ ಬೆಂಗಳೂರಿನ ತಂತ್ರಜ್ಞಾನ ಪಾರ್ಕ್‌ಗಳಲ್ಲಿ.",
     },
   },
   cognizable: {
@@ -395,8 +395,8 @@ function getOneLineAgentResponse(stage, qText, lang, fullText) {
       : "Multi-hop syndicate graph resolved shared phone hashes, vehicle plates, and cross-case criminal conduits.";
   }
   return lang === "kn"
-    ? "7-ದಿನಗಳ ಕಾನ್‌ಫಾರ್ಮಲ್ ಪ್ರಿಡಿಕ್ಷನ್ ಇಂಟರ್ವಲ್ ಮತ್ತು Gi* ಹಾಟ್‌ಸ್ಪಾಟ್ ಕ್ಲಸ್ಟರ್‌ಗಳನ್ನು ಲೆಕ್ಕಹಾಕಲಾಗಿದೆ."
-    : "Spatiotemporal forecast engine computed 7-day conformal prediction interval and Gi* hotspot clusters.";
+    ? "ಮುಂದಿನ 7 ದಿನಗಳ ಸಂಭಾವ್ಯ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳನ್ನು ಲೆಕ್ಕಹಾಕಲಾಗಿದೆ."
+    : "Worked out the likely range for the next 7 days, and the hotspots.";
 }
 
 // ─── Accordion Stage ──────────────────────────────────────────────────────────
@@ -1436,7 +1436,7 @@ function DocsFull() {
                     <circle className="dot" cx="178" cy="30" r="3.4"/>
                   </svg>
                 </div>
-                <p className="tools-tdesc">Anomaly detection and a 7-day forecast band flag emerging hotspots early, allowing teams to deploy proactively, not reactively.</p>
+                <p className="tools-tdesc">Spots unusual rises early and gives a likely range for the next 7 days, so patrols can be planned before a problem grows.</p>
               </div>
 
               {/* 5 search */}
@@ -1448,7 +1448,7 @@ function DocsFull() {
                   <span className="scan"></span>
                   <span className="mag"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3" strokeLinecap="round"/></svg></span>
                 </div>
-                <p className="tools-tdesc">Find anyone, fast. Fuzzy and phonetic matching across name, alias, phone and plate - with verified records and optional OSINT leads.</p>
+                <p className="tools-tdesc">Find anyone, fast, even with spelling mistakes, by name, alias, phone or vehicle number, with optional leads from the public internet.</p>
               </div>
 
               {/* 6 alerts */}

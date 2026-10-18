@@ -893,13 +893,13 @@ export default function MapScreen() {
           {geo && fc.clustersOn && fc.on && topGiZones.filter((z) => z.is_hotspot).map((z, i) => (
             <CircleMarker key={"gir" + (z.zone || i)} center={[z.lat, z.lon]} radius={16} interactive
               pathOptions={{ color: "#22E6F0", weight: 1.6, opacity: 0.9, dashArray: "4 4", fill: false }}>
-              <Tooltip className="mx-hs" sticky>{z.zone} · Gi* confirmed cluster (z={z.gi_stat.toFixed(2)}, {z.observed} FIRs in 30 days)</Tooltip>
+              <Tooltip className="mx-hs" sticky>{z.zone} · confirmed hotspot: {z.observed} FIRs in 30 days, more than its neighbours by a margin unlikely to be chance</Tooltip>
             </CircleMarker>
           ))}
           {geo && fc.clustersOn && !fc.on && topGiZones.map((z, i) => (
             <CircleMarker key={"hs" + (z.zone || i)} center={[z.lat, z.lon]} radius={2 + Math.sqrt(Math.max(z.observed, 1)) * 0.6}
               pathOptions={{ color: z.is_hotspot ? "#ff5a5a" : "#5d6b80", weight: 1.4, fillColor: z.is_hotspot ? "#ff2f2f" : "#7a8aa3", fillOpacity: 0.55 }}>
-              <Tooltip className="mx-hs" sticky>{z.zone} · z={z.gi_stat.toFixed(2)} · {z.observed} incidents{z.is_hotspot ? " · confirmed hotspot" : ""}</Tooltip>
+              <Tooltip className="mx-hs" sticky>{z.zone} · {z.observed} cases{z.is_hotspot ? " · confirmed hotspot" : z.gi_stat > 1 ? " · higher than its neighbours" : ""}</Tooltip>
             </CircleMarker>
           ))}
 
@@ -945,7 +945,7 @@ export default function MapScreen() {
                       <span style={{ opacity: 0.85 }}>#{i + 1}</span> {kn ? "ಸೂಚಿತ ಗಸ್ತು" : "Suggested patrol"} · {pz.zone}
                     </div>
                     <div style={{ fontSize: "8.5px", color: "#E2E8F0", opacity: 0.9 }}>
-                      {cType.replace(/_/g, " ")} · z={pz.gi_stat?.toFixed(2)} · {pz.observed} {kn ? "ಪ್ರಕರಣಗಳು" : "cases"}
+                      {cType.replace(/_/g, " ")} · {pz.observed} {kn ? "ಪ್ರಕರಣಗಳು" : "cases"}
                       {pz.is_hotspot ? (kn ? " · ಖಚಿತ" : " · confirmed") : ""}
                     </div>
                   </div>
@@ -1425,11 +1425,11 @@ export default function MapScreen() {
                       <div 
                         onClick={() => setShowDossier(true)}
                         style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
-                        title={kn ? "ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ತೆರೆಯಿರಿ" : "Open Geo Intel Dashboard"}
+                        title={kn ? "ಜಿಲ್ಲಾ ಮಾಹಿತಿ ಫಲಕ ತೆರೆಯಿರಿ" : "Open the district briefing"}
                       >
-                        <span style={{ color: "var(--cyan)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Geo Intel</span>
+                        <span style={{ color: "var(--cyan)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>{kn ? "ಮಾಹಿತಿ" : "Briefing"}</span>
                         <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "ಜಿಯೋ-ಇಂಟೆಲ್: ನೈಜ-ಸಮಯದ ಭೌಗೋಳಿಕ ಗುಪ್ತಚರ ಮಾಹಿತಿಯನ್ನು ಸಂಗ್ರಹಿಸಲಾಗುತ್ತಿದೆ..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
+                          {kn ? "ಜಿಲ್ಲಾ ಮಾಹಿತಿಯನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
                         </marquee>
                       </div>
                       {/* Integrated Prediction Ticker */}
@@ -1438,9 +1438,9 @@ export default function MapScreen() {
                         style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
                         title={kn ? "ಮುಂದೆ ಎಲ್ಲಿ ಫಲಕ ತೆರೆಯಿರಿ" : "Open Where Next Panel"}
                       >
-                        <span style={{ color: "var(--amber)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>Prediction</span>
+                        <span style={{ color: "var(--amber)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>{kn ? "ಮುಂದಿನ ವಾರ" : "Next week"}</span>
                         <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (fc.hot?.items?.length ? `Predictive forecast indicates ${fc.hot.items.length} emerging hotspots across the state. Highest risk identified at ${fc.hot.items[0]?.name} (projecting up to ${fc.hot.items[0]?.band80?.hi} cases).` : "Gathering real-time predictive intelligence...")}
+                          {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (fc.hot?.items?.length ? `${fc.hot.items.length} places are likely to be busier than usual in the next 7 days. The busiest is ${fc.hot.items[0]?.name}, with up to ${fc.hot.items[0]?.band80?.hi} cases likely.` : "Preparing the forecast for the next 7 days...")}
                         </marquee>
                       </div>
                 </div>

@@ -79,10 +79,10 @@ USPS = (
 # ── 3. Evidence classes (ICD 203-aligned) ────────────────────────────────────────
 
 CLASSES = {
-    "K": {"en": "Known", "kn": "ದಾಖಲಿತ", "desc": "read directly from a record"},
-    "D": {"en": "Derived", "kn": "ಲೆಕ್ಕಾಚಾರ", "desc": "calculated from records — shares, rates, rankings, trends"},
-    "I": {"en": "Inferred", "kn": "ಅನುಮಾನಿತ", "desc": "an analytical judgment, with its basis"},
-    "U": {"en": "Unknown", "kn": "ಅಜ್ಞಾತ", "desc": "a gap — data absent or unrecorded"},
+    "K": {"en": "From the records", "kn": "ದಾಖಲಿತ", "desc": "read directly from a record"},
+    "D": {"en": "Calculated", "kn": "ಲೆಕ್ಕಾಚಾರ", "desc": "calculated from records — shares, rates, rankings, trends"},
+    "I": {"en": "Estimate", "kn": "ಅನುಮಾನಿತ", "desc": "an analytical judgment, with its basis"},
+    "U": {"en": "Not on record", "kn": "ಅಜ್ಞಾತ", "desc": "a gap — data absent or unrecorded"},
 }
 _TAG_CLASS = {"VERIFIED": "K", "K": "K", "COMPUTED": "D", "D": "D",
               "INFERRED": "I", "I": "I", "GAP": "U", "U": "U"}

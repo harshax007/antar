@@ -163,7 +163,7 @@ def compile_board(limit: int = 0, force: bool = False) -> dict:
         "count": len(predictions),
         "zones_covered": len({c["zone"] for c in predictions}),
         "as_of": as_of,
-        "engine": "anomaly scan (MAD-z + seasonal + silence check) → ST-DBSCAN → split-conformal band",
+        "engine": "How it works: each area is compared with its usual level, the season and sudden quiet; nearby cases are grouped; a likely range is drawn from past weeks",
     })
     for card in full_payload["predictions"]:
         put_product(f"warning_ledger:board:{card['zone']}:{card['crime_type']}", card, ttl=21600)

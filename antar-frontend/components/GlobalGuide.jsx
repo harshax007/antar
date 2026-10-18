@@ -23,7 +23,7 @@ const GUIDES = {
       { h: L("Reading Responses", "ಪ್ರತ್ಯುತ್ತರಗಳನ್ನು ಅರ್ಥೈಸಿಕೊಳ್ಳುವುದು"), items: [
         [L("The Bottom Line First", "ಮೊದಲಿಗೆ ನೇರ ಉತ್ತರ"), L("Antar provides the direct answer immediately, followed by the supporting evidence and reasoning.", "ಅಂತರ ತಕ್ಷಣವೇ ನೇರ ಉತ್ತರವನ್ನು ನೀಡುತ್ತದೆ, ಅದರ ನಂತರ ಪೂರಕ ಸಾಕ್ಷ್ಯ ಮತ್ತು ತಾರ್ಕಿಕ ವಿವರಣೆಯನ್ನು ನೀಡುತ್ತದೆ.")],
         [L("Source Citations", "ಮೂಲ ಉಲ್ಲೇಖಗಳು"), L("Every factual claim is backed by specific FIR record numbers. Click them to view the original case file.", "ಪ್ರತಿಯೊಂದು ವಾಸ್ತವಿಕ ಹೇಳಿಕೆಯು ನಿರ್ದಿಷ್ಟ FIR ದಾಖಲೆ ಸಂಖ್ಯೆಗಳಿಂದ ಬೆಂಬಲಿತವಾಗಿದೆ. ಮೂಲ ಪ್ರಕರಣದ ಫೈಲ್ ಅನ್ನು ವೀಕ್ಷಿಸಲು ಅವುಗಳ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ.")],
-        [L("Evidence Badges (K-D-I)", "ಸಾಕ್ಷ್ಯ ಬ್ಯಾಡ್ಜ್‌ಗಳು (K-D-I)"), L("Answers are strictly tagged: K (Known fact from FIR), D (Derived calculation), or I (Inferred/Prediction).", "ಉತ್ತರಗಳನ್ನು ಕಟ್ಟುನಿಟ್ಟಾಗಿ ಟ್ಯಾಗ್ ಮಾಡಲಾಗಿದೆ: K (FIR ನಿಂದ ತಿಳಿದಿರುವ ವಾಸ್ತವ), D (ಪಡೆದ ಲೆಕ್ಕಾಚಾರ), ಅಥವಾ I (ಊಹಿಸಲಾದ/ಮುನ್ಸೂಚನೆ).")],
+        [L("Evidence badges", "ಸಾಕ್ಷ್ಯ ಗುರುತುಗಳು"), L("Every answer says where it comes from: From the records, Calculated, Estimate, or Not on record.", "ಪ್ರತಿ ಉತ್ತರವೂ ತನ್ನ ಮೂಲವನ್ನು ಹೇಳುತ್ತದೆ: ದಾಖಲೆಯಿಂದ, ಲೆಕ್ಕಾಚಾರ, ಅಂದಾಜು, ಅಥವಾ ದಾಖಲೆಯಲ್ಲಿಲ್ಲ.")],
       ] },
       { h: L("Core Agent Commands", "ಮುಖ್ಯ ಏಜೆಂಟ್ ಆಜ್ಞೆಗಳು"), items: [
         [L("/query", "/query"), L("Forces a strict structural search of the database (e.g. '/query how many thefts in Koramangala').", "ಡೇಟಾಬೇಸ್‌ನ ಕಟ್ಟುನಿಟ್ಟಾದ ರಚನಾತ್ಮಕ ಹುಡುಕಾಟವನ್ನು ಒತ್ತಾಯಿಸುತ್ತದೆ (ಉದಾ. '/query ಕೋರಮಂಗಲದಲ್ಲಿ ಎಷ್ಟು ಕಳ್ಳತನಗಳಿವೆ').")],
@@ -53,8 +53,8 @@ const GUIDES = {
             "ಮುಂಬರುವ 7 ದಿನಗಳ ಅಪರಾಧ ಅಪಾಯವನ್ನು ಅಂದಾಜು ಮಾಡಲು ನಾನು ಐತಿಹಾಸಿಕ FIR ಗಳನ್ನು ಸಕ್ರಿಯವಾಗಿ ವಿಶ್ಲೇಷಿಸುತ್ತೇನೆ. ನನ್ನ ಪ್ರತಿಯೊಂದು ಮುನ್ಸೂಚನೆಯು ಸಂಪೂರ್ಣವಾಗಿ ವಿವರಿಸಬಲ್ಲದು."),
     blocks: [
       { h: L("My Capabilities", "ನನ್ನ ಸಾಮರ್ಥ್ಯಗಳು"), items: [
-        [L("Spatiotemporal Clustering", "ನೈಜ-ಸಮಯದ ಸಮೂಹ ವಿಶ್ಲೇಷಣೆ"), L("I utilize ST-DBSCAN algorithms to instantly detect emerging crime clusters before they become trends.", "ಅಪರಾಧ ಸಮೂಹಗಳನ್ನು ಅವು ಟ್ರೆಂಡ್‌ಗಳಾಗುವ ಮುನ್ನವೇ ಪತ್ತೆಹಚ್ಚಲು ನಾನು ST-DBSCAN ಅಲ್ಗಾರಿದಮ್‌ಗಳನ್ನು ಬಳಸುತ್ತೇನೆ.")],
-        [L("Anomaly Detection (MAD-z)", "ಅಸಂಗತತೆ ಪತ್ತೆ (MAD-z)"), L("I filter out statistical noise. A Z-score above 2.5 tells me a spike is a true anomaly, not a random fluctuation.", "ನಾನು ಸಾಂಖ್ಯಿಕ ಶಬ್ದವನ್ನು ಫಿಲ್ಟರ್ ಮಾಡುತ್ತೇನೆ. 2.5 ಕ್ಕಿಂತ ಹೆಚ್ಚಿನ Z-ಸ್ಕೋರ್ ನನಗೆ ಸ್ಪೈಕ್ ನಿಜವಾದ ಅಸಂಗತತೆ ಎಂದು ಹೇಳುತ್ತದೆ.")],
+        [L("Finding clusters", "ಗುಂಪುಗಳನ್ನು ಕಂಡುಹಿಡಿಯುವುದು"), L("I group cases that happen close together in place and time, so a new cluster shows up before it becomes a trend.", "ಸ್ಥಳ ಮತ್ತು ಸಮಯದಲ್ಲಿ ಹತ್ತಿರ ನಡೆದ ಪ್ರಕರಣಗಳನ್ನು ನಾನು ಗುಂಪು ಮಾಡುತ್ತೇನೆ, ಹೊಸ ಗುಂಪು ಪ್ರವೃತ್ತಿಯಾಗುವ ಮುನ್ನವೇ ಕಾಣುತ್ತದೆ.")],
+        [L("Spotting unusual rises", "ಅಸಾಮಾನ್ಯ ಏರಿಕೆ ಗುರುತಿಸುವುದು"), L("I compare each area with its usual level. A score above 2.5 means the rise is unusual, not ordinary ups and downs.", "ಪ್ರತಿ ವಲಯವನ್ನು ಅದರ ಸಾಮಾನ್ಯ ಮಟ್ಟದೊಂದಿಗೆ ಹೋಲಿಸುತ್ತೇನೆ. 2.5 ಕ್ಕಿಂತ ಹೆಚ್ಚಿನ ಅಂಕ ಎಂದರೆ ಏರಿಕೆ ಅಸಾಮಾನ್ಯ.")],
         [L("Split-Conformal Forecasting", "ಸ್ಪ್ಲಿಟ್-ಕಾನ್ಫಾರ್ಮಲ್ ಮುನ್ಸೂಚನೆ"), L("I do not just guess; I provide exact expected incident ranges (e.g., 6-9 cases) with 80% to 90% mathematical confidence.", "ನಾನು ಕೇವಲ ಊಹಿಸುವುದಿಲ್ಲ; 80% ರಿಂದ 90% ಗಣಿತದ ವಿಶ್ವಾಸದೊಂದಿಗೆ ನಿಖರವಾದ ನಿರೀಕ್ಷಿತ ಘಟನೆಗಳ ಶ್ರೇಣಿಯನ್ನು ನಾನು ಒದಗಿಸುತ್ತೇನೆ.")],
       ] },
       { h: L("Confidence and events", "ವಿಶ್ವಾಸ ಮತ್ತು ಘಟನೆಗಳು"), items: [
@@ -101,7 +101,7 @@ const GUIDES = {
       ] },
       { h: L("Fast Run", "ಫಾಸ್ಟ್ ರನ್"), items: [
         [L("Scan what is on screen", "ಪರದೆಯಲ್ಲಿರುವುದನ್ನು ಪರಿಶೀಲಿಸಿ"), L("Fast Run (top right) counts the records in the current view and lists what stands out, agent by agent.", "ಮೇಲಿನ ಬಲದ Fast Run ಪ್ರಸ್ತುತ ನೋಟದ ದಾಖಲೆಗಳನ್ನು ಎಣಿಸಿ, ಗಮನಾರ್ಹವಾದುದನ್ನು ಏಜೆಂಟ್‌ವಾರು ಪಟ್ಟಿ ಮಾಡುತ್ತದೆ.")],
-        [L("K, D, I, U", "K, D, I, U"), L("Known is read from a record. Derived is calculated. Inferred is a judgment. Unknown is a gap.", "Known ದಾಖಲೆಯಿಂದ ಓದಿದ್ದು. Derived ಲೆಕ್ಕ ಹಾಕಿದ್ದು. Inferred ಒಂದು ತೀರ್ಮಾನ. Unknown ಒಂದು ಕೊರತೆ.")],
+        [L("Where an answer comes from", "ಉತ್ತರದ ಮೂಲ"), L("From the records: read from an FIR. Calculated: worked out from FIRs. Estimate: a judgement with its reason. Not on record: the information is missing.", "ದಾಖಲೆಯಿಂದ: FIR ನಿಂದ ಓದಿದ್ದು. ಲೆಕ್ಕಾಚಾರ: FIR ಗಳಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ್ದು. ಅಂದಾಜು: ಕಾರಣ ಸಹಿತ ತೀರ್ಮಾನ. ದಾಖಲೆಯಲ್ಲಿಲ್ಲ: ಮಾಹಿತಿ ಇಲ್ಲ.")],
       ] },
     ],
   },
@@ -117,9 +117,9 @@ const GUIDES = {
         [L("Agents", "ಏಜೆಂಟ್‌ಗಳು"), L("Open Agents and drag one onto a district. It runs there for the date selected in the calendar.", "Agents ತೆರೆದು, ಒಂದನ್ನು ಜಿಲ್ಲೆಯ ಮೇಲೆ ಎಳೆದು ಬಿಡಿ. ಕ್ಯಾಲೆಂಡರ್‌ನಲ್ಲಿ ಆಯ್ದ ದಿನಾಂಕಕ್ಕೆ ಅದು ಅಲ್ಲಿ ಕೆಲಸ ಮಾಡುತ್ತದೆ.")],
       ] },
       { h: L("Read the hotspots", "ಹಾಟ್‌ಸ್ಪಾಟ್ ಓದಿ"), items: [
-        [L("Red zones", "ಕೆಂಪು ವಲಯ"), L("Dense clusters that need attention now.", "ತಕ್ಷಣ ಗಮನ ಬೇಕಾದ ದಟ್ಟ ಕ್ಲಸ್ಟರ್‌ಗಳು.")],
+        [L("Red zones", "ಕೆಂಪು ವಲಯ"), L("Places where many cases are bunched together and need attention now.", "ಹಲವು ಪ್ರಕರಣಗಳು ಒಟ್ಟಿಗೆ ಇರುವ, ತಕ್ಷಣ ಗಮನ ಬೇಕಾದ ಸ್ಥಳಗಳು.")],
         [L("Cyan zones", "ನೀಲಿ ವಲಯ"), L("Emerging or scattered patterns to watch.", "ಗಮನಿಸಬೇಕಾದ ಉದಯಿಸುತ್ತಿರುವ ಅಥವಾ ಚದುರಿದ ಮಾದರಿಗಳು.")],
-        [L("Gi* z-score", "Gi* z-ಸ್ಕೋರ್"), L("Above 1.96 means the cluster is real (95% confidence), not chance.", "1.96 ಕ್ಕಿಂತ ಹೆಚ್ಚು ಎಂದರೆ ಕ್ಲಸ್ಟರ್ ನಿಜವಾದದ್ದು (95% ವಿಶ್ವಾಸ), ಆಕಸ್ಮಿಕವಲ್ಲ.")],
+        [L("Confirmed hotspot", "ಖಚಿತ ಹಾಟ್‌ಸ್ಪಾಟ್"), L("An area with clearly more cases than its neighbours, by a margin that is very unlikely to be chance.", "ನೆರೆಯ ವಲಯಗಳಿಗಿಂತ ಸ್ಪಷ್ಟವಾಗಿ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳಿರುವ ವಲಯ; ಇದು ಆಕಸ್ಮಿಕವಲ್ಲ.")],
       ] },
     ],
     tip: L("Click Bengaluru City, then a neighbouring district, and compare.", "Bengaluru City ಕ್ಲಿಕ್ ಮಾಡಿ, ನಂತರ ಪಕ್ಕದ ಜಿಲ್ಲೆಯೊಂದಿಗೆ ಹೋಲಿಸಿ."),
@@ -137,19 +137,19 @@ const GUIDES = {
       ] },
       { h: L("Reading results", "ಫಲಿತಾಂಶ ಓದಿ"), items: [
         [L("Risk index", "ಅಪಾಯ ಸೂಚ್ಯಂಕ"), L("Above 70 is high risk, based on how often and how seriously someone appears in cases.", "70 ಕ್ಕಿಂತ ಹೆಚ್ಚು ಎಂದರೆ ಹೆಚ್ಚಿನ ಅಪಾಯ. ಪ್ರಕರಣಗಳಲ್ಲಿ ಎಷ್ಟು ಬಾರಿ, ಎಷ್ಟು ಗಂಭೀರವಾಗಿ ಕಾಣಿಸಿಕೊಂಡಿದ್ದಾರೆ ಎಂಬುದರ ಆಧಾರ.")],
-        [L("OSINT (preview)", "OSINT (ಪೂರ್ವನೋಟ)"), L("Open-web signals for admins. Unverified: always confirm manually.", "ನಿರ್ವಾಹಕರಿಗೆ ಮುಕ್ತ-ವೆಬ್ ಸಂಕೇತಗಳು. ಪರಿಶೀಲಿಸಿಲ್ಲ: ಯಾವಾಗಲೂ ಕೈಯಾರೆ ದೃಢೀಕರಿಸಿ.")],
+        [L("Internet search (preview)", "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ (ಪೂರ್ವನೋಟ)"), L("Leads from the public internet, for admins. Not verified: always confirm by hand.", "ನಿರ್ವಾಹಕರಿಗೆ ಸಾರ್ವಜನಿಕ ಇಂಟರ್ನೆಟ್ ಸುಳಿವುಗಳು. ಪರಿಶೀಲಿಸಿಲ್ಲ: ಯಾವಾಗಲೂ ಕೈಯಾರೆ ದೃಢೀಕರಿಸಿ.")],
       ] },
     ],
     examples: { en: ["Yelappa"], kn: ["Yelappa"] },
   },
 
   trace: {
-    title: L("Trace & Telemetry Guide", "ಟ್ರೇಸ್ ಮತ್ತು ಟೆಲಿಮೆಟ್ರಿ ಮಾರ್ಗದರ್ಶಿ"),
+    title: L("Answer History Guide", "ಉತ್ತರಗಳ ಇತಿಹಾಸ ಮಾರ್ಗದರ್ಶಿ"),
     lead: L("Every question asked in a session, and exactly how each answer was produced.",
             "ಸೆಷನ್‌ನಲ್ಲಿ ಕೇಳಿದ ಪ್ರತಿ ಪ್ರಶ್ನೆ, ಮತ್ತು ಪ್ರತಿ ಉತ್ತರ ನಿಖರವಾಗಿ ಹೇಗೆ ತಯಾರಾಯಿತು."),
     blocks: [
       { h: L("For each question", "ಪ್ರತಿ ಪ್ರಶ್ನೆಗೆ"), items: [
-        [L("Route", "ಮಾರ್ಗ"), L("Which query template and agents handled it.", "ಯಾವ ಪ್ರಶ್ನೆ ಟೆಂಪ್ಲೇಟ್ ಮತ್ತು ಏಜೆಂಟ್‌ಗಳು ನಿರ್ವಹಿಸಿದವು.")],
+        [L("Route", "ಮಾರ್ಗ"), L("Which kind of query and which agents handled it.", "ಯಾವ ರೀತಿಯ ಪ್ರಶ್ನೆ ಮತ್ತು ಯಾವ ಏಜೆಂಟ್‌ಗಳು ನಿರ್ವಹಿಸಿದವು.")],
         [L("Evidence", "ಸಾಕ್ಷ್ಯ"), L("How many records came back.", "ಎಷ್ಟು ದಾಖಲೆಗಳು ಬಂದವು.")],
         [L("Timing", "ಸಮಯ"), L("Latency of every step and of any model calls.", "ಪ್ರತಿ ಹಂತದ ಮತ್ತು ಮಾದರಿ ಕರೆಗಳ ಸಮಯ.")],
       ] },
@@ -166,7 +166,7 @@ const GUIDES = {
             "ಒಬ್ಬ ಶಂಕಿತನಿಂದ ಆರಂಭಿಸಿ, ಎರಡು ಹಂತದವರೆಗಿನ (150 ಜನರವರೆಗೆ) ದಾಖಲಾದ ಎಲ್ಲಾ ಸಂಪರ್ಕಗಳನ್ನು ಗ್ರಾಫ್ ತೋರಿಸುತ್ತದೆ."),
     blocks: [
       { h: L("Who matters", "ಯಾರು ಮುಖ್ಯ"), items: [
-        [L("Influence", "ಪ್ರಭಾವ"), L("PageRank: the bigger the node, the more central the person.", "PageRank: ದೊಡ್ಡ ನೋಡ್ ಎಂದರೆ ಹೆಚ್ಚು ಕೇಂದ್ರೀಯ ವ್ಯಕ್ತಿ.")],
+        [L("Influence", "ಪ್ರಭಾವ"), L("The bigger the circle, the more people this person is linked to.", "ವೃತ್ತ ದೊಡ್ಡದಾದಷ್ಟು ಆ ವ್ಯಕ್ತಿ ಹೆಚ್ಚು ಜನರೊಂದಿಗೆ ಸಂಪರ್ಕ ಹೊಂದಿದ್ದಾರೆ.")],
         [L("Broker", "ಮಧ್ಯವರ್ತಿ"), L("Betweenness: the person whose removal splits the network.", "Betweenness: ತೆಗೆದರೆ ಜಾಲವನ್ನು ವಿಭಜಿಸುವ ವ್ಯಕ್ತಿ.")],
         [L("Inner circle", "ಒಳ ವಲಯ"), L("k-core: the tightly connected core of the group.", "k-core: ಗುಂಪಿನ ಗಾಢವಾಗಿ ಜೋಡಿಸಿದ ಕೇಂದ್ರ.")],
       ] },
@@ -184,7 +184,7 @@ const GUIDES = {
     blocks: [
       { h: L("Reading the chart", "ಚಾರ್ಟ್ ಓದಿ"), items: [
         [L("Latest month", "ಇತ್ತೀಚಿನ ತಿಂಗಳು"), L("Usually incomplete. A dip at the right edge is late registration, not less crime.", "ಸಾಮಾನ್ಯವಾಗಿ ಅಪೂರ್ಣ. ಬಲ ತುದಿಯ ಇಳಿಕೆ ತಡವಾದ ನೋಂದಣಿ, ಅಪರಾಧ ಕಡಿಮೆಯಾಗಿದೆ ಎಂದಲ್ಲ.")],
-        [L("Trend vs anomaly", "ಪ್ರವೃತ್ತಿ ಮತ್ತು ಅಸಂಗತಿ"), L("A rising line is context. To test whether a rise is unusual, open Predict.", "ಏರುವ ರೇಖೆ ಸಂದರ್ಭ ಮಾತ್ರ. ಏರಿಕೆ ಅಸಾಮಾನ್ಯವೇ ಎಂದು ತಿಳಿಯಲು Predict ತೆರೆಯಿರಿ.")],
+        [L("Trend or unusual rise", "ಪ್ರವೃತ್ತಿ ಅಥವಾ ಅಸಾಮಾನ್ಯ ಏರಿಕೆ"), L("A rising line is background. To see whether a rise is unusual, open Predict.", "ಏರುವ ರೇಖೆ ಹಿನ್ನೆಲೆ ಮಾತ್ರ. ಏರಿಕೆ ಅಸಾಮಾನ್ಯವೇ ಎಂದು ತಿಳಿಯಲು Predict ತೆರೆಯಿರಿ.")],
       ] },
     ],
   },
@@ -211,7 +211,7 @@ const GUIDES = {
     blocks: [
       { h: L("Hard limit", "ಕಟ್ಟುನಿಟ್ಟಾದ ಮಿತಿ"), warn: true, items: [
         [L("Population level only", "ಒಟ್ಟು ಮಟ್ಟ ಮಾತ್ರ"), L("Never a basis to target, stop or suspect any person or community.", "ಯಾವುದೇ ವ್ಯಕ್ತಿ ಅಥವಾ ಸಮುದಾಯವನ್ನು ಗುರಿಯಾಗಿಸಲು, ತಡೆಯಲು ಅಥವಾ ಶಂಕಿಸಲು ಎಂದಿಗೂ ಆಧಾರವಲ್ಲ.")],
-        [L("Monitored", "ನಿಗಾವಹಿಸಲಾಗಿದೆ"), L("The Vigil compliance agent flags any query that uses demographics as a suspect filter.", "ಜನಸಂಖ್ಯಾ ಗುಣಗಳನ್ನು ಶಂಕಿತ ಫಿಲ್ಟರ್ ಆಗಿ ಬಳಸುವ ಯಾವುದೇ ಪ್ರಶ್ನೆಯನ್ನು Vigil ಏಜೆಂಟ್ ಗುರುತಿಸುತ್ತದೆ.")],
+        [L("Monitored", "ನಿಗಾವಹಿಸಲಾಗಿದೆ"), L("The misuse check stops any search that picks suspects by caste, religion or community.", "ಜಾತಿ, ಧರ್ಮ ಅಥವಾ ಸಮುದಾಯದ ಆಧಾರದ ಮೇಲೆ ಶಂಕಿತರನ್ನು ಹುಡುಕುವ ಪ್ರಶ್ನೆಯನ್ನು ದುರ್ಬಳಕೆ ತಪಾಸಣೆ ತಡೆಯುತ್ತದೆ.")],
       ] },
     ],
   },

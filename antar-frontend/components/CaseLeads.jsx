@@ -42,12 +42,12 @@ export default function CaseLeads({ zone }) {
             <h4>FIRs that share a vehicle, UPI id or IP address</h4>
             {sk.leads.length === 0 ? <p className="cl-empty">No FIR registered here shares one of these with another FIR.</p> : (
               <>
-                <p className="cl-count"><b>{sk.total}</b> shared {sk.total === 1 ? "key" : "keys"} touch this district; <b>{sk.specific}</b> are specific.</p>
+                <p className="cl-count"><b>{sk.total}</b> shared {sk.total === 1 ? "detail" : "details"} (vehicle, phone, UPI or IP) touch this district; <b>{sk.specific}</b> appear on only a few FIRs.</p>
                 <ul className="cl-list">
                   {sk.leads.map((l) => (
                     <li key={`${l.key_type}-${l.key}`}>
                       <div className="top"><code>{l.key}</code><span>{l.key_type} · on {l.firs} FIRs{l.districts.length > 1 ? ` in ${l.districts.length} districts` : ""}</span></div>
-                      {!l.specific && <p className="weak">On {l.firs} FIRs: more likely a common value or a data artefact than a link.</p>}
+                      {!l.specific && <p className="weak">On {l.firs} FIRs: more likely a common value or a data-entry error than a real link.</p>}
                       <ol>{l.examples.map((e, i) => <li key={i}><code>{e.fir}</code> {e.crime || "Crime head not recorded"} · {e.station} · {day(e.date)}</li>)}</ol>
                       <p className="settle">{l.would_settle}{l.seeded ? " Some of these rows are seeded for the demonstration." : ""}</p>
                     </li>

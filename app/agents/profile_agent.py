@@ -128,12 +128,12 @@ def _leads(sid: str, s: dict, world: dict) -> list[str]:
     except Exception:
         pass
     if s.get("phone_hash"):
-        leads.append("Subpoena CDR for the suspect's linked phone number.")
+        leads.append("Request call records (CDR) for the suspect's phone number.")
     crimes = _crimes_of(sid, world)
     if crimes:
         zone = Counter(c["zone"] for c in crimes if c.get("zone")).most_common(1)
         if zone:
-            leads.append(f"Check CCTV corridors in {zone[0][0]} for the recurring MO.")
+            leads.append(f"Check CCTV along the routes in {zone[0][0]} where the same method keeps repeating.")
     return leads[:4]
 
 

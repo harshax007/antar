@@ -854,10 +854,10 @@ function CustodyStrip({ custody, kn }) {
   const extra = (custody.fir_total || firs.length) - firs.length;
   const summary = (
     <span className="cx-custody-sum">
-      <span className="cx-custody-k" title={kn ? "ದಾಖಲೆಗಳಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Verified - derived from records, not the model"}>K</span>
+      <span className="cx-custody-k" title={kn ? "ದಾಖಲೆಗಳಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Checked against the FIR records, not written by the AI"}>✓</span>
       <b>{custody.record_count.toLocaleString()}</b> {kn ? "ದಾಖಲೆ" : custody.record_count === 1 ? "record" : "records"}
-      <i>·</i> {custody.source}
-      <i>·</i> {kn ? "ದಿನಾಂಕದವರೆಗೆ" : "as-of"} {custody.as_of}
+      <i>·</i> {custody.source === "crimes" || !custody.source ? (kn ? "FIR ದಾಖಲೆಗಳು" : "FIR records") : custody.source}
+      <i>·</i> {kn ? "ದಿನಾಂಕದವರೆಗೆ" : "as of"} {custody.as_of}
     </span>
   );
   return (
@@ -953,10 +953,10 @@ function applyEvent(msg, evt) {
 // next step. Rendered from `layout.sections`, which the backend builds for EVERY answer —
 // LLM-written or deterministic - so the shape never depends on which path answered.
 const CLASS_HELP = {
-  K: "Known - read directly from a record",
-  D: "Derived - calculated from records (shares, rates, rankings, trends)",
-  I: "Inferred - Antar's judgment, with its basis",
-  U: "Unknown - the data needed is absent or unrecorded",
+  K: "From the records: read directly from FIRs",
+  D: "Calculated: worked out from FIRs (shares, rates, rankings, trends)",
+  I: "Estimate: Antar's judgement, with the reason given",
+  U: "Not on record: the information needed is missing",
 };
 
 function TemplateAnswer({ m, kn, send, router }) {
@@ -1143,15 +1143,16 @@ const MessageRow = memo(({
                             fontSize: "12px", color: "#fff"
                           }}>
                             <b style={{ color: m.vigil.status === "REJECTED" ? "#ff6b6b" : "#f5a623" }}>
-                              A5 VIGIL: {m.vigil.status}
+                              {m.vigil.status === "REJECTED" ? (kn ? "ದುರ್ಬಳಕೆ ತಪಾಸಣೆ: ತಡೆಯಲಾಗಿದೆ" : "Misuse check: blocked")
+                                : (kn ? "ದುರ್ಬಳಕೆ ತಪಾಸಣೆ: ಗಮನಿಸಿ" : "Misuse check: please review")}
                             </b>
                             <p style={{ margin: "4px 0", fontSize: "11px", color: "#ddd" }}>{m.vigil.explanation}</p>
                           </div>
                         )}
                         {m.vigil && m.vigil.status === "APPROVED" && !m.streaming && (
-                          <Collapse title={`A5 Vigil compliance audit - APPROVED (${m.vigil.receipt_id || ""})`}>
+                          <Collapse title={kn ? "ದುರ್ಬಳಕೆ ತಪಾಸಣೆ: ಸರಿಯಾಗಿದೆ" : "Misuse check: passed"}>
                             <p style={{ margin: "4px 0", fontSize: "12px", color: "#cbd5e1" }}>{m.vigil.explanation}</p>
-                            <div style={{ fontSize: "11px", color: "#8fa3bd" }}>Statute: <b style={{ color: "var(--cyan)" }}>{m.vigil.bnss_citation}</b></div>
+                            <div style={{ fontSize: "11px", color: "#8fa3bd" }}>{kn ? "ಕಾನೂನು" : "Law"}: <b style={{ color: "var(--cyan)" }}>{m.vigil.bnss_citation}</b>{m.vigil.receipt_id ? <span style={{ opacity: 0.6 }}> · {kn ? "ಉಲ್ಲೇಖ" : "ref"} {m.vigil.receipt_id}</span> : null}</div>
                           </Collapse>
                         )}
                         {m.error && m.retryText && (

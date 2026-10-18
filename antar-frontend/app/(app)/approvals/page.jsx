@@ -122,7 +122,7 @@ export default function ApprovalsPage() {
       <div className="ap-wrap">
         <header className="ap-head">
           <div>
-            <span className="ap-kicker"><ShieldCheck size={13} aria-hidden="true" /> {kn ? "ಮಾನವ ಅನುಮೋದನೆ · ಎರಡು-ಅಧಿಕಾರಿ ನಿಯಮ" : "Human-in-the-loop · two-officer rule"}</span>
+            <span className="ap-kicker"><ShieldCheck size={13} aria-hidden="true" /> {kn ? "ಎರಡು-ಅಧಿಕಾರಿ ನಿಯಮ" : "Two-officer rule"}</span>
             <h1>{kn ? "ಅನುಮೋದನೆಗಳು" : "Approvals"}</h1>
             <p>{headline}.{" "}
               {approver
@@ -140,7 +140,7 @@ export default function ApprovalsPage() {
           <div><b>{stats?.pending ?? "–"}</b><span>{kn ? "ಬಾಕಿ" : "pending"}</span></div>
           <div className={stats?.pending_high_risk ? "hot" : ""}><b>{stats?.pending_high_risk ?? "–"}</b><span>{kn ? "ಹೆಚ್ಚಿನ ಅಪಾಯ" : "high risk"}</span></div>
           <div className={stats?.expiring_within_2h ? "warn" : ""}><b>{stats?.expiring_within_2h ?? "–"}</b><span>{kn ? "2 ಗಂಟೆಯಲ್ಲಿ ಅವಧಿ ಮುಗಿಯುತ್ತದೆ" : "expiring < 2h"}</span></div>
-          <div><b>{stats?.by_status?.EXECUTED ?? "–"}</b><span>{kn ? "ಜಾರಿಗೊಳಿಸಲಾಗಿದೆ" : "executed"}</span></div>
+          <div><b>{stats?.by_status?.EXECUTED ?? "–"}</b><span>{kn ? "ಜಾರಿಗೊಳಿಸಲಾಗಿದೆ" : "carried out"}</span></div>
         </div>
 
         <div className="ap-toolbar">

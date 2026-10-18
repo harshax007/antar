@@ -81,8 +81,8 @@ def shared_keys(conn: sqlite3.Connection, zone: str, limit: int = 6) -> dict:
     leads.sort(key=lambda d: (not d["specific"], d["firs"], d["key"]))
     total = len(leads)
     return {"total": total, "specific": sum(1 for d in leads if d["specific"]), "leads": leads[:limit],
-            "note": (f"A key is called specific when it is on {SPECIFIC_MAX} FIRs or fewer. One on many FIRs is more "
-                     "likely a common value or a data artefact than a link.")}
+            "note": (f"A detail on {SPECIFIC_MAX} FIRs or fewer points to a real link. One on many FIRs is more "
+                     "likely a common value or a data-entry error than a link.")}
 
 
 # ── 2. accused named across a district border ────────────────────────────────

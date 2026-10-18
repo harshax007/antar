@@ -87,12 +87,12 @@ def generate_shift_briefing(zone: str = "all", window: str = "12h") -> dict[str,
     actions = [
         {
             "rank": 1,
-            "action": f"Deploy targeted patrol units around high-density corridors in {zone_display} between 01:00 and 05:00.",
+            "action": f"Send patrol units to the busiest routes in {zone_display} between 01:00 and 05:00.",
             "rationale": f"Recurring pattern of {top_crimes} reported in this window."
         },
         {
             "rank": 2,
-            "action": f"Initiate vehicle checkpoint checks and verify CDR movement signals for linked entities.",
+            "action": f"Set up vehicle checkpoints and check the call records (CDR) of people linked to these cases.",
             "rationale": (f"Cross-case evidence ledger indicates active movement of {top_suspect} across sector boundaries."
                           if top_suspect else "Standard preventive checkpoint per shift protocol.")
         }

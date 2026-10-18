@@ -2163,3 +2163,16 @@ Measured every page-load endpoint against the running backend (`/api/*`, cold th
 * An answer whose period lies wholly after the real record (10 March 2024) now says, on its second line: "these are demonstration records, not registered FIRs. The real KSP record ends on 10 Mar 2024." A period that crosses the end (2024, or "last 12 months" when that reaches back) says rows after that date are demonstration records. No period named: nothing added. Real-record years are unchanged.
 * Covers every template the writer answers (counts, rankings, trends, rates, yearly totals, "last 3 months") in English and Kannada, and is shown beside the bottom line, not under Limits. Model-worded answers get the same line appended (`query_agent._with_seeded_note`).
 * Tests in `tests/test_suggestions_real.py`.
+
+## Plain words on every screen - 2026-10-18
+
+Read each screen as it renders and replaced the technical words an officer or a member of the public would not know. English and Kannada where both exist.
+
+* **Predict:** "Anomaly score" is "Unusual-activity score (2 is unusual, 4 is rare)"; "inferred" tags are "estimate"; "Hypotheses" is "Possible links between accused" (Confirm/Reject link); the track record reads "of weeks fell inside the likely range"; alert types read "Sudden rise", "Seasonal rise", "Hotspot"; the footer no longer says "MAD-z → ST-DBSCAN → split-conformal band"; case leads say "shared details" and "data-entry error" instead of "keys" and "data artefact".
+* **Map:** hover tips no longer show "Gi* … z=…"; the "Geo Intel" and "Prediction" tickers are "Briefing" and "Next week" in plain sentences.
+* **Chat:** evidence badges are "From the records / Calculated / Estimate / Not on record" (were Known / Derived / Inferred / Unknown); "A5 Vigil compliance audit - APPROVED" is "Misuse check: passed"; the evidence line reads "FIR records · as of" with a tick, not "K · crimes · as-of".
+* **Expert workspace:** "OSINT search", "AI/ML forecast (Poisson GLM)", "K/D/I/U dossier", "MO signatures", "Template", "Latency", "Integrity" are plain.
+* **Search:** "Enable OSINT", "Fuzzy + phonetic engine", "Statutory § 91 Evidentiary Dossier", "Risk Index", "priors", "Network centrality", "FIR-linked ID", "Modus operandi" are plain; suggested steps say "Request call records (CDR)".
+* **Brain / Data Overview:** "rendered", "click a node", "Intelligent Data", "ACC/Arr." are plain; the full-dataset blurb no longer claims "unfiltered … without sampling" and says which years are partial or demonstration data.
+* **Account, Answer History (was Trace & Telemetry), Approvals, page guide, Docs, About:** jargon and two overclaims removed ("0.0% hallucination", "sandboxed OSINT layer").
+* Not changed: names of the agents in the Brain strip; "Dis/acq", which is a value in the data; test sessions listed on Answer History. The evidence badge words come from the backend and need a restart.
