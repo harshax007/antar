@@ -1083,138 +1083,118 @@ function DocsFull() {
                             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                             style={{ overflow: "hidden", maxWidth: "680px" }}
                           >
-                            <div style={{ padding: "16px 20px", background: "rgba(3,5,12,0.9)", border: "1px solid rgba(34,230,240,0.15)", borderRadius: "8px", boxShadow: "0 0 20px rgba(0,0,0,0.5)" }}>
-                              {expandedDetail === 'features' && (
-                                // Every line names something the product does today and can be shown
-                                // (docs/USP01_02.md). Two USPs first: Secure AI, then Predict.
-                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                  {(lang === "kn" ? [
-                                    { h: "ಸುರಕ್ಷಿತ AI — ಮಾದರಿ ಓದಬಹುದು, ಕ್ರಮ ಕೈಗೊಳ್ಳಲಾಗದು", items: [
-                                      "ಪ್ರತಿ ಏಜೆಂಟ್ ತಾನು ಏನನ್ನು ಮುಟ್ಟಬಹುದು ಮತ್ತು ಯಾವ ಕನಿಷ್ಠ ಹುದ್ದೆ ಅದನ್ನು ಚಲಾಯಿಸಬಹುದು ಎಂದು ಘೋಷಿಸುತ್ತದೆ; ಪ್ರಾರಂಭಕ್ಕೂ ಮುನ್ನ ಪರಿಶೀಲನೆ. ಭದ್ರತಾ ಸ್ಕೋರ್‌ಕಾರ್ಡ್‌ನಲ್ಲಿ 161 ರಲ್ಲಿ 161 ದಾಳಿಗಳು ತಡೆಯಲ್ಪಟ್ಟಿವೆ.",
-                                      "ಯಾವುದೇ ಭಾಷಾ ಮಾದರಿ, ನಿಮ್ಮದೇ ನೆಟ್‌ವರ್ಕ್‌ನಲ್ಲಿರುವುದೂ ಸಹ. ಹೊರಹೋಗುವ ಕರೆಗಳು ಅನುಮತಿ ಪಟ್ಟಿಗೆ ಸೀಮಿತ, ಪ್ರತಿಯೊಂದೂ ದಾಖಲು.",
-                                      "Analyst ಗಿಂತ ಕೆಳಗಿನ ಅಧಿಕಾರಿ ತನ್ನ ಜಿಲ್ಲೆಯ ಪ್ರಕರಣಗಳನ್ನು ಮಾತ್ರ ನೋಡುತ್ತಾರೆ. ಪ್ರತಿ ವಿನಂತಿಯೂ ಹ್ಯಾಶ್-ಸರಪಳಿ ಲೆಕ್ಕಪತ್ರದಲ್ಲಿ; ನೈಜ ಕ್ರಮಕ್ಕೆ ಎರಡನೇ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಬೇಕು.",
-                                    ] },
-                                    { h: "ಮುನ್ಸೂಚನೆ — ಪರಿಶೀಲಿಸಬಹುದಾದ, ಕಾರ್ಯಗತಗೊಳಿಸಬಹುದಾದ", items: [
-                                      "ಪ್ರತಿ ಠಾಣೆ ಮತ್ತು ಬೀಟ್‌ಗೆ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ, ಅದರ ಕಾರಣಗಳೊಂದಿಗೆ; ನೈಜ ದಾಖಲೆಯ 23 ವಾರಗಳ ಮೇಲೆ ಪರೀಕ್ಷಿತ.",
-                                      "ಮುನ್ಸೂಚನೆಯಿಂದ ಕ್ರಮಕ್ಕೆ: ಮುದ್ರಿಸಬಹುದಾದ ಪಾಳಿ ಯೋಜನೆ, ಪ್ರಕರಣ ಸುಳಿವುಗಳು (ಹಂಚಿಕೊಂಡ ವಾಹನ, UPI, IP; ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಆರೋಪಿಗಳು), ಮತ್ತು ನ್ಯಾಯಸಮ್ಮತತೆ ವರದಿ.",
-                                      "ಬಳಕೆಯಿಂದ ಕಲಿಯುತ್ತದೆ: ಮುನ್ಸೂಚನೆಗಳು ನಡೆದದ್ದರ ವಿರುದ್ಧ ಅಂಕಿತವಾಗಿ, ತಪ್ಪಿದಾಗ ತಮ್ಮ ವಿಶ್ವಾಸವನ್ನು ತಾವೇ ಇಳಿಸುತ್ತವೆ; ಅಧಿಕಾರಿಗಳ ರೇಟಿಂಗ್ ಮುಂದಿನ ಉತ್ತರಗಳನ್ನು ರೂಪಿಸುತ್ತದೆ.",
-                                    ] },
-                                    { h: "ಪ್ರತಿ ದಿನದ ಕೆಲಸಕ್ಕೆ", items: [
-                                      "ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ, ಧ್ವನಿ ಅಥವಾ ಬರಹದಲ್ಲಿ ಕೇಳಿ. ಪ್ರತಿ ಅಂಕಿಯೂ ಅದರ FIR ದಾಖಲೆಗಳಿಗೆ ಜೋಡಣೆ, ದಾಖಲಿತ / ಲೆಕ್ಕಾಚಾರ / ಅನುಮಾನಿತ / ಅಜ್ಞಾತ ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ.",
-                                      "ನಕ್ಷೆಯ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು (Gi*), ಸಂಬಂಧ ಜಾಲ ಮತ್ತು ಪ್ರಕರಣಗಳ ನಡುವಿನ ಸಂಪರ್ಕ, ಮತ್ತು ಕೇಳಿದ ಅಧಿಕಾರಿಗೆ ಬದ್ಧವಾದ ನ್ಯಾಯಾಲಯ-ಸಿದ್ಧ ವರದಿಗಳು.",
-                                    ] },
-                                  ] : [
-                                    { h: "Secure AI: the model can read, but it cannot act", items: [
-                                      "Every agent declares what it may touch and the lowest role that may run it, checked before it starts. 161 of 161 injection and misuse attacks stopped in the security scorecard.",
-                                      "Any language model, including one on your own network. Outbound calls are limited to an allow-list, and every one is logged.",
-                                      "Officers below Analyst see case records for their own district only. Every request is on a hash-chained audit log, and a real-world action needs a second officer's approval.",
-                                    ] },
-                                    { h: "Predict: a forecast an officer can check, and act on", items: [
-                                      "A 7-day forecast for every station and beat that shows its reasons, graded on 23 weeks of the real record.",
-                                      "From forecast to action: a printable shift plan, case leads (shared vehicle, UPI or IP keys; accused across districts; a near-repeat check), and a fairness report.",
-                                      "Learns from use: forecasts are scored against what happened and lower their own confidence when they miss; officer ratings shape later answers. Nothing is retrained.",
-                                    ] },
-                                    { h: "For everyday work", items: [
-                                      "Ask in English or Kannada, by voice or text. Every figure links to the FIR records behind it, marked Known, Derived, Inferred or Unknown.",
-                                      "Map hotspots (Gi*), relationship graphs and cross-case links, and court-ready reports bound to the officers who asked.",
-                                    ] },
-                                  ]).map((g) => (
-                                    <div key={g.h}>
-                                      <div style={{ fontSize: "11px", fontWeight: 600, color: "#22E6F0", letterSpacing: "0.02em", marginBottom: "4px" }}>{g.h}</div>
-                                      <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                                        {g.items.map((t, i) => (
-                                          <li key={i} style={{ marginBottom: i === g.items.length - 1 ? 0 : "4px", display: "flex", gap: "8px" }}>
-                                            <span style={{ color: "#22E6F0" }}>•</span><span>{t}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {(expandedDetail === 'impact' || expandedDetail === 'usecase') && (
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px 28px" }}>
-                                  {(lang === "kn" ? [
-                                    { h: "ಪರಿಣಾಮ", items: [
-                                      ["ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಉತ್ತರ", "ಹೆಚ್ಚಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ 2 ರಿಂದ 5 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ದಾಖಲೆಗಳಿಂದ ಉತ್ತರ, ನಡುವೆ ವಿಶ್ಲೇಷಕರಿಲ್ಲದೆ."],
-                                      ["ಪ್ರತಿ ಸಂಖ್ಯೆಗೂ ಸಾಕ್ಷ್ಯ", "ಪ್ರತಿ ಉತ್ತರವೂ FIR ದಾಖಲೆಗೆ ಹಿಂತಿರುಗುತ್ತದೆ; ಅಂಕಿ ತಿಳಿಯದಿದ್ದರೆ ಹಾಗೆಂದೇ ಹೇಳುತ್ತದೆ."],
-                                      ["ಪರೀಕ್ಷಿತ ಮುನ್ಸೂಚನೆಯ ಮೇಲೆ ಗಸ್ತು", "ಪಾಳಿ ಯೋಜನೆ ನೈಜ ವಾರಗಳ ಮೇಲೆ ಪರೀಕ್ಷಿಸಿದ ಮುನ್ಸೂಚನೆಯಿಂದ ಬೀಟ್‌ಗಳನ್ನು ಶ್ರೇಣೀಕರಿಸುತ್ತದೆ, ಅಂದಾಜಿನಿಂದಲ್ಲ."],
-                                      ["ಮಾದರಿ ತಪ್ಪಿದರೂ ಸುರಕ್ಷಿತ", "ಭಾಷಾ ಮಾದರಿ ಮೋಸಗೊಂಡರೂ ಅದು ದಾಖಲೆ ಬದಲಿಸಲು, ಅನುಮತಿಯಿಲ್ಲದ ಏಜೆಂಟ್ ಚಲಾಯಿಸಲು ಅಥವಾ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು ಸಾಧ್ಯವಿಲ್ಲ."],
-                                    ] },
-                                    { h: "ಬಳಕೆ", items: [
-                                      ["ಠಾಣಾ ಅಧಿಕಾರಿ", "ಕನ್ನಡದಲ್ಲಿ ಧ್ವನಿಯ ಮೂಲಕ ಕೇಳಿ: \"ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು\""],
-                                      ["ತನಿಖಾಧಿಕಾರಿ", "ಒಂದೇ ವಾಹನ, UPI ಅಥವಾ IP ಹಂಚಿಕೊಂಡ FIR ಗಳನ್ನು ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಕಂಡುಹಿಡಿಯಿರಿ."],
-                                      ["ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿ", "ಮುನ್ಸೂಚನೆ ಮತ್ತು ಅದರ ಪಾಳಿ ಯೋಜನೆಯಿಂದ ವಾರದ ಗಸ್ತು ಯೋಜಿಸಿ; ಮರುನಿಯೋಜನೆಗೆ ಅನುಮೋದನೆ ಪಡೆಯಿರಿ."],
-                                      ["ಪ್ರಕರಣ ದಾಖಲಾತಿ", "ಸಂಭಾಷಣೆಯ ಅಧಿಕಾರಿಗಳಿಗೆ ಬದ್ಧವಾದ, ಪ್ರತಿ ಅಂಕಿಯ ಮೂಲ ತೋರಿಸುವ ವರದಿಯನ್ನು ರಫ್ತು ಮಾಡಿ."],
-                                    ] },
-                                  ] : [
-                                    { h: "Impact", items: [
-                                      ["Answers in seconds", "Most questions are answered from the records in 2 to 5 seconds, with no analyst in between."],
-                                      ["Every number has proof", "Each answer traces back to FIR records, and says so when a figure is not known."],
-                                      ["Patrols on a tested forecast", "The shift plan ranks beats by a forecast graded on real weeks, not by a hunch."],
-                                      ["Safe even if the model is fooled", "A tricked language model still cannot change a record, run an agent it is not allowed, or take an action."],
-                                    ] },
-                                    { h: "Use Cases", items: [
-                                      ["Station officer", "Asks by voice in Kannada: \"Which areas in Mysuru City have the most theft?\""],
-                                      ["Investigator", "Finds FIRs that share a vehicle, UPI ID or IP address across districts."],
-                                      ["Superintendent", "Plans the week's patrols from the forecast and its printable shift plan, with approval for any redeployment."],
-                                      ["Case documentation", "Exports a report bound to the officers in the conversation, with the source of every figure."],
-                                    ] },
-                                  ]).map((g) => (
-                                    <div key={g.h}>
-                                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10.5px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#22E6F0", marginBottom: "8px" }}>{g.h}</div>
-                                      <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "grid", gap: "8px" }}>
-                                        {g.items.map(([t, d]) => (
-                                          <li key={t} style={{ fontSize: "12px", lineHeight: 1.5, color: "#94A3B8" }}>
-                                            <span style={{ color: "#FFFFFF", fontWeight: 600, marginRight: "6px" }}>{t}.</span>{d}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {expandedDetail === 'innovation' && (
-                                // Built and demonstrable first, then the roadmap - and the roadmap says it is one.
-                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                  {(lang === "kn" ? [
-                                    { h: "ಹೊಸತು", items: [
-                                      ["ರಚನೆಯಿಂದಲೇ ವಿವರಿಸಬಹುದಾದ ಮುನ್ಸೂಚನೆ", "ಮುನ್ಸೂಚನೆಯ ಕಾರಣಗಳು ಗುಣಿಸಿದರೆ ಮುನ್ಸೂಚನೆಯೇ ಬರುತ್ತದೆ; ನಂತರ ಊಹಿಸಿದ ವಿವರಣೆಯಲ್ಲ."],
-                                      ["ಮಾದರಿಯನ್ನು ಶತ್ರು ಎಂದು ಭಾವಿಸುವ ಪರೀಕ್ಷೆ", "ಭದ್ರತಾ ಪರೀಕ್ಷೆಗಳು ಮಾದರಿಯನ್ನು ಈಗಾಗಲೇ ವಶಪಡಿಸಿಕೊಳ್ಳಲಾಗಿದೆ ಎಂದು ಭಾವಿಸುತ್ತವೆ; 161 ರಲ್ಲಿ 161 ತಡೆಯಲ್ಪಟ್ಟಿವೆ."],
-                                      ["ಕಾರ್ಯಗತಗೊಳ್ಳುವ ಏಜೆಂಟ್ ದಾಖಲೆ", "ಏಜೆಂಟ್‌ಗಳ ವಿವರಣೆಯೇ ವ್ಯವಸ್ಥೆಯನ್ನು ರೂಪಿಸುತ್ತದೆ; ಪರಿಶೀಲಿಸದ ಬದಲಾವಣೆ ಇದ್ದರೆ ಉತ್ಪಾದನೆಯಲ್ಲಿ ಪ್ರಾರಂಭವಾಗುವುದಿಲ್ಲ."],
-                                      ["ತನ್ನ ವಿರುದ್ಧವೇ ವಾದಿಸುವ ಏಜೆಂಟ್", "LLM ಇಲ್ಲದ ಎದುರಾಳಿ ಏಜೆಂಟ್ ಪ್ರತಿ ಊಹೆಯನ್ನು ಅದರ ಮೂಲ ದರದ ವಿರುದ್ಧ ಪರೀಕ್ಷಿಸುತ್ತದೆ, ದೃಢೀಕರಣಕ್ಕೂ ಮುನ್ನ."],
-                                    ] },
-                                    { h: "ಮುಂದಿನ ಯೋಜನೆ", items: [
-                                      ["ಹೆಚ್ಚು ಅಳೆದ ಘಟನೆಗಳು", "ಹಬ್ಬ ಮತ್ತು ಕಾರ್ಯಕ್ರಮಗಳ ಪರಿಣಾಮವನ್ನು ಹಿಂದಿನ ವರ್ಷಗಳ FIR ಗಳಿಂದ ಅಳೆಯುವುದು."],
-                                      ["ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಫೆಡರೇಟೆಡ್ ಕಲಿಕೆ", "ಕಚ್ಚಾ FIR ಗಳನ್ನು ಒಂದೆಡೆ ಸೇರಿಸದೆ ಮಾದರಿಯನ್ನು ತರಬೇತುಗೊಳಿಸುವುದು."],
-                                      ["ಕನ್ನಡಕ್ಕಾಗಿ ಸಣ್ಣ ಮಾದರಿ", "ಆಡಳಿತಾತ್ಮಕ ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರ ಬರೆಯಲು ತರಬೇತಾದ ಸಣ್ಣ ಮಾದರಿ, ನಿಮ್ಮದೇ ನೆಟ್‌ವರ್ಕ್‌ನಲ್ಲಿ."],
-                                    ] },
-                                  ] : [
-                                    { h: "What is new", items: [
-                                      ["Explainable by construction", "A forecast's reasons multiply out to the forecast itself; nothing is explained after the fact."],
-                                      ["Assume-compromise testing", "The security suite treats the language model as already hostile; 161 of 161 attacks stopped."],
-                                      ["An agent manifest that runs", "The agents' description is what builds the system; changed agent code refuses to start in production."],
-                                      ["An agent that argues against itself", "An LLM-free adversary prices every hypothesis against its base rate before it can be confirmed."],
-                                    ] },
-                                    { h: "Roadmap", items: [
-                                      ["More measured events", "Festival and event effects measured from past years of FIRs, not assumed."],
-                                      ["Federated fitting across districts", "Forecasts fitted without pooling raw FIRs in one place."],
-                                      ["A small model for Kannada", "A purpose-trained small model for administrative Kannada, running on your own network."],
-                                    ] },
-                                  ]).map((g) => (
-                                    <div key={g.h}>
-                                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10.5px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#22E6F0", marginBottom: "8px" }}>{g.h}</div>
-                                      <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "grid", gap: "8px" }}>
-                                        {g.items.map(([t, d]) => (
-                                          <li key={t} style={{ fontSize: "12px", lineHeight: 1.5, color: "#94A3B8" }}>
-                                            <span style={{ color: "#FFFFFF", fontWeight: 600, marginRight: "6px" }}>{t}.</span>{d}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
+                            <div style={{ padding: "12px 16px", background: "rgba(3,5,12,0.9)", border: "1px solid rgba(34,230,240,0.15)", borderRadius: "8px", boxShadow: "0 0 20px rgba(0,0,0,0.5)" }}>
+                              {(() => {
+                                // The three tabs, short and plain. Every line is something the product
+                                // does today, except "Coming next", which says it is not built yet.
+                                const TABS = {
+                                  features: {
+                                    en: [
+                                      { h: "Secure AI", items: [
+                                        "The AI can read records, but it can't change them or act on its own.",
+                                        "Officers see only what their role allows, and every request is logged.",
+                                        "Works with any AI model, even one on your own network.",
+                                      ] },
+                                      { h: "Predict", items: [
+                                        "A 7-day forecast for every station, with the reasons behind it.",
+                                        "Turns the forecast into a shift plan and case leads.",
+                                        "Checks itself against what actually happened.",
+                                      ] },
+                                      { h: "Everyday use", items: [
+                                        "Ask in English or Kannada, by voice or text.",
+                                        "Every number links back to the FIRs it came from.",
+                                        "Hotspot maps, case links and printable reports.",
+                                      ] },
+                                    ],
+                                    kn: [
+                                      { h: "ಸುರಕ್ಷಿತ AI", items: [
+                                        "AI ದಾಖಲೆಗಳನ್ನು ಓದಬಲ್ಲದು, ಆದರೆ ಬದಲಿಸಲು ಅಥವಾ ತಾನೇ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+                                        "ಅಧಿಕಾರಿಗಳು ತಮ್ಮ ಹುದ್ದೆಗೆ ಅನುಮತಿಸಿದಷ್ಟನ್ನು ಮಾತ್ರ ನೋಡುತ್ತಾರೆ; ಪ್ರತಿ ವಿನಂತಿಯೂ ದಾಖಲಾಗುತ್ತದೆ.",
+                                        "ಯಾವುದೇ AI ಮಾದರಿಯೊಂದಿಗೆ, ನಿಮ್ಮದೇ ನೆಟ್‌ವರ್ಕ್‌ನಲ್ಲಿರುವುದರೊಂದಿಗೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ.",
+                                      ] },
+                                      { h: "ಮುನ್ಸೂಚನೆ", items: [
+                                        "ಪ್ರತಿ ಠಾಣೆಗೆ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ, ಅದರ ಕಾರಣಗಳೊಂದಿಗೆ.",
+                                        "ಮುನ್ಸೂಚನೆಯನ್ನು ಪಾಳಿ ಯೋಜನೆ ಮತ್ತು ಪ್ರಕರಣ ಸುಳಿವುಗಳಾಗಿ ಮಾಡುತ್ತದೆ.",
+                                        "ನಿಜವಾಗಿ ನಡೆದದ್ದರೊಂದಿಗೆ ತನ್ನನ್ನು ತಾನೇ ಪರಿಶೀಲಿಸುತ್ತದೆ.",
+                                      ] },
+                                      { h: "ದೈನಂದಿನ ಬಳಕೆ", items: [
+                                        "ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ, ಧ್ವನಿ ಅಥವಾ ಬರಹದಲ್ಲಿ ಕೇಳಿ.",
+                                        "ಪ್ರತಿ ಸಂಖ್ಯೆಯೂ ಅದರ FIR ಗಳಿಗೆ ಜೋಡಣೆಯಾಗಿದೆ.",
+                                        "ಹಾಟ್‌ಸ್ಪಾಟ್ ನಕ್ಷೆಗಳು, ಪ್ರಕರಣ ಸಂಪರ್ಕಗಳು ಮತ್ತು ಮುದ್ರಿಸಬಹುದಾದ ವರದಿಗಳು.",
+                                      ] },
+                                    ],
+                                  },
+                                  impact: {
+                                    en: [
+                                      { h: "Impact", items: [
+                                        "Answers in seconds, not days.",
+                                        "Every figure can be checked against the records.",
+                                        "Patrols are planned on a forecast that has been tested.",
+                                      ] },
+                                      { h: "Who uses it", items: [
+                                        "Station officer: asks a question in Kannada, by voice.",
+                                        "Investigator: finds cases linked by the same vehicle, phone or UPI ID.",
+                                        "Superintendent: plans the week's patrols and approves changes.",
+                                      ] },
+                                    ],
+                                    kn: [
+                                      { h: "ಪರಿಣಾಮ", items: [
+                                        "ದಿನಗಳಲ್ಲ, ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಉತ್ತರ.",
+                                        "ಪ್ರತಿ ಅಂಕಿಯನ್ನೂ ದಾಖಲೆಗಳೊಂದಿಗೆ ಪರಿಶೀಲಿಸಬಹುದು.",
+                                        "ಪರೀಕ್ಷಿತ ಮುನ್ಸೂಚನೆಯ ಮೇಲೆ ಗಸ್ತು ಯೋಜನೆ.",
+                                      ] },
+                                      { h: "ಯಾರು ಬಳಸುತ್ತಾರೆ", items: [
+                                        "ಠಾಣಾ ಅಧಿಕಾರಿ: ಕನ್ನಡದಲ್ಲಿ ಧ್ವನಿಯ ಮೂಲಕ ಪ್ರಶ್ನೆ ಕೇಳುತ್ತಾರೆ.",
+                                        "ತನಿಖಾಧಿಕಾರಿ: ಒಂದೇ ವಾಹನ, ಫೋನ್ ಅಥವಾ UPI ಯಿಂದ ಜೋಡಣೆಯಾದ ಪ್ರಕರಣಗಳನ್ನು ಕಂಡುಹಿಡಿಯುತ್ತಾರೆ.",
+                                        "ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿ: ವಾರದ ಗಸ್ತು ಯೋಜಿಸಿ ಬದಲಾವಣೆಗಳನ್ನು ಅನುಮೋದಿಸುತ್ತಾರೆ.",
+                                      ] },
+                                    ],
+                                  },
+                                  innovation: {
+                                    en: [
+                                      { h: "What's new", items: [
+                                        "Forecasts that explain themselves.",
+                                        "Tested as if the AI had already been hacked.",
+                                        "An agent that argues against its own findings.",
+                                      ] },
+                                      { h: "Coming next", items: [
+                                        "Festival effects measured from past years.",
+                                        "Learning across districts without sharing raw data.",
+                                        "A small Kannada model that runs in-house.",
+                                      ] },
+                                    ],
+                                    kn: [
+                                      { h: "ಹೊಸತು", items: [
+                                        "ತಮ್ಮನ್ನು ತಾವೇ ವಿವರಿಸುವ ಮುನ್ಸೂಚನೆಗಳು.",
+                                        "AI ಈಗಾಗಲೇ ಹ್ಯಾಕ್ ಆಗಿದೆ ಎಂದು ಭಾವಿಸಿ ಪರೀಕ್ಷಿಸಲಾಗಿದೆ.",
+                                        "ತನ್ನದೇ ತೀರ್ಮಾನಗಳ ವಿರುದ್ಧ ವಾದಿಸುವ ಏಜೆಂಟ್.",
+                                      ] },
+                                      { h: "ಮುಂದೆ ಬರಲಿದೆ", items: [
+                                        "ಹಿಂದಿನ ವರ್ಷಗಳಿಂದ ಅಳೆದ ಹಬ್ಬಗಳ ಪರಿಣಾಮ.",
+                                        "ಕಚ್ಚಾ ದತ್ತಾಂಶ ಹಂಚದೆ ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಕಲಿಕೆ.",
+                                        "ಒಳಗೇ ಚಲಿಸುವ ಸಣ್ಣ ಕನ್ನಡ ಮಾದರಿ.",
+                                      ] },
+                                    ],
+                                  },
+                                };
+                                const key = expandedDetail === "usecase" ? "impact" : expandedDetail;
+                                const groups = TABS[key]?.[lang === "kn" ? "kn" : "en"];
+                                if (!groups) return null;
+                                return (
+                                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))`, gap: "18px" }}>
+                                    {groups.map((g) => (
+                                      <div key={g.h}>
+                                        <div style={{ fontSize: "10.5px", fontWeight: 600, color: "#22E6F0", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "6px" }}>{g.h}</div>
+                                        <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "grid", gap: "5px" }}>
+                                          {g.items.map((t) => (
+                                            <li key={t} style={{ fontSize: "11.5px", lineHeight: 1.45, color: "#CBD5E1" }}>{t}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
 
                             </div>
                           </motion.div>
