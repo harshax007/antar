@@ -1136,27 +1136,29 @@ function DocsFull() {
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px 28px" }}>
                                   {(lang === "kn" ? [
                                     { h: "ಪರಿಣಾಮ", items: [
-                                      ["ದಿನಗಳಲ್ಲ, ಸೆಕೆಂಡುಗಳು", "ವಿಶ್ಲೇಷಕರ ಸಹಾಯವಿಲ್ಲದೆ ಅಧಿಕಾರಿಗಳಿಗೆ ತಕ್ಷಣ ಗುಪ್ತಚರ ಮಾಹಿತಿ."],
-                                      ["ಪ್ರತಿ ಸಂಖ್ಯೆಗೂ ಸಾಕ್ಷ್ಯ", "ಪ್ರತಿ ಉತ್ತರವೂ FIR ದಾಖಲೆಗೆ ಹಿಂತಿರುಗುತ್ತದೆ. ಪ್ರಕರಣ ಕಡತಕ್ಕೆ ಸಿದ್ಧ."],
-                                      ["ಪ್ರತಿಕ್ರಿಯೆಯಿಂದ ತಡೆಗಟ್ಟುವಿಕೆಗೆ", "ಅಪರಾಧ ಎಲ್ಲಿಗೆ ಸಾಗುತ್ತಿದೆಯೋ ಅಲ್ಲಿಗೆ ಗಸ್ತು."],
+                                      ["ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಉತ್ತರ", "ಹೆಚ್ಚಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ 2 ರಿಂದ 5 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ದಾಖಲೆಗಳಿಂದ ಉತ್ತರ, ನಡುವೆ ವಿಶ್ಲೇಷಕರಿಲ್ಲದೆ."],
+                                      ["ಪ್ರತಿ ಸಂಖ್ಯೆಗೂ ಸಾಕ್ಷ್ಯ", "ಪ್ರತಿ ಉತ್ತರವೂ FIR ದಾಖಲೆಗೆ ಹಿಂತಿರುಗುತ್ತದೆ; ಅಂಕಿ ತಿಳಿಯದಿದ್ದರೆ ಹಾಗೆಂದೇ ಹೇಳುತ್ತದೆ."],
+                                      ["ಪರೀಕ್ಷಿತ ಮುನ್ಸೂಚನೆಯ ಮೇಲೆ ಗಸ್ತು", "ಪಾಳಿ ಯೋಜನೆ ನೈಜ ವಾರಗಳ ಮೇಲೆ ಪರೀಕ್ಷಿಸಿದ ಮುನ್ಸೂಚನೆಯಿಂದ ಬೀಟ್‌ಗಳನ್ನು ಶ್ರೇಣೀಕರಿಸುತ್ತದೆ, ಅಂದಾಜಿನಿಂದಲ್ಲ."],
+                                      ["ಮಾದರಿ ತಪ್ಪಿದರೂ ಸುರಕ್ಷಿತ", "ಭಾಷಾ ಮಾದರಿ ಮೋಸಗೊಂಡರೂ ಅದು ದಾಖಲೆ ಬದಲಿಸಲು, ಅನುಮತಿಯಿಲ್ಲದ ಏಜೆಂಟ್ ಚಲಾಯಿಸಲು ಅಥವಾ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು ಸಾಧ್ಯವಿಲ್ಲ."],
                                     ] },
                                     { h: "ಬಳಕೆ", items: [
-                                      ["ಠಾಣಾ ಅಧಿಕಾರಿ", "ಕನ್ನಡದಲ್ಲಿ ಧ್ವನಿಯ ಮೂಲಕ ಕೇಳಿ: \"ಈ ತಿಂಗಳು ಹೆಚ್ಚು ಕಳ್ಳತನ ಎಲ್ಲಿ?\""],
-                                      ["ತನಿಖಾಧಿಕಾರಿ", "ಫೋನ್, UPI ಅಥವಾ ವಾಹನದ ಮೂಲಕ ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಶಂಕಿತನ ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸಿ."],
-                                      ["ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿ", "ಪ್ರವೃತ್ತಿ, ಮುನ್ಸೂಚನೆ ಮತ್ತು ಜಿಲ್ಲಾ ಶ್ರೇಣಿಯಿಂದ ನಿಯೋಜನೆ ಯೋಜನೆ."],
-                                      ["ಪ್ರಕರಣ ದಾಖಲಾತಿ", "ಮುದ್ರೆಯುಳ್ಳ PDF ವರದಿಯನ್ನು ಒಂದೇ ಕ್ಲಿಕ್‌ನಲ್ಲಿ ರಫ್ತು ಮಾಡಿ."],
+                                      ["ಠಾಣಾ ಅಧಿಕಾರಿ", "ಕನ್ನಡದಲ್ಲಿ ಧ್ವನಿಯ ಮೂಲಕ ಕೇಳಿ: \"ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು\""],
+                                      ["ತನಿಖಾಧಿಕಾರಿ", "ಒಂದೇ ವಾಹನ, UPI ಅಥವಾ IP ಹಂಚಿಕೊಂಡ FIR ಗಳನ್ನು ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಕಂಡುಹಿಡಿಯಿರಿ."],
+                                      ["ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿ", "ಮುನ್ಸೂಚನೆ ಮತ್ತು ಅದರ ಪಾಳಿ ಯೋಜನೆಯಿಂದ ವಾರದ ಗಸ್ತು ಯೋಜಿಸಿ; ಮರುನಿಯೋಜನೆಗೆ ಅನುಮೋದನೆ ಪಡೆಯಿರಿ."],
+                                      ["ಪ್ರಕರಣ ದಾಖಲಾತಿ", "ಸಂಭಾಷಣೆಯ ಅಧಿಕಾರಿಗಳಿಗೆ ಬದ್ಧವಾದ, ಪ್ರತಿ ಅಂಕಿಯ ಮೂಲ ತೋರಿಸುವ ವರದಿಯನ್ನು ರಫ್ತು ಮಾಡಿ."],
                                     ] },
                                   ] : [
                                     { h: "Impact", items: [
-                                      ["Seconds, not days", "Officers get intelligence instantly, without waiting for an analyst."],
-                                      ["Every number has proof", "Each answer traces back to FIR records, ready for the case file."],
-                                      ["From reacting to preventing", "Patrols go where crime is heading, not where it was."],
+                                      ["Answers in seconds", "Most questions are answered from the records in 2 to 5 seconds, with no analyst in between."],
+                                      ["Every number has proof", "Each answer traces back to FIR records, and says so when a figure is not known."],
+                                      ["Patrols on a tested forecast", "The shift plan ranks beats by a forecast graded on real weeks, not by a hunch."],
+                                      ["Safe even if the model is fooled", "A tricked language model still cannot change a record, run an agent it is not allowed, or take an action."],
                                     ] },
                                     { h: "Use Cases", items: [
-                                      ["Station officer", "Asks by voice in Kannada: \"Where is theft highest this month?\""],
-                                      ["Investigator", "Links a suspect's cases across districts through phone, UPI or vehicle."],
-                                      ["Superintendent", "Plans deployment from trends, forecasts and district rankings."],
-                                      ["Case documentation", "Exports a sealed, audit-ready PDF report in one click."],
+                                      ["Station officer", "Asks by voice in Kannada: \"Which areas in Mysuru City have the most theft?\""],
+                                      ["Investigator", "Finds FIRs that share a vehicle, UPI ID or IP address across districts."],
+                                      ["Superintendent", "Plans the week's patrols from the forecast and its printable shift plan, with approval for any redeployment."],
+                                      ["Case documentation", "Exports a report bound to the officers in the conversation, with the source of every figure."],
                                     ] },
                                   ]).map((g) => (
                                     <div key={g.h}>
@@ -1173,32 +1175,45 @@ function DocsFull() {
                                 </div>
                               )}
                               {expandedDetail === 'innovation' && (
-                                <ul style={{ listStyleType: "none", padding: 0, margin: 0, fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>
-                                  <li style={{ marginBottom: "8px" }}>
-                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>SDAR Data Flywheel:</span>
-                                    {lang === "kn"
-                                      ? "ಅದು ವಿಶ್ಲೇಷಿಸುವ ಪ್ರತಿಯೊಂದು ಪ್ರಕರಣದೊಂದಿಗೆ ಚುರುಕಾಗುವ ಸ್ವಾಯತ್ತ ಸ್ವಯಂ-ಸುಧಾರಣಾ ಡೇಟಾ ಲೂಪ್. ಇದು ಏಜೆಂಟ್‌ನ ಯಶಸ್ಸು ಮತ್ತು ತಪ್ಪುಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಲಾಗ್ ಮಾಡುತ್ತದೆ, ದುಬಾರಿ ಹಾರ್ಡ್‌ವೇರ್ ಅಗತ್ಯವಿಲ್ಲದೆ ತೆರೆಮರೆಯಲ್ಲಿ ಸಿಸ್ಟಮ್‌ನ ನಿಖರತೆ ಮತ್ತು ವೇಗವನ್ನು ನಿರಂತರವಾಗಿ ಹೆಚ್ಚಿಸಲು ಒಳನೋಟಗಳನ್ನು ಕ್ಲೀನ್ ತರಬೇತಿ ಡೇಟಾವಾಗಿ ಪ್ಯಾಕೇಜ್ ಮಾಡುತ್ತದೆ."
-                                      : "An autonomous self-improving data loop that gets smarter with every case it analyzes. It automatically logs agent successes and mistakes, packaging the insights into clean training data to continuously fine-tune the system's accuracy and speed behind the scenes, all without needing expensive hardware."}
-                                  </li>
-                                  <li style={{ marginBottom: "8px" }}>
-                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>Isolated OSINT Agent (Scout):</span>
-                                    {lang === "kn"
-                                      ? "ಅಧಿಕೃತ ಪೊಲೀಸ್ FIR ದಾಖಲೆಗಳನ್ನು ಕಲುಷಿತಗೊಳಿಸದೆ ಮುಕ್ತ/ಡಾರ್ಕ್ ವೆಬ್ ಶಂಕಿತ ಮಾಹಿತಿಗಾಗಿ ಪ್ರತ್ಯೇಕಿಸಿದ ಜೀರೋ-ಟ್ರಸ್ಟ್ ಸ್ಯಾಂಡ್‌ಬಾಕ್ಸ್."
-                                      : "Completely sandboxed OSINT layer (Scout) crawling open/dark web intelligence in isolation to protect official FIR data integrity."}
-                                  </li>
-                                  <li style={{ marginBottom: "8px" }}>
-                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>Custom Tool Ecosystem:</span>
-                                    {lang === "kn"
-                                      ? "Known/Unknown Layered (KUL) ಡಾಸಿಯರ್‌ಗಳು, ಜಿಯೋ-ಸ್ಪೇಷಿಯಲ್ ಕ್ಲಸ್ಟರಿಂಗ್ ಮತ್ತು SHA-256 ಸಾಕ್ಷ್ಯ ಲಾಗ್‌ಗಳೊಂದಿಗೆ ಕಸ್ಟಮ್ ಉಪಕರಣಗಳ ರಚನೆ."
-                                      : "Custom tools built around Known/Unknown Layered (KUL) dossiers, dynamic ZCQL AST parsing, Gi* spatial density clustering, and SHA-256 cryptographic logging."}
-                                  </li>
-                                  <li style={{ marginBottom: "0px" }}>
-                                    <span style={{ color: "#22E6F0", fontWeight: 700, marginRight: "6px" }}>Future Scaling Roadmap:</span>
-                                    {lang === "kn"
-                                      ? "vLLM/TRL ಜೊತೆಗೆ GPU ಕ್ಲಸ್ಟರ್‌ಗಳಿಗೆ ವಿಸ್ತರಿಸುವುದು, Graph Attention Networks (GAT), ಮತ್ತು CCTV/ಡ್ರೋನ್ ದೃಶ್ಯಗಳಿಗಾಗಿ ಮಲ್ಟಿಮೊಡಲ್ AI ಮಾದರಿಗಳ ಸೇರ್ಪಡೆ."
-                                      : "Scaling from CPU-native AppSail to GPU-accelerated clusters (vLLM/TRL), Graph Attention Networks (GAT) for syndicate discovery, and Multimodal Vision models for CCTV/drone feeds."}
-                                  </li>
-                                </ul>
+                                // Built and demonstrable first, then the roadmap - and the roadmap says it is one.
+                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                  {(lang === "kn" ? [
+                                    { h: "ಹೊಸತು", items: [
+                                      ["ರಚನೆಯಿಂದಲೇ ವಿವರಿಸಬಹುದಾದ ಮುನ್ಸೂಚನೆ", "ಮುನ್ಸೂಚನೆಯ ಕಾರಣಗಳು ಗುಣಿಸಿದರೆ ಮುನ್ಸೂಚನೆಯೇ ಬರುತ್ತದೆ; ನಂತರ ಊಹಿಸಿದ ವಿವರಣೆಯಲ್ಲ."],
+                                      ["ಮಾದರಿಯನ್ನು ಶತ್ರು ಎಂದು ಭಾವಿಸುವ ಪರೀಕ್ಷೆ", "ಭದ್ರತಾ ಪರೀಕ್ಷೆಗಳು ಮಾದರಿಯನ್ನು ಈಗಾಗಲೇ ವಶಪಡಿಸಿಕೊಳ್ಳಲಾಗಿದೆ ಎಂದು ಭಾವಿಸುತ್ತವೆ; 161 ರಲ್ಲಿ 161 ತಡೆಯಲ್ಪಟ್ಟಿವೆ."],
+                                      ["ಕಾರ್ಯಗತಗೊಳ್ಳುವ ಏಜೆಂಟ್ ದಾಖಲೆ", "ಏಜೆಂಟ್‌ಗಳ ವಿವರಣೆಯೇ ವ್ಯವಸ್ಥೆಯನ್ನು ರೂಪಿಸುತ್ತದೆ; ಪರಿಶೀಲಿಸದ ಬದಲಾವಣೆ ಇದ್ದರೆ ಉತ್ಪಾದನೆಯಲ್ಲಿ ಪ್ರಾರಂಭವಾಗುವುದಿಲ್ಲ."],
+                                      ["ತನ್ನ ವಿರುದ್ಧವೇ ವಾದಿಸುವ ಏಜೆಂಟ್", "LLM ಇಲ್ಲದ ಎದುರಾಳಿ ಏಜೆಂಟ್ ಪ್ರತಿ ಊಹೆಯನ್ನು ಅದರ ಮೂಲ ದರದ ವಿರುದ್ಧ ಪರೀಕ್ಷಿಸುತ್ತದೆ, ದೃಢೀಕರಣಕ್ಕೂ ಮುನ್ನ."],
+                                    ] },
+                                    { h: "ಮುಂದಿನ ಯೋಜನೆ", items: [
+                                      ["ಹೆಚ್ಚು ಅಳೆದ ಘಟನೆಗಳು", "ಹಬ್ಬ ಮತ್ತು ಕಾರ್ಯಕ್ರಮಗಳ ಪರಿಣಾಮವನ್ನು ಹಿಂದಿನ ವರ್ಷಗಳ FIR ಗಳಿಂದ ಅಳೆಯುವುದು."],
+                                      ["ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಫೆಡರೇಟೆಡ್ ಕಲಿಕೆ", "ಕಚ್ಚಾ FIR ಗಳನ್ನು ಒಂದೆಡೆ ಸೇರಿಸದೆ ಮಾದರಿಯನ್ನು ತರಬೇತುಗೊಳಿಸುವುದು."],
+                                      ["ಕನ್ನಡಕ್ಕಾಗಿ ಸಣ್ಣ ಮಾದರಿ", "ಆಡಳಿತಾತ್ಮಕ ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರ ಬರೆಯಲು ತರಬೇತಾದ ಸಣ್ಣ ಮಾದರಿ, ನಿಮ್ಮದೇ ನೆಟ್‌ವರ್ಕ್‌ನಲ್ಲಿ."],
+                                    ] },
+                                  ] : [
+                                    { h: "What is new", items: [
+                                      ["Explainable by construction", "A forecast's reasons multiply out to the forecast itself; nothing is explained after the fact."],
+                                      ["Assume-compromise testing", "The security suite treats the language model as already hostile; 161 of 161 attacks stopped."],
+                                      ["An agent manifest that runs", "The agents' description is what builds the system; changed agent code refuses to start in production."],
+                                      ["An agent that argues against itself", "An LLM-free adversary prices every hypothesis against its base rate before it can be confirmed."],
+                                    ] },
+                                    { h: "Roadmap", items: [
+                                      ["More measured events", "Festival and event effects measured from past years of FIRs, not assumed."],
+                                      ["Federated fitting across districts", "Forecasts fitted without pooling raw FIRs in one place."],
+                                      ["A small model for Kannada", "A purpose-trained small model for administrative Kannada, running on your own network."],
+                                    ] },
+                                  ]).map((g) => (
+                                    <div key={g.h}>
+                                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10.5px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#22E6F0", marginBottom: "8px" }}>{g.h}</div>
+                                      <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "grid", gap: "8px" }}>
+                                        {g.items.map(([t, d]) => (
+                                          <li key={t} style={{ fontSize: "12px", lineHeight: 1.5, color: "#94A3B8" }}>
+                                            <span style={{ color: "#FFFFFF", fontWeight: 600, marginRight: "6px" }}>{t}.</span>{d}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
 
                             </div>
