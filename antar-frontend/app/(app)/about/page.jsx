@@ -1,179 +1,165 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { ShieldCheck, Lock, Network, FileSearch, MessageSquare, Map as MapIcon, ShieldAlert, Cpu } from "lucide-react";
+import React from "react";
 import { useLang } from "@/components/Providers";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
 export default function AboutPage() {
   const { lang } = useLang();
   const kn = lang === "kn";
-  
-  const [stats, setStats] = useState({ firs: "10,00,000", districts: "41", stations: "1,155" });
-  const [health, setHealth] = useState("checking...");
-
-  useEffect(() => {
-    // In a real app we'd fetch from /api/dataset/overview and /api/health
-    // Simulated fetch for the scope of this update
-    setHealth("All systems operational");
-  }, []);
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
 
   return (
     <div className="ab-page">
-      <div className="ab-grid-bg" />
-
       <main className="ab-main">
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="ab-content">
-          
-          {/* 1. Hero */}
-          <motion.section variants={itemVariants} className="ab-hero">
-            <h1 className="ab-title">Antar</h1>
-            <p className="ab-promise">
-              {kn ? "ಕನ್ನಡದಲ್ಲಿ ಕೇಳಿ. ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಉತ್ತರ ಪಡೆಯಿರಿ. ಪ್ರತಿ ಸಂಖ್ಯೆಯನ್ನು ನಂಬಿ." : "Ask in Kannada. Get the answer in seconds. Trust every number."}
+
+        {/* Top Bar: Title + Meaning side by side */}
+        <header className="ab-top">
+          <div className="ab-top-left">
+            <div className="ab-kicker">
+              {kn ? "ತಂಡದ ಪರಿಚಯ" : "ABOUT US"}
+            </div>
+            <h1 className="ab-title">
+              {kn ? "ಟೀಮ್ ವಿಮರಕ್ಷ" : "Team Vimaraksha"}
+            </h1>
+            <p className="ab-lead">
+              {kn
+                ? "ಪೊಲೀಸ್ ತನಿಖೆ ಮತ್ತು ಸಾರ್ವಜನಿಕ ಸುರಕ್ಷತೆಗಾಗಿ ಪ್ರಾಯೋಗಿಕ ಹಾಗೂ ಸುರಕ್ಷಿತ ತಂತ್ರಜ್ಞಾನವನ್ನು ನಿರ್ಮಿಸುವ ಇಂಜಿನಿಯರಿಂಗ್ ತಂಡ."
+                : "Building practical, secure intelligence tools for law enforcement and public safety."}
             </p>
-            <div className="ab-stats">
-              <span className="ab-stat-chip">{stats.firs} FIRs</span>
-              <span className="ab-stat-chip">{stats.districts} Districts</span>
-              <span className="ab-stat-chip">{stats.stations} Stations</span>
-              <span className="ab-stat-chip highlight">{health}</span>
-            </div>
-          </motion.section>
+          </div>
 
-          {/* 2. What it does */}
-          <motion.section variants={itemVariants} className="ab-section">
-            <h2 className="ab-heading">{kn ? "ಇದು ಏನು ಮಾಡುತ್ತದೆ" : "What it does"}</h2>
-            <div className="ab-feature-grid">
-              <Link href="/antar" className="ab-tile">
-                <MessageSquare size={20} />
-                <h3>Chat</h3>
-                <p>Ask in English or Kannada</p>
-              </Link>
-              <Link href="/search" className="ab-tile">
-                <FileSearch size={20} />
-                <h3>Search</h3>
-                <p>See hidden links between cases and people</p>
-              </Link>
-              <Link href="/predict" className="ab-tile">
-                <ShieldAlert size={20} />
-                <h3>Predict</h3>
-                <p>Know where risk is rising</p>
-              </Link>
-              <Link href="/map" className="ab-tile">
-                <MapIcon size={20} />
-                <h3>Map</h3>
-                <p>Plan patrols with spatial intel</p>
-              </Link>
-              <div className="ab-tile">
-                <Network size={20} />
-                <h3>Traceable</h3>
-                <p>Every number traceable</p>
+          <div className="ab-meaning">
+            <div className="ab-meaning-title">
+              {kn ? "‘ವಿಮರಕ್ಷ’ ಪದದ ಅರ್ಥ" : "Meaning of Vimaraksha"}
+            </div>
+            <p className="ab-meaning-text">
+              {kn ? (
+                <>
+                  <b>ವಿಮರ್ಶೆ</b> (ಆಳವಾದ ಪರಿಶೀಲನೆ ಮತ್ತು ಚಿಂತನೆ) ಮತ್ತು <b>ರಕ್ಷೆ</b> (ಭದ್ರತೆ ಮತ್ತು ರಕ್ಷಣೆ) ಎಂಬ ಎರಡು ಪದಗಳಿಂದ <b>ವಿಮರಕ್ಷ</b> ಹುಟ್ಟಿದೆ. ದಾಖಲೆಗಳನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಪರಿಶೀಲಿಸಿ ಮುಂಚಿತವಾಗಿಯೇ ಸುರಕ್ಷತೆ ಒದಗಿಸುವುದು ಇದರ ಉದ್ದೇಶ.
+                </>
+              ) : (
+                <>
+                  Formed from <strong>Vimarsha</strong> (critical inquiry and reflection) and <strong>Raksha</strong> (protection and safeguarding). It stands for <em>protection through thoughtful inquiry</em>, examining records carefully to prevent harm early.
+                </>
+              )}
+            </p>
+          </div>
+        </header>
+
+        {/* Middle Grid: How the Idea Started + Our Vision */}
+        <div className="ab-mid-grid">
+          <section className="ab-card">
+            <div className="ab-sec-label">
+              {kn ? "ಆಲೋಚನೆ ಪ್ರಾರಂಭವಾಗಿದ್ದು ಹೇಗೆ" : "HOW THE IDEA STARTED"}
+            </div>
+            <blockquote className="ab-origin-quote">
+              {kn
+                ? "“ನಮ್ಮಲ್ಲಿ ಬೃಹತ್ ಪ್ರಮಾಣದ FIR ದತ್ತಾಂಶವಿದೆ, ಆದರೆ ಅದರ ಮೇಲೆ ಯೋಚಿಸುವ ಬುದ್ಧಿವಂತ ಪದರ ಇಲ್ಲ ಮತ್ತು ದತ್ತಾಂಶವನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಹುಡುಕಿ ತೆಗೆಯುವುದು ಸುಲಭವಲ್ಲ.”"
+                : "“We have large data of FIRs, but no intelligent layer and thinking layer, and it is not easy to retrieve the data securely.”"}
+            </blockquote>
+            <p className="ab-card-text">
+              {kn
+                ? "ಪೊಲೀಸ್ ಇಲಾಖೆಗಳಲ್ಲಿ ಲಕ್ಷಾಂತರ FIR ದಾಖಲೆಗಳಿವೆ, ಆದರೆ ತನಿಖೆಯ ಸಮಯದಲ್ಲಿ ಪ್ರಕರಣಗಳ ನಡುವಿನ ನಂಟನ್ನು ಹುಡುಕುವುದು ಕಷ್ಟಕರವಾಗಿತ್ತು. ಈ ಸಮಸ್ಯೆಯನ್ನು ಪರಿಹರಿಸಲು ನಾವು Antar ಅನ್ನು ಅಭಿವೃದ್ಧಿಪಡಿಸಿದ್ದೇವೆ. ಇದು FIR ದತ್ತಾಂಶದ ಮೇಲೆ ಸುರಕ್ಷಿತ ಚಿಂತನಾ ಪದರವಾಗಿ ಕೆಲಸ ಮಾಡುತ್ತದೆ ಮತ್ತು ಅಧಿಕಾರಿಗಳಿಗೆ ಕನ್ನಡ ಅಥವಾ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ತಕ್ಷಣವೇ ಪರಿಶೀಲಿಸಿದ ಮಾಹಿತಿಯನ್ನು ನೀಡುತ್ತದೆ."
+                : "Police stations hold hundreds of thousands of FIRs across districts, yet important links between repeat offenders, vehicles, and crime patterns stay buried in static text. Manual lookup takes hours, and opening raw database access is unsafe. We developed Antar to solve this problem by adding a secure thinking and retrieval layer over FIR records."}
+            </p>
+          </section>
+
+          <section className="ab-card">
+            <div className="ab-sec-label">
+              {kn ? "ನಮ್ಮ ದೃಷ್ಟಿಕೋನ" : "OUR VISION"}
+            </div>
+            <div className="ab-vision-list">
+              <div className="ab-vision-row">
+                <strong>{kn ? "ಬುದ್ಧಿವಂತ ವಿಶ್ಲೇಷಣಾ ಪದರ" : "Intelligent thinking layer"}</strong>
+                <span>
+                  {kn
+                    ? "ಪ್ರಕರಣಗಳ ನಡುವಿನ ಸಂಬಂಧಗಳು, ಅಪರಾಧದ ಮಾದರಿಗಳು ಮತ್ತು ಸಹಚರರ ಜಾಲವನ್ನು ಗುರುತಿಸಿ ತನಿಖೆಗೆ ವೇಗ ನೀಡುವುದು."
+                    : "Turn static FIR archives into active intelligence by connecting repeat modus operandi, co-accused networks, and district trends."}
+                </span>
               </div>
-              <div className="ab-tile">
-                <Lock size={20} />
-                <h3>Compliant</h3>
-                <p>Built for compliance and RBAC</p>
+              <div className="ab-vision-row">
+                <strong>{kn ? "ಸುರಕ್ಷಿತ ಮಾಹಿತಿ ಪಡೆಯುವಿಕೆ" : "Secure data retrieval"}</strong>
+                <span>
+                  {kn
+                    ? "ಹುದ್ದೆ ಆಧಾರಿತ ಪ್ರವೇಶ (RBAC) ಮತ್ತು ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆಯೊಂದಿಗೆ ಪ್ರತಿ ಅಂಕಿಅಂಶವೂ ಅಧಿಕೃತ FIR ಗೆ ಜೋಡಣೆಯಾಗಿರುತ್ತದೆ."
+                    : "Enforce role-based permissions, approved query paths, and tamper-evident audit logs with every figure tied to its source FIR."}
+                </span>
+              </div>
+              <div className="ab-vision-row">
+                <strong>{kn ? "ಅಧಿಕಾರಿಗಳ ಭಾಷೆಯಲ್ಲೇ ಸಂವಹನ" : "Built for field officers"}</strong>
+                <span>
+                  {kn
+                    ? "ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಎರಡರಲ್ಲೂ ಸರಳವಾಗಿ ಪ್ರಶ್ನಿಸಿ ನಿಖರವಾದ ಉತ್ತರ ಪಡೆಯುವ ಸೌಲಭ್ಯ."
+                    : "Support natural queries in Kannada and English so officers can move straight from a question to verified case records in seconds."}
+                </span>
               </div>
             </div>
-          </motion.section>
+          </section>
+        </div>
 
-          {/* 3. How it works */}
-          <motion.section variants={itemVariants} className="ab-section">
-            <h2 className="ab-heading">{kn ? "ಇದು ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ" : "How it works"}</h2>
-            <div className="ab-steps">
-              <div className="ab-step"><span>1</span> Question</div>
-              <div className="ab-step-arrow">→</div>
-              <div className="ab-step"><span>2</span> Approved query</div>
-              <div className="ab-step-arrow">→</div>
-              <div className="ab-step"><span>3</span> Verified rows</div>
-              <div className="ab-step-arrow">→</div>
-              <div className="ab-step"><span>4</span> Answer with sources</div>
-            </div>
-          </motion.section>
-
-          {/* 4. Trust & safety */}
-          <motion.section variants={itemVariants} className="ab-section">
-            <h2 className="ab-heading">{kn ? "ನಂಬಿಕೆ ಮತ್ತು ಸುರಕ್ಷತೆ" : "Trust & safety"}</h2>
-            <ul className="ab-trust-list">
-              <li>No free-form SQL</li>
-              <li>Strict guardrails</li>
-              <li>Cryptographic audit chain</li>
-              <li>Correlation-only demographics</li>
-              <li>Internet leads kept separate from FIRs</li>
-            </ul>
-          </motion.section>
-
-          {/* 5. Team Vimaraksha */}
-          <motion.section variants={itemVariants} className="ab-section ab-vim">
-            <div className="ab-vim-head">
-              <div className="ab-eyebrow">// {kn ? "ಮುನ್ಸೂಚಕ ಭದ್ರತೆ" : "PREDICTIVE SECURITY"}</div>
-              <h2 className="ab-vim-title">TEAM VIMARAKSHA</h2>
-              <p className="ab-vim-sub">
-                {kn
-                  ? "ವಿಮರಕ್ಷ - 'ಬೆದರಿಕೆ ರೂಪುಗೊಳ್ಳುವ ಮೊದಲೇ ಮುನ್ಸೂಚಿಸಿ ಮತ್ತು ಸುರಕ್ಷಿತಗೊಳಿಸಿ.' 10,00,000+ FIR ದಾಖಲೆಗಳನ್ನು ರಚನಾತ್ಮಕ ಮಾದರಿ ಗುಪ್ತಚರ ಮತ್ತು ಅಜ್ಞಾತ ಸುಳಿವುಗಳಾಗಿ ಪರಿವರ್ತಿಸಲು ನಾವು Antar ಅನ್ನು ನಿರ್ಮಿಸಿದ್ದೇವೆ."
-                  : <>Vimaraksha &lsquo;Predict and Secure Before the Threat Materializes.&rsquo; We engineered Antar to convert 10,00,000+ FIR records into structured pattern intelligence and unknown leads.</>}
-              </p>
-            </div>
-
-            <div className="ab-principles">
-              <h3 className="ab-principles-t">
-                <ShieldCheck size={20} strokeWidth={1.8} aria-hidden="true" />
-                {kn ? "ಸಾಂಸ್ಥಿಕ ತತ್ವಗಳು ಮತ್ತು ವಾಸ್ತುಶಿಲ್ಪ" : "Institutional Principles & Architecture"}
-              </h3>
-              <div className="ab-principles-grid">
-                <div className="ab-principle">
-                  <h4><FileSearch size={14} strokeWidth={2} aria-hidden="true" /> 01. {kn ? "ಅಜ್ಞಾತ vs. ಮೇಲ್ಮೈ ದತ್ತಾಂಶ" : "UNKNOWN VS. SURFACE DATA"}</h4>
-                  <p>{kn
-                    ? "ಸಾಮಾನ್ಯ ವ್ಯವಸ್ಥೆಗಳು ಕೇವಲ ತಿಳಿದ ಮೇಲ್ಮೈ ಎಣಿಕೆಗಳನ್ನು ಪುನರಾವರ್ತಿಸುತ್ತವೆ. ಸಂಪರ್ಕವಿಲ್ಲದ ಆರೋಪಿಗಳು, ಗುಪ್ತ ಫೋನ್ ಮಾರ್ಗಗಳು ಮತ್ತು ಹೇಳದ ಪ್ರಕರಣ-ಅಂತರ ವೈಪರೀತ್ಯಗಳನ್ನು ಹೊರತರಲು Antar ತಿಳಿದ/ಅಜ್ಞಾತ ಪದರ (KUL) ಟ್ಯಾಗಿಂಗ್ ಬಳಸುತ್ತದೆ."
-                    : "Standard systems merely repeat known surface counts. Antar uses Known/Unknown Layered (KUL) tagging to surface unlinked accused, hidden phone conduits, and unsaid cross-case anomalies."}</p>
+        {/* Bottom Grid: Team Members */}
+        <section className="ab-team-section">
+          <div className="ab-sec-label">
+            {kn ? "ತಂಡದ ಸದಸ್ಯರು" : "TEAM MEMBERS"}
+          </div>
+          <div className="ab-team-grid">
+            <div className="ab-member">
+              <div className="ab-avatar">HD</div>
+              <div className="ab-member-body">
+                <div className="ab-member-head">
+                  <h3 className="ab-member-name">Harsha D B</h3>
+                  <span className="ab-member-role">
+                    {kn ? "ತಂಡದ ನಾಯಕ · ಫುಲ್-ಸ್ಟ್ಯಾಕ್ ಮತ್ತು ಸೆಕ್ಯುರಿಟಿ" : "Team Lead · Full-Stack & Security Engineering"}
+                  </span>
                 </div>
-                <div className="ab-principle">
-                  <h4><Network size={14} strokeWidth={2} aria-hidden="true" /> 02. {kn ? "ಮಾದರಿ ಗುಪ್ತಚರ" : "PATTERN INTELLIGENCE"}</h4>
-                  <p>{kn
-                    ? "ಬಿಡಿ FIR ಗಳ ಬದಲು, ಏಜೆಂಟ್‌ಗಳು ಪ್ರಕರಣಗಳು ಎಲ್ಲಿ ಮತ್ತು ಯಾವಾಗ ಗುಂಪಾಗುತ್ತವೆ, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಮತ್ತು ವ್ಯಕ್ತಿಗಳ ನಡುವಿನ ಸಂಪರ್ಕಗಳನ್ನು ಒಟ್ಟಿಗೆ ತೋರಿಸುತ್ತವೆ, ಮುಂಚಿತವಾಗಿ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು."
-                    : "Instead of reading FIRs one by one, the agents show where and when cases bunch together, the hotspots, and how people are linked, so action can be taken early."}</p>
-                </div>
-                <div className="ab-principle">
-                  <h4><Lock size={14} strokeWidth={2} aria-hidden="true" /> 03. {kn ? "ಲೆಕ್ಕಪರಿಶೋಧನೆ ಮತ್ತು ಶೂನ್ಯ-ವಿಶ್ವಾಸ ಭದ್ರತೆ" : "AUDIT & ZERO-TRUST SECURITY"}</h4>
-                  <p>{kn
-                    ? "ಪ್ರತಿ ಹಂತದಲ್ಲೂ ಭದ್ರತೆ: ತಿದ್ದಲಾಗದ ಲೆಕ್ಕಪತ್ರ, ಹುದ್ದೆ ಆಧಾರಿತ ಪ್ರವೇಶ, ಮತ್ತು ಇಂಟರ್ನೆಟ್ ಸುಳಿವುಗಳನ್ನು ಅಧಿಕೃತ ದಾಖಲೆಗಳಿಂದ ದೂರ ಇಡಲಾಗುತ್ತದೆ."
-                    : "Security at every step: a tamper-evident log of every request, access by rank and posting, and internet leads kept apart from official records."}</p>
-                </div>
+                <p className="ab-member-bio">
+                  {kn
+                    ? "Antar ನ ಮೂಲ ವಾಸ್ತುಶಿಲ್ಪ, ಮಲ್ಟಿ-ಏಜೆಂಟ್ ಚಿಂತನಾ ವ್ಯವಸ್ಥೆ ಹಾಗೂ ಸುರಕ್ಷಿತ ಡೇಟಾ ಹುಡುಕಾಟದ ಪೈಪ್‌ಲೈನ್ ವಿನ್ಯಾಸಗೊಳಿಸಿದ್ದಾರೆ."
+                    : "Architected Antar’s core backend, multi-agent reasoning pipeline, and security guardrails for fast, deterministic, and safe FIR retrieval."}
+                </p>
               </div>
             </div>
 
-            <div className="ab-team-grid">
-              <div className="ab-team-card">
-                <h3>Harsha D B</h3>
-                <div className="ab-role">Team lead full-stack engineering</div>
-                <p>Exploring where AI can actually make security work better. Focus on security operations and network monitoring.</p>
-              </div>
-              <div className="ab-team-card">
-                <h3>Chandana M</h3>
-                <div className="ab-role">Team member design and system engineering</div>
-                <p>Thriving at the intersection of data, design, and engineering. Translating complex analytics into clean interfaces.</p>
+            <div className="ab-member">
+              <div className="ab-avatar">CM</div>
+              <div className="ab-member-body">
+                <div className="ab-member-head">
+                  <h3 className="ab-member-name">Chandana M</h3>
+                  <span className="ab-member-role">
+                    {kn ? "ಸಿಸ್ಟಮ್ ವಿನ್ಯಾಸ ಮತ್ತು ಫ್ರಂಟ್-ಎಂಡ್ ಇಂಜಿನಿಯರಿಂಗ್" : "System Design & Frontend Engineering"}
+                  </span>
+                </div>
+                <p className="ab-member-bio">
+                  {kn
+                    ? "ಅಧಿಕಾರಿಗಳ ತನಿಖಾ ಕಾರ್ಯಕ್ಷೇತ್ರ, ಅಪರಾಧ ನಕ್ಷೆಗಳು ಮತ್ತು ಕನ್ನಡ-ಇಂಗ್ಲಿಷ್ ಇಂಟರ್ಫೇಸ್ ಅನ್ನು ಸರಳ ಹಾಗೂ ಸ್ಪಷ್ಟವಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಿದ್ದಾರೆ."
+                    : "Designed and engineered the investigative workspace across search, spatial crime mapping, and bilingual views to keep complex data clear and minimal."}
+                </p>
               </div>
             </div>
-          </motion.section>
+          </div>
+        </section>
 
-          {/* 6. Footer */}
-          <motion.section variants={itemVariants} className="ab-footer">
-            <p>All data is synthetic, Datathon 2026. Version 1.0.0</p>
-            <Link href="/docs">Documentation</Link>
-          </motion.section>
+        {/* Compact Footer */}
+        <footer className="ab-footer">
+          <span>
+            {kn
+              ? "ಟೀಮ್ ವಿಮರಕ್ಷ · ಡೇಟಾಥಾನ್ 2026"
+              : "Team Vimaraksha · Datathon 2026"}
+          </span>
+          <div className="ab-footer-links">
+            <Link href="/docs">
+              {kn ? "ದಾಖಲಾತಿ" : "Documentation"} <ArrowUpRight size={13} />
+            </Link>
+            <Link href="/antar">
+              {kn ? "Antar ತೆರೆಯಿರಿ" : "Open Antar"} <ArrowUpRight size={13} />
+            </Link>
+          </div>
+        </footer>
 
-        </motion.div>
       </main>
     </div>
   );
 }
+
+

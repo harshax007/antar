@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "rea
 import { fetchAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
-import { RefBadge } from "@/components/RefStrip";
 import { Mic, MicOff, X, ShieldCheck, Search, ArrowRight, Brain, MapPin, Sparkles, FolderGit2, Calendar, Users, Hash, Activity } from "lucide-react";
 import ProposeAction from "@/components/ProposeAction";
 
@@ -26,8 +25,18 @@ const cap = (s) => (s || "").replace(/_/g, " ");
 
 function HighlightName({ name, query }) {
   if (!query) return <>{name}</>;
-  const parts = String(name).split(new RegExp(`(${query})`, 'gi'));
-  return <>{parts.map((p, i) => p.toLowerCase() === query.toLowerCase() ? <span key={i} style={{ color: "var(--cyan)", fontWeight: 700 }}>{p}</span> : p)}</>;
+  const parts = String(name).split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"));
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.toLowerCase() === query.toLowerCase() ? (
+          <span key={i} className="sx-hl">{p}</span>
+        ) : (
+          p
+        )
+      )}
+    </>
+  );
 }
 
 
@@ -326,9 +335,9 @@ function SearchContent() {
         <div className="sx-listpanel">
           <div className="sx-searchwrap">
             <div className="sx-searchbar">
-              <Search size={16} />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={kn ? "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ಫೋನ್, ನಂ.ತಟ್ಟೆ…" : "Name, alias, phone, vehicle plate…"} aria-label={kn ? "ಶಂಕಿತರನ್ನು ಹುಡುಕಿ" : "Search suspects"} />
-              <button type="button" className="clr" onClick={toggleVoice} title={recording ? "Stop listening" : "Speak suspect name"} style={{ background: recording ? "rgba(239,68,68,0.2)" : "transparent", color: recording ? "#EF4444" : "#22E6F0", marginRight: query ? "4px" : "0" }}>
+              <Search size={15} />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={kn ? "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ಫೋನ್, ನಂ.ತಟ್ಟೆ…" : "Search name, alias, phone, vehicle plate…"} aria-label={kn ? "ಶಂಕಿತರನ್ನು ಹುಡುಕಿ" : "Search suspects"} />
+              <button type="button" className="clr" onClick={toggleVoice} title={recording ? "Stop listening" : "Speak suspect name"} style={{ background: recording ? "rgba(239,68,68,0.16)" : "transparent", color: recording ? "#F87171" : "#94A3B8", marginRight: query ? "4px" : "0" }}>
                 {recording ? <MicOff size={14} /> : <Mic size={14} />}
               </button>
               {query && (
@@ -337,7 +346,7 @@ function SearchContent() {
                 </button>
               )}
             </div>
-            <div className="sx-fchips" style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <div className="sx-fchips">
               {FILTERS.map((f) => <button key={f.key} className={filterType === f.key ? "on" : ""} onClick={() => setFilterType(f.key)}>{kn ? f.kn : f.en}</button>)}
               {osintAllowed && (
                 <button type="button"
@@ -348,48 +357,45 @@ function SearchContent() {
                     setProfileTab("osint");
                   }}
                   title={kn ? "ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ - ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳು ಲಾಗ್ ಆಗುತ್ತವೆ" : "Open-source intelligence - unverified, every query is audit-logged"}
-                  style={{ marginLeft: "auto", color: "var(--osint)", borderColor: "var(--osint)" }}>
+                  style={{ marginLeft: "auto" }}>
                   {profileTab === "osint"
                     ? (kn ? "OSINT ಮುಚ್ಚಿ" : "Close OSINT")
-                    : osintConsentOpen ? (kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ ಸಕ್ರಿಯಗೊಳಿಸಿ" : "Turn on internet search (preview)") : (kn ? "ಇಂಟರ್ನೆಟ್" : "Internet search")}
+                    : osintConsentOpen ? (kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ" : "Web search") : (kn ? "ಇಂಟರ್ನೆಟ್" : "Web search")}
                 </button>
               )}
             </div>
             <div className="sx-enginehint">
-              {kn ? "ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ ಹೆಸರು ಸಿಗುತ್ತದೆ (Yellappa ≈ Yellapa)" : "Finds names even when spelt differently (Yellappa ≈ Yellapa ≈ Ylappa)"}
+              {kn ? "ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ ಹೆಸರು ಸಿಗುತ್ತದೆ (Yellappa ≈ Yellapa)" : "Matches close spellings and phonetic variants (Yellappa ≈ Yellapa ≈ Ylappa)"}
             </div>
           </div>
 
-          {trackToast && (() => {
-            const c = { ok: "#18D69A", warn: "#FFB020", error: "#FF3B30" }[trackToast.tone] || "#18D69A";
-            return (
-              <div role="status" style={{ padding: "10px 14px", margin: "10px", borderRadius: "8px", background: `${c}2E`, border: `1px solid ${c}`, color: c, fontWeight: 700, fontSize: "12px" }}>
-                {trackToast.text}
-              </div>
-            );
-          })()}
+          {trackToast && (
+            <div role="status" className={`sx-toast ${trackToast.tone || "ok"}`}>
+              {trackToast.text}
+            </div>
+          )}
 
           {identityHypotheses.length > 0 && (
-            <div style={{ margin: "10px", padding: "12px", background: "rgba(176,38,255,0.08)", border: "1px solid rgba(176,38,255,0.4)", borderRadius: "8px" }}>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: "#B026FF", marginBottom: "6px" }}>
+            <div className="sx-hypbox">
+              <div className="sx-hypbox-hd">
                 INFERRED CROSS-SOURCE IDENTITY HYPOTHESES · REQUIRES INSPECTOR REVIEW
               </div>
               {identityHypotheses.slice(0, 2).map((h) => (
-                <div key={h.hypothesis_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px", background: "rgba(0,0,0,0.3)", borderRadius: "6px", marginBottom: "6px", fontSize: "12px" }}>
+                <div key={h.hypothesis_id} className="sx-hyprow">
                   <div>
-                    <span style={{ fontWeight: 700, color: "#E2E8F0" }}>{h.entity_a.name} ({h.entity_a.id})</span>
+                    <span className="sx-hyp-nm">{h.entity_a.name} ({h.entity_a.id})</span>
                     {" ≈ "}
-                    <span style={{ fontWeight: 700, color: "#E2E8F0" }}>{h.entity_b.name} ({h.entity_b.id})</span>
-                    <div style={{ fontSize: "11px", color: "#94A3B8" }}>
+                    <span className="sx-hyp-nm">{h.entity_b.name} ({h.entity_b.id})</span>
+                    <div className="sx-hyp-meta">
                       Confidence: {Math.round(h.confidence * 100)}% · {h.reasons.join(", ")}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: "6px" }}>
-                    {[["confirm", "Confirm", "24,214,154", "#18D69A"], ["reject", "Reject", "255,59,48", "#FF3B30"]].map(([action, label, rgb, hex]) => (
+                  <div className="sx-hyp-acts">
+                    {[["confirm", "Confirm"], ["reject", "Reject"]].map(([action, label]) => (
                       <button key={action} disabled={!canReviewHypotheses}
                         title={canReviewHypotheses ? undefined : (kn ? "ಇನ್ಸ್‌ಪೆಕ್ಟರ್ ಅಥವಾ ಮೇಲಿನ ಶ್ರೇಣಿ ಅಗತ್ಯ" : `Inspector or higher rank required (you are signed in as ${role})`)}
                         onClick={() => handleHypothesisAction(h.hypothesis_id, action)}
-                        style={{ padding: "4px 8px", borderRadius: "4px", background: `rgba(${rgb},0.2)`, border: `1px solid ${hex}`, color: hex, fontSize: "11px", fontWeight: 700, cursor: canReviewHypotheses ? "pointer" : "not-allowed", opacity: canReviewHypotheses ? 1 : 0.45 }}>
+                        className={`sx-hyp-btn ${action}`}>
                         {label}
                       </button>
                     ))}
@@ -400,13 +406,12 @@ function SearchContent() {
           )}
 
           <div className="sx-sortrow">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              {results && results.length > 0 && <RefBadge tag="K" />}
+            <span>
               {results
-                ? `${results.length} ${kn ? "ಫಲಿತಾಂಶ" : "results"} · ${isSearch ? (kn ? "ಹತ್ತಿರದ ಹೊಂದಾಣಿಕೆ" : "including close spellings") : (kn ? "ದಾಖಲೆ" : "from the records")}${isSearch && filterType !== "all" ? ` · ${FILTERS.find((f) => f.key === filterType)?.[kn ? "kn" : "en"]} ${kn ? "ಮಾತ್ರ" : "only"}` : ""}`
+                ? `${results.length} ${kn ? "ಫಲಿತಾಂಶ" : "records"} · ${isSearch ? (kn ? "ಹತ್ತಿರದ ಹೊಂದಾಣಿಕೆ" : "including close spellings") : (kn ? "ಪರಿಶೀಲಿತ ದಾಖಲೆ" : "verified registry")}${isSearch && filterType !== "all" ? ` · ${FILTERS.find((f) => f.key === filterType)?.[kn ? "kn" : "en"]} ${kn ? "ಮಾತ್ರ" : "only"}` : ""}`
                 : (kn ? "ಲೋಡ್…" : "loading…")}
             </span>
-            <span className="sv">{kn ? "ಅಪಾಯ ↓" : "Risk ↓"}</span>
+            <span className="sv">{kn ? "ಅಪಾಯ ↓" : "Sorted by risk ↓"}</span>
           </div>
 
           <div className="sx-results" role="list">
@@ -415,23 +420,23 @@ function SearchContent() {
               <div className="sx-nomatch">
                 <p>{kn ? "ಯಾವುದೇ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ." : "No matching records found."}</p>
                 {unknownDiscovery && (
-                  <div style={{ margin: "14px 0", padding: "14px", background: "rgba(34,230,240,0.08)", border: "1px solid #22E6F0", borderRadius: "8px", textAlign: "left" }}>
-                    <div style={{ fontSize: "12px", fontWeight: 700, color: "#22E6F0", marginBottom: "8px" }}>
+                  <div className="sx-unknown-box">
+                    <div className="sx-unknown-ttl">
                       {kn ? "ಅಜ್ಞಾತ ಲೀಡ್ ಅನ್ವೇಷಣೆ ಪ್ರೋಟೋಕಾಲ್ ಸಕ್ರಿಯ" : "UNKNOWN-FIRST DISCOVERY PROTOCOL ACTIVE"}
                     </div>
-                    <div style={{ fontSize: "12px", color: "#E2E8F0", marginBottom: "10px" }}>
+                    <div className="sx-unknown-msg">
                       {unknownDiscovery.message}
                     </div>
                     {unknownDiscovery.nearest_neighbors?.length > 0 && (
-                      <div style={{ fontSize: "11px", color: "#94A3B8", marginBottom: "8px" }}>
+                      <div className="sx-unknown-nn">
                         <b>Phonetic Nearest Neighbors:</b> {unknownDiscovery.nearest_neighbors.map((n) => `${n.full_name} (${Math.round(n.match_score * 100)}%)`).join(", ")}
                       </div>
                     )}
                     <button
                       onClick={() => trackUnknownLead(query)}
-                      style={{ padding: "6px 12px", borderRadius: "6px", background: "#22E6F0", color: "#0A0E17", fontWeight: 700, fontSize: "12px", border: "none", cursor: "pointer" }}
+                      className="sx-unknown-btn"
                     >
-                      + {kn ? "ಈ ಅಜ್ಞಾತ ಲೀಡ್ ಅನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ" : "Track this Unknown Lead in Second Brain"}
+                      + {kn ? "ಈ ಅಜ್ಞಾತ ಲೀಡ್ ಅನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ" : "Track Unknown Lead in Second Brain"}
                     </button>
                   </div>
                 )}
@@ -448,78 +453,24 @@ function SearchContent() {
               const t = tierCls(r.risk_score || 0);
               const why = isSearch ? matchWhy(r, kn) : null;
               return (
-                <div key={r.suspect_id} style={{ display: "flex", flexDirection: "column" }}>
-                  <button
-                    id={`sx-row-${r.suspect_id}`}
-                    role="listitem"
-                    className={`sx-rrow ${selectedId === r.suspect_id ? "active" : ""}`}
-                    onClick={() => setSelectedId(selectedId === r.suspect_id ? null : r.suspect_id)}
-                    style={{ borderBottom: selectedId === r.suspect_id ? "none" : "" }}
-                  >
-                    <span className={`sx-rav r-${t}`}>{initials(r.full_name)}</span>
-                    <span className="sx-rbody">
-                      <span className="nm"><HighlightName name={r.full_name} query={debounced} /></span>
-                      <span className="al">{r.alias ? `alias "${r.alias}" · ` : ""}{r.suspect_id}</span>
-                      <span className="mt">{r.address_zone || r.zone}{why ? <span className={`sx-why ${why.cls}`}>{why.txt}</span> : null}</span>
-                    </span>
-                    <span className="sx-rright">
-                      <span className={`pip p-${t}`}>{tier(r.risk_score || 0)}</span>
-                      <span className="fc">{r.prior_count ?? 0} {kn ? "FIR" : "FIRs"}</span>
-                    </span>
-                  </button>
-
-                  {/* Minimalist Inline Evidentiary Dossier */}
-                  {selectedId === r.suspect_id && (
-                    <div className={`sx-dossier-box ${(r.risk_score || 0) >= 70 ? "r-h" : ""}`}>
-                      <div className="sx-dossier-head">
-                        <div className="sx-dossier-ttl">
-                          <ShieldCheck size={13} />
-                          <span>{kn ? "ವ್ಯಕ್ತಿಯ ಸಾರಾಂಶ" : "Profile summary"}</span>
-                        </div>
-                        <div className="sx-dossier-tag">
-                          id: <b style={{ color: "var(--cyan)" }}>{r.suspect_id}</b>
-                        </div>
-                      </div>
-
-                      {why && (
-                        <div className="sx-dossier-why">
-                          <b>{kn ? "ಹೊಂದಾಣಿಕೆ ಕಾರಣ:" : "Match Justification:"}</b> {why.txt.toLowerCase()} ({kn ? "ಕ್ಷೇತ್ರ:" : "field:"} <code style={{ color: "var(--cyan)" }}>{r.match_field || "full_name"}</code>)
-                        </div>
-                      )}
-
-                      <div className="sx-dossier-grid">
-                        <div className="sx-dossier-stat">
-                          <div className="sl">{kn ? "ಅಪಾಯ ಅಂಕ" : "Risk score"}</div>
-                          <div className="sv" style={{ color: (r.risk_score || 0) >= 70 ? "#F87171" : "var(--cyan)" }}>
-                            {typeof r.risk_score === "number" ? r.risk_score.toFixed(1) : "—"}
-                          </div>
-                        </div>
-                        <div className="sx-dossier-stat">
-                          <div className="sl">{kn ? "ಹಿಂದಿನ FIR" : "Earlier FIRs"}</div>
-                          <div className="sv">{r.prior_count ?? 0}</div>
-                        </div>
-                        <div className="sx-dossier-stat">
-                          <div className="sl">{kn ? "ವಲಯ" : "Area"}</div>
-                          <div className="sv" style={{ fontSize: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {r.address_zone || r.zone || "—"}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", paddingTop: "2px" }}>
-                        <button
-                          type="button"
-                          className="sx-dossier-btn"
-                          onClick={() => router.push(`/antarBrain?suspect=${r.suspect_id}`)}
-                        >
-                          <Brain size={12} />
-                          <span>{kn ? "3D ಮೆದುಳಿನಲ್ಲಿ ನೋಡಿ" : "Open in 3D Brain"}</span>
-                          <ArrowRight size={11} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  key={r.suspect_id}
+                  id={`sx-row-${r.suspect_id}`}
+                  role="listitem"
+                  className={`sx-rrow ${selectedId === r.suspect_id ? "active" : ""}`}
+                  onClick={() => setSelectedId(r.suspect_id)}
+                >
+                  <span className={`sx-rav r-${t}`}>{initials(r.full_name)}</span>
+                  <span className="sx-rbody">
+                    <span className="nm"><HighlightName name={r.full_name} query={debounced} /></span>
+                    <span className="al">{r.alias ? `alias "${r.alias}" · ` : ""}{r.suspect_id}</span>
+                    <span className="mt">{r.address_zone || r.zone}{why ? <span className={`sx-why ${why.cls}`}>{why.txt}</span> : null}</span>
+                  </span>
+                  <span className="sx-rright">
+                    <span className={`pip p-${t}`}>{tier(r.risk_score || 0)}</span>
+                    <span className="fc">{r.prior_count ?? 0} {kn ? "FIR" : "FIRs"}</span>
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -527,7 +478,7 @@ function SearchContent() {
 
         {/* RIGHT: profile detail */}
         <div className="sx-detailpanel">
-          {!selectedId && <div className="sx-detail-empty">{kn ? "ವಿವರಗಳಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ" : "Select a profile to view full details"}</div>}
+          {!selectedId && <div className="sx-detail-empty">{kn ? "ವಿವರಗಳಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ" : "Select a record from the list to view full dossier"}</div>}
           {selectedId && loadingProfile && !p && <div className="sx-detail-empty"><div className="signal-pulse" style={{ width: 180 }} /></div>}
           {selectedId && p && (
             <div className="sx-dp-inner fade-rise">
@@ -545,9 +496,9 @@ function SearchContent() {
                   <div className="badges">
                     <span className="b verified">
                       <ShieldCheck size={12} />
-                      {kn ? "ಪರಿಶೀಲಿತ ದಾಖಲೆ" : "VERIFIED RECORD"}
+                      {kn ? "ಪರಿಶೀಲಿತ ದಾಖಲೆ" : "Verified record"}
                     </span>
-                    <span className={`b r-${tierCls(p.risk_score || 0)}`}>{tier(p.risk_score || 0)} {kn ? "ಅಪಾಯ" : "RISK"}</span>
+                    <span className={`b r-${tierCls(p.risk_score || 0)}`}>{tier(p.risk_score || 0)} {kn ? "ಅಪಾಯ" : "risk"}</span>
                     <span className="b id">{p.suspect_id}</span>
                     {rec?.priors != null && <span className="b priors">{rec.priors} {kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ" : rec.priors === 1 ? "earlier case" : "earlier cases"}</span>}
                     {rec?.status && <span className="b status">{rec.status}</span>}
@@ -561,305 +512,321 @@ function SearchContent() {
               </div>
 
               <div className="sx-profile-tabs">
-                <button
-                  type="button"
-                  className={`sx-ptab ${profileTab === "details" ? "on" : ""}`}
-                  onClick={() => setProfileTab("details")}
-                >
-                  <Activity size={13} />
-                  <span>{kn ? "ವಿವರಗಳು ಮತ್ತು ಕೇಸ್‌ಫೈಲ್" : "DETAILS & CASEFILE"}</span>
-                </button>
-                <button
-                  type="button"
-                  className={`sx-ptab osint ${profileTab === "osint" ? "on" : ""}`}
-                  onClick={() => setProfileTab("osint")}
-                >
-                  <Sparkles size={13} />
-                  <span>{kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ" : "INTERNET SEARCH"}</span>
-                </button>
+                <div className="sx-ptabs-left">
+                  <button
+                    type="button"
+                    className={`sx-ptab ${profileTab === "details" ? "on" : ""}`}
+                    onClick={() => setProfileTab("details")}
+                  >
+                    <Activity size={13} />
+                    <span>{kn ? "ವಿವರಗಳು ಮತ್ತು ಕೇಸ್‌ಫೈಲ್" : "Details & Casefile"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`sx-ptab osint ${profileTab === "osint" ? "on" : ""}`}
+                    onClick={() => setProfileTab("osint")}
+                  >
+                    <Sparkles size={13} />
+                    <span>{kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ" : "Internet Search"}</span>
+                  </button>
+                </div>
+                <div className="sx-ptabs-actions">
+                  {role !== "Approver" && (
+                    <button className="sx-act-sm" onClick={() => setWatchRequest(true)}
+                            title={kn ? "ಮೇಲ್ವಿಚಾರಕರ ಅನುಮೋದನೆ ಅಗತ್ಯ" : "Requires supervising officer approval"}>
+                      <ShieldCheck size={12} aria-hidden="true" /> {kn ? "ವೀಕ್ಷಣಾ ಪಟ್ಟಿ" : "Watchlist"}
+                    </button>
+                  )}
+                  <button className="sx-act-sm" onClick={() => router.push(`/map?zone=${encodeURIComponent(p.address_zone || p.zone || "")}`)}>
+                    <MapPin size={12} /> {kn ? "ನಕ್ಷೆ" : "Map"}
+                  </button>
+                  <button className="sx-act-sm" onClick={() => router.push(`/antar?q=${encodeURIComponent("Tell me about " + (p.full_name || ""))}`)}>
+                    <Sparkles size={12} /> {kn ? "Antar ಕೇಳಿ" : "Ask Antar"}
+                  </button>
+                  <button className="sx-act-sm primary" onClick={() => router.push(`/antarBrain?suspect=${p.suspect_id}`)}>
+                    <Brain size={12} /> {kn ? "ಮೆದುಳಿನಲ್ಲಿ ನೋಡಿ" : "Show in Brain"} <ArrowRight size={12} />
+                  </button>
+                </div>
               </div>
               
               {profileTab === "osint" && !osintAllowed && (
-                 <div style={{ padding: "24px", textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: "14px" }}>
-                   <div style={{ marginBottom: "12px", color: "var(--osint)" }}>
-                     <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                 <div className="sx-osint-locked">
+                   <div className="sx-osint-locked-ico">
+                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                    </div>
                    OSINT is available to administrators.<br/>Log in with an admin ID (A-...) to enable.
                  </div>
               )}
               {profileTab === "osint" && osintAllowed && osintConsentOpen && (
-                <div style={{ padding: "24px" }}>
-                  <div style={{ border: "1px solid rgba(239, 68, 68, 0.4)", background: "rgba(239, 68, 68, 0.1)", borderRadius: "8px", padding: "16px", textAlign: "left" }}>
-                    <div style={{ color: "#EF4444", fontWeight: 700, marginBottom: "8px", fontFamily: "Chakra Petch" }}>OSINT ACCESS CONSENT</div>
-                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>
+                <div className="sx-osint-consent-wrap">
+                  <div className="sx-osint-consent">
+                    <div className="sx-osint-consent-ttl">OSINT ACCESS CONSENT</div>
+                    <p>
                       You are about to access the open-source intelligence (OSINT) module. This tool queries public data, social media, and unverified third-party sources.
                       By proceeding, you acknowledge that OSINT data is unverified and all queries are audit-logged.
                     </p>
-                    <div style={{ marginTop: "16px", display: "flex", gap: "10px" }}>
-                      <button onClick={() => setProfileTab("details")} style={{ padding: "8px 16px", borderRadius: "6px", background: "rgba(255,255,255,0.05)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}>Cancel</button>
-                      <button onClick={() => setOsintConsentOpen(false)} style={{ padding: "8px 16px", borderRadius: "6px", background: "#EF4444", color: "#fff", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}>I Agree · Enable OSINT</button>
+                    <div className="sx-osint-consent-btns">
+                      <button onClick={() => setProfileTab("details")} className="sx-act">Cancel</button>
+                      <button onClick={() => setOsintConsentOpen(false)} className="sx-act primary">I Agree · Enable OSINT</button>
                     </div>
                   </div>
                 </div>
               )}
               {profileTab === "osint" && osintAllowed && !osintConsentOpen && (
-                <div style={{ padding: "0 24px 24px" }}>
-<div className="sx-osint-main" style={{ display: "flex", flexDirection: "column", height: "auto" }}>
-          {/* LEFT: query builder */}
-          <div className="sx-qbuilder">
-            <div className="sx-ql"><span className="req" />{kn ? "ಗುರುತಿನ ಸಿಗ್ನಲ್‌ಗಳು" : "Identity signals"}</div>
-            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "6px" }}>
-              <input className="sx-qfield" style={{ flex: 1, paddingRight: "64px" }} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={kn ? "ಪೂರ್ಣ ಹೆಸರು ಅಥವಾ ಅಡ್ಡಹೆಸರು…" : "Full name, alias, phone, plate…"} onKeyDown={(e) => { if (e.key === "Enter") runOsint(); }} />
-              <div style={{ position: "absolute", right: "10px", display: "flex", alignItems: "center", gap: "4px" }}>
-                <button type="button" onClick={toggleVoice} title={recording ? "Stop listening" : "Speak to search"} style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: recording ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.08)", color: recording ? "#EF4444" : "#22E6F0", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  {recording ? <MicOff size={13} /> : <Mic size={13} />}
-                </button>
-                {query && (
-                  <button type="button" onClick={() => setQuery("")} title="Clear input" style={{ width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.08)", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="sx-ql">{kn ? "ಗುಪ್ತಚರ ಮೂಲಗಳು" : "Intelligence sources"}</div>
-            <div className="sx-src-grid">
-              {[["Public Records", "#22E6F0"], ["Social Media", "#FF8C42"], ["Court Records", "#18D69A"], ["News Archives", "#FFB020"], ["Marketplace", "#B026FF"], ["Geo-tagged", "#7A8BA0"]].map(([n, c], i) => (
-                <div key={n} className={`sx-src ${i < 5 ? "on" : ""}`}>
-                  <span className="dot" style={{ background: c }} />
-                  <span className="nm">{n}</span>
-                  <span className="cb">{i < 5 ? "" : ""}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="sx-ql">{kn ? "ಹುಡುಕಾಟ ಆಳ" : "Search depth"}</div>
-            <div className="sx-depth">
-              {["Surface", "Standard", "Deep", "Full"].map((d, i) => <button key={d} className={i === 1 ? "on" : ""}>{d}</button>)}
-            </div>
-
-            <button className="sx-run" onClick={runOsint} disabled={osintLoading}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-              {osintLoading ? (kn ? "ಸ್ಕ್ಯಾನ್…" : "Scanning…") : (kn ? "OSINT ಹುಡುಕಾಟ ಚಲಾಯಿಸಿ" : "Run OSINT search")}
-            </button>
-
-            <div className="sx-legal"><b>{kn ? "ಕಾನೂನು ಸೂಚನೆ:" : "Legal Notice:"}</b> {kn ? "ಎಲ್ಲಾ OSINT ಡೇಟಾ ಮುಕ್ತ-ಮೂಲ ಮತ್ತು ಪರಿಶೀಲಿಸದ. ಫಲಿತಾಂಶಗಳನ್ನು ಎಂದಿಗೂ ದೃಢೀಕೃತ ಸತ್ಯವೆಂದು ಪರಿಗಣಿಸಬೇಡಿ." : "All OSINT data is open-source and unverified. Results must never be treated as confirmed facts. This session is audit-logged (KSP Policy §4.2)."}</div>
-
-            <div className="sx-audit">
-              <div className="t">{kn ? "ಸೆಶನ್ ಲೆಕ್ಕಪರಿಶೋಧನೆ" : "Session audit log"}</div>
-              <div className="row"><span className="ts">00:00</span> {kn ? "ಸೆಶನ್ ಪ್ರಾರಂಭ · DCP Kumar" : "Session initiated · DCP Kumar"}</div>
-              {osint && <div className="row"><span className="ts">00:03</span> {kn ? "ಪ್ರಶ್ನೆ ಸಲ್ಲಿಸಲಾಗಿದೆ · " : "Query submitted · "}"{osint.q}"</div>}
-              {osint && <div className="row"><span className="ts">00:04</span> {osint.claims.length} {kn ? "ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು" : "open-web signals surfaced"}</div>}
-            </div>
-          </div>
-
-          {/* RIGHT: results */}
-          {/* RIGHT: results */}
-          <div className="sx-osint-results">
-            <div className="sx-rmeta">
-              <div>
-                <span className="cnt">{osint ? osint.claims.length : (kn ? "—" : "0")} {kn ? "ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು" : "open-web signals"}</span>
-                {osint && <span className="sub"> {kn ? "ಇದಕ್ಕಾಗಿ" : "for"} "{osint.q}"</span>}
-              </div>
-              {osintLoading && <span className="scan"><span className="d" /> {kn ? "ಸ್ಕ್ಯಾನ್ ಆಗುತ್ತಿದೆ" : "scanning"}</span>}
-            </div>
-
-            {/* Verified anchor from internal DB */}
-            {anchor && (
-              <div className="sx-anchor">
-                <div className={`sx-anchor-av r-${tierCls(anchor.risk_score || 0)}`}>{initials(anchor.full_name)}</div>
-                <div className="sx-anchor-body">
-                  <div className="nm">{anchor.full_name} <span className="vtag"> {kn ? "FIR-ಲಿಂಕ್" : "FIR-Linked"} {anchor.suspect_id}</span></div>
-                  <div className="sub">{anchor.alias ? `alias "${anchor.alias}" · ` : ""}{anchor.address_zone} · {anchor.prior_count} {kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ" : "earlier cases"} · {kn ? "ಅಪಾಯ" : "risk"} {anchor.risk_score ?? "—"}</div>
-                </div>
-                <button className="sx-anchor-btn" onClick={() => router.push(`/antarBrain?suspect=${anchor.suspect_id}`)}>{kn ? "ಮೆದುಳಿನಲ್ಲಿ →" : "Show in Brain →"}</button>
-              </div>
-            )}
-
-            {/* 4-TAB MULTI-MODULE RECON WORKBENCH (Layer 5) */}
-            {reconData && (
-              <div className="sx-recon-workbench" style={{ margin: "16px 0", border: "1px solid rgba(255,140,66,0.3)", borderRadius: "10px", background: "rgba(10,14,23,0.85)", overflow: "hidden" }}>
-                <div className="sx-recon-tabs" style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.4)" }}>
-                  {[
-                    ["maltego", "Maltego Graph"],
-                    ["telecom", "PhoneInfoga"],
-                    ["sherlock", "Sherlock Handles"],
-                    ["bbot", "BBOT Scan Tree"],
-                  ].map(([k, label]) => (
-                    <button
-                      key={k}
-                      onClick={() => setReconTab(k)}
-                      style={{
-                        flex: 1,
-                        padding: "10px 8px",
-                        fontSize: "12px",
-                        fontWeight: reconTab === k ? "700" : "500",
-                        color: reconTab === k ? "#FF8C42" : "#94A3B8",
-                        background: reconTab === k ? "rgba(255,140,66,0.12)" : "transparent",
-                        borderBottom: reconTab === k ? "2px solid #FF8C42" : "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="sx-recon-body" style={{ padding: "14px", maxHeight: "320px", overflowY: "auto" }}>
-                  {reconTab === "maltego" && (
-                    <div>
-                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.8)", marginBottom: "8px", fontWeight: 600 }}>
-                        maltego linkage topology · {reconData.maltego_linkage?.nodes?.length || 0} nodes · {reconData.maltego_linkage?.edges?.length || 0} edges
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {(reconData.maltego_linkage?.nodes || []).map((n, idx) => (
-                          <div key={n?.id || idx} style={{ padding: "6px 10px", borderRadius: "6px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", fontSize: "12px", color: "rgba(255,255,255,0.9)" }}>
-                            <span style={{ fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{String(n?.type || n?.node_type || "NODE").toLowerCase()}:</span> {n?.label || n?.name || n?.id || "—"}
-                            {n?.verified ? <span style={{ marginLeft: "6px", fontSize: "10px", color: "rgba(255,255,255,0.5)" }}>● verified</span> : <span style={{ marginLeft: "6px", fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>○ unverified</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {reconTab === "telecom" && (
-                    <div>
-                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.8)", marginBottom: "8px", fontWeight: 600 }}>
-                        phoneinfoga telecom footprint · e.164 geo-footprinting
-                      </div>
-                      <div style={{ fontSize: "13px", color: "#E2E8F0" }}>
-                        <div><b>Number / Query:</b> {reconData.phone_infoga?.phone_query || "N/A"}</div>
-                        <div><b>Line Classification:</b> {reconData.phone_infoga?.line_type || "Unknown"} ({reconData.phone_infoga?.country || "IN"})</div>
-                        <div style={{ marginTop: "8px", color: "#94A3B8" }}>
-                          <b>Co-occurring Internal Records:</b> {(reconData.phone_infoga?.co_occurring_records || []).join(", ") || "None"}
+                <div className="sx-osint-wrap">
+                  <div className="sx-osint-main">
+                    {/* LEFT: query builder */}
+                    <div className="sx-qbuilder">
+                      <div className="sx-ql"><span className="req" />{kn ? "ಗುರುತಿನ ಸಿಗ್ನಲ್‌ಗಳು" : "Identity signals"}</div>
+                      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <input className="sx-qfield" style={{ flex: 1, paddingRight: "64px" }} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={kn ? "ಪೂರ್ಣ ಹೆಸರು ಅಥವಾ ಅಡ್ಡಹೆಸರು…" : "Full name, alias, phone, plate…"} onKeyDown={(e) => { if (e.key === "Enter") runOsint(); }} />
+                        <div style={{ position: "absolute", right: "10px", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <button type="button" onClick={toggleVoice} title={recording ? "Stop listening" : "Speak to search"} style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: recording ? "rgba(239,68,68,0.16)" : "rgba(255,255,255,0.06)", color: recording ? "#F87171" : "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                            {recording ? <MicOff size={13} /> : <Mic size={13} />}
+                          </button>
+                          {query && (
+                            <button type="button" onClick={() => setQuery("")} title="Clear input" style={{ width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                              <X size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
 
-                  {reconTab === "sherlock" && (
-                    <div>
-                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.8)", marginBottom: "8px", fontWeight: 600 }}>
-                        sherlock digital profiles · strict unverified quarantine
+                      <div className="sx-ql">{kn ? "ಗುಪ್ತಚರ ಮೂಲಗಳು" : "Intelligence sources"}</div>
+                      <div className="sx-src-grid">
+                        {["Public Records", "Social Media", "Court Records", "News Archives", "Marketplace", "Geo-tagged"].map((n, i) => (
+                          <div key={n} className={`sx-src ${i < 5 ? "on" : ""}`}>
+                            <span className="dot" />
+                            <span className="nm">{n}</span>
+                          </div>
+                        ))}
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        {(reconData.sherlock_handles || []).map((h, i) => (
-                          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "rgba(255,255,255,0.04)", borderRadius: "6px", fontSize: "12px" }}>
-                            <div>
-                              <span style={{ fontWeight: 700, color: "#E2E8F0" }}>{h?.platform || "Platform"}</span> · <span style={{ color: "#94A3B8" }}>@{h?.handle || "handle"}</span>
+
+                      <div className="sx-ql">{kn ? "ಹುಡುಕಾಟ ಆಳ" : "Search depth"}</div>
+                      <div className="sx-depth">
+                        {["Surface", "Standard", "Deep", "Full"].map((d, i) => <button key={d} className={i === 1 ? "on" : ""}>{d}</button>)}
+                      </div>
+
+                      <button className="sx-run" onClick={runOsint} disabled={osintLoading}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                        {osintLoading ? (kn ? "ಸ್ಕ್ಯಾನ್…" : "Scanning…") : (kn ? "OSINT ಹುಡುಕಾಟ ಚಲಾಯಿಸಿ" : "Run OSINT search")}
+                      </button>
+
+                      <div className="sx-legal"><b>{kn ? "ಕಾನೂನು ಸೂಚನೆ:" : "Legal Notice:"}</b> {kn ? "ಎಲ್ಲಾ OSINT ಡೇಟಾ ಮುಕ್ತ-ಮೂಲ ಮತ್ತು ಪರಿಶೀಲಿಸದ. ಫಲಿತಾಂಶಗಳನ್ನು ಎಂದಿಗೂ ದೃಢೀಕೃತ ಸತ್ಯವೆಂದು ಪರಿಗಣಿಸಬೇಡಿ." : "All OSINT data is open-source and unverified. Results must never be treated as confirmed facts. This session is audit-logged (KSP Policy §4.2)."}</div>
+
+                      <div className="sx-audit">
+                        <div className="t">{kn ? "ಸೆಶನ್ ಲೆಕ್ಕಪರಿಶೋಧನೆ" : "Session audit log"}</div>
+                        <div className="row"><span className="ts">00:00</span> {kn ? "ಸೆಶನ್ ಪ್ರಾರಂಭ · DCP Kumar" : "Session initiated · DCP Kumar"}</div>
+                        {osint && <div className="row"><span className="ts">00:03</span> {kn ? "ಪ್ರಶ್ನೆ ಸಲ್ಲಿಸಲಾಗಿದೆ · " : "Query submitted · "}"{osint.q}"</div>}
+                        {osint && <div className="row"><span className="ts">00:04</span> {osint.claims.length} {kn ? "ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು" : "open-web signals surfaced"}</div>}
+                      </div>
+                    </div>
+
+                    {/* RIGHT: results */}
+                    <div className="sx-osint-results">
+                      <div className="sx-rmeta">
+                        <div>
+                          <span className="cnt">{osint ? osint.claims.length : (kn ? "—" : "0")} {kn ? "ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು" : "open-web signals"}</span>
+                          {osint && <span className="sub"> {kn ? "ಇದಕ್ಕಾಗಿ" : "for"} "{osint.q}"</span>}
+                        </div>
+                        {osintLoading && <span className="scan"><span className="d" /> {kn ? "ಸ್ಕ್ಯಾನ್ ಆಗುತ್ತಿದೆ" : "scanning"}</span>}
+                      </div>
+
+                      {/* Verified anchor from internal DB */}
+                      {anchor && (
+                        <div className="sx-anchor">
+                          <div className={`sx-anchor-av r-${tierCls(anchor.risk_score || 0)}`}>{initials(anchor.full_name)}</div>
+                          <div className="sx-anchor-body">
+                            <div className="nm">{anchor.full_name} <span className="vtag">{kn ? "FIR-ಲಿಂಕ್" : "FIR-Linked"} {anchor.suspect_id}</span></div>
+                            <div className="sub">{anchor.alias ? `alias "${anchor.alias}" · ` : ""}{anchor.address_zone} · {anchor.prior_count} {kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ" : "earlier cases"} · {kn ? "ಅಪಾಯ" : "risk"} {anchor.risk_score ?? "—"}</div>
+                          </div>
+                          <button className="sx-anchor-btn" onClick={() => router.push(`/antarBrain?suspect=${anchor.suspect_id}`)}>{kn ? "ಮೆದುಳಿನಲ್ಲಿ →" : "Show in Brain →"}</button>
+                        </div>
+                      )}
+
+                      {/* 4-TAB MULTI-MODULE RECON WORKBENCH */}
+                      {reconData && (
+                        <div className="sx-recon-workbench">
+                          <div className="sx-recon-tabs">
+                            {[
+                              ["maltego", "Maltego Graph"],
+                              ["telecom", "PhoneInfoga"],
+                              ["sherlock", "Sherlock Handles"],
+                              ["bbot", "BBOT Scan Tree"],
+                            ].map(([k, label]) => (
+                              <button
+                                key={k}
+                                onClick={() => setReconTab(k)}
+                                className={reconTab === k ? "on" : ""}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="sx-recon-body">
+                            {reconTab === "maltego" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  maltego linkage topology · {reconData.maltego_linkage?.nodes?.length || 0} nodes · {reconData.maltego_linkage?.edges?.length || 0} edges
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                                  {(reconData.maltego_linkage?.nodes || []).map((n, idx) => (
+                                    <div key={n?.id || idx} className="sx-recon-chip">
+                                      <span className="tp">{String(n?.type || n?.node_type || "NODE").toLowerCase()}:</span> {n?.label || n?.name || n?.id || "—"}
+                                      {n?.verified ? <span className="vf">· verified</span> : <span className="uv">· unverified</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {reconTab === "telecom" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  phoneinfoga telecom footprint · e.164 geo-footprinting
+                                </div>
+                                <div style={{ fontSize: "12.5px", color: "#E2E8F0", lineHeight: 1.6 }}>
+                                  <div><b>Number / Query:</b> {reconData.phone_infoga?.phone_query || "N/A"}</div>
+                                  <div><b>Line Classification:</b> {reconData.phone_infoga?.line_type || "Unknown"} ({reconData.phone_infoga?.country || "IN"})</div>
+                                  <div style={{ marginTop: "6px", color: "#94A3B8" }}>
+                                    <b>Co-occurring Internal Records:</b> {(reconData.phone_infoga?.co_occurring_records || []).join(", ") || "None"}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {reconTab === "sherlock" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  sherlock digital profiles · strict unverified quarantine
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                  {(reconData.sherlock_handles || []).map((h, i) => (
+                                    <div key={i} className="sx-recon-handle">
+                                      <div>
+                                        <span style={{ fontWeight: 600, color: "#F8FAFC" }}>{h?.platform || "Platform"}</span> · <span style={{ color: "#94A3B8" }}>@{h?.handle || "handle"}</span>
+                                      </div>
+                                      <span className="bdg">{h?.badge || "FOUND"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {reconTab === "bbot" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  bbot event scan tree · chronological recon audit
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace" }}>
+                                  {(reconData.bbot_scan_tree || []).map((e, idx) => (
+                                    <div key={e?.id || idx} className="sx-recon-log">
+                                      <span className="ev">[{String(e?.event_type || "SCAN").toUpperCase()}]</span> <span>{e?.detail || "—"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {!osint && !osintLoading && (
+                        <div className="sx-osint-empty">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                          <p>{kn ? "ಮುಕ್ತ-ಮೂಲ ಸಿಗ್ನಲ್‌ಗಳಿಗಾಗಿ ಪ್ರಶ್ನೆ ನಮೂದಿಸಿ ಮತ್ತು “OSINT ಹುಡುಕಾಟ ಚಲಾಯಿಸಿ” ಒತ್ತಿ." : "Enter a query and run an OSINT search to surface open-web signals alongside the verified record."}</p>
+                        </div>
+                      )}
+
+                      {osint && osint.claims.length === 0 && !osintLoading && (
+                        <div className="sx-osint-empty"><p>{kn ? "ಯಾವುದೇ ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ." : "No open-web signals found for this query."}</p></div>
+                      )}
+
+                      {osint?.claims.map((c, i) => {
+                        const pct = Math.round((c.confidence || 0) * 100);
+                        return (
+                          <div className="sx-claim" key={i}>
+                            <div className="sx-claim-hd">
+                              <span className="src">OSINT</span>
+                              <span className={`status ${c.status}`}>{c.status || "unverified"}</span>
+                              <span className="conf">{pct}%</span>
                             </div>
-                            <span style={{ padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: 700, background: "rgba(255,140,66,0.2)", color: "#FF8C42" }}>
-                              {h?.badge || "FOUND"}
-                            </span>
+                            <div className="sx-claim-body">{c.claim}</div>
+                            <div className="sx-claim-ft">
+                              <div className="bar"><div className="f" style={{ width: `${pct}%` }} /></div>
+                              {/^https?:\/\//i.test(c.source_url || "") && <a href={c.source_url} target="_blank" rel="noopener noreferrer nofollow">source ↗</a>}
+                              <span className="warn">{kn ? "ಪರಿಶೀಲಿಸದ · ಮುಕ್ತ-ಮೂಲ" : "Unverified · open-source"}</span>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                        );
+                      })}
 
-                  {reconTab === "bbot" && (
-                    <div>
-                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.8)", marginBottom: "8px", fontWeight: 600 }}>
-                        bbot event scan tree · chronological recon audit
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px", fontFamily: "monospace" }}>
-                        {(reconData.bbot_scan_tree || []).map((e, idx) => (
-                          <div key={e?.id || idx} style={{ padding: "6px", background: "rgba(0,0,0,0.3)", borderLeft: "2px solid #18D69A" }}>
-                            <span style={{ color: "#18D69A", fontWeight: 700 }}>[{String(e?.event_type || "SCAN").toUpperCase()}]</span> <span style={{ color: "#94A3B8" }}>{e?.detail || "—"}</span>
+                      {profile?.similar_cases?.[0] && osint && (
+                        <div className="sx-infer">
+                          <div>
+                            <div className="t">{kn ? "AI ಸಂಬಂಧ ಸಲಹೆ" : "AI Correlation Suggestion"}</div>
+                            <div className="s">{profile.similar_cases[0].summary?.slice(0, 220)}… <span className="c">{kn ? "ವಿಶ್ವಾಸ" : "Confidence"}: {Math.round((profile.similar_cases[0].score || 0) * 100)}% · {kn ? "ಊಹಿತ ಮಾತ್ರ" : "inferred only"}</span></div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {!osint && !osintLoading && (
-              <div className="sx-osint-empty">
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--osint)" strokeWidth="1.4"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                <p>{kn ? "ಮುಕ್ತ-ಮೂಲ ಸಿಗ್ನಲ್‌ಗಳಿಗಾಗಿ ಪ್ರಶ್ನೆ ನಮೂದಿಸಿ ಮತ್ತು “OSINT ಹುಡುಕಾಟ ಚಲಾಯಿಸಿ” ಒತ್ತಿ." : "Enter a query and run an OSINT search to surface open-web signals alongside the verified record."}</p>
-              </div>
-            )}
-
-            {osint && osint.claims.length === 0 && !osintLoading && (
-              <div className="sx-osint-empty"><p>{kn ? "ಯಾವುದೇ ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ." : "No open-web signals found for this query."}</p></div>
-            )}
-
-            {osint?.claims.map((c, i) => {
-              const pct = Math.round((c.confidence || 0) * 100);
-              return (
-                <div className="sx-claim" key={i}>
-                  <div className="sx-claim-hd">
-                    <span className="src">OSINT</span>
-                    <span className={`status ${c.status}`}>{c.status || "unverified"}</span>
-                    <span className="conf">{pct}%</span>
-                  </div>
-                  <div className="sx-claim-body">{c.claim}</div>
-                  <div className="sx-claim-ft">
-                    <div className="bar"><div className="f" style={{ width: `${pct}%` }} /></div>
-                    {/* a link from the open web: only an http(s) address is ever made clickable */}
-                    {/^https?:\/\//i.test(c.source_url || "") && <a href={c.source_url} target="_blank" rel="noopener noreferrer nofollow">source ↗</a>}
-                    <span className="warn">{kn ? "ಪರಿಶೀಲಿಸದ · ಮುಕ್ತ-ಮೂಲ" : "Unverified · open-source"}</span>
                   </div>
                 </div>
-              );
-            })}
-
-            {/* AI correlation from Second Brain */}
-            {profile?.similar_cases?.[0] && osint && (
-              <div className="sx-infer">
-                <span className="ico"></span>
-                <div>
-                  <div className="t">{kn ? "AI ಸಂಬಂಧ ಸಲಹೆ" : "AI Correlation Suggestion"}</div>
-                  <div className="s">{profile.similar_cases[0].summary?.slice(0, 220)}… <span className="c">{kn ? "ವಿಶ್ವಾಸ" : "Confidence"}: {Math.round((profile.similar_cases[0].score || 0) * 100)}% · {kn ? "ಊಹಿತ ಮಾತ್ರ" : "inferred only"}</span></div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
+              )}
               
               {profileTab === "details" && rec && (
               <div className="sx-sections sx-casefile">
                 {/* Key figures - four numbers an officer reads first */}
                 <div className="sx-kpis sx-sec-full">
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                      <span>{kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "linked cases"}</span>
-                      <FolderGit2 size={14} style={{ color: "var(--cyan)", opacity: 0.8 }} />
+                    <div className="sx-kpi-hd">
+                      <span>{kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "Linked cases"}</span>
+                      <FolderGit2 size={14} />
                     </div>
                     <b>{rec.linkedCases ?? "—"}</b>
                   </div>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                      <span>{kn ? "ಕೊನೆಯ FIR ನಿಂದ" : "since last FIR"}</span>
-                      <Calendar size={14} style={{ color: rec.lastFirDays != null && rec.lastFirDays <= 30 ? "#FBBF24" : "var(--cyan)", opacity: 0.8 }} />
+                    <div className="sx-kpi-hd">
+                      <span>{kn ? "ಕೊನೆಯ FIR ನಿಂದ" : "Since last FIR"}</span>
+                      <Calendar size={14} />
                     </div>
-                    <b className={rec.lastFirDays != null && rec.lastFirDays <= 30 ? "warn" : ""}>
-                      {rec.lastFirDays != null ? `${rec.lastFirDays}d` : "—"}
-                    </b>
+                    <b>{rec.lastFirDays != null ? `${rec.lastFirDays}d` : "—"}</b>
                   </div>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                      <span>{kn ? "ಸಹಚರರು" : "associates"}</span>
-                      <Users size={14} style={{ color: "var(--cyan)", opacity: 0.8 }} />
+                    <div className="sx-kpi-hd">
+                      <span>{kn ? "ಸಹಚರರು" : "Associates"}</span>
+                      <Users size={14} />
                     </div>
                     <b>{p.associates?.length ?? 0}</b>
                   </div>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                      <span>{kn ? "ಮೊದಲಿನ ಪ್ರಕರಣಗಳು" : "prior counts"}</span>
-                      <Hash size={14} style={{ color: "var(--cyan)", opacity: 0.8 }} />
+                    <div className="sx-kpi-hd">
+                      <span>{kn ? "ಮೊದಲಿನ ಪ್ರಕರಣಗಳು" : "Prior counts"}</span>
+                      <Hash size={14} />
                     </div>
                     <b>{rec.priors ?? "—"}</b>
                   </div>
                 </div>
 
-                {/* Why this risk score - points each factor actually contributed */}
+                {/* ROW 1 LEFT: Complete Record Details */}
+                <div className="sx-sec">
+                  <div className="sx-sec-t">{kn ? "ಪೂರ್ಣ ದಾಖಲೆ ವಿವರಗಳು" : "Complete record details"} <span className="cnt">{kn ? "ಪರಿಶೀಲಿತ" : "FIR registry"}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಶಂಕಿತ ಐಡಿ" : "Suspect ID"}</span><span className="v mono">{p.suspect_id}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಪೂರ್ಣ ಹೆಸರು" : "Full name"}</span><span className="v">{p.full_name}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಅಡ್ಡಹೆಸರು" : "Known alias"}</span><span className="v">{p.alias || (kn ? "ದಾಖಲಾಗಿಲ್ಲ" : "None recorded")}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಪ್ರಾಥಮಿಕ ವಲಯ" : "Primary zone"}</span><span className="v">{rec.zone || "—"}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಪ್ರಸ್ತುತ ಸ್ಥಿತಿ" : "Current status"}</span><span className="v">{rec.status || (kn ? "ಸಕ್ರಿಯ ದಾಖಲೆ" : "Active record")}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಹಿಂದಿನ ಪ್ರಕರಣಗಳು" : "Prior FIR count"}</span><span className="v">{rec.priors != null ? `${rec.priors} (${rec.priors === 1 ? "case" : "cases"})` : "0"}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "Linked case files"}</span><span className="v">{rec.linkedCases != null ? `${rec.linkedCases} linked` : "—"}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಕೊನೆಯ ಚಟುವಟಿಕೆ" : "Last FIR activity"}</span><span className="v">{rec.lastFirDays != null ? `${rec.lastFirDays} days ago` : "—"}</span></div>
+                  {(p.age || p.gender) && <div className="sx-field"><span className="k">{kn ? "ಲಿಂಗ · ವಯಸ್ಸು" : "Demographics"}</span><span className="v">{[cap(p.gender), p.age && `${p.age} yrs`].filter(Boolean).join(" · ")}</span></div>}
+                  {isSearch && row?.match_method && <div className="sx-field"><span className="k">{kn ? "ಹುಡುಕಾಟ ಹೊಂದಾಣಿಕೆ" : "Search match"}</span><span className="v mono">{matchWhy(row)?.txt || row.match_method}</span></div>}
+                </div>
+
+                {/* ROW 1 RIGHT: Why this risk score - points each factor actually contributed */}
                 {(p.risk_attributions || p.factors) && (
-                  <div className="sx-sec sx-sec-full">
+                  <div className="sx-sec">
                     <div className="sx-sec-t">{kn ? "ಈ ಅಪಾಯ ಅಂಕ ಏಕೆ" : "Why this risk score"} <span className="cnt">{kn ? "4 ಅಂಶಗಳು" : "4 factors · points"}</span></div>
                     <p className="sx-why-narrative">
                       {(() => {
@@ -885,20 +852,17 @@ function SearchContent() {
                   </div>
                 )}
 
-                {/* Record - only fields that exist in the data */}
-                <div className="sx-sec">
-                  <div className="sx-sec-t">{kn ? "ದಾಖಲೆ" : "Record"}</div>
-                  <div className="sx-field"><span className="k">{kn ? "ಐಡಿ" : "Suspect ID"}</span><span className="v mono">{p.suspect_id}</span></div>
-                  <div className="sx-field"><span className="k">{kn ? "ಹೆಸರು" : "Name"}</span><span className="v">{p.full_name}</span></div>
-                  {p.alias && <div className="sx-field"><span className="k">{kn ? "ಅಡ್ಡಹೆಸರು" : "Alias"}</span><span className="v">{p.alias}</span></div>}
-                  {rec.zone && <div className="sx-field"><span className="k">{kn ? "ಪ್ರಾಥಮಿಕ ವಲಯ" : "Primary zone"}</span><span className="v">{rec.zone}</span></div>}
-                  {rec.status && <div className="sx-field"><span className="k">{kn ? "ಸ್ಥಿತಿ" : "Status"}</span><span className="v red">{rec.status}</span></div>}
-                  {(p.age || p.gender) && <div className="sx-field"><span className="k">{kn ? "ಲಿಂಗ · ವಯಸ್ಸು" : "Gender · age"}</span><span className="v">{[cap(p.gender), p.age].filter(Boolean).join(" · ")}</span></div>}
-                </div>
+                {/* ROW 2 LEFT: Modus operandi */}
+                {rec.moText && (
+                  <div className="sx-sec">
+                    <div className="sx-sec-t">{kn ? "ಅಪರಾಧ ವಿಧಾನ (MO)" : "How they operate (MO)"} <span className="cnt">{kn ? "ಸಾರಾಂಶ" : "case summary"}</span></div>
+                    <div className="sx-mo">{rec.moText}</div>
+                  </div>
+                )}
 
-                {/* Recommended next steps */}
-                <div className="sx-sec">
-                  <div className="sx-sec-t">{kn ? "ಮುಂದಿನ ಹೆಜ್ಜೆಗಳು" : "Recommended next steps"}</div>
+                {/* ROW 2 RIGHT: Recommended next steps */}
+                <div className={`sx-sec ${!rec.moText ? "sx-sec-full" : ""}`}>
+                  <div className="sx-sec-t">{kn ? "ಮುಂದಿನ ಹೆಜ್ಜೆಗಳು" : "Recommended next steps"} <span className="cnt">{p.leads?.length || 0} {kn ? "ಕ್ರಮಗಳು" : "actions"}</span></div>
                   {p.leads?.length ? (
                     <ul className="sx-leads">
                       {p.leads.slice(0, 4).map((l, i) => (
@@ -913,17 +877,9 @@ function SearchContent() {
                   )}
                 </div>
 
-                {/* Modus operandi */}
-                {rec.moText && (
-                  <div className="sx-sec sx-sec-full">
-                    <div className="sx-sec-t">{kn ? "ಅಪರಾಧ ವಿಧಾನ (MO)" : "How they operate (MO)"}</div>
-                    <div className="sx-mo">{rec.moText}</div>
-                  </div>
-                )}
-
-                {/* Known associates - opens their record in place */}
+                {/* ROW 3: Known associates - opens their record in place */}
                 <div className="sx-sec sx-sec-full">
-                  <div className="sx-sec-t">{kn ? "ತಿಳಿದ ಸಹಚರರು" : "Known associates"} <span className="cnt">{p.associates?.length || 0}</span></div>
+                  <div className="sx-sec-t">{kn ? "ತಿಳಿದ ಸಹಚರರು" : "Known associates"} <span className="cnt">{p.associates?.length || 0} {kn ? "ಸಂಪರ್ಕಗಳು" : "co-accused links"}</span></div>
                   {(!p.associates || p.associates.length === 0) && <div className="sx-empty-sm">{kn ? "ಯಾವುದೇ ಲಿಂಕ್ ಇಲ್ಲ" : "No recorded associates in FIR data."}</div>}
                   <div className="sx-assoc-list sx-assoc-grid">
                     {(p.associates || []).slice(0, 6).map((a) => (
@@ -937,7 +893,7 @@ function SearchContent() {
                   </div>
                 </div>
 
-                {/* Cross-case matches - only ones strong enough to be worth reading */}
+                {/* ROW 4: Cross-case matches - only ones strong enough to be worth reading */}
                 {rec.strongMatches.length > 0 && (
                   <div className="sx-sec sx-sec-full">
                     <div className="sx-sec-t">{kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "Similar past cases"} <span className="cnt">{kn ? "ಊಹಿತ" : "inferred · ≥25% match"}</span></div>
@@ -951,11 +907,8 @@ function SearchContent() {
                 )}
               </div>
               )}
-              {/* Actions */}
+              {/* Bottom Actions */}
               <div className="sx-actions">
-                {/* Watchlisting a person is a real-world effect: this files a request that a
-                    supervising officer must approve (app/core/hitl.py). Approvers review
-                    requests; they do not file them. */}
                 {role !== "Approver" && (
                   <button className="sx-act hitl-request" onClick={() => setWatchRequest(true)}
                           title={kn ? "ಮೇಲ್ವಿಚಾರಕರ ಅನುಮೋದನೆ ಅಗತ್ಯ" : "Requires supervising officer approval"}>
