@@ -407,6 +407,25 @@ export default function MapScreen() {
   );
   const maxFir = Math.max(...Object.values(districtFirTotals), 1);
 
+  // The busiest districts in the current view get a faint leader line and one line of
+  // context, from the same counts that colour the map. East of the state's middle the
+  // line runs out to the right; on the west the coast sits close to the panel, so the
+  // line rises a little and the label sits above it.
+  const callouts = useMemo(() => {
+    const total = Object.values(districtFirTotals).reduce((a, b) => a + b, 0);
+    if (!total) return [];
+    return Object.entries(districtFirTotals)
+      .filter(([name, n]) => n > 0 && GADM_CENTROIDS[name])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([name, n], i) => {
+        const [lat, lon] = GADM_CENTROIDS[name];
+        const west = lon < 76.2;
+        const end = west ? [lat + 0.32, lon - 0.22] : [lat + (i % 2 ? -0.12 : 0.12), lon + 0.6];
+        return { name, n, share: Math.round((100 * n) / total), from: [lat, lon], end, west };
+      });
+  }, [districtFirTotals]);
+
   function colorFor(firs) {
     const t = Math.min(firs / maxFir, 1);
     // Use solid fill colors; fillOpacity handles transparency separately
@@ -841,6 +860,19 @@ export default function MapScreen() {
           {stateOutline && (
             <GeoJSON key="ka-edge" data={stateOutline} style={stateEdgeStyle} interactive={false} />
           )}
+
+          {/* Busiest districts: a faint leader line and one line of context */}
+          {geo && !selectedDistrict && callouts.map((c) => (
+            <Polyline key={"co-" + c.name} positions={[c.from, c.end]} interactive={false}
+                      pathOptions={{ color: "#E2E8F0", weight: 1, opacity: 0.28, dashArray: "2 4" }} />
+          ))}
+          {geo && !selectedDistrict && callouts.map((c) => (
+            <CircleMarker key={"col-" + c.name} center={c.end} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
+              <Tooltip permanent direction={c.west ? "top" : "right"} offset={c.west ? [0, -3] : [4, 0]} className="mx-callout">
+                <b>{c.name}</b> · {c.n.toLocaleString("en-IN")} FIR{kn || c.n === 1 ? "" : "s"} · {c.share}% {kn ? "ರಾಜ್ಯದ" : "of state"}
+              </Tooltip>
+            </CircleMarker>
+          ))}
 
           {/* Permanent District Labels - rendered when geo bounds are ready so they do not jump */}
           {geo && Object.entries(GADM_CENTROIDS).map(([name, coords]) => (
