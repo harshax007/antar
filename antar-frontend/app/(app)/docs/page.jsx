@@ -1162,10 +1162,12 @@ function DocsFull() {
                                         ["Built-in challenge", "an independent agent tests every hypothesis against base rates before it can be confirmed."],
                                         ["Governed agents", "each agent's permissions are declared and verified before it runs."],
                                       ] },
-                                      { h: "Coming Next", items: [
+                                      { h: "Future Development", items: [
+                                        ["Fully on-premises", "the whole system, AI model included, runs inside police infrastructure, so no data is sent to an external service."],
+                                        ["GPU acceleration", "local GPUs to run larger models and faster forecasts, using the system to its full potential."],
+                                        ["Live CCTV integration", "camera feeds linked to locations and cases, so alerts can draw on what is happening now."],
                                         ["Event-aware forecasting", "festival and event effects measured from past years of FIRs."],
                                         ["Federated learning", "models trained across districts without pooling raw FIR data."],
-                                        ["Kannada language model", "a compact model that runs on police infrastructure."],
                                       ] },
                                     ],
                                     kn: [
@@ -1175,10 +1177,12 @@ function DocsFull() {
                                         ["ಅಂತರ್ನಿರ್ಮಿತ ಸವಾಲು", "ಸ್ವತಂತ್ರ ಏಜೆಂಟ್ ಪ್ರತಿ ಊಹೆಯನ್ನು ದೃಢೀಕರಣಕ್ಕೂ ಮುನ್ನ ಮೂಲ ದರದ ವಿರುದ್ಧ ಪರೀಕ್ಷಿಸುತ್ತದೆ."],
                                         ["ನಿಯಂತ್ರಿತ ಏಜೆಂಟ್‌ಗಳು", "ಪ್ರತಿ ಏಜೆಂಟ್‌ನ ಅನುಮತಿಗಳನ್ನು ಘೋಷಿಸಿ, ಚಲಾಯಿಸುವ ಮೊದಲು ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ."],
                                       ] },
-                                      { h: "ಮುಂದೆ ಬರಲಿದೆ", items: [
+                                      { h: "ಭವಿಷ್ಯದ ಅಭಿವೃದ್ಧಿ", items: [
+                                        ["ಸಂಪೂರ್ಣ ಸ್ಥಳೀಯ ವ್ಯವಸ್ಥೆ", "AI ಮಾದರಿ ಸೇರಿದಂತೆ ಇಡೀ ವ್ಯವಸ್ಥೆ ಪೊಲೀಸ್ ಮೂಲಸೌಕರ್ಯದಲ್ಲೇ ಚಲಿಸುತ್ತದೆ; ಯಾವುದೇ ದತ್ತಾಂಶ ಹೊರಗಿನ ಸೇವೆಗೆ ಹೋಗುವುದಿಲ್ಲ."],
+                                        ["GPU ವೇಗವರ್ಧನೆ", "ದೊಡ್ಡ ಮಾದರಿಗಳು ಮತ್ತು ವೇಗದ ಮುನ್ಸೂಚನೆಗಾಗಿ ಸ್ಥಳೀಯ GPU ಗಳು, ವ್ಯವಸ್ಥೆಯ ಪೂರ್ಣ ಸಾಮರ್ಥ್ಯ ಬಳಕೆ."],
+                                        ["ನೇರ CCTV ಸಂಯೋಜನೆ", "ಕ್ಯಾಮೆರಾ ದೃಶ್ಯಗಳನ್ನು ಸ್ಥಳ ಮತ್ತು ಪ್ರಕರಣಗಳೊಂದಿಗೆ ಜೋಡಿಸಿ, ಈಗ ನಡೆಯುತ್ತಿರುವುದನ್ನು ಎಚ್ಚರಿಕೆಗಳಲ್ಲಿ ಬಳಸುವುದು."],
                                         ["ಘಟನೆ ಆಧಾರಿತ ಮುನ್ಸೂಚನೆ", "ಹಿಂದಿನ ವರ್ಷಗಳ FIR ಗಳಿಂದ ಅಳೆದ ಹಬ್ಬ ಮತ್ತು ಕಾರ್ಯಕ್ರಮಗಳ ಪರಿಣಾಮ."],
                                         ["ಫೆಡರೇಟೆಡ್ ಕಲಿಕೆ", "ಕಚ್ಚಾ FIR ದತ್ತಾಂಶವನ್ನು ಒಂದೆಡೆ ಸೇರಿಸದೆ ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಮಾದರಿ ತರಬೇತಿ."],
-                                        ["ಕನ್ನಡ ಭಾಷಾ ಮಾದರಿ", "ಪೊಲೀಸ್ ಮೂಲಸೌಕರ್ಯದಲ್ಲೇ ಚಲಿಸುವ ಸಣ್ಣ ಮಾದರಿ."],
                                       ] },
                                     ],
                                   },
