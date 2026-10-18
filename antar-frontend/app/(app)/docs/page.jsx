@@ -1091,88 +1091,94 @@ function DocsFull() {
                                   features: {
                                     en: [
                                       { h: "Secure AI", items: [
-                                        "The AI can read records, but it can't change them or act on its own.",
-                                        "Officers see only what their role allows, and every request is logged.",
-                                        "Works with any AI model, even one on your own network.",
+                                        ["Read-only by design", "the AI queries records through approved templates and cannot alter data or act without an officer's approval."],
+                                        ["Role-based access", "what an officer can see depends on rank and posting, and every request is kept in a tamper-evident audit log."],
+                                        ["Model-independent", "runs on a cloud model or one hosted on your own network, with all outbound connections restricted and logged."],
                                       ] },
                                       { h: "Predict", items: [
-                                        "A 7-day forecast for every station, with the reasons behind it.",
-                                        "Turns the forecast into a shift plan and case leads.",
-                                        "Checks itself against what actually happened.",
+                                        ["Seven-day forecasts", "for every police station and beat, each showing the factors that drive it."],
+                                        ["Operational outputs", "printable shift plans, and case leads from shared vehicles, phone numbers, UPI IDs or IP addresses."],
+                                        ["Continuous validation", "each forecast is scored against recorded cases, and confidence is lowered automatically when accuracy drops."],
                                       ] },
-                                      { h: "Everyday use", items: [
-                                        "Ask in English or Kannada, by voice or text.",
-                                        "Every number links back to the FIRs it came from.",
-                                        "Hotspot maps, case links and printable reports.",
+                                      { h: "Everyday Use", items: [
+                                        ["Bilingual", "questions in English or Kannada, typed or spoken, answered in seconds."],
+                                        ["Traceable figures", "every number links to its source FIRs and is labelled as known, calculated or inferred."],
+                                        ["Analysis tools", "hotspot maps, cross-case links and reports ready for the case file."],
                                       ] },
                                     ],
                                     kn: [
                                       { h: "ಸುರಕ್ಷಿತ AI", items: [
-                                        "AI ದಾಖಲೆಗಳನ್ನು ಓದಬಲ್ಲದು, ಆದರೆ ಬದಲಿಸಲು ಅಥವಾ ತಾನೇ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು ಸಾಧ್ಯವಿಲ್ಲ.",
-                                        "ಅಧಿಕಾರಿಗಳು ತಮ್ಮ ಹುದ್ದೆಗೆ ಅನುಮತಿಸಿದಷ್ಟನ್ನು ಮಾತ್ರ ನೋಡುತ್ತಾರೆ; ಪ್ರತಿ ವಿನಂತಿಯೂ ದಾಖಲಾಗುತ್ತದೆ.",
-                                        "ಯಾವುದೇ AI ಮಾದರಿಯೊಂದಿಗೆ, ನಿಮ್ಮದೇ ನೆಟ್‌ವರ್ಕ್‌ನಲ್ಲಿರುವುದರೊಂದಿಗೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ.",
+                                        ["ಓದಲು ಮಾತ್ರ", "AI ಅನುಮೋದಿತ ಟೆಂಪ್ಲೇಟ್‌ಗಳ ಮೂಲಕ ದಾಖಲೆಗಳನ್ನು ಪ್ರಶ್ನಿಸುತ್ತದೆ; ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆಯಿಲ್ಲದೆ ದತ್ತಾಂಶ ಬದಲಿಸಲು ಅಥವಾ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು ಸಾಧ್ಯವಿಲ್ಲ."],
+                                        ["ಹುದ್ದೆ ಆಧಾರಿತ ಪ್ರವೇಶ", "ಅಧಿಕಾರಿಗಳು ತಮ್ಮ ವ್ಯಾಪ್ತಿಯ ದಾಖಲೆಗಳನ್ನು ಮಾತ್ರ ನೋಡುತ್ತಾರೆ; ಪ್ರತಿ ವಿನಂತಿಯೂ ತಿದ್ದಲಾಗದ ಲೆಕ್ಕಪತ್ರದಲ್ಲಿ ದಾಖಲಾಗುತ್ತದೆ."],
+                                        ["ಯಾವುದೇ ಮಾದರಿಯೊಂದಿಗೆ", "ಕ್ಲೌಡ್ ಮಾದರಿ ಅಥವಾ ನಿಮ್ಮದೇ ನೆಟ್‌ವರ್ಕ್‌ನ ಮಾದರಿಯೊಂದಿಗೆ; ಹೊರಹೋಗುವ ಎಲ್ಲ ಸಂಪರ್ಕಗಳು ನಿರ್ಬಂಧಿತ ಮತ್ತು ದಾಖಲಿತ."],
                                       ] },
                                       { h: "ಮುನ್ಸೂಚನೆ", items: [
-                                        "ಪ್ರತಿ ಠಾಣೆಗೆ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ, ಅದರ ಕಾರಣಗಳೊಂದಿಗೆ.",
-                                        "ಮುನ್ಸೂಚನೆಯನ್ನು ಪಾಳಿ ಯೋಜನೆ ಮತ್ತು ಪ್ರಕರಣ ಸುಳಿವುಗಳಾಗಿ ಮಾಡುತ್ತದೆ.",
-                                        "ನಿಜವಾಗಿ ನಡೆದದ್ದರೊಂದಿಗೆ ತನ್ನನ್ನು ತಾನೇ ಪರಿಶೀಲಿಸುತ್ತದೆ.",
+                                        ["ಏಳು ದಿನಗಳ ಮುನ್ಸೂಚನೆ", "ಪ್ರತಿ ಠಾಣೆ ಮತ್ತು ಬೀಟ್‌ಗೆ, ಅದನ್ನು ರೂಪಿಸುವ ಅಂಶಗಳೊಂದಿಗೆ."],
+                                        ["ಕಾರ್ಯಾಚರಣೆಯ ಫಲಿತಾಂಶ", "ಮುದ್ರಿಸಬಹುದಾದ ಪಾಳಿ ಯೋಜನೆ, ಮತ್ತು ಹಂಚಿಕೊಂಡ ವಾಹನ, ಫೋನ್, UPI ಅಥವಾ IP ಆಧಾರಿತ ಪ್ರಕರಣ ಸುಳಿವುಗಳು."],
+                                        ["ನಿರಂತರ ಪರಿಶೀಲನೆ", "ಪ್ರತಿ ಮುನ್ಸೂಚನೆಯನ್ನು ದಾಖಲಾದ ಪ್ರಕರಣಗಳೊಂದಿಗೆ ಹೋಲಿಸಲಾಗುತ್ತದೆ; ನಿಖರತೆ ಕುಸಿದರೆ ವಿಶ್ವಾಸಮಟ್ಟ ತಾನಾಗಿ ಇಳಿಯುತ್ತದೆ."],
                                       ] },
                                       { h: "ದೈನಂದಿನ ಬಳಕೆ", items: [
-                                        "ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ, ಧ್ವನಿ ಅಥವಾ ಬರಹದಲ್ಲಿ ಕೇಳಿ.",
-                                        "ಪ್ರತಿ ಸಂಖ್ಯೆಯೂ ಅದರ FIR ಗಳಿಗೆ ಜೋಡಣೆಯಾಗಿದೆ.",
-                                        "ಹಾಟ್‌ಸ್ಪಾಟ್ ನಕ್ಷೆಗಳು, ಪ್ರಕರಣ ಸಂಪರ್ಕಗಳು ಮತ್ತು ಮುದ್ರಿಸಬಹುದಾದ ವರದಿಗಳು.",
+                                        ["ದ್ವಿಭಾಷಾ", "ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ, ಬರಹ ಅಥವಾ ಧ್ವನಿಯಲ್ಲಿ ಪ್ರಶ್ನೆ; ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಉತ್ತರ."],
+                                        ["ಪತ್ತೆಹಚ್ಚಬಹುದಾದ ಅಂಕಿಗಳು", "ಪ್ರತಿ ಸಂಖ್ಯೆಯೂ ಮೂಲ FIR ಗಳಿಗೆ ಜೋಡಣೆ; ದಾಖಲಿತ, ಲೆಕ್ಕಾಚಾರ ಅಥವಾ ಅನುಮಾನಿತ ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ."],
+                                        ["ವಿಶ್ಲೇಷಣಾ ಸಾಧನಗಳು", "ಹಾಟ್‌ಸ್ಪಾಟ್ ನಕ್ಷೆಗಳು, ಪ್ರಕರಣಗಳ ನಡುವಿನ ಸಂಪರ್ಕ ಮತ್ತು ಪ್ರಕರಣ ಕಡತಕ್ಕೆ ಸಿದ್ಧ ವರದಿಗಳು."],
                                       ] },
                                     ],
                                   },
                                   impact: {
                                     en: [
                                       { h: "Impact", items: [
-                                        "Answers in seconds, not days.",
-                                        "Every figure can be checked against the records.",
-                                        "Patrols are planned on a forecast that has been tested.",
+                                        ["Faster decisions", "answers in seconds, instead of waiting days for an analyst's report."],
+                                        ["Verifiable results", "every figure can be checked against the source records."],
+                                        ["Better deployment", "patrols are planned on forecasts tested against real case data."],
+                                        ["Lower risk", "the AI cannot alter records or act without a named officer's approval."],
                                       ] },
-                                      { h: "Who uses it", items: [
-                                        "Station officer: asks a question in Kannada, by voice.",
-                                        "Investigator: finds cases linked by the same vehicle, phone or UPI ID.",
-                                        "Superintendent: plans the week's patrols and approves changes.",
+                                      { h: "Who Uses It", items: [
+                                        ["Station House Officer", "reviews local crime patterns in Kannada, by voice or text."],
+                                        ["Investigating Officer", "finds cases linked by a common vehicle, phone number or UPI ID across districts."],
+                                        ["Superintendent of Police", "plans weekly patrols from the forecast and approves redeployments."],
+                                        ["Crime Analyst", "exports traceable reports for briefings and case files."],
                                       ] },
                                     ],
                                     kn: [
                                       { h: "ಪರಿಣಾಮ", items: [
-                                        "ದಿನಗಳಲ್ಲ, ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಉತ್ತರ.",
-                                        "ಪ್ರತಿ ಅಂಕಿಯನ್ನೂ ದಾಖಲೆಗಳೊಂದಿಗೆ ಪರಿಶೀಲಿಸಬಹುದು.",
-                                        "ಪರೀಕ್ಷಿತ ಮುನ್ಸೂಚನೆಯ ಮೇಲೆ ಗಸ್ತು ಯೋಜನೆ.",
+                                        ["ವೇಗದ ನಿರ್ಧಾರ", "ವಿಶ್ಲೇಷಕರ ವರದಿಗಾಗಿ ದಿನಗಟ್ಟಲೆ ಕಾಯದೆ, ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಉತ್ತರ."],
+                                        ["ಪರಿಶೀಲಿಸಬಹುದಾದ ಫಲಿತಾಂಶ", "ಪ್ರತಿ ಅಂಕಿಯನ್ನೂ ಮೂಲ ದಾಖಲೆಗಳೊಂದಿಗೆ ಪರಿಶೀಲಿಸಬಹುದು."],
+                                        ["ಉತ್ತಮ ನಿಯೋಜನೆ", "ನೈಜ ಪ್ರಕರಣ ದತ್ತಾಂಶದ ಮೇಲೆ ಪರೀಕ್ಷಿಸಿದ ಮುನ್ಸೂಚನೆಯಿಂದ ಗಸ್ತು ಯೋಜನೆ."],
+                                        ["ಕಡಿಮೆ ಅಪಾಯ", "ಹೆಸರಿಸಿದ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆಯಿಲ್ಲದೆ AI ದಾಖಲೆ ಬದಲಿಸಲು ಅಥವಾ ಕ್ರಮ ಕೈಗೊಳ್ಳಲು ಸಾಧ್ಯವಿಲ್ಲ."],
                                       ] },
                                       { h: "ಯಾರು ಬಳಸುತ್ತಾರೆ", items: [
-                                        "ಠಾಣಾ ಅಧಿಕಾರಿ: ಕನ್ನಡದಲ್ಲಿ ಧ್ವನಿಯ ಮೂಲಕ ಪ್ರಶ್ನೆ ಕೇಳುತ್ತಾರೆ.",
-                                        "ತನಿಖಾಧಿಕಾರಿ: ಒಂದೇ ವಾಹನ, ಫೋನ್ ಅಥವಾ UPI ಯಿಂದ ಜೋಡಣೆಯಾದ ಪ್ರಕರಣಗಳನ್ನು ಕಂಡುಹಿಡಿಯುತ್ತಾರೆ.",
-                                        "ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿ: ವಾರದ ಗಸ್ತು ಯೋಜಿಸಿ ಬದಲಾವಣೆಗಳನ್ನು ಅನುಮೋದಿಸುತ್ತಾರೆ.",
+                                        ["ಠಾಣಾಧಿಕಾರಿ", "ಸ್ಥಳೀಯ ಅಪರಾಧ ಪ್ರವೃತ್ತಿಯನ್ನು ಕನ್ನಡದಲ್ಲಿ, ಧ್ವನಿ ಅಥವಾ ಬರಹದಲ್ಲಿ ಪರಿಶೀಲಿಸುತ್ತಾರೆ."],
+                                        ["ತನಿಖಾಧಿಕಾರಿ", "ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಒಂದೇ ವಾಹನ, ಫೋನ್ ಅಥವಾ UPI ಯಿಂದ ಜೋಡಣೆಯಾದ ಪ್ರಕರಣಗಳನ್ನು ಗುರುತಿಸುತ್ತಾರೆ."],
+                                        ["ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿ", "ಮುನ್ಸೂಚನೆಯಿಂದ ವಾರದ ಗಸ್ತು ಯೋಜಿಸಿ ಮರುನಿಯೋಜನೆಗಳನ್ನು ಅನುಮೋದಿಸುತ್ತಾರೆ."],
+                                        ["ಅಪರಾಧ ವಿಶ್ಲೇಷಕ", "ಸಭೆಗಳು ಮತ್ತು ಪ್ರಕರಣ ಕಡತಗಳಿಗೆ ಮೂಲ ತೋರಿಸುವ ವರದಿಗಳನ್ನು ರಫ್ತು ಮಾಡುತ್ತಾರೆ."],
                                       ] },
                                     ],
                                   },
                                   innovation: {
                                     en: [
-                                      { h: "What's new", items: [
-                                        "Forecasts that explain themselves.",
-                                        "Tested as if the AI had already been hacked.",
-                                        "An agent that argues against its own findings.",
+                                      { h: "What's New", items: [
+                                        ["Explainable forecasting", "each forecast is the product of its stated factors, so the reasoning can be checked."],
+                                        ["Adversarial security testing", "the system is tested on the assumption that the AI has already been compromised."],
+                                        ["Built-in challenge", "an independent agent tests every hypothesis against base rates before it can be confirmed."],
+                                        ["Governed agents", "each agent's permissions are declared and verified before it runs."],
                                       ] },
-                                      { h: "Coming next", items: [
-                                        "Festival effects measured from past years.",
-                                        "Learning across districts without sharing raw data.",
-                                        "A small Kannada model that runs in-house.",
+                                      { h: "Coming Next", items: [
+                                        ["Event-aware forecasting", "festival and event effects measured from past years of FIRs."],
+                                        ["Federated learning", "models trained across districts without pooling raw FIR data."],
+                                        ["Kannada language model", "a compact model that runs on police infrastructure."],
                                       ] },
                                     ],
                                     kn: [
                                       { h: "ಹೊಸತು", items: [
-                                        "ತಮ್ಮನ್ನು ತಾವೇ ವಿವರಿಸುವ ಮುನ್ಸೂಚನೆಗಳು.",
-                                        "AI ಈಗಾಗಲೇ ಹ್ಯಾಕ್ ಆಗಿದೆ ಎಂದು ಭಾವಿಸಿ ಪರೀಕ್ಷಿಸಲಾಗಿದೆ.",
-                                        "ತನ್ನದೇ ತೀರ್ಮಾನಗಳ ವಿರುದ್ಧ ವಾದಿಸುವ ಏಜೆಂಟ್.",
+                                        ["ವಿವರಿಸಬಹುದಾದ ಮುನ್ಸೂಚನೆ", "ಪ್ರತಿ ಮುನ್ಸೂಚನೆಯೂ ಅದರ ಘೋಷಿತ ಅಂಶಗಳ ಗುಣಲಬ್ಧ; ತರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಬಹುದು."],
+                                        ["ಪ್ರತಿಕೂಲ ಭದ್ರತಾ ಪರೀಕ್ಷೆ", "AI ಈಗಾಗಲೇ ವಶವಾಗಿದೆ ಎಂಬ ಊಹೆಯ ಮೇಲೆ ವ್ಯವಸ್ಥೆಯನ್ನು ಪರೀಕ್ಷಿಸಲಾಗುತ್ತದೆ."],
+                                        ["ಅಂತರ್ನಿರ್ಮಿತ ಸವಾಲು", "ಸ್ವತಂತ್ರ ಏಜೆಂಟ್ ಪ್ರತಿ ಊಹೆಯನ್ನು ದೃಢೀಕರಣಕ್ಕೂ ಮುನ್ನ ಮೂಲ ದರದ ವಿರುದ್ಧ ಪರೀಕ್ಷಿಸುತ್ತದೆ."],
+                                        ["ನಿಯಂತ್ರಿತ ಏಜೆಂಟ್‌ಗಳು", "ಪ್ರತಿ ಏಜೆಂಟ್‌ನ ಅನುಮತಿಗಳನ್ನು ಘೋಷಿಸಿ, ಚಲಾಯಿಸುವ ಮೊದಲು ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ."],
                                       ] },
                                       { h: "ಮುಂದೆ ಬರಲಿದೆ", items: [
-                                        "ಹಿಂದಿನ ವರ್ಷಗಳಿಂದ ಅಳೆದ ಹಬ್ಬಗಳ ಪರಿಣಾಮ.",
-                                        "ಕಚ್ಚಾ ದತ್ತಾಂಶ ಹಂಚದೆ ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಕಲಿಕೆ.",
-                                        "ಒಳಗೇ ಚಲಿಸುವ ಸಣ್ಣ ಕನ್ನಡ ಮಾದರಿ.",
+                                        ["ಘಟನೆ ಆಧಾರಿತ ಮುನ್ಸೂಚನೆ", "ಹಿಂದಿನ ವರ್ಷಗಳ FIR ಗಳಿಂದ ಅಳೆದ ಹಬ್ಬ ಮತ್ತು ಕಾರ್ಯಕ್ರಮಗಳ ಪರಿಣಾಮ."],
+                                        ["ಫೆಡರೇಟೆಡ್ ಕಲಿಕೆ", "ಕಚ್ಚಾ FIR ದತ್ತಾಂಶವನ್ನು ಒಂದೆಡೆ ಸೇರಿಸದೆ ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಮಾದರಿ ತರಬೇತಿ."],
+                                        ["ಕನ್ನಡ ಭಾಷಾ ಮಾದರಿ", "ಪೊಲೀಸ್ ಮೂಲಸೌಕರ್ಯದಲ್ಲೇ ಚಲಿಸುವ ಸಣ್ಣ ಮಾದರಿ."],
                                       ] },
                                     ],
                                   },
@@ -1181,13 +1187,15 @@ function DocsFull() {
                                 const groups = TABS[key]?.[lang === "kn" ? "kn" : "en"];
                                 if (!groups) return null;
                                 return (
-                                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))`, gap: "18px" }}>
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "18px 22px" }}>
                                     {groups.map((g) => (
                                       <div key={g.h}>
-                                        <div style={{ fontSize: "10.5px", fontWeight: 600, color: "#22E6F0", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "6px" }}>{g.h}</div>
-                                        <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "grid", gap: "5px" }}>
-                                          {g.items.map((t) => (
-                                            <li key={t} style={{ fontSize: "11.5px", lineHeight: 1.45, color: "#CBD5E1" }}>{t}</li>
+                                        <div style={{ fontSize: "10.5px", fontWeight: 600, color: "#22E6F0", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px", paddingBottom: "5px", borderBottom: "1px solid rgba(34,230,240,0.12)" }}>{g.h}</div>
+                                        <ul style={{ listStyleType: "none", padding: 0, margin: 0, display: "grid", gap: "7px" }}>
+                                          {g.items.map(([lead, rest]) => (
+                                            <li key={lead} style={{ fontSize: "11.5px", lineHeight: 1.5, color: "#94A3B8" }}>
+                                              <span style={{ color: "#E2E8F0", fontWeight: 600 }}>{lead}</span>{lang === "kn" ? ": " : ": "}{rest}
+                                            </li>
                                           ))}
                                         </ul>
                                       </div>
