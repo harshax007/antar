@@ -3309,6 +3309,22 @@ html[data-chatnav="1"] .xw { top: 60px !important; height: calc(100vh - 60px) !i
 .ap-head p { margin: 0; font-size: 13px; color: var(--muted); max-width: 620px; line-height: 1.55; }
 .ap-identity { display: flex; align-items: center; gap: 8px; }
 .ap-identity code { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--text); }
+.ap-signout { background: transparent; border: 1px solid var(--border, rgba(255,255,255,.12)); color: var(--text-dim, #94A3B8); border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+.ap-signout:hover { color: #fff; }
+/* Supervising officer sign-in, on the Approvals page */
+.ap-signin { margin: 0 0 16px; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, .28); background: rgba(251, 191, 36, .05); display: grid; gap: 10px; }
+.ap-signin-hd { display: flex; gap: 10px; align-items: flex-start; color: #FBBF24; }
+.ap-signin-hd b { display: block; font-size: 13px; color: #F8FAFC; }
+.ap-signin-hd span { font-size: 12px; color: #94A3B8; }
+.ap-signin-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.ap-signin-row label { display: grid; gap: 4px; flex: 1 1 180px; }
+.ap-signin-row label span { font-size: 11px; color: #94A3B8; }
+.ap-signin-row input { background: rgba(3, 6, 14, .7); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 8px 10px; color: #F8FAFC; font-size: 13px; }
+.ap-signin-row input:focus { outline: none; border-color: rgba(251, 191, 36, .6); }
+.ap-signin-ft { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ap-fill { background: transparent; border: none; color: rgba(255,255,255,.4); font: 500 11px 'JetBrains Mono', monospace; letter-spacing: .06em; cursor: pointer; padding: 0; }
+.ap-fill:hover { color: #FBBF24; }
+.ap-signin-ft em { font-style: normal; font-size: 12px; color: #F87171; }
 .ap-role { font-family: 'JetBrains Mono'; font-size: 10px; letter-spacing: .14em; padding: 4px 9px; border-radius: 999px; border: 1px solid; }
 .ap-role.approver { color: #FBBF24; border-color: rgba(251,191,36,.45); background: rgba(251,191,36,.08); }
 .ap-role.ops { color: var(--cyan); border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.07); }

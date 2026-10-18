@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLang, useTheme } from "@/components/Providers";
 import { asset } from "@/lib/assets";
-import { ADMIN_ID, APPROVER_ID, signIn, homeFor } from "@/lib/auth";
+import { ADMIN_ID, signIn, homeFor } from "@/lib/auth";
 import { raiseCurtain } from "@/lib/curtain";
 
 const COPY = {
@@ -177,31 +177,7 @@ export default function LoginPage() {
         </form>
 
         <div style={{ marginTop: "24px", textAlign: "center", display: "flex", justifyContent: "center", gap: "18px" }}>
-          <button
-            type="button"
-            onClick={() => {
-              setBadge(APPROVER_ID);
-              // Filled only when this build was given a demo password (.env.local); otherwise the officer types it.
-              setPassword(process.env.NEXT_PUBLIC_DEMO_PW_APPROVER || "");
-              if (!process.env.NEXT_PUBLIC_DEMO_PW_APPROVER) document.getElementById("pw")?.focus();
-              setError("");
-            }}
-            disabled={busy}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "rgba(255,255,255,0.35)",
-              fontSize: "11px",
-              fontFamily: "'JetBrains Mono', monospace",
-              cursor: "pointer",
-              letterSpacing: "0.06em",
-              transition: "all 0.2s ease"
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#FBBF24")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
-          >
-            [ {kn ? "ಅನುಮೋದಕ ಪ್ರವೇಶ" : "APPROVER ACCESS"} ]
-          </button>
+          {/* The supervising officer signs in on the Approvals page (Account > Approvals). */}
           <button
             type="button"
             onClick={() => {

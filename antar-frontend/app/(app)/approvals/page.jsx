@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchAPI } from "@/lib/api";
-import { readSession, isApprover } from "@/lib/auth";
+import { readSession, isApprover, verifyOfficer, readApproverSession, saveApproverSession, clearApproverSession, APPROVER_ID } from "@/lib/auth";
 import { useLang } from "@/components/Providers";
 import {
   ShieldCheck, ShieldAlert, Clock, CheckCircle2, XCircle, Undo2, Siren, Eye, Fingerprint,
@@ -57,18 +57,33 @@ export default function ApprovalsPage() {
   const [flash, setFlash] = useState(null);
   const [loadError, setLoadError] = useState(null);
 
-  useEffect(() => { setSession(readSession()); }, []);
+  const [approverSession, setApproverSession] = useState(null);   // the supervising officer, signed in on this page
+  useEffect(() => {
+    setSession(readSession());
+    const a = readApproverSession();
+    if (isApprover(a)) setApproverSession(a); else if (a) clearApproverSession();
+  }, []);
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
-  const approver = isApprover(session);
-  const me = session?.officer;
+  // Who decides: the tab's own officer if they are an approver, else the supervising
+  // officer who signed in on this page. Approve / reject go out with that officer's token.
+  const acting = isApprover(session) ? session : (isApprover(approverSession) ? approverSession : null);
+  const approver = !!acting;
+  const me = acting?.officer || session?.officer;
+  const asApprover = acting && acting !== session
+    ? { Authorization: `Bearer ${acting.token}`, "X-Role": acting.role, "X-Officer": acting.officer } : undefined;
+
+  function signOutApprover() {
+    clearApproverSession();
+    setApproverSession(null);
+  }
 
   const load = useCallback(async () => {
     try {
       const status = tab === "pending" ? "pending" : "decided";
       const [q, s] = await Promise.all([
-        fetchAPI(`/api/hitl/queue?status=${status}&limit=100`),
-        fetchAPI("/api/hitl/stats"),
+        fetchAPI(`/api/hitl/queue?status=${status}&limit=100`, { headers: asApprover }),
+        fetchAPI("/api/hitl/stats", { headers: asApprover }),
       ]);
       setItems(q.items || []);
       setStats(s);
@@ -78,7 +93,7 @@ export default function ApprovalsPage() {
       setLoadError(err.message || "Could not reach the approvals service.");
       setItems((prev) => prev ?? []);
     }
-  }, [tab]);
+  }, [tab, acting?.token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setItems(null);
@@ -93,7 +108,9 @@ export default function ApprovalsPage() {
     setErrors((e) => ({ ...e, [a.action_id]: null }));
     try {
       const body = verb === "approve" ? { reason, payload_hash: a.payload_hash } : { reason };
-      const res = await fetchAPI(`/api/hitl/${a.action_id}/${verb}`, { method: "POST", body: JSON.stringify(body) });
+      const res = await fetchAPI(`/api/hitl/${a.action_id}/${verb}`, {
+        method: "POST", body: JSON.stringify(body), headers: verb === "withdraw" ? undefined : asApprover,
+      });
       const msg = {
         approve: res.status === "EXECUTED" ? (kn ? "ಅನುಮೋದಿಸಲಾಗಿದೆ ಮತ್ತು ಜಾರಿಗೊಳಿಸಲಾಗಿದೆ" : "Approved and executed")
           : res.status === "FAILED" ? (kn ? "ಅನುಮೋದಿಸಲಾಗಿದೆ, ಆದರೆ ಜಾರಿ ವಿಫಲ" : "Approved, but execution failed")
@@ -106,6 +123,7 @@ export default function ApprovalsPage() {
       setReasons((r) => ({ ...r, [a.action_id]: "" }));
       load();
     } catch (err) {
+      if (err.status === 401 && asApprover) signOutApprover();   // the approver's sign-in expired
       setErrors((e) => ({ ...e, [a.action_id]: err.message }));
       if (err.detail?.error === "stale_review" || err.detail?.error === "not_pending") load();
     } finally {
@@ -133,8 +151,17 @@ export default function ApprovalsPage() {
           <div className="ap-identity">
             <span className={`ap-role ${approver ? "approver" : "ops"}`}>{approver ? (kn ? "ಅನುಮೋದಕ" : "APPROVER") : (kn ? "ಕಾರ್ಯಾಚರಣೆ" : "OPERATIONS")}</span>
             <code>{me || "—"}</code>
+            {approverSession && acting === approverSession && (
+              <button type="button" className="ap-signout" onClick={signOutApprover}>
+                {kn ? "ಅನುಮೋದಕ ನಿರ್ಗಮನ" : "Approver sign out"}
+              </button>
+            )}
           </div>
         </header>
+
+        {!approver && session && (
+          <ApproverSignIn kn={kn} onSignedIn={(s) => { saveApproverSession(s); setApproverSession(s); }} />
+        )}
 
         <div className="ap-stats">
           <div><b>{stats?.pending ?? "–"}</b><span>{kn ? "ಬಾಕಿ" : "pending"}</span></div>
@@ -195,6 +222,72 @@ function Badges({ a, kn }) {
       )}
       <code className="ap-id">{a.action_id}</code>
     </div>
+  );
+}
+
+// The supervising officer signs in here to decide. A form the browser recognises as a
+// sign-in (username + current-password), so a saved password can be filled in by the
+// browser; "Fill demo approver" fills the demo account when this build carries one.
+function ApproverSignIn({ kn, onSignedIn }) {
+  const [id, setId] = useState(APPROVER_ID);
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!id.trim() || !pw) { setErr(kn ? "ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ." : "Enter the approver's ID and password."); return; }
+    setBusy(true); setErr("");
+    try {
+      const s = await verifyOfficer(id, pw);
+      if (!isApprover(s)) {
+        setErr(kn ? "ಈ ಖಾತೆ ಅನುಮೋದಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ. ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಖಾತೆ ಬಳಸಿ." : "This account cannot approve. Use a supervising officer's account.");
+        return;
+      }
+      setPw("");
+      onSignedIn(s);
+    } catch (e2) {
+      setErr(e2.status === 401 ? (kn ? "ಐಡಿ ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ." : "ID or password is incorrect.")
+           : e2.status === 429 ? (kn ? "ಹಲವು ಪ್ರಯತ್ನಗಳು. ಸ್ವಲ್ಪ ನಂತರ ಪ್ರಯತ್ನಿಸಿ." : "Too many attempts. Try again in a few minutes.")
+           : (kn ? "ಈಗ ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ." : "Could not check the password just now."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="ap-signin" onSubmit={submit} autoComplete="on">
+      <div className="ap-signin-hd">
+        <Fingerprint size={15} aria-hidden="true" />
+        <div>
+          <b>{kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿ ಪ್ರವೇಶ" : "Supervising officer sign-in"}</b>
+          <span>{kn ? "ಅನುಮೋದಿಸಲು ಎರಡನೇ ಅಧಿಕಾರಿ ಬೇಕು. ಅನುಮೋದಕರ ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ." : "Approving needs a second officer. Enter the approver's ID and password."}</span>
+        </div>
+      </div>
+      <div className="ap-signin-row">
+        <label>
+          <span>{kn ? "ಅನುಮೋದಕ ಐಡಿ" : "Approver ID"}</span>
+          <input name="username" autoComplete="username" value={id} onChange={(e) => setId(e.target.value)} disabled={busy} />
+        </label>
+        <label>
+          <span>{kn ? "ಪಾಸ್‌ವರ್ಡ್" : "Password"}</span>
+          <input name="password" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)}
+                 disabled={busy} autoFocus placeholder={kn ? "ಪಾಸ್‌ವರ್ಡ್" : "Password"} />
+        </label>
+        <button type="submit" className="ap-btn approve" disabled={busy}>
+          {busy ? "…" : (kn ? "ಪ್ರವೇಶಿಸಿ" : "Sign in")}
+        </button>
+      </div>
+      <div className="ap-signin-ft">
+        <button type="button" className="ap-fill" disabled={busy} onClick={() => {
+          setId(APPROVER_ID);
+          // Filled only when this build carries a demo password (.env.local); otherwise typed.
+          setPw(process.env.NEXT_PUBLIC_DEMO_PW_APPROVER || "");
+          setErr("");
+        }}>[ {kn ? "ಡೆಮೊ ಅನುಮೋದಕ ತುಂಬಿಸಿ" : "Fill demo approver"} ]</button>
+        {err && <em role="alert">{err}</em>}
+      </div>
+    </form>
   );
 }
 

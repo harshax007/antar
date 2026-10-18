@@ -93,6 +93,46 @@ export async function signIn(id, password) {
   return session;
 }
 
+// The supervising officer on the Approvals page. Approving needs a second officer, so the
+// approver signs in there with their own password, beside the officer already signed in to
+// this tab. Their session is kept apart (its own key, gone when the tab closes) and is used
+// only for the approve / reject calls; the tab's own session is untouched.
+const APPROVER_KEY = "antar_approver_session";
+
+export async function verifyOfficer(id, password) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: normId(id), password }),
+    });
+  } catch {
+    throw Object.assign(new Error("unreachable"), { status: 0 });
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(typeof body.detail === "string" ? body.detail : "refused"), { status: res.status });
+  return { officer: body.officer, role: body.role, name: body.name, token: body.token, exp: body.expires_at, ts: Date.now() };
+}
+
+export function readApproverSession() {
+  try { return JSON.parse(sessionStorage.getItem(APPROVER_KEY) || "null"); } catch { return null; }
+}
+
+export function saveApproverSession(s) {
+  try { sessionStorage.setItem(APPROVER_KEY, JSON.stringify(s)); } catch {}
+}
+
+export function clearApproverSession() {
+  const s = readApproverSession();
+  try { sessionStorage.removeItem(APPROVER_KEY); } catch {}
+  if (s?.token && typeof fetch === "function") {
+    try {
+      fetch(`${API_BASE}/api/auth/logout`, { method: "POST", headers: { Authorization: `Bearer ${s.token}` }, keepalive: true }).catch(() => {});
+    } catch {}
+  }
+}
+
 // A printed report is a page of its own, and a new tab cannot carry the token. So it is
 // fetched here, with the token, and the tab is pointed at the result. The tab is opened
 // first, inside the click, because a window opened after an await is blocked as a pop-up.
