@@ -4093,16 +4093,16 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
 /* Map: one-line context beside the busiest districts, almost transparent */
 .mx-callout {
   background: rgba(8, 12, 20, 0.45) !important;
-  border: 1px solid rgba(226, 232, 240, 0.08) !important;
+  border: 1px solid rgba(34, 230, 240, 0.14) !important;
   box-shadow: none !important;
   border-radius: 4px !important;
   padding: 2px 7px !important;
-  color: rgba(226, 232, 240, 0.72) !important;
+  color: rgba(34, 230, 240, 0.72) !important;
   font: 400 10px/1.4 'Inter', sans-serif !important;
   white-space: nowrap;
   pointer-events: none !important;
 }
-.mx-callout b { color: rgba(255, 255, 255, 0.9); font-weight: 600; }
+.mx-callout b { color: #22E6F0; font-weight: 600; }
 .mx-callout::before { display: none !important; }
 /* Overrides for integrated forecast panel inside View summary */
 .integrated-forecast .mx-panel {

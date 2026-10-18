@@ -864,7 +864,7 @@ export default function MapScreen() {
           {/* Busiest districts: a faint leader line and one line of context */}
           {geo && !selectedDistrict && callouts.map((c) => (
             <Polyline key={"co-" + c.name} positions={[c.from, c.end]} interactive={false}
-                      pathOptions={{ color: "#E2E8F0", weight: 1, opacity: 0.28, dashArray: "2 4" }} />
+                      pathOptions={{ color: "#22E6F0", weight: 1, opacity: 0.3, dashArray: "2 4" }} />
           ))}
           {geo && !selectedDistrict && callouts.map((c) => (
             <CircleMarker key={"col-" + c.name} center={c.end} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
