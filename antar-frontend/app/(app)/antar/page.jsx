@@ -105,6 +105,38 @@ const STARTERS = {
   ],
 };
 
+// An answer that is still streaming outlives the page that asked for it. Leaving the chat
+// mid-answer used to lose it: the stream kept arriving, but into a page that was gone, and
+// on return the half-built reply came back as "Stopped". The stream now writes to whichever
+// chat page is on screen, or, while none is, straight into the saved conversation; a page
+// that opens while it is still running picks it up where it is.
+const LIVE = { setMessages: null, setLoading: null, setSessionId: null, inflight: false };
+
+function liveUpdateLast(fn) {
+  if (LIVE.setMessages) {
+    LIVE.setMessages((m) => {
+      if (m.length === 0) return m;
+      const next = [...m];
+      next[next.length - 1] = fn(next[next.length - 1]);
+      return next;
+    });
+    return;
+  }
+  try {
+    const m = JSON.parse(sessionStorage.getItem("antar_chat_msgs") || "[]");
+    if (m.length) {
+      m[m.length - 1] = fn(m[m.length - 1]);
+      sessionStorage.setItem("antar_chat_msgs", JSON.stringify(m));
+    }
+  } catch {}
+}
+
+function liveSessionId(id) {
+  if (!id) return;
+  try { sessionStorage.setItem("antar_chat_id", id); } catch {}
+  LIVE.setSessionId?.(id);
+}
+
 function newAssistantMsg(lang) {
   return {
     role: "assistant",
@@ -1522,17 +1554,28 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
+    LIVE.setMessages = setMessages;
+    LIVE.setLoading = setLoading;
+    LIVE.setSessionId = setSessionId;
+    return () => {
+      if (LIVE.setMessages === setMessages) { LIVE.setMessages = null; LIVE.setLoading = null; LIVE.setSessionId = null; }
+    };
+  }, []);
+
+  useEffect(() => {
     setVoiceOk(true); // MediaRecorder is widely supported
     try {
       const savedMsg = sessionStorage.getItem("antar_chat_msgs");
       const savedSess = sessionStorage.getItem("antar_chat_id");
       const savedMode = sessionStorage.getItem("antar_chat_mode");
       if (savedMsg) {
-        // A reload can't resume a stream. A message saved mid-answer used to come back as
-        // "Thinking… 199.9s" with a clock that never stopped; mark it interrupted instead,
-        // so the Stopped strip offers Regenerate with the original question.
+        // An answer still streaming from before this page opened (the officer went to
+        // another page and came back) is picked up as it is. Only a reload, which ends the
+        // stream, leaves a message saved mid-answer: that one is marked interrupted, so
+        // the Stopped strip offers Regenerate with the original question.
         const saved = JSON.parse(savedMsg);
-        setMessages(Array.isArray(saved) ? saved.map((m, i) => (m && m.streaming)
+        if (LIVE.inflight) setLoading(true);
+        setMessages(Array.isArray(saved) ? saved.map((m, i) => (m && m.streaming && !LIVE.inflight)
           ? { ...m, streaming: false, stopped: true,
               retryText: m.retryText || (saved[i - 1]?.role === "user" ? saved[i - 1].text : undefined) }
           : m) : []);
@@ -1679,12 +1722,7 @@ export default function ChatPage() {
   }, [loading]);
 
   function patchLast(fn) {
-    setMessages((m) => {
-      if (m.length === 0) return m;
-      const next = [...m];
-      next[next.length - 1] = fn(next[next.length - 1]);
-      return next;
-    });
+    liveUpdateLast(fn);
   }
 
   async function sendNonStream(q) {
@@ -1789,6 +1827,7 @@ export default function ChatPage() {
     try {
       abortedRef.current = false;          // fresh turn - a previous stop must not leak in
       abortControllerRef.current = new AbortController();
+      LIVE.inflight = true;
       const res = await fetch(`${API}/api/chat/stream`, {
         method: "POST",
         headers: getAuthHeaders(),
@@ -1819,15 +1858,15 @@ export default function ChatPage() {
              gotToken = true;
              fullText += evt.content || "";
           }
-          if (evt.type === "session" && evt.session_id) setSessionId(evt.session_id);
-          if (evt.type === "complete") { setSessionId(evt.session_id); setMode(evt.mode); if (evt.lang) lastLang = evt.lang; }
+          if (evt.type === "session" && evt.session_id) liveSessionId(evt.session_id);
+          if (evt.type === "complete") { liveSessionId(evt.session_id); setMode(evt.mode); if (evt.lang) lastLang = evt.lang; }
           patchLast((msg) => applyEvent(msg, evt));
         }
       }
 
       // Speak the answer when the question was dictated (either language) or the
-      // conversation is in Kannada (existing behaviour).
-      if (!abortedRef.current && fullText.trim() && (spokenTurn || lastLang === "kn" || lang === "kn")) {
+      // conversation is in Kannada (existing behaviour) - and only if the chat is on screen.
+      if (!abortedRef.current && LIVE.setMessages && fullText.trim() && (spokenTurn || lastLang === "kn" || lang === "kn")) {
         speakAnswer(spokenTextOf({ text: fullText }), lastLang === "kn" || lang === "kn" ? "kn" : "en", API);
       }
     } catch (e) {
@@ -1856,7 +1895,8 @@ export default function ChatPage() {
         }
       }
     } finally {
-      setLoading(false);
+      LIVE.inflight = false;
+      (LIVE.setLoading || setLoading)(false);
     }
   }
 
@@ -1878,6 +1918,7 @@ export default function ChatPage() {
   }
 
   function newSession() {
+    if (LIVE.inflight) stopChat();   // a running answer must not land in the new conversation
     stopTts();                       // a new session should not keep reading the old answer
     setMessages([]);
     setSessionId(null);
