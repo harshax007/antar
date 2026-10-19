@@ -27,6 +27,7 @@
     "react-is": "^19.2.7",
     "react-leaflet": "^4.2.1",
     "recharts": "^3.9.1",
+    "thinking-orbs": "0.3.2",
     "topojson-client": "^3.1.0",
     "vis-data": "^8.0.4",
     "vis-network": "^10.1.0"

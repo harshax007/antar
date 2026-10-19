@@ -12,6 +12,7 @@ import BrainViewSummary from "@/components/BrainViewSummary";
 import BrainLoader from "@/components/BrainLoader";
 import TypingSearchInput from "@/components/TypingSearchInput";
 import AgentMascot from "@/components/AgentMascot";
+import Orb from "@/components/Orb";
 
 
 function CustomDropdown({ value, options, onChange, label, ariaLabel }) {
@@ -759,7 +760,9 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       {view === "net" && (
         <button className={`bsx-pill think ${think?.phase === "run" ? "busy" : ""}`} onClick={runThink}
                 aria-busy={think?.phase === "run"}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4-2.5 5.4-.9 1-1.5 1.8-1.5 3.1V19h-6v-1.5c0-1.3-.6-2.1-1.5-3.1C6.2 13 5 11.4 5 9a7 7 0 0 1 7-7z" /><path d="M9 22h6" strokeLinecap="round" /></svg>
+          {think?.phase === "run"
+            ? <Orb agent={AGENTS[Math.min(think.at, AGENTS.length - 1)].id} label={kn ? "ಚಾಲನೆಯಲ್ಲಿದೆ" : "Running"} />
+            : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4-2.5 5.4-.9 1-1.5 1.8-1.5 3.1V19h-6v-1.5c0-1.3-.6-2.1-1.5-3.1C6.2 13 5 11.4 5 9a7 7 0 0 1 7-7z" /><path d="M9 22h6" strokeLinecap="round" /></svg>}
           {think?.phase === "run" ? (kn ? "ಚಾಲನೆಯಲ್ಲಿದೆ…" : "Running…") : (kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run")}
         </button>
       )}
@@ -774,7 +777,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       {view === "net" && think?.phase === "run" && (
         <div className="bsx-thinkdock" role="status" aria-live="polite">
           <div className="top">
-            <span className="ttl"><i />{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"} · {AGENTS[Math.min(think.at, AGENTS.length - 1)].name}</span>
+            <span className="ttl"><Orb agent={AGENTS[Math.min(think.at, AGENTS.length - 1)].id} label={AGENTS[Math.min(think.at, AGENTS.length - 1)].name} />{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"} · {AGENTS[Math.min(think.at, AGENTS.length - 1)].name}</span>
             <span className="ct">{Math.min(think.at + 1, AGENTS.length)} / {AGENTS.length}</span>
           </div>
           <div className="bar"><b style={{ width: `${((think.at + 1) / AGENTS.length) * 100}%` }} /></div>

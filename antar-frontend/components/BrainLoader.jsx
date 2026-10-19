@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Orb from "@/components/Orb";
 
 // Brain loading state: a caption that steps through what is actually happening, cross-fading
 // from one step to the next, over a thin bar that fills as the steps go by.
@@ -15,6 +16,8 @@ const STEPS = {
 // fade in again. Each step stays long enough to read; the text cross-fades and the bar
 // fills smoothly, instead of the caption being swapped and the dots snapping on.
 const STEP_MS = 2400;
+// The orb above the caption does what the caption says: reads, links, groups, builds.
+const STEP_ORB = ["searching", "connecting", "shaping", "working"];
 let startedAt = 0, lastSeen = 0;
 
 export default function BrainLoader({ kn = false, fullscreen = false }) {
@@ -36,6 +39,7 @@ export default function BrainLoader({ kn = false, fullscreen = false }) {
 
   return (
     <div className={`brl ${fullscreen ? "brl-full" : ""}${handover ? " brl-on" : ""}`} role="status" aria-live="polite">
+      <Orb state={STEP_ORB[i] || "working"} size={64} label={steps[i]} />
       <div className="brl-cap">
         <div className="brl-steps">
           {steps.map((s, k) => (

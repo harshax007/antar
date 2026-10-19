@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Orb from "@/components/Orb";
 import { motion, AnimatePresence } from "framer-motion";
 import { Paperclip, Globe, ArrowUp, X, Mic, MicOff, Brain, Network, Share2, Compass, CheckCircle2, Sparkles, RefreshCw, Copy, Download, ThumbsUp, ThumbsDown, Map as MapIcon, Search as SearchIcon, Languages, Square, Volume2, Loader2, Activity } from "lucide-react";
 import NetworkGraph from "@/components/NetworkGraph";
@@ -660,7 +661,7 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
       return (
         <div className="cx-think" aria-live="polite">
           <div className="cx-think-live">
-            <span className="cx-spin" aria-hidden="true" />
+            <Orb agent={current?.agent} label={current ? stepLabel(current) : "Thinking"} />
             <span className="cx-think-faces" aria-hidden="true">
               {[...new Set(visible.map((v) => String(v.agent || "").toLowerCase()))].filter((a) => AGENT_FACE[a]).map((a) => (
                 <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(/mascots/sm/${AGENT_FACE[a]}-directions.webp)` }} />
@@ -677,7 +678,7 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
     return (
       <div className="cx-think" aria-live="polite">
         <div className="cx-think-head live">
-          <span className="cx-spin" aria-hidden="true" />
+          <Orb agent={current?.agent} label={kn ? "ಯೋಚಿಸುತ್ತಿದೆ" : "Thinking"} />
           <span>{kn ? "ಯೋಚಿಸುತ್ತಿದೆ" : "Thinking"}</span>
           <span className="t">{liveSecs}s</span>
         </div>
@@ -2140,9 +2141,9 @@ export default function ChatPage() {
     }}>
       {recording ? (
         <>
-          <button type="button" onClick={() => {}} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: "26px", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 10px", fontWeight: 300, lineHeight: 1 }}>
-            +
-          </button>
+          <span style={{ display: "flex", alignItems: "center", padding: "0 8px" }}>
+            <Orb state="listening" label={kn ? "ಆಲಿಸುತ್ತಿದೆ" : "Listening"} />
+          </span>
           
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
              <WhisperWaveform kn={kn} onStop={toggleVoice} onClear={() => { committedTextRef.current = ""; setInput(""); }} />
