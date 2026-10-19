@@ -116,7 +116,7 @@ function makeLabelSprite(THREE, text, sub, color) {
   return sprite;
 }
 
-const INTRO_MS = 6000;      // length of the opening zoom-in - slow on purpose
+const INTRO_MS = 3500;      // length of the opening zoom-in
 
 export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
   const containerRef = useRef(null);
