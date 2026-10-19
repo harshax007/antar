@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildConstellation, aliasFor, CATEGORIES , soften, groupProfile } from "@/lib/crimeGraph";
 
 // Every drawn edge exists because two FIRs share a real key - name it.
@@ -37,6 +37,10 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
   const containerRef = useRef(null);
   const fgRef = useRef(null);
   const introUntil = useRef(0);      // until when the opening zoom-in owns the view
+  const introRaf = useRef(null);     // rAF id of the opening zoom-in
+  const appliedRef = useRef(null);   // the constellation the graph is currently drawing
+  const [lateTick, setLateTick] = useState(0);   // bumps when the arrival lands, to apply held data
+  const lateTickSeen = useRef(0);
   const focusRef = useRef(null);     // Set of node ids in the focused group
   const latchRef = useRef(false);    // one zoom-trigger per zoom-in
   const activeRef = useRef(active);
@@ -124,7 +128,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
   useEffect(() => {
     if (!constel || !containerRef.current || fgRef.current) return;
     let destroyed = false;
-    import("force-graph").then(({ default: ForceGraph }) => {
+    Promise.all([import("force-graph"), import("d3-force-3d")]).then(([{ default: ForceGraph }, d3f]) => {
       if (destroyed || !containerRef.current || fgRef.current) return;
 
       const visible = (n) => n.kind === "agent" || activeRef.current === null || activeRef.current.has(n.cat);
@@ -357,7 +361,8 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
           }
           if (k < 2.4) latchRef.current = false;
         })
-        .warmupTicks(80)
+        .warmupTicks(0)
+        .cooldownTicks(0)   // laid out in advance (below); the live engine is switched on once the view lands
         .cooldownTime(8000);
 
       // Crime-type mode: nodes must stay inside their category bubble, so repulsion is
@@ -387,26 +392,67 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
       fg.d3Force("center", null);
       fg.d3Force("radial", radial);
 
-      fgRef.current = fg;
       const validNodeIds = new Set(constel.nodes.map(n => n.id));
-      dataRef.current = { 
+      appliedRef.current = constel;
+      dataRef.current = {
         nodes: constel.nodes.map(n => ({...n})),
         links: constel.links.filter((l) => validNodeIds.has(l.source?.id || l.source) && validNodeIds.has(l.target?.id || l.target)).map(l => ({...l, source: l.source.id || l.source, target: l.target.id || l.target}))
       };
-      fg.graphData(dataRef.current);
-      buildMeta(constel);
-      onReady?.();
-      // Arrive from far out and settle slowly. 130px padding keeps the category labels on
-      // the rim clear of the tool column. The data effect below holds off until it lands.
-      // It starts near enough to be seen at once and begins to move on the next frame;
-      // from 0.12 with a 500 ms wait it was a speck and the screen read as blank.
-      introUntil.current = Date.now() + 3900;
-      fg.zoom(0.4, 0);
-      requestAnimationFrame(() => { if (!destroyed) fg.zoomToFit(3500, 130); });
+
+      // Lay the brain out BEFORE it is shown, as the 3D view does. Run live, the layout
+      // (80 synchronous warm-up steps, then 8 s of live steps) froze the page and then
+      // made the zoom-in stutter. The same forces run here in small slices while the
+      // loader is still up, and the graph is handed over already settled.
+      const SETTLE_TICKS = 120, SETTLE_BUDGET_MS = 2500;
+      const sim = d3f.forceSimulation(dataRef.current.nodes, 2).stop()
+        .force("charge", d3f.forceManyBody().strength(groupByRef.current === "type" ? -14 : -80))
+        .force("link", d3f.forceLink(dataRef.current.links.map((l) => ({ ...l }))).id((d) => d.id).distance(35))
+        .force("radial", radial);
+      const settleStart = performance.now();
+      let ticks = 0;
+      const settle = () => {
+        if (destroyed) return;
+        const sliceEnd = performance.now() + 28;
+        while (ticks < SETTLE_TICKS && performance.now() < sliceEnd) { sim.tick(); ticks++; }
+        if (ticks < SETTLE_TICKS && performance.now() - settleStart < SETTLE_BUDGET_MS) { setTimeout(settle, 0); return; }
+        start();
+      };
+      setTimeout(settle, 0);
+
+      const start = () => {
+        fg.graphData(dataRef.current);
+        fgRef.current = fg;
+        buildMeta(constel);
+        onReady?.();
+        // The same arrival as the 3D view: it opens on the whole brain, holds while the
+        // loader fades, then glides in to the working fit (130 px padding keeps the
+        // category labels on the rim clear of the tool column), easing in and out.
+        // Nothing else may move the view until it lands - the data effect waits for it.
+        const HOLD_MS = 1300, INTRO_MS = 3500;
+        introUntil.current = Date.now() + HOLD_MS + INTRO_MS + 400;
+        fg.zoomToFit(0, 130);
+        const endK = fg.zoom(), startK = endK * 0.55;
+        fg.zoom(startK, 0);
+        const t0 = performance.now() + HOLD_MS;
+        const ease = (t) => (1 - Math.cos(Math.PI * t)) / 2;
+        const glide = (now) => {
+          if (destroyed) return;
+          const t = Math.max(0, Math.min(1, (now - t0) / INTRO_MS));
+          fg.zoom(startK + (endK - startK) * ease(t), 0);
+          introRaf.current = t < 1 ? requestAnimationFrame(glide) : null;
+        };
+        introRaf.current = requestAnimationFrame(glide);
+        setTimeout(() => {
+          if (destroyed) return;
+          fg.cooldownTicks(Infinity);   // live layout back on for filters and focus
+          setLateTick((k) => k + 1);    // apply any data that changed while the brain was being laid out
+        }, HOLD_MS + INTRO_MS + 400);
+      };
     });
     return () => {
       destroyed = true;
       if (flightRef.current) cancelAnimationFrame(flightRef.current);
+      if (introRaf.current) cancelAnimationFrame(introRaf.current);
       try { fgRef.current?._destructor?.(); } catch {}
       fgRef.current = null;
     };
@@ -423,6 +469,17 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg || !constel) return;
+    // Data that lands mid-arrival waits until the view has landed: rebuilding thousands of
+    // nodes mid-glide is a visible stall. Only the latest data is applied.
+    const wait = introUntil.current - Date.now();
+    if (wait > 0) {
+      const t = setTimeout(() => setLateTick((k) => k + 1), wait);
+      return () => clearTimeout(t);
+    }
+    const landed = lateTick !== lateTickSeen.current;  // this run is the arrival landing
+    lateTickSeen.current = lateTick;
+    if (appliedRef.current === constel) return;        // already drawn - nothing held back
+    appliedRef.current = constel;
     focusRef.current = null;
     focusCompRef.current = null;
     onFocus?.(null);
@@ -432,9 +489,9 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
     fg.graphData(dataRef.current);
     buildMeta(constel);
     onReady?.();
-    if (Date.now() < introUntil.current) return;
+    if (landed) return;                                // just landed: the view is already framed
     setTimeout(() => fg.zoomToFit(600, 130), 900);
-  }, [constel]); // eslint-disable-line
+  }, [constel, lateTick]); // eslint-disable-line
 
   // Think-flight: agent hubs leave their shell, spiral through the data
   // (satellites trail behind via the link force), then glide home.

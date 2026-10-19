@@ -31,6 +31,12 @@ function Icon({ name }) {
     case "download": return <svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;
     case "db": return <svg {...p}><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>;
     case "star": return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>;
+    case "approve": return <svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>;
+    case "siren": return <svg {...p}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
+    case "eye": return <svg {...p}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
+    case "history": return <svg {...p}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l3 2" /></svg>;
+    case "lock": return <svg {...p}><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
+    case "logout": return <svg {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>;
     case "brief": return <svg {...p}><rect x="4" y="4" width="16" height="18" rx="2" /><path d="M9 2h6v4H9z" /><path d="M8 12h8M8 16h5" /></svg>;
     default: return null;
   }
@@ -225,13 +231,13 @@ export default function AccountPage() {
     { key: "briefing", en: "Shift Brief", kn: "ಶಿಫ್ಟ್ ಬ್ರೀಫ್", icon: "brief" },
     // Approvals moved off the top nav: the queue is the officer's own work, and its
     // pending count is what the ACCOUNT badge in PillNav is counting.
-    { key: "approvals", en: "Approvals", kn: "ಅನುಮೋದನೆಗಳು", icon: "shield", badge: hitlPending },
-    { key: "alerts", en: "Antar Alerts", kn: "Antar ಎಚ್ಚರಿಕೆಗಳು", icon: "bell", badge: alertsList.length },
+    { key: "approvals", en: "Approvals", kn: "ಅನುಮೋದನೆಗಳು", icon: "approve", badge: hitlPending },
+    { key: "alerts", en: "Antar Alerts", kn: "Antar ಎಚ್ಚರಿಕೆಗಳು", icon: "siren", badge: alertsList.length },
     { key: "preferences", en: "Preferences", kn: "ಆದ್ಯತೆಗಳು", icon: "gear" },
-    { key: "vigil", en: "Misuse Checks", kn: "ದುರ್ಬಳಕೆ ತಪಾಸಣೆ", icon: "shield" },
-    { key: "trace", en: "Answer History", kn: "ಉತ್ತರಗಳ ಇತಿಹಾಸ", icon: "shield" },
+    { key: "vigil", en: "Misuse Checks", kn: "ದುರ್ಬಳಕೆ ತಪಾಸಣೆ", icon: "eye" },
+    { key: "trace", en: "Answer History", kn: "ಉತ್ತರಗಳ ಇತಿಹಾಸ", icon: "history" },
     { key: "notifications", en: "Notifications", kn: "ಅಧಿಸೂಚನೆಗಳು", icon: "bell", badge: unread },
-    { key: "security", en: "Security", kn: "ಭದ್ರತೆ", icon: "shield" },
+    { key: "security", en: "Security", kn: "ಭದ್ರತೆ", icon: "lock" },
     { key: "activity", en: "Activity Log", kn: "ಚಟುವಟಿಕೆ", icon: "file" },
     { key: "export", en: "Export Centre", kn: "ರಫ್ತು ಕೇಂದ್ರ", icon: "download" },
     ...(isAdmin ? [{ key: "admin", en: "Admin · Data", kn: "ನಿರ್ವಾಹಕ · ಡೇಟಾ", icon: "db" }] : []),
@@ -280,7 +286,7 @@ export default function AccountPage() {
         </nav>
 
         <button className="ac-signout" onClick={() => { try { sessionStorage.removeItem("antar_session"); } catch {} router.push("/login"); }}>
-          <Icon name="shield" /> {kn ? "ಸೈನ್ ಔಟ್" : "Sign out"}
+          <Icon name="logout" /> {kn ? "ಸೈನ್ ಔಟ್" : "Sign out"}
         </button>
       </aside>
 
@@ -343,7 +349,7 @@ export default function AccountPage() {
         {/* ANTAR ALERTS */}
         {activeSection === "alerts" && (
           <div className="ac-block">
-            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="bell" /> {kn ? "Antar ಎಚ್ಚರಿಕೆಗಳು" : "Antar Alerts"}</span></div>
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="siren" /> {kn ? "Antar ಎಚ್ಚರಿಕೆಗಳು" : "Antar Alerts"}</span></div>
             {alertsList.length === 0 ? (
               <div className="ac-loading" style={{ color: "#94A3B8" }}>{kn ? "ಯಾವುದೇ ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳಿಲ್ಲ." : "No active watchdog alerts."}</div>
             ) : (
@@ -437,7 +443,7 @@ export default function AccountPage() {
         {activeSection === "vigil" && (
           <div className="ac-block fade-rise">
             <div className="ac-block-hd" style={{ marginBottom: "20px" }}>
-              <span className="ac-block-t"><Icon name="shield" /> {kn ? "ನಿಯಮಗಳು ಹಾಗೂ ಭದ್ರತೆ" : "Compliance & Guardrails"}</span>
+              <span className="ac-block-t"><Icon name="eye" /> {kn ? "ನಿಯಮಗಳು ಹಾಗೂ ಭದ್ರತೆ" : "Compliance & Guardrails"}</span>
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -522,7 +528,7 @@ export default function AccountPage() {
         {/* SECURITY */}
         {activeSection === "security" && (
           <div className="ac-block">
-            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="shield" /> {kn ? "ಭದ್ರತೆ" : "Security"}</span></div>
+            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="lock" /> {kn ? "ಭದ್ರತೆ" : "Security"}</span></div>
 
             <div className="ac-2fa-setup">
               <div className="ac-2fa-ico"><Icon name="shield" /></div>
