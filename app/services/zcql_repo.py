@@ -92,6 +92,21 @@ DISTRICT_ZONES = ["Mysuru-Devaraja", "Mysuru-Nazarbad", "Hubballi", "Belagavi",
                   "Mangaluru", "Kalaburagi"]
 ALL_ZONES = BENGALURU_ZONES + DISTRICT_ZONES
 
+# Statewide police units that register FIRs under their own name in the district column.
+# They are not places: a rise in "CID" is a rise in what one unit registered across the
+# state, and no beat can be sent to it. Screens that rank or forecast areas list them
+# apart. (K.G.F is a police district and is an area.)
+POLICE_UNITS = {
+    "CID": "Criminal Investigation Department, statewide",
+    "Coastal Security Police": "Coastal Security Police, along the coast",
+    "Karnataka Railways": "Railway Police, on railway premises and trains",
+    "ISD Bengaluru": "Internal Security Division",
+}
+
+
+def is_police_unit(name: str | None) -> bool:
+    return (name or "").strip() in POLICE_UNITS
+
 # Convenience regions → concrete zones — expanded to real KSP districts
 REGIONS = {
     # Bengaluru crime lives under BOTH district-level labels (real KSP data) AND the

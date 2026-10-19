@@ -130,6 +130,12 @@ const cap = (s) => {
 };
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? (Math.round(n * 10) / 10).toLocaleString("en-IN") : null; };
 const RISK_WORD = { HIGH: "High risk", MEDIUM: "Medium risk", LOW: "Low risk" };
+// Statewide police units register FIRs under their own name, so they arrive in the board
+// beside the districts. They are not areas: no beat goes to "CID". The server tags them
+// (`unit`); the names are the fallback for a board cached before it did.
+const UNIT_NAMES = { "CID": "Criminal Investigation Department", "Coastal Security Police": "Coastal Security Police",
+  "Karnataka Railways": "Railway Police", "ISD Bengaluru": "Internal Security Division" };
+const isUnit = (p) => !!(p?.unit || UNIT_NAMES[p?.zone]);
 // What the card says about an area. "Low risk" beside "far above normal" read as a
 // contradiction (few cases, but many more than usual), so the card leads with what to do.
 function statusOf(p) {
@@ -779,6 +785,14 @@ const PREDICT_MODERN_STYLES = `
 .px-st.s-dn { color: #67E8F9; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.08); }
 .px-st.s-ev { color: #C4B5FD; border-color: rgba(167,139,250,.4); background: rgba(167,139,250,.08); }
 /* Repeated alerts, and the "show all" under them */
+/* Statewide units, listed apart from the areas */
+.px-units { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 14px 12px; border-top: 1px solid rgba(255,255,255,.06); }
+.px-units-k { font: 600 10.5px 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: #8FA3BC; margin-right: 4px; cursor: help; }
+.px-units button { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; cursor: pointer;
+  font: 500 12px 'Inter', sans-serif; color: #B4C2D6; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.09); }
+.px-units button:hover, .px-units button.on { color: #EEF3FA; border-color: rgba(34,230,240,.4); }
+.px-units button i { width: 6px; height: 6px; border-radius: 50%; background: #39455A; }
+.px-units button.s-hi i { background: #E14038; } .px-units button.s-up i { background: #FFB020; } .px-units button.s-dn i { background: #22E6F0; }
 .pxd-rep { margin-left: 6px; font: 600 10.5px 'JetBrains Mono', monospace; color: #8FA3BC; }
 .pxd-more { display: block; margin: 8px auto 4px; }
 /* Sections folded until asked for */
@@ -1193,11 +1207,13 @@ function PredictScreen() {
 
   // The week in a few counted sentences. Each one opens the area it is about.
   const P = predictions || [];
+  const A = P.filter((x) => !isUnit(x));                       // the areas
+  const unitCards = P.map((x, i) => ({ p: x, i })).filter(({ p: x }) => isUnit(x));
   const evsAhead = (eng && eng !== "missing" && eng.events) || [];
-  const highs = P.filter((x) => x.risk === "HIGH");
-  const aboves = P.filter((x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2).sort((a, b) => (b.z_score || 0) - (a.z_score || 0));
-  const drops = P.filter((x) => x.direction === "silence");
-  const usual = P.filter((x) => x.risk !== "HIGH" && x.direction !== "silence" && (Number(x.z_score) || 0) < 2).length;
+  const highs = A.filter((x) => x.risk === "HIGH");
+  const aboves = A.filter((x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2).sort((a, b) => (b.z_score || 0) - (a.z_score || 0));
+  const drops = A.filter((x) => x.direction === "silence");
+  const usual = A.filter((x) => x.risk !== "HIGH" && x.direction !== "silence" && (Number(x.z_score) || 0) < 2).length;
   const names = (a, n = 3) => a.slice(0, n).map((x) => x.zone).join(", ") + (a.length > n ? ` and ${a.length - n} more` : "");
   const are = (n) => (n === 1 ? "area is" : "areas are");
   const brief = !P.length ? [] : [
@@ -1276,11 +1292,11 @@ function PredictScreen() {
     ["sure", "High confidence", (x) => x.confidence_level === "High"],
   ];
   useEffect(() => {
-    if (predictions?.length && flt === "attention" && !predictions.some(needsAttention)) setFlt("all");
+    if (predictions?.length && flt === "attention" && !predictions.some((x) => !isUnit(x) && needsAttention(x))) setFlt("all");
   }, [predictions]); // eslint-disable-line react-hooks/exhaustive-deps
   const needle = findArea.trim().toLowerCase();
   const passes = (FILTERS.find((f) => f[0] === flt) || FILTERS[0])[2];
-  const shown = P.map((x, i) => ({ p: x, i })).filter(({ p: x }) => passes(x) && (!needle || String(x.zone).toLowerCase().includes(needle) || cap(x.crime_type).toLowerCase().includes(needle)));
+  const shown = P.map((x, i) => ({ p: x, i })).filter(({ p: x }) => !isUnit(x) && passes(x) && (!needle || String(x.zone).toLowerCase().includes(needle) || cap(x.crime_type).toLowerCase().includes(needle)));
 
   // The week as text an officer can paste into a briefing note.
   const copyBrief = async () => {
@@ -1309,7 +1325,7 @@ const avgConf = predictions?.length
         </div>
         <div className="px-head-r">
           {boardMeta && <span className="px-chip">{kn ? "ಮೌಲ್ಯಮಾಪನ" : "Assessed"} <b>{dayOf(boardMeta.as_of)}</b></span>}
-          {boardMeta?.zones_covered != null && <span className="px-chip"><b>{boardMeta.zones_covered}</b> {kn ? "ವಲಯ" : "areas"}</span>}
+          {predictions?.length > 0 && <span className="px-chip"><b>{A.length}</b> {kn ? "ವಲಯ" : "areas"}{unitCards.length ? <> · <b>{unitCards.length}</b> {kn ? "ಘಟಕ" : "statewide units"}</> : null}</span>}
           {trackPct && (
             // The forecast's own track record, up front: how often the real count fell
             // inside the range it gave, on weeks of the real register. Opens the details.
@@ -1366,11 +1382,11 @@ const avgConf = predictions?.length
         <div className="pxd-card">
           <div className="pxd-hd">
             <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast for the next 7 days"}</span>
-            <span className="pxd-sub">{shown.length === P.length ? P.length : `${shown.length} of ${P.length}`} {kn ? "ವಲಯ" : "areas"}</span>
+            <span className="pxd-sub">{shown.length === A.length ? A.length : `${shown.length} of ${A.length}`} {kn ? "ವಲಯ" : "areas"}</span>
           </div>
           <div className="px-flt" role="toolbar" aria-label="Narrow the forecast list">
             {FILTERS.map(([key, label, test]) => {
-              const count = P.filter(test).length;
+              const count = A.filter(test).length;
               return (
                 <button type="button" key={key} className={flt === key ? "on" : ""} aria-pressed={flt === key}
                         disabled={key !== "all" && count === 0} onClick={() => setFlt(key)}>
@@ -1440,6 +1456,20 @@ const avgConf = predictions?.length
               </div>
             ))}
           </div>
+          {unitCards.length > 0 && (
+            <div className="px-units" aria-label="Statewide police units">
+              <span className="px-units-k" title="Units that register FIRs statewide under their own name. They are not areas, so they are not ranked with them or put in the plan.">
+                {kn ? "ರಾಜ್ಯಮಟ್ಟದ ಘಟಕಗಳು" : "Statewide units"}
+              </span>
+              {unitCards.map(({ p, i }) => (
+                <button type="button" key={p.zone} title={`${p.unit || UNIT_NAMES[p.zone]}: ${cap(p.crime_type)}, ${levelOf(p).toLowerCase()}`}
+                        className={`${focusKind === "prediction" && selected === i ? "on" : ""} s-${statusOf(p).k}`}
+                        onClick={() => { setFocusKind("prediction"); setSelected(i); }}>
+                  <i aria-hidden="true" />{p.zone}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 3 · Active alerts (all, scrollable, clickable) */}

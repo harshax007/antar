@@ -152,6 +152,13 @@ def compile_board(limit: int = 0, force: bool = False) -> dict:
             "window": "next 7 days", "as_of": as_of,
         })
 
+    # A statewide police unit (CID, Railways, ...) is not an area: tagged, so the screen
+    # lists it apart and does not count it among the areas.
+    from app.services.zcql_repo import POLICE_UNITS
+    for c in predictions:
+        if c["zone"] in POLICE_UNITS:
+            c["unit"] = POLICE_UNITS[c["zone"]]
+
     order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
     predictions.sort(key=lambda c: (order.get(c["risk"], 9), -(c["z_score"] or 0)))
     upcoming_events = _annotate(predictions, rows, date.today())
@@ -161,7 +168,8 @@ def compile_board(limit: int = 0, force: bool = False) -> dict:
         "events": upcoming_events,
         "predictions": predictions,
         "count": len(predictions),
-        "zones_covered": len({c["zone"] for c in predictions}),
+        "zones_covered": len({c["zone"] for c in predictions if not c.get("unit")}),
+        "units_covered": len({c["zone"] for c in predictions if c.get("unit")}),
         "as_of": as_of,
         "engine": "How it works: each area is compared with its usual level, the season and sudden quiet; nearby cases are grouped; a likely range is drawn from past weeks",
     })
