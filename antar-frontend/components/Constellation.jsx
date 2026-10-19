@@ -398,9 +398,11 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
       onReady?.();
       // Arrive from far out and settle slowly. 130px padding keeps the category labels on
       // the rim clear of the tool column. The data effect below holds off until it lands.
-      introUntil.current = Date.now() + 4600;
-      fg.zoom(0.12, 0);
-      setTimeout(() => fg.zoomToFit(3800, 130), 500);
+      // It starts near enough to be seen at once and begins to move on the next frame;
+      // from 0.12 with a 500 ms wait it was a speck and the screen read as blank.
+      introUntil.current = Date.now() + 3600;
+      fg.zoom(0.4, 0);
+      requestAnimationFrame(() => { if (!destroyed) fg.zoomToFit(3000, 130); });
     });
     return () => {
       destroyed = true;

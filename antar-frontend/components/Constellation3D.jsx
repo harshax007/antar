@@ -355,16 +355,24 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       fgRef.current = fg;
       onReady?.();
       
-      // The brain arrives from a distance: one slow, unbroken move from far out (z 2600)
-      // to its working distance (z 820). Nothing else may move the camera until it lands -
-      // the data effect below would otherwise cut it short with its own reframe.
+      // The brain arrives: one unbroken glide to its working distance (z 820). It starts
+      // near enough to be seen at once (z 1500) and moves from the first frame - from z 2600
+      // with a 300 ms wait it was a speck, so the screen read as blank while the loader
+      // faded. The glide decelerates (ease-out cubic): quick to start, a long soft landing,
+      // drawn every frame rather than handed to the library's slow-start tween. Nothing
+      // else may move the camera until it lands - the data effect below waits for it.
       introUntil.current = Date.now() + INTRO_MS + 400;
-      fg.cameraPosition({ x: 0, y: 0, z: 2600 }, { x: 0, y: 0, z: 0 }, 0);
-
-      zoomTimer = setTimeout(() => {
+      const START_Z = 1500, END_Z = 820;
+      fg.cameraPosition({ x: 0, y: 0, z: START_Z }, { x: 0, y: 0, z: 0 }, 0);
+      const t0 = performance.now();
+      const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+      const glide = (now) => {
         if (destroyed || !fg) return;
-        fg.cameraPosition({ x: 0, y: 0, z: 820 }, { x: 0, y: 0, z: 0 }, INTRO_MS);
-      }, 300);
+        const t = Math.min(1, (now - t0) / INTRO_MS);
+        fg.cameraPosition({ x: 0, y: 0, z: START_Z + (END_Z - START_Z) * easeOut(t) }, { x: 0, y: 0, z: 0 }, 0);
+        flightRef.current = t < 1 ? requestAnimationFrame(glide) : null;
+      };
+      flightRef.current = requestAnimationFrame(glide);
 
       rotateTimer = setTimeout(() => {
         if (destroyed || !fg) return;
