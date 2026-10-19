@@ -953,6 +953,21 @@ function PredictScreen() {
   const abortRef = useRef(null);
   const reasonRef = useRef(null);
 
+  // The outlook is for "the next 7 days from today": a page left open overnight must not
+  // keep yesterday's week (an event that has ended, one that has started). It reloads every
+  // 15 minutes, and at once when the officer comes back to the tab on a new day.
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let day = new Date().toDateString();
+    const again = () => setTick((t) => t + 1);
+    const iv = setInterval(again, 15 * 60 * 1000);
+    const onVis = () => {
+      if (document.visibilityState === "visible" && new Date().toDateString() !== day) { day = new Date().toDateString(); again(); }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
+
   // Load predictions: real board first, alerts mapping second, offline sample last
   useEffect(() => {
     Promise.all([
@@ -985,7 +1000,7 @@ function PredictScreen() {
     };
     window.addEventListener("antar-demo-trigger", handler);
     return () => window.removeEventListener("antar-demo-trigger", handler);
-  }, []);
+  }, [tick]);
 
   // Whatever is being explained below - a ranked prediction or a clicked alert.
   const rawAlert = alertList[selAlert];

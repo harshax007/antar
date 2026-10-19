@@ -114,6 +114,7 @@ def scan_watches() -> list[dict[str, Any]]:
 
         alerts_store.add_alert({
             "alert_type": "sentinel_tripwire",
+            "watch_id": wid,
             "severity": "high",
             "zone": target.split(":")[1] if ":" in target else target,
             "crime_type": target.split(":")[0] if ":" in target else "special_watch",

@@ -29,10 +29,24 @@ def clear() -> None:
     _alerts = []
 
 
+def _same(a: dict, b: dict) -> bool:
+    """One standing condition, however often it is re-detected: the same watch, or the
+    same kind of alert on the same area and crime."""
+    if a.get("watch_id") or b.get("watch_id"):
+        return a.get("watch_id") == b.get("watch_id")
+    return all(a.get(k) == b.get(k) for k in ("alert_type", "zone", "crime_type"))
+
+
 def add_alert(alert: dict) -> None:
-    """Add a single alert (e.g. from Sentinel tripwire)."""
+    """Add a single alert (e.g. from Sentinel tripwire).
+
+    A watch that is still tripped is re-detected on every scan. Each scan used to add a
+    fresh copy, so one watch filled the list (44 of 50 alerts were three watches). A
+    repeat now replaces the alert it repeats, refreshed and moved to the top.
+    """
     global _alerts
     alert.setdefault("status", "new")
+    _alerts = [a for a in _alerts if not _same(a, alert)]
     _alerts.insert(0, alert)
     
     # Proactively push alert to live_stream WebSockets
