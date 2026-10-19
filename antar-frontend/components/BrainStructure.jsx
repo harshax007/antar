@@ -471,10 +471,12 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   const handleGraphReady = () => setGraphReady(true);
   const isReady = !!recs && graphReady;
 
-  // Fallback safety: guarantee curtain lift quickly once records are parsed
+  // Fallback safety: lift the curtain even if the graph never reports ready. Only a
+  // safety net - the 3D brain lays itself out under the curtain (a few seconds on a slow
+  // machine) and says when it is ready; lifting at 800 ms showed an empty screen.
   useEffect(() => {
     if (!recs) { setGraphReady(false); return; }
-    const t = setTimeout(() => setGraphReady(true), 800);
+    const t = setTimeout(() => setGraphReady(true), 6000);
     return () => clearTimeout(t);
   }, [recs]);
 

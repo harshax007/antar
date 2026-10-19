@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildConstellation, aliasFor, CATEGORIES, groupProfile } from "@/lib/crimeGraph";
 
 // 3D evidence globe — same data, order, grouping, colors and interactions as
@@ -122,6 +122,9 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
   const containerRef = useRef(null);
   const fgRef = useRef(null);
   const introUntil = useRef(0);      // until when the arrival owns the camera
+  const appliedRef = useRef(null);   // the constellation the graph is currently drawing
+  const [lateTick, setLateTick] = useState(0);   // bumps when the arrival lands, to apply held data
+  const lateTickSeen = useRef(0);
   const threeRef = useRef(null);
   const focusRef = useRef(null);
   const activeRef = useRef(active);
@@ -245,11 +248,12 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     let destroyed = false;
     let zoomTimer = null;
     let rotateTimer = null;
-    Promise.all([import("3d-force-graph"), import("three")]).then(([{ default: ForceGraph3D }, THREE]) => {
+    Promise.all([import("3d-force-graph"), import("three"), import("d3-force-3d")]).then(([{ default: ForceGraph3D }, THREE, d3f]) => {
       if (destroyed || !containerRef.current || fgRef.current) return;
       threeRef.current = THREE;
 
       const validNodeIds = new Set(constel.nodes.map(n => n.id));
+      appliedRef.current = constel;
       dataRef.current = {
         nodes: constel.nodes.map((n) => ({ ...n, z: (n.z != null ? n.z : Math.sin((n._i || 0) * 0.7) * (n.ring || 200) * 0.6) })),
         links: constel.links.filter((l) => validNodeIds.has(l.source?.id || l.source) && validNodeIds.has(l.target?.id || l.target)).map((l) => ({ ...l, source: l.source.id || l.source, target: l.target.id || l.target })),
@@ -297,7 +301,8 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
           focusComponent(n);
         })
         .onBackgroundClick(() => { if (focusRef.current) clearFocus(); })
-        .warmupTicks(30)
+        .warmupTicks(0)
+        .cooldownTicks(0)   // laid out in advance (below); the live engine is switched on once the camera lands
         .cooldownTime(4000);
 
       // Cap the pixel ratio at 2: past that a 4K/retina panel renders four times the
@@ -351,6 +356,28 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       fg.d3Force("center", null);
       fg.d3Force("radial3", radial3);
 
+      // Lay the brain out BEFORE it is shown. Each step of the layout costs ~100 ms here
+      // (thousands of nodes repelling each other); run live, it made every frame of the
+      // zoom-in a 100-300 ms stall. The same forces are run here in small slices while the
+      // loader is still up - so the loader keeps moving - and the graph is handed over
+      // already settled. The zoom then moves only the camera.
+      const SETTLE_TICKS = 60, SETTLE_BUDGET_MS = 2500;   // ~ the old 30 warm-up ticks on a slow machine, more on a fast one
+      const sim = d3f.forceSimulation(dataRef.current.nodes, 3).stop()
+        .force("charge", d3f.forceManyBody().strength(-45))
+        .force("link", d3f.forceLink(dataRef.current.links.map((l) => ({ ...l }))).id((d) => d.id).distance(40))
+        .force("radial3", radial3);
+      const settleStart = performance.now();
+      let ticks = 0;
+      const settle = () => {
+        if (destroyed) return;
+        const sliceEnd = performance.now() + 28;
+        while (ticks < SETTLE_TICKS && performance.now() < sliceEnd) { sim.tick(); ticks++; }
+        if (ticks < SETTLE_TICKS && performance.now() - settleStart < SETTLE_BUDGET_MS) { setTimeout(settle, 0); return; }
+        start();
+      };
+      setTimeout(settle, 0);
+
+      const start = () => {
       fg.graphData(dataRef.current);
       fgRef.current = fg;
       onReady?.();
@@ -384,7 +411,10 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
           controls.autoRotate = true;
           controls.autoRotateSpeed = 0.45;
         }
+        fg.cooldownTicks(Infinity);   // live layout back on for filters and focus
+        setLateTick((k) => k + 1);    // apply any data that changed while the brain was being laid out
       }, HOLD_MS + INTRO_MS + 400);
+      };
     });
     return () => {
       destroyed = true;
@@ -400,6 +430,18 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg || !constel) return;
+    // Data that lands mid-arrival (the predicted links come a moment after the records)
+    // waits until the camera has landed: rebuilding thousands of nodes mid-glide is a
+    // visible stall in the zoom. Only the latest data is applied.
+    const wait = introUntil.current - Date.now();
+    if (wait > 0) {
+      const t = setTimeout(() => setLateTick((k) => k + 1), wait);
+      return () => clearTimeout(t);
+    }
+    const landed = lateTick !== lateTickSeen.current;  // this run is the arrival landing
+    lateTickSeen.current = lateTick;
+    if (appliedRef.current === constel) return;        // already drawn - nothing held back
+    appliedRef.current = constel;
     focusRef.current = null;
     onFocus?.(null);
     const validNodeIds = new Set(constel.nodes.map(n => n.id));
@@ -410,13 +452,13 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     fg.graphData(dataRef.current);
     refreshVisuals();
     onReady?.();
-    if (Date.now() < introUntil.current) return;      // the arrival is still under way
+    if (landed) return;                                // just landed: the camera is already framed
     if (groupByRef.current === "type") {
       fg.cameraPosition({ x: 0, y: 0, z: 820 }, { x: 0, y: 0, z: 0 }, 900);
     } else {
       setTimeout(() => fg.zoomToFit(700, 90), 800);
     }
-  }, [constel]); // eslint-disable-line
+  }, [constel, lateTick]); // eslint-disable-line
 
   // Parent controls (parity with the 2D component)
   useEffect(() => {
