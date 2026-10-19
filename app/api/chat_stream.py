@@ -136,6 +136,62 @@ def _answer_confidence(routing_conf: float, rows: list, citations: list, lang: s
     return out
 
 
+class _TracedTurn:
+    """The SSE queue for one streamed chat turn, recording the turn as a trace.
+
+    A streamed answer used to leave only the per-request trace ("/api/chat/stream",
+    answer "200"): the question and answer an officer sees on the Observability & Trace
+    page were never written for the main chat. This passes every event through unchanged,
+    keeps the answer as it streams, and adds the turn's trace id to `complete` so the chat
+    can link each answer to its trace.
+    """
+
+    def __init__(self, q: SSEQueue, trace_id: str | None) -> None:
+        self._q = q
+        self.trace_id = trace_id
+        self.parts: list[str] = []
+        self.session_id = ""
+        self.reasoning_id = None
+        self.complete: dict = {}
+
+    async def emit(self, event_type: str, **kw) -> None:
+        if event_type == "token":
+            self.parts.append(str(kw.get("content") or ""))
+        elif event_type == "session":
+            self.session_id = kw.get("session_id") or self.session_id
+        elif event_type == "complete":
+            self.session_id = kw.get("session_id") or self.session_id
+            self.reasoning_id = kw.get("reasoning_id")
+            self.complete = kw
+            if self.trace_id:
+                kw = {**kw, "trace_id": self.trace_id}
+        await self._q.emit(event_type, **kw)
+
+    async def close(self) -> None:
+        await self._q.close()
+
+    def finish(self) -> None:
+        """Write the trace. Fail-open: tracing must never cost the officer an answer."""
+        if not self.trace_id:
+            return
+        try:
+            from app.obs import trace as _obs
+            t = _obs.current()
+            if not t or t.d.get("trace_id") != self.trace_id:
+                return
+            t.d["session_id"] = self.session_id or t.d.get("session_id") or ""
+            c = self.complete
+            if c.get("template_id"):
+                t.d["template_id"] = c["template_id"]
+            if isinstance(c.get("rows"), int):
+                t.d["n_rows"] = c["rows"]
+            if c.get("mode") and t.d.get("mode") != "llm":
+                t.d["mode"] = c["mode"]
+            _obs.close(answer="".join(self.parts), reasoning_id=self.reasoning_id)
+        except Exception:
+            pass
+
+
 async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-stream") -> None:
     """Full agentic pipeline that emits SSE events via *q* as it progresses.
     Mirrors agentic_spine.run_agentic_spine() but with live event emission.
@@ -755,14 +811,26 @@ async def chat_stream(req: StreamChatRequest, request: Request) -> StreamingResp
     officer = current_identity(request).officer
 
     async def run():
+        # One trace per turn, opened in this task's own context, so the model calls the
+        # pipeline makes are counted on it (and not on the request's trace, which closes
+        # as soon as the stream's headers go out).
         try:
-            await _run_pipeline(req, q, officer)
+            from app.obs import trace as _obs
+            trace_id = _obs.start(session_id=req.session_id or "", surface="chat_stream",
+                                  question=req.text, lang=req.lang or "en", env="appsail")
+        except Exception:
+            trace_id = None
+        turn = _TracedTurn(q, trace_id)
+        try:
+            await _run_pipeline(req, turn, officer)
         except Exception as exc:
             # The officer gets a plain message and a reference; the exception (which can
             # carry an upstream error body, a file path or a project id) stays in the log.
             err = public_error(exc, "stream")
             await q.emit("error", message=err["message"], error_id=err["error_id"])
             await q.close()
+        finally:
+            turn.finish()
 
     asyncio.create_task(run())
 

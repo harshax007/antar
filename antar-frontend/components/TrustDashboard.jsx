@@ -63,6 +63,8 @@ export default function TrustDashboard() {
   const [turns, setTurns] = useState([]);
   const [turnsLoading, setTurnsLoading] = useState(false);
   const [openTrace, setOpenTrace] = useState(null);
+  // The answer the chat linked to (/trace?t=<trace id>): shown first, already open.
+  const [focusId, setFocusId] = useState(null);
   const [detail, setDetail] = useState({});                   // trace_id -> detail
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -125,6 +127,41 @@ export default function TrustDashboard() {
     }
   }
 
+  // Opened from a chat answer's trace button. The trace is written as the answer finishes,
+  // so a click straight after it can arrive a moment early: one retry covers that.
+  useEffect(() => {
+    let id = null;
+    try { id = new URLSearchParams(window.location.search).get("t"); } catch {}
+    if (!id) return;
+    setFocusId(id);
+    setOpenTrace(id);
+    let alive = true;
+    const load = (retry) => fetchAPI(`/api/obs/trace/${encodeURIComponent(id)}`)
+      .then((d) => { if (alive) setDetail((prev) => ({ ...prev, [id]: d })); })
+      .catch((e) => {
+        if (!alive) return;
+        if (retry) setTimeout(() => load(false), 1500);
+        else setDetail((prev) => ({ ...prev, [id]: { __error: e.message } }));
+      });
+    load(true);
+    return () => { alive = false; };
+  }, []);
+
+  // Bring the opened answer into view once it has loaded (it sits below the summary figures).
+  const focusLoaded = !!(focusId && detail[focusId] && metrics);   // the list renders only once the figures are in
+  useEffect(() => {
+    if (!focusLoaded) return;
+    const t = setTimeout(() => {
+      try { document.querySelector(".tlm-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {}
+    }, 150);
+    return () => clearTimeout(t);
+  }, [focusLoaded]);
+
+  function clearFocus() {
+    setFocusId(null);
+    try { window.history.replaceState(null, "", "/trace"); } catch {}
+  }
+
   const shown = useMemo(() => {
     if (!query.trim() || activeSession === null) return turns;
     const q = query.toLowerCase();
@@ -145,7 +182,7 @@ export default function TrustDashboard() {
         {/* ── Header ───────────────────────────────────────────────── */}
         <header className="tlm-head">
           <div>
-            <h1>{kn ? "ಉತ್ತರಗಳ ಇತಿಹಾಸ" : "Answer History"}</h1>
+            <h1>{kn ? "ವೀಕ್ಷಣೆ ಮತ್ತು ಜಾಡು" : "Observability & Trace"}</h1>
             <p>{kn
               ? "ಪ್ರತಿ ಸೆಷನ್‌ನ ಪ್ರತಿ ಪ್ರಶ್ನೆಯ ಸಂಪೂರ್ಣ ತಾರ್ಕಿಕ ಜಾಡು"
               : "Every question asked, and how each answer was produced: the query that ran, the FIR rows it read, and the checks it passed."}</p>
@@ -287,8 +324,30 @@ export default function TrustDashboard() {
             </div>
 
             <div className="tlm-scroll tlm-turns">
+              {focusId && (
+                <div className="tlm-focus">
+                  <div className="tlm-focus-h">
+                    <span>{kn ? "ಚಾಟ್‌ನಿಂದ ತೆರೆದ ಉತ್ತರ" : "The answer you opened from Chat"}</span>
+                    <button type="button" onClick={clearFocus}>{kn ? "ಎಲ್ಲವನ್ನೂ ತೋರಿಸಿ" : "Show all"}</button>
+                  </div>
+                  {detail[focusId] && !detail[focusId].__error ? (
+                    <Turn
+                      t={{ ...(turns.find((x) => x.trace_id === focusId) || {}), ...detail[focusId] }}
+                      n={null}
+                      kn={kn}
+                      open={openTrace === focusId}
+                      detail={detail[focusId]}
+                      onToggle={() => setOpenTrace((o) => (o === focusId ? null : focusId))}
+                    />
+                  ) : (
+                    <p className="tlm-empty left">{detail[focusId]?.__error
+                      ? (kn ? "ಈ ಉತ್ತರದ ಜಾಡು ಸಿಗಲಿಲ್ಲ." : "The trace for this answer could not be found.")
+                      : (kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Reading the trace…")}</p>
+                  )}
+                </div>
+              )}
               {turnsLoading && <p className="tlm-empty">{kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Reading the questions…"}</p>}
-              {!turnsLoading && shown.map((t, i) => (
+              {!turnsLoading && shown.filter((t) => t.trace_id !== focusId).map((t, i) => (
                 <Turn
                   key={t.trace_id}
                   t={t}

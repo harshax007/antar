@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Paperclip, Globe, ArrowUp, X, Mic, MicOff, Brain, Network, Share2, Compass, CheckCircle2, Sparkles, RefreshCw, Copy, Download, ThumbsUp, ThumbsDown, Map as MapIcon, Search as SearchIcon, Languages, Square, Volume2, Loader2 } from "lucide-react";
+import { Paperclip, Globe, ArrowUp, X, Mic, MicOff, Brain, Network, Share2, Compass, CheckCircle2, Sparkles, RefreshCw, Copy, Download, ThumbsUp, ThumbsDown, Map as MapIcon, Search as SearchIcon, Languages, Square, Volume2, Loader2, Activity } from "lucide-react";
 import NetworkGraph from "@/components/NetworkGraph";
 import ExpertWorkspace from "@/components/ExpertWorkspace";
 import { useLang } from "@/components/Providers";
@@ -964,6 +964,7 @@ function applyEvent(msg, evt) {
         noResults: !!evt.no_results,
         thoughtMs: typeof evt.elapsed_ms === "number" ? evt.elapsed_ms : Date.now() - (msg.ts || Date.now()),
         auditHash: evt.audit_hash || null,
+        traceId: evt.trace_id || null,   // opens this answer on the Observability & Trace page
         // Provenance for the Expert workspace's Sources block.
         method: evt.method || msg.method || null,
         rowCount: typeof evt.rows === "number" ? evt.rows : msg.rowCount,
@@ -1295,6 +1296,12 @@ const MessageRow = memo(({
                           <Copy size={14} />
                         </button>
                         <ListenButton text={spokenTextOf(m)} lang={(m.showAlt ? m.altLang : m.lang) || lang} kn={kn} />
+                        {m.traceId && (
+                          <button type="button" title={kn ? "ಈ ಉತ್ತರದ ಜಾಡು ನೋಡಿ" : "See how this answer was produced (trace)"}
+                                  onClick={() => router.push(`/trace?t=${encodeURIComponent(m.traceId)}`)}>
+                            <Activity size={14} />
+                          </button>
+                        )}
                         {sessionId && (
                           <button type="button" title={kn ? "ವರದಿ ರಫ್ತು" : "Export intelligence report"} onClick={exportReport}>
                             <Download size={14} />

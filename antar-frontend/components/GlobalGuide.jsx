@@ -144,7 +144,7 @@ const GUIDES = {
   },
 
   trace: {
-    title: L("Answer History Guide", "ಉತ್ತರಗಳ ಇತಿಹಾಸ ಮಾರ್ಗದರ್ಶಿ"),
+    title: L("Observability & Trace Guide", "ವೀಕ್ಷಣೆ ಮತ್ತು ಜಾಡು ಮಾರ್ಗದರ್ಶಿ"),
     lead: L("Every question asked in a session, and exactly how each answer was produced.",
             "ಸೆಷನ್‌ನಲ್ಲಿ ಕೇಳಿದ ಪ್ರತಿ ಪ್ರಶ್ನೆ, ಮತ್ತು ಪ್ರತಿ ಉತ್ತರ ನಿಖರವಾಗಿ ಹೇಗೆ ತಯಾರಾಯಿತು."),
     blocks: [

@@ -1,7 +1,7 @@
 import TrustDashboard from "@/components/TrustDashboard";
 
 export const metadata = {
-  title: "Answer History | Antar",
+  title: "Observability & Trace | Antar",
   description: "AI Observability and Tracing Telemetry",
 };
 

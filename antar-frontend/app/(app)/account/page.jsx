@@ -235,7 +235,7 @@ export default function AccountPage() {
     { key: "alerts", en: "Antar Alerts", kn: "Antar ಎಚ್ಚರಿಕೆಗಳು", icon: "siren", badge: alertsList.length },
     { key: "preferences", en: "Preferences", kn: "ಆದ್ಯತೆಗಳು", icon: "gear" },
     { key: "vigil", en: "Misuse Checks", kn: "ದುರ್ಬಳಕೆ ತಪಾಸಣೆ", icon: "eye" },
-    { key: "trace", en: "Answer History", kn: "ಉತ್ತರಗಳ ಇತಿಹಾಸ", icon: "history" },
+    { key: "trace", en: "Observability & Trace", kn: "ವೀಕ್ಷಣೆ ಮತ್ತು ಜಾಡು", icon: "history" },
     { key: "notifications", en: "Notifications", kn: "ಅಧಿಸೂಚನೆಗಳು", icon: "bell", badge: unread },
     { key: "security", en: "Security", kn: "ಭದ್ರತೆ", icon: "lock" },
     { key: "activity", en: "Activity Log", kn: "ಚಟುವಟಿಕೆ", icon: "file" },
