@@ -356,19 +356,22 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       onReady?.();
       
       // The brain arrives: one unbroken glide to its working distance (z 820). It starts
-      // near enough to be seen at once (z 1500) and moves from the first frame - from z 2600
-      // with a 300 ms wait it was a speck, so the screen read as blank while the loader
+      // with the whole brain on screen (z 2600) and moves from the first frame - it used to
+      // wait 300 ms first and then creep out of a slow-start tween, so the screen read as blank while the loader
       // faded. The glide is slow and eases in and out (sine), with no jolt at either end,
       // drawn every frame rather than handed to the library's slow-start tween. Nothing
       // else may move the camera until it lands - the data effect below waits for it.
-      introUntil.current = Date.now() + INTRO_MS + 400;
-      const START_Z = 1500, END_Z = 820;
+      // It holds on the whole brain for HOLD_MS first - the loader is still fading over it
+      // until then, and a glide that ran behind the loader was a zoom nobody saw.
+      const HOLD_MS = 1300;
+      introUntil.current = Date.now() + HOLD_MS + INTRO_MS + 400;
+      const START_Z = 2600, END_Z = 820;
       fg.cameraPosition({ x: 0, y: 0, z: START_Z }, { x: 0, y: 0, z: 0 }, 0);
-      const t0 = performance.now();
+      const t0 = performance.now() + HOLD_MS;
       const easeOut = (t) => (1 - Math.cos(Math.PI * t)) / 2;   // gentle start, gentle landing
       const glide = (now) => {
         if (destroyed || !fg) return;
-        const t = Math.min(1, (now - t0) / INTRO_MS);
+        const t = Math.max(0, Math.min(1, (now - t0) / INTRO_MS));
         fg.cameraPosition({ x: 0, y: 0, z: START_Z + (END_Z - START_Z) * easeOut(t) }, { x: 0, y: 0, z: 0 }, 0);
         flightRef.current = t < 1 ? requestAnimationFrame(glide) : null;
       };
@@ -381,7 +384,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
           controls.autoRotate = true;
           controls.autoRotateSpeed = 0.45;
         }
-      }, INTRO_MS + 400);
+      }, HOLD_MS + INTRO_MS + 400);
     });
     return () => {
       destroyed = true;
