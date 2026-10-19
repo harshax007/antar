@@ -146,11 +146,75 @@ function SearchContent() {
   const [assoc, setAssoc] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // OSINT (admin)
+  // Standalone OSINT Workbench State (Strictly isolated from FIR search & Antar core)
+  const [osintQuery, setOsintQuery] = useState("");
   const [osint, setOsint] = useState(null);
   const [osintLoading, setOsintLoading] = useState(false);
   const [reconData, setReconData] = useState(null);
-  const [reconTab, setReconTab] = useState("maltego"); // "maltego" | "telecom" | "sherlock" | "bbot"
+  const [reconTab, setReconTab] = useState("decoder"); // "decoder" | "maltego" | "telecom" | "sherlock" | "bbot" | "bnss94"
+  const [osintSources, setOsintSources] = useState([
+    "public_records",
+    "social_media",
+    "court_records",
+    "news_archives",
+    "marketplace",
+  ]);
+  const [osintDepth, setOsintDepth] = useState("standard");
+  const [osintAuditLog, setOsintAuditLog] = useState([]);
+  const [osintRecording, setOsintRecording] = useState(false);
+  const osintRecRef = useRef(null);
+
+  const getSessionOfficer = useCallback(() => {
+    try {
+      const s = JSON.parse(sessionStorage.getItem("antar_session") || "null");
+      if (s?.officer || s?.name || s?.username) {
+        return `${s.role || role || "Inspector"} · ${s.officer || s.name || s.username}`;
+      }
+      if (s?.role) return `${s.role} Session`;
+    } catch {}
+    return `${role || "Inspector"} Session`;
+  }, [role]);
+
+  const appendOsintAudit = useCallback((eventText) => {
+    const now = new Date();
+    const ts = now.toTimeString().slice(0, 8);
+    setOsintAuditLog((prev) => [...prev.slice(-9), { ts, text: eventText }]);
+  }, []);
+
+  const toggleOsintSource = useCallback((srcKey) => {
+    setOsintSources((prev) => {
+      if (prev.includes(srcKey)) {
+        return prev.length > 1 ? prev.filter((k) => k !== srcKey) : prev;
+      }
+      return [...prev, srcKey];
+    });
+  }, []);
+
+  const toggleOsintVoice = useCallback(() => {
+    if (osintRecording && osintRecRef.current) {
+      osintRecRef.current.stop();
+      setOsintRecording(false);
+      return;
+    }
+    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Speech) {
+      alert(kn ? "ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಧ್ವನಿ ಇನ್ಪುಟ್ ಬೆಂಬಲಿಸುವುದಿಲ್ಲ" : "Voice input not supported in this browser.");
+      return;
+    }
+    const rec = new Speech();
+    rec.lang = kn ? "kn-IN" : "en-IN";
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      const transcript = e.results[0]?.[0]?.transcript;
+      if (transcript) setOsintQuery((prev) => (prev ? prev + " " + transcript : transcript));
+      setOsintRecording(false);
+    };
+    rec.onerror = () => setOsintRecording(false);
+    rec.onend = () => setOsintRecording(false);
+    osintRecRef.current = rec;
+    rec.start();
+    setOsintRecording(true);
+  }, [osintRecording, kn]);
 
   // Layer 5 Unknown-First & Identity Hypotheses
   const [unknownDiscovery, setUnknownDiscovery] = useState(null);
@@ -271,21 +335,44 @@ function SearchContent() {
     return () => { alive = false; };
   }, [selectedId]); // eslint-disable-line
 
-  // ── OSINT run (admin) ──
-  const runOsint = useCallback(() => {
-    const q = query.trim() || profile?.full_name || "";
-    if (!q) return;
+  // ── Standalone OSINT execution (ONLY runs when user explicitly triggers in OSINT tab; ZERO FIR access) ──
+  const runOsint = useCallback((overrideTarget) => {
+    const q = (typeof overrideTarget === "string" ? overrideTarget : osintQuery).trim();
+    if (!q || q.length < 2) {
+      flashToast(kn ? "ಕನಿಷ್ಠ 2 ಅಕ್ಷರಗಳ ಗುರಿಯನ್ನು ನಮೂದಿಸಿ" : "Enter a target identifier (min 2 chars) to run OSINT", "warn");
+      return;
+    }
+    if (typeof overrideTarget === "string") {
+      setOsintQuery(overrideTarget);
+    }
+    const srcParam = osintSources.length ? `&sources=${encodeURIComponent(osintSources.join(","))}` : "";
+    const depthParam = `&depth=${encodeURIComponent(osintDepth)}`;
     setOsintLoading(true);
+    appendOsintAudit(`Submitted standalone OSINT query "${q}" [depth=${osintDepth.toUpperCase()}]`);
     Promise.all([
-      fetchAPI(`/api/osint/?entity=${encodeURIComponent(q)}`).catch(() => ({ claims: [] })),
-      fetchAPI(`/api/osint/recon?entity=${encodeURIComponent(q)}`).catch(() => null),
+      fetchAPI(`/api/osint/?entity=${encodeURIComponent(q)}${srcParam}${depthParam}`).catch(() => ({ claims: [], reached: false })),
+      fetchAPI(`/api/osint/recon?entity=${encodeURIComponent(q)}${srcParam}${depthParam}`).catch(() => null),
     ])
       .then(([d, r]) => {
-        setOsint({ q, claims: d.claims || [] });
+        const claimList = d?.claims || [];
+        setOsint({
+          q,
+          claims: claimList,
+          summary: d?.summary || "",
+          risk_flags: d?.risk_flags || [],
+          matched_risk_terms: d?.matched_risk_terms || [],
+          query_executed: d?.query_executed || q,
+          reached: d?.reached !== false,
+          isolation_mode: d?.isolation_mode || "STANDALONE_NO_FIR_ACCESS",
+        });
         setReconData(r);
+        const decodedLabel = r?.forensic_decoder?.target_label || "Identifier";
+        appendOsintAudit(
+          `Decoded [${decodedLabel}] · ${claimList.length} open-web signals · ${r?.sherlock_handles?.length || 0} surface probes`
+        );
       })
-      .finally(() => setOsintLoading(false));   // was never reset: stuck on "Scanning…"
-  }, [query, profile]);
+      .finally(() => setOsintLoading(false));
+  }, [osintQuery, osintSources, osintDepth, appendOsintAudit, flashToast, kn]);
 
   // Short alias for the selected profile - the detail pane references it ~60 times.
   const p = profile;
@@ -352,15 +439,17 @@ function SearchContent() {
                 <button type="button"
                   className={profileTab === "osint" ? "on" : ""}
                   onClick={() => {
-                    if (profileTab === "osint") { setProfileTab("details"); return; }
-                    if (!selectedId && results?.length) setSelectedId(results[0].suspect_id);
+                    if (profileTab === "osint") {
+                      setProfileTab("details");
+                      return;
+                    }
                     setProfileTab("osint");
                   }}
-                  title={kn ? "ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ - ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳು ಲಾಗ್ ಆಗುತ್ತವೆ" : "Open-source intelligence - unverified, every query is audit-logged"}
+                  title={kn ? "ಸ್ವತಂತ್ರ ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ ಘಟಕ (FIR ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕವಿಲ್ಲ)" : "Standalone OSINT & Forensic Recon Module (Zero FIR database interaction)"}
                   style={{ marginLeft: "auto" }}>
                   {profileTab === "osint"
                     ? (kn ? "OSINT ಮುಚ್ಚಿ" : "Close OSINT")
-                    : osintConsentOpen ? (kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ" : "Web search") : (kn ? "ಇಂಟರ್ನೆಟ್" : "Web search")}
+                    : (kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ (OSINT)" : "OSINT Workbench")}
                 </button>
               )}
             </div>
@@ -476,11 +565,535 @@ function SearchContent() {
           </div>
         </div>
 
-        {/* RIGHT: profile detail */}
+        {/* RIGHT: Standalone OSINT Workbench (when profileTab === "osint") OR FIR Profile Detail (when profileTab === "details") */}
         <div className="sx-detailpanel">
-          {!selectedId && <div className="sx-detail-empty">{kn ? "ವಿವರಗಳಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ" : "Select a record from the list to view full dossier"}</div>}
-          {selectedId && loadingProfile && !p && <div className="sx-detail-empty"><div className="signal-pulse" style={{ width: 180 }} /></div>}
-          {selectedId && p && (
+          {profileTab === "osint" && (
+            <div className="sx-dp-inner fade-rise">
+              <div className="sx-profile-tabs" style={{ marginTop: 0 }}>
+                <div className="sx-ptabs-left">
+                  <button
+                    type="button"
+                    className={`sx-ptab ${profileTab === "details" ? "on" : ""}`}
+                    onClick={() => setProfileTab("details")}
+                  >
+                    <Activity size={13} />
+                    <span>{kn ? "ವಿವರಗಳು ಮತ್ತು ಕೇಸ್‌ಫೈಲ್" : "Details & Casefile"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`sx-ptab osint ${profileTab === "osint" ? "on" : ""}`}
+                    onClick={() => setProfileTab("osint")}
+                  >
+                    <Sparkles size={13} />
+                    <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Standalone OSINT & Forensic Recon"}</span>
+                  </button>
+                </div>
+                <div className="sx-ptabs-actions">
+                  <span
+                    style={{
+                      fontFamily: "JetBrains Mono, monospace",
+                      fontSize: "10px",
+                      padding: "4px 9px",
+                      borderRadius: "6px",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      color: "#CBD5E1",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {kn ? "ಪ್ರತ್ಯೇಕ ಘಟಕ · FIR ಸಂಪರ್ಕವಿಲ್ಲ" : "ISOLATED MODULE · ZERO FIR ACCESS"}
+                  </span>
+                </div>
+              </div>
+
+              {!osintAllowed && (
+                <div className="sx-osint-locked">
+                  <div className="sx-osint-locked-ico">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
+                  OSINT is available to authorized investigators.<br />Log in with an Inspector or Admin ID to enable.
+                </div>
+              )}
+
+              {osintAllowed && osintConsentOpen && (
+                <div className="sx-osint-consent-wrap">
+                  <div className="sx-osint-consent">
+                    <div className="sx-osint-consent-ttl">STANDALONE OSINT & DIGITAL FORENSICS CONSENT</div>
+                    <p>
+                      You are entering the standalone Open-Source Intelligence (OSINT) & Indian Forensic Decoder module.
+                      This module operates in strict isolation: it <b>never queries or modifies the FIR database</b> and never interacts with Antar core records.
+                      All open-web signals and handle checks are strictly quarantined as unverified and audit-logged.
+                    </p>
+                    <div className="sx-osint-consent-btns">
+                      <button onClick={() => setProfileTab("details")} className="sx-act">Cancel</button>
+                      <button
+                        onClick={() => {
+                          setOsintConsentOpen(false);
+                          appendOsintAudit(`OSINT session authorized by ${getSessionOfficer()}`);
+                        }}
+                        className="sx-act primary"
+                      >
+                        I Agree · Launch Standalone OSINT
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {osintAllowed && !osintConsentOpen && (
+                <div className="sx-osint-wrap">
+                  <div className="sx-osint-main">
+                    {/* LEFT: Standalone OSINT Query Builder */}
+                    <div className="sx-qbuilder">
+                      <div className="sx-ql"><span className="req" />{kn ? "ತನಿಖಾ ಗುರಿ (ಹೆಸರು / ಫೋನ್ / ನಂ.ತಟ್ಟೆ / UPI)" : "Target Identifier (Name / Phone / Plate / UPI)"}</div>
+                      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <input
+                          className="sx-qfield"
+                          style={{ flex: 1, paddingRight: "64px" }}
+                          value={osintQuery}
+                          onChange={(e) => setOsintQuery(e.target.value)}
+                          placeholder={kn ? "KA-02-MJ-4821, 9845012345@ybl, +9198450…" : "KA-02-MJ-4821, 9845012345@ybl, +9198450…"}
+                          onKeyDown={(e) => { if (e.key === "Enter") runOsint(); }}
+                        />
+                        <div style={{ position: "absolute", right: "10px", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <button
+                            type="button"
+                            onClick={toggleOsintVoice}
+                            title={osintRecording ? "Stop listening" : "Speak target identifier"}
+                            style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: osintRecording ? "rgba(239,68,68,0.16)" : "rgba(255,255,255,0.06)", color: osintRecording ? "#F87171" : "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                          >
+                            {osintRecording ? <MicOff size={13} /> : <Mic size={13} />}
+                          </button>
+                          {osintQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setOsintQuery("")}
+                              title="Clear target"
+                              style={{ width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="sx-ql">{kn ? "ತ್ವರಿತ ಫಾರೆನ್ಸಿಕ್ ಮಾದರಿಗಳು" : "Quick Forensic Target Presets"}</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                        {[
+                          { label: "KA-02-MJ-4821", val: "KA-02-MJ-4821", hint: "Karnataka RTO Plate" },
+                          { label: "9845012345@ybl", val: "9845012345@ybl", hint: "UPI VPA + Mobile" },
+                          { label: "+91 98450 67890", val: "+91 98450 67890", hint: "KA Telecom MSISDN" },
+                          { label: "24BH4821AA", val: "24BH4821AA", hint: "Bharat Series Plate" },
+                          { label: "Ramesh Gowda", val: "Ramesh Gowda", hint: "Named Subject" },
+                        ].map((preset) => (
+                          <button
+                            key={preset.val}
+                            type="button"
+                            title={preset.hint}
+                            onClick={() => runOsint(preset.val)}
+                            style={{
+                              fontFamily: "JetBrains Mono, monospace",
+                              fontSize: "10px",
+                              padding: "4px 8px",
+                              borderRadius: "5px",
+                              border: osintQuery === preset.val ? "1px solid #F8FAFC" : "1px solid rgba(255,255,255,0.1)",
+                              background: osintQuery === preset.val ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)",
+                              color: "#E2E8F0",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="sx-ql">{kn ? "ಗುಪ್ತಚರ ಮೂಲಗಳು" : "Intelligence sources"}</div>
+                      <div className="sx-src-grid">
+                        {[
+                          { key: "public_records", label: kn ? "ಸಾರ್ವಜನಿಕ ದಾಖಲೆ" : "Public Records" },
+                          { key: "social_media", label: kn ? "ಸಾಮಾಜಿಕ ಜಾಲತಾಣ" : "Social Media" },
+                          { key: "court_records", label: kn ? "ನ್ಯಾಯಾಲಯ ದಾಖಲೆ" : "Court Records" },
+                          { key: "news_archives", label: kn ? "ಸುದ್ದಿ ಪತ್ರಾಗಾರ" : "News Archives" },
+                          { key: "marketplace", label: kn ? "ಮಾರುಕಟ್ಟೆ" : "Marketplace" },
+                          { key: "geo_tagged", label: kn ? "ಭೌಗೋಳಿಕ" : "Geo-tagged" },
+                        ].map((src) => {
+                          const active = osintSources.includes(src.key);
+                          return (
+                            <button
+                              type="button"
+                              key={src.key}
+                              onClick={() => toggleOsintSource(src.key)}
+                              className={`sx-src ${active ? "on" : ""}`}
+                              style={{ cursor: "pointer", textAlign: "left" }}
+                            >
+                              <span className="dot" />
+                              <span className="nm">{src.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="sx-ql">{kn ? "ಹುಡುಕಾಟ ಆಳ" : "Search depth"}</div>
+                      <div className="sx-depth">
+                        {[
+                          { key: "surface", label: "Surface" },
+                          { key: "standard", label: "Standard" },
+                          { key: "deep", label: "Deep" },
+                          { key: "full", label: "Full" },
+                        ].map((d) => (
+                          <button
+                            type="button"
+                            key={d.key}
+                            onClick={() => setOsintDepth(d.key)}
+                            className={osintDepth === d.key ? "on" : ""}
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button type="button" className="sx-run" onClick={() => runOsint()} disabled={osintLoading}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                        {osintLoading ? (kn ? "ಸ್ಕ್ಯಾನ್…" : "Scanning…") : (kn ? "OSINT ಹುಡುಕಾಟ ಚಲಾಯಿಸಿ" : "Run OSINT search")}
+                      </button>
+
+                      <div className="sx-legal">
+                        <b>{kn ? "ಕಾನೂನು ಸೂಚನೆ:" : "Quarantine & Isolation Notice:"}</b>{" "}
+                        {kn
+                          ? "ಈ OSINT ಘಟಕವು ಸಂಪೂರ್ಣವಾಗಿ ಸ್ವತಂತ್ರವಾಗಿದೆ ಮತ್ತು FIR ಡೇಟಾಬೇಸ್ ಅನ್ನು ಎಂದಿಗೂ ಮುಟ್ಟುವುದಿಲ್ಲ. ಎಲ್ಲಾ ಫಲಿತಾಂಶಗಳು ಪರಿಶೀಲಿಸದವು."
+                          : "This module is strictly isolated from internal FIR records (main.db). All outputs are unverified open-source leads and are audit-logged (KSP Policy §4.2)."}
+                      </div>
+
+                      <div className="sx-audit">
+                        <div className="t">{kn ? "ಸೆಶನ್ ಲೆಕ್ಕಪರಿಶೋಧನೆ" : "Session audit log"}</div>
+                        <div className="row"><span className="ts">INIT</span> {getSessionOfficer()}</div>
+                        {osintAuditLog.map((entry, idx) => (
+                          <div key={idx} className="row">
+                            <span className="ts">{entry.ts}</span> {entry.text}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* RIGHT: Standalone OSINT & Forensic Results */}
+                    <div className="sx-osint-results">
+                      <div className="sx-rmeta">
+                        <div>
+                          <span className="cnt">
+                            {osint ? osint.claims.length : "0"} {kn ? "ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು" : "open-web signals"}
+                          </span>
+                          {osint && (
+                            <span className="sub">
+                              {" "}{kn ? "ಇದಕ್ಕಾಗಿ" : "for"} "{osint.q}" · {reconData?.forensic_decoder?.target_label || "Standalone Scan"}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {osintLoading && <span className="scan"><span className="d" /> {kn ? "ಸ್ಕ್ಯಾನ್ ಆಗುತ್ತಿದೆ" : "scanning"}</span>}
+                          {reconData && (
+                            <button
+                              type="button"
+                              className="sx-anchor-btn"
+                              onClick={() => {
+                                const fd = reconData.forensic_decoder || {};
+                                const req = reconData.statutory_requisition || {};
+                                const lines = [
+                                  `KSP STANDALONE OSINT & FORENSIC RECONNAISSANCE REPORT`,
+                                  `=====================================================`,
+                                  `Timestamp: ${reconData.timestamp}`,
+                                  `Officer Session: ${getSessionOfficer()}`,
+                                  `Isolation Mode: ${reconData.isolation_mode || "STANDALONE_NO_FIR_ACCESS"}`,
+                                  `Target Query: ${reconData.query}`,
+                                  `Classification: ${fd.target_label || "N/A"} (${fd.normalized || reconData.query})`,
+                                  `SHA-256 Fingerprint: ${fd.sha256_fingerprint || "N/A"}`,
+                                  ``,
+                                  `--- DECODED FORENSIC ATTRIBUTES ---`,
+                                  ...(fd.decoded_fields || []).map((f) => `${f.label}: ${f.value}`),
+                                  ``,
+                                  `--- STATUTORY REQUISITION DRAFT (${req.statute || "BNSS §94"}) ---`,
+                                  req.template_text || "",
+                                  ``,
+                                  `--- QUARANTINED OPEN-WEB SIGNALS (${osint?.claims?.length || 0}) ---`,
+                                  ...(osint?.claims || []).map(
+                                    (c, idx) => `[${idx + 1}] (${c.category || "Open Web"}) ${c.claim} — ${c.source_url}`
+                                  ),
+                                ];
+                                navigator.clipboard?.writeText(lines.join("\n"));
+                                appendOsintAudit(`Copied standalone OSINT dossier for "${reconData.query}"`);
+                                flashToast(kn ? "OSINT ವರದಿ ನಕಲಿಸಲಾಗಿದೆ" : "Standalone OSINT report copied to clipboard");
+                              }}
+                            >
+                              {kn ? "ವರದಿ ನಕಲಿಸಿ" : "Copy OSINT Dossier"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 5-TAB STANDALONE FORENSIC & MULTI-MODULE RECON WORKBENCH */}
+                      {reconData && (
+                        <div className="sx-recon-workbench">
+                          <div className="sx-recon-tabs">
+                            {[
+                              ["decoder", kn ? "ಫಾರೆನ್ಸಿಕ್ ಡಿಕೋಡರ್" : "Forensic Decoder"],
+                              ["bnss94", kn ? "BNSS §94 ನೋಟಿಸ್" : "BNSS §94 Notice"],
+                              ["maltego", "Maltego Graph"],
+                              ["telecom", "PhoneInfoga"],
+                              ["sherlock", "Sherlock Handles"],
+                              ["bbot", "BBOT Scan Tree"],
+                            ].map(([k, label]) => (
+                              <button
+                                type="button"
+                                key={k}
+                                onClick={() => setReconTab(k)}
+                                className={reconTab === k ? "on" : ""}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="sx-recon-body">
+                            {reconTab === "decoder" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  indian forensic identifier decoder · {reconData.forensic_decoder?.target_label || "target analysis"} · {reconData.forensic_decoder?.sha256_fingerprint}
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px" }}>
+                                  {(reconData.forensic_decoder?.decoded_fields || []).map((f, idx) => (
+                                    <div key={idx} className="sx-recon-chip" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                      <span className="tp" style={{ fontSize: "9.5px", textTransform: "uppercase" }}>{f.label}</span>
+                                      <span style={{ fontWeight: 600, color: "#F8FAFC", fontSize: "12px" }}>{f.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {(reconData.forensic_decoder?.pivots || []).length > 0 && (
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "6px" }}>
+                                    {reconData.forensic_decoder.pivots.map((pv, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={pv.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer nofollow"
+                                        className="sx-anchor-btn"
+                                        style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "5px" }}
+                                      >
+                                        <span>{pv.label}</span> <span>↗</span>
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {reconTab === "bnss94" && (
+                              <div>
+                                <div className="sx-recon-sub" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span>{reconData.statutory_requisition?.statute || "BNSS §94 Statutory Notice"}</span>
+                                  <button
+                                    type="button"
+                                    className="sx-anchor-btn"
+                                    style={{ padding: "3px 9px", fontSize: "10px" }}
+                                    onClick={() => {
+                                      const txt = reconData.statutory_requisition?.template_text || "";
+                                      navigator.clipboard?.writeText(txt);
+                                      appendOsintAudit(`Copied BNSS §94 requisition notice for "${reconData.query}"`);
+                                      flashToast(kn ? "BNSS §94 ನೋಟಿಸ್ ನಕಲಿಸಲಾಗಿದೆ" : "BNSS §94 statutory requisition copied to clipboard");
+                                    }}
+                                  >
+                                    {kn ? "ನೋಟಿಸ್ ನಕಲಿಸಿ" : "Copy Notice Text"}
+                                  </button>
+                                </div>
+                                <div style={{ fontSize: "11.5px", color: "#CBD5E1", marginBottom: "8px" }}>
+                                  <div><b>To:</b> {reconData.statutory_requisition?.recipient}</div>
+                                  <div><b>Subject:</b> {reconData.statutory_requisition?.subject}</div>
+                                </div>
+                                <pre
+                                  style={{
+                                    whiteSpace: "pre-wrap",
+                                    fontFamily: "JetBrains Mono, monospace",
+                                    fontSize: "10.5px",
+                                    lineHeight: 1.55,
+                                    color: "#E2E8F0",
+                                    background: "rgba(0,0,0,0.35)",
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    borderRadius: "6px",
+                                    padding: "10px",
+                                    margin: 0,
+                                  }}
+                                >
+                                  {reconData.statutory_requisition?.template_text}
+                                </pre>
+                              </div>
+                            )}
+
+                            {reconTab === "maltego" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  maltego open-source topology · {reconData.maltego_linkage?.nodes?.length || 0} nodes · {reconData.maltego_linkage?.edges?.length || 0} edges
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
+                                  {(reconData.maltego_linkage?.nodes || []).map((n, idx) => (
+                                    <div key={n?.id || idx} className="sx-recon-chip">
+                                      <span className="tp">{String(n?.type || n?.kind || n?.node_type || "NODE").toLowerCase()}:</span> {n?.label || n?.name || n?.id || "—"}
+                                      <span className="uv">· {n?.badge || "OSINT / UNVERIFIED"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {(reconData.maltego_linkage?.edges || []).length > 0 && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace", color: "#94A3B8" }}>
+                                    {(reconData.maltego_linkage.edges || []).map((edge, idx) => (
+                                      <div key={idx} className="sx-recon-log">
+                                        <span>{edge.source}</span> <span className="ev">──[{edge.label}]──▸</span> <span>{edge.target}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {reconTab === "telecom" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  phoneinfoga telecom footprint · e.164 & trai numbering plan
+                                </div>
+                                <div style={{ fontSize: "12px", color: "#E2E8F0", lineHeight: 1.65 }}>
+                                  <div><b>Normalized Target / MSISDN:</b> {reconData.phone_infoga?.phone_query || reconData.phone_infoga?.normalized_input || "N/A"}</div>
+                                  <div><b>Line / Series Classification:</b> {reconData.phone_infoga?.line_type || reconData.phone_infoga?.carrier_type || "Unknown"}</div>
+                                  <div><b>Telecom Circle / Allocation:</b> {reconData.phone_infoga?.telecom_circle || reconData.phone_infoga?.country || "India (+91)"}</div>
+                                  <div><b>SHA-256 Privacy Hash:</b> <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{reconData.phone_infoga?.sha256_fingerprint || "N/A"}</span></div>
+                                  <div><b>Statutory Nodal Escalation:</b> {reconData.phone_infoga?.nodal_authority || "N/A"}</div>
+                                  {(reconData.phone_infoga?.whatsapp_surface || reconData.phone_infoga?.telegram_surface) && (
+                                    <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                                      {reconData.phone_infoga.whatsapp_surface && (
+                                        <a href={reconData.phone_infoga.whatsapp_surface} target="_blank" rel="noopener noreferrer nofollow" className="sx-anchor-btn" style={{ textDecoration: "none" }}>
+                                          WhatsApp Surface ↗
+                                        </a>
+                                      )}
+                                      {reconData.phone_infoga.telegram_surface && (
+                                        <a href={reconData.phone_infoga.telegram_surface} target="_blank" rel="noopener noreferrer nofollow" className="sx-anchor-btn" style={{ textDecoration: "none" }}>
+                                          Telegram Surface ↗
+                                        </a>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {reconTab === "sherlock" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  sherlock digital surface matrix · strict unverified quarantine
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                  {(reconData.sherlock_handles || []).map((h, i) => (
+                                    <div key={i} className="sx-recon-handle">
+                                      <div>
+                                        <span style={{ fontWeight: 600, color: "#F8FAFC" }}>{h?.platform || "Platform"}</span>
+                                        {h?.category && <span style={{ color: "#64748B", fontSize: "10.5px" }}> ({h.category})</span>}
+                                        {" · "}
+                                        <span style={{ color: "#94A3B8", fontFamily: "JetBrains Mono, monospace", fontSize: "11px" }}>@{h?.handle || "handle"}</span>
+                                      </div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                        {/^https?:\/\//i.test(h?.url || "") && (
+                                          <a
+                                            href={h.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer nofollow"
+                                            style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: "#E2E8F0", textDecoration: "underline" }}
+                                          >
+                                            probe ↗
+                                          </a>
+                                        )}
+                                        <span className="bdg">{h?.badge || "OSINT / UNVERIFIED"}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {reconTab === "bbot" && (
+                              <div>
+                                <div className="sx-recon-sub">
+                                  bbot event scan tree · chronological standalone recon audit
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace" }}>
+                                  {(reconData.bbot_scan_tree || []).map((e, idx) => (
+                                    <div key={e?.id || idx} className="sx-recon-log">
+                                      <span className="ev">[{String(e?.event_type || "SCAN").toUpperCase()}]</span> <span>{e?.detail || "—"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {!osint && !osintLoading && (
+                        <div className="sx-osint-empty">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                          <p>
+                            {kn
+                              ? "ಯಾವುದೇ ಹೆಸರು, ಫೋನ್ ಸಂಖ್ಯೆ (+91), ವಾಹನ ಸಂಖ್ಯೆ (KA-01-...) ಅಥವಾ UPI ಐಡಿಯನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ಮೇಲಿನ ಮಾದರಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ."
+                              : "Enter any person name, mobile number (+91), vehicle plate (KA-01-...), or UPI ID (@ybl, @okaxis) — or click a Quick Preset on the left — to run standalone forensic decoding and open-web OSINT."}
+                          </p>
+                        </div>
+                      )}
+
+                      {osint && osint.claims.length === 0 && !osintLoading && (
+                        <div className="sx-osint-empty">
+                          <p>
+                            {osint.summary || (kn ? "ಯಾವುದೇ ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ." : "No external open-web snippets returned. Deterministic forensic decoding, Sherlock probes, and BNSS §94 requisition above remain ready for field use.")}
+                          </p>
+                        </div>
+                      )}
+
+                      {osint?.claims.map((c, i) => {
+                        const pct = Math.round((c.confidence || 0.6) * 100);
+                        return (
+                          <div className="sx-claim" key={i}>
+                            <div className="sx-claim-hd">
+                              <span className="src">{c.category || "OSINT"}</span>
+                              {c.domain && <span className="status">{c.domain}</span>}
+                              <span className={`status ${c.status}`}>{c.status || "unverified"}</span>
+                              <span className="conf">{pct}%</span>
+                            </div>
+                            {c.title && (
+                              <div style={{ fontSize: "12px", fontWeight: 600, color: "#F8FAFC", marginBottom: "4px" }}>
+                                {c.title}
+                              </div>
+                            )}
+                            <div className="sx-claim-body">{c.claim}</div>
+                            {c.matched_keywords?.length > 0 && (
+                              <div style={{ marginTop: "6px", fontSize: "10px", fontFamily: "JetBrains Mono, monospace", color: "#CBD5E1" }}>
+                                Risk indicators: {c.matched_keywords.join(", ")}
+                              </div>
+                            )}
+                            <div className="sx-claim-ft">
+                              <div className="bar"><div className="f" style={{ width: `${pct}%` }} /></div>
+                              {/^https?:\/\//i.test(c.source_url || "") && <a href={c.source_url} target="_blank" rel="noopener noreferrer nofollow">source ↗</a>}
+                              {c.evidence_sha256 && (
+                                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "#64748B" }}>
+                                  SHA256:{c.evidence_sha256}
+                                </span>
+                              )}
+                              <span className="warn">{kn ? "ಪರಿಶೀಲಿಸದ · ಮುಕ್ತ-ಮೂಲ" : "Unverified · Quarantined"}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {profileTab !== "osint" && !selectedId && <div className="sx-detail-empty">{kn ? "ವಿವರಗಳಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ" : "Select a record from the list to view full dossier"}</div>}
+          {profileTab !== "osint" && selectedId && loadingProfile && !p && <div className="sx-detail-empty"><div className="signal-pulse" style={{ width: 180 }} /></div>}
+          {profileTab !== "osint" && selectedId && p && (
             <div className="sx-dp-inner fade-rise">
               {/* HERO */}
               <div className={`sx-hero r-${tierCls(p.risk_score || 0)}`}>
@@ -527,7 +1140,7 @@ function SearchContent() {
                     onClick={() => setProfileTab("osint")}
                   >
                     <Sparkles size={13} />
-                    <span>{kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ" : "Internet Search"}</span>
+                    <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Standalone OSINT & Forensic Recon"}</span>
                   </button>
                 </div>
                 <div className="sx-ptabs-actions">
@@ -548,232 +1161,6 @@ function SearchContent() {
                   </button>
                 </div>
               </div>
-              
-              {profileTab === "osint" && !osintAllowed && (
-                 <div className="sx-osint-locked">
-                   <div className="sx-osint-locked-ico">
-                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                   </div>
-                   OSINT is available to administrators.<br/>Log in with an admin ID (A-...) to enable.
-                 </div>
-              )}
-              {profileTab === "osint" && osintAllowed && osintConsentOpen && (
-                <div className="sx-osint-consent-wrap">
-                  <div className="sx-osint-consent">
-                    <div className="sx-osint-consent-ttl">OSINT ACCESS CONSENT</div>
-                    <p>
-                      You are about to access the open-source intelligence (OSINT) module. This tool queries public data, social media, and unverified third-party sources.
-                      By proceeding, you acknowledge that OSINT data is unverified and all queries are audit-logged.
-                    </p>
-                    <div className="sx-osint-consent-btns">
-                      <button onClick={() => setProfileTab("details")} className="sx-act">Cancel</button>
-                      <button onClick={() => setOsintConsentOpen(false)} className="sx-act primary">I Agree · Enable OSINT</button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {profileTab === "osint" && osintAllowed && !osintConsentOpen && (
-                <div className="sx-osint-wrap">
-                  <div className="sx-osint-main">
-                    {/* LEFT: query builder */}
-                    <div className="sx-qbuilder">
-                      <div className="sx-ql"><span className="req" />{kn ? "ಗುರುತಿನ ಸಿಗ್ನಲ್‌ಗಳು" : "Identity signals"}</div>
-                      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <input className="sx-qfield" style={{ flex: 1, paddingRight: "64px" }} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={kn ? "ಪೂರ್ಣ ಹೆಸರು ಅಥವಾ ಅಡ್ಡಹೆಸರು…" : "Full name, alias, phone, plate…"} onKeyDown={(e) => { if (e.key === "Enter") runOsint(); }} />
-                        <div style={{ position: "absolute", right: "10px", display: "flex", alignItems: "center", gap: "4px" }}>
-                          <button type="button" onClick={toggleVoice} title={recording ? "Stop listening" : "Speak to search"} style={{ width: 26, height: 26, borderRadius: "50%", border: "none", background: recording ? "rgba(239,68,68,0.16)" : "rgba(255,255,255,0.06)", color: recording ? "#F87171" : "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                            {recording ? <MicOff size={13} /> : <Mic size={13} />}
-                          </button>
-                          {query && (
-                            <button type="button" onClick={() => setQuery("")} title="Clear input" style={{ width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                              <X size={13} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="sx-ql">{kn ? "ಗುಪ್ತಚರ ಮೂಲಗಳು" : "Intelligence sources"}</div>
-                      <div className="sx-src-grid">
-                        {["Public Records", "Social Media", "Court Records", "News Archives", "Marketplace", "Geo-tagged"].map((n, i) => (
-                          <div key={n} className={`sx-src ${i < 5 ? "on" : ""}`}>
-                            <span className="dot" />
-                            <span className="nm">{n}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="sx-ql">{kn ? "ಹುಡುಕಾಟ ಆಳ" : "Search depth"}</div>
-                      <div className="sx-depth">
-                        {["Surface", "Standard", "Deep", "Full"].map((d, i) => <button key={d} className={i === 1 ? "on" : ""}>{d}</button>)}
-                      </div>
-
-                      <button className="sx-run" onClick={runOsint} disabled={osintLoading}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                        {osintLoading ? (kn ? "ಸ್ಕ್ಯಾನ್…" : "Scanning…") : (kn ? "OSINT ಹುಡುಕಾಟ ಚಲಾಯಿಸಿ" : "Run OSINT search")}
-                      </button>
-
-                      <div className="sx-legal"><b>{kn ? "ಕಾನೂನು ಸೂಚನೆ:" : "Legal Notice:"}</b> {kn ? "ಎಲ್ಲಾ OSINT ಡೇಟಾ ಮುಕ್ತ-ಮೂಲ ಮತ್ತು ಪರಿಶೀಲಿಸದ. ಫಲಿತಾಂಶಗಳನ್ನು ಎಂದಿಗೂ ದೃಢೀಕೃತ ಸತ್ಯವೆಂದು ಪರಿಗಣಿಸಬೇಡಿ." : "All OSINT data is open-source and unverified. Results must never be treated as confirmed facts. This session is audit-logged (KSP Policy §4.2)."}</div>
-
-                      <div className="sx-audit">
-                        <div className="t">{kn ? "ಸೆಶನ್ ಲೆಕ್ಕಪರಿಶೋಧನೆ" : "Session audit log"}</div>
-                        <div className="row"><span className="ts">00:00</span> {kn ? "ಸೆಶನ್ ಪ್ರಾರಂಭ · DCP Kumar" : "Session initiated · DCP Kumar"}</div>
-                        {osint && <div className="row"><span className="ts">00:03</span> {kn ? "ಪ್ರಶ್ನೆ ಸಲ್ಲಿಸಲಾಗಿದೆ · " : "Query submitted · "}"{osint.q}"</div>}
-                        {osint && <div className="row"><span className="ts">00:04</span> {osint.claims.length} {kn ? "ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು" : "open-web signals surfaced"}</div>}
-                      </div>
-                    </div>
-
-                    {/* RIGHT: results */}
-                    <div className="sx-osint-results">
-                      <div className="sx-rmeta">
-                        <div>
-                          <span className="cnt">{osint ? osint.claims.length : (kn ? "—" : "0")} {kn ? "ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು" : "open-web signals"}</span>
-                          {osint && <span className="sub"> {kn ? "ಇದಕ್ಕಾಗಿ" : "for"} "{osint.q}"</span>}
-                        </div>
-                        {osintLoading && <span className="scan"><span className="d" /> {kn ? "ಸ್ಕ್ಯಾನ್ ಆಗುತ್ತಿದೆ" : "scanning"}</span>}
-                      </div>
-
-                      {/* Verified anchor from internal DB */}
-                      {anchor && (
-                        <div className="sx-anchor">
-                          <div className={`sx-anchor-av r-${tierCls(anchor.risk_score || 0)}`}>{initials(anchor.full_name)}</div>
-                          <div className="sx-anchor-body">
-                            <div className="nm">{anchor.full_name} <span className="vtag">{kn ? "FIR-ಲಿಂಕ್" : "FIR-Linked"} {anchor.suspect_id}</span></div>
-                            <div className="sub">{anchor.alias ? `alias "${anchor.alias}" · ` : ""}{anchor.address_zone} · {anchor.prior_count} {kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ" : "earlier cases"} · {kn ? "ಅಪಾಯ" : "risk"} {anchor.risk_score ?? "—"}</div>
-                          </div>
-                          <button className="sx-anchor-btn" onClick={() => router.push(`/antarBrain?suspect=${anchor.suspect_id}`)}>{kn ? "ಮೆದುಳಿನಲ್ಲಿ →" : "Show in Brain →"}</button>
-                        </div>
-                      )}
-
-                      {/* 4-TAB MULTI-MODULE RECON WORKBENCH */}
-                      {reconData && (
-                        <div className="sx-recon-workbench">
-                          <div className="sx-recon-tabs">
-                            {[
-                              ["maltego", "Maltego Graph"],
-                              ["telecom", "PhoneInfoga"],
-                              ["sherlock", "Sherlock Handles"],
-                              ["bbot", "BBOT Scan Tree"],
-                            ].map(([k, label]) => (
-                              <button
-                                key={k}
-                                onClick={() => setReconTab(k)}
-                                className={reconTab === k ? "on" : ""}
-                              >
-                                {label}
-                              </button>
-                            ))}
-                          </div>
-
-                          <div className="sx-recon-body">
-                            {reconTab === "maltego" && (
-                              <div>
-                                <div className="sx-recon-sub">
-                                  maltego linkage topology · {reconData.maltego_linkage?.nodes?.length || 0} nodes · {reconData.maltego_linkage?.edges?.length || 0} edges
-                                </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                                  {(reconData.maltego_linkage?.nodes || []).map((n, idx) => (
-                                    <div key={n?.id || idx} className="sx-recon-chip">
-                                      <span className="tp">{String(n?.type || n?.node_type || "NODE").toLowerCase()}:</span> {n?.label || n?.name || n?.id || "—"}
-                                      {n?.verified ? <span className="vf">· verified</span> : <span className="uv">· unverified</span>}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {reconTab === "telecom" && (
-                              <div>
-                                <div className="sx-recon-sub">
-                                  phoneinfoga telecom footprint · e.164 geo-footprinting
-                                </div>
-                                <div style={{ fontSize: "12.5px", color: "#E2E8F0", lineHeight: 1.6 }}>
-                                  <div><b>Number / Query:</b> {reconData.phone_infoga?.phone_query || "N/A"}</div>
-                                  <div><b>Line Classification:</b> {reconData.phone_infoga?.line_type || "Unknown"} ({reconData.phone_infoga?.country || "IN"})</div>
-                                  <div style={{ marginTop: "6px", color: "#94A3B8" }}>
-                                    <b>Co-occurring Internal Records:</b> {(reconData.phone_infoga?.co_occurring_records || []).join(", ") || "None"}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {reconTab === "sherlock" && (
-                              <div>
-                                <div className="sx-recon-sub">
-                                  sherlock digital profiles · strict unverified quarantine
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                  {(reconData.sherlock_handles || []).map((h, i) => (
-                                    <div key={i} className="sx-recon-handle">
-                                      <div>
-                                        <span style={{ fontWeight: 600, color: "#F8FAFC" }}>{h?.platform || "Platform"}</span> · <span style={{ color: "#94A3B8" }}>@{h?.handle || "handle"}</span>
-                                      </div>
-                                      <span className="bdg">{h?.badge || "FOUND"}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {reconTab === "bbot" && (
-                              <div>
-                                <div className="sx-recon-sub">
-                                  bbot event scan tree · chronological recon audit
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace" }}>
-                                  {(reconData.bbot_scan_tree || []).map((e, idx) => (
-                                    <div key={e?.id || idx} className="sx-recon-log">
-                                      <span className="ev">[{String(e?.event_type || "SCAN").toUpperCase()}]</span> <span>{e?.detail || "—"}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {!osint && !osintLoading && (
-                        <div className="sx-osint-empty">
-                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                          <p>{kn ? "ಮುಕ್ತ-ಮೂಲ ಸಿಗ್ನಲ್‌ಗಳಿಗಾಗಿ ಪ್ರಶ್ನೆ ನಮೂದಿಸಿ ಮತ್ತು “OSINT ಹುಡುಕಾಟ ಚಲಾಯಿಸಿ” ಒತ್ತಿ." : "Enter a query and run an OSINT search to surface open-web signals alongside the verified record."}</p>
-                        </div>
-                      )}
-
-                      {osint && osint.claims.length === 0 && !osintLoading && (
-                        <div className="sx-osint-empty"><p>{kn ? "ಯಾವುದೇ ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ." : "No open-web signals found for this query."}</p></div>
-                      )}
-
-                      {osint?.claims.map((c, i) => {
-                        const pct = Math.round((c.confidence || 0) * 100);
-                        return (
-                          <div className="sx-claim" key={i}>
-                            <div className="sx-claim-hd">
-                              <span className="src">OSINT</span>
-                              <span className={`status ${c.status}`}>{c.status || "unverified"}</span>
-                              <span className="conf">{pct}%</span>
-                            </div>
-                            <div className="sx-claim-body">{c.claim}</div>
-                            <div className="sx-claim-ft">
-                              <div className="bar"><div className="f" style={{ width: `${pct}%` }} /></div>
-                              {/^https?:\/\//i.test(c.source_url || "") && <a href={c.source_url} target="_blank" rel="noopener noreferrer nofollow">source ↗</a>}
-                              <span className="warn">{kn ? "ಪರಿಶೀಲಿಸದ · ಮುಕ್ತ-ಮೂಲ" : "Unverified · open-source"}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {profile?.similar_cases?.[0] && osint && (
-                        <div className="sx-infer">
-                          <div>
-                            <div className="t">{kn ? "AI ಸಂಬಂಧ ಸಲಹೆ" : "AI Correlation Suggestion"}</div>
-                            <div className="s">{profile.similar_cases[0].summary?.slice(0, 220)}… <span className="c">{kn ? "ವಿಶ್ವಾಸ" : "Confidence"}: {Math.round((profile.similar_cases[0].score || 0) * 100)}% · {kn ? "ಊಹಿತ ಮಾತ್ರ" : "inferred only"}</span></div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
               
               {profileTab === "details" && rec && (
               <div className="sx-sections sx-casefile">
