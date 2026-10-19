@@ -116,7 +116,7 @@ function makeLabelSprite(THREE, text, sub, color) {
   return sprite;
 }
 
-const INTRO_MS = 3200;      // length of the opening zoom-in
+const INTRO_MS = 6000;      // length of the opening zoom-in - slow on purpose
 
 export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
   const containerRef = useRef(null);
@@ -358,14 +358,14 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       // The brain arrives: one unbroken glide to its working distance (z 820). It starts
       // near enough to be seen at once (z 1500) and moves from the first frame - from z 2600
       // with a 300 ms wait it was a speck, so the screen read as blank while the loader
-      // faded. The glide decelerates (ease-out cubic): quick to start, a long soft landing,
+      // faded. The glide is slow and eases in and out (sine), with no jolt at either end,
       // drawn every frame rather than handed to the library's slow-start tween. Nothing
       // else may move the camera until it lands - the data effect below waits for it.
       introUntil.current = Date.now() + INTRO_MS + 400;
       const START_Z = 1500, END_Z = 820;
       fg.cameraPosition({ x: 0, y: 0, z: START_Z }, { x: 0, y: 0, z: 0 }, 0);
       const t0 = performance.now();
-      const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+      const easeOut = (t) => (1 - Math.cos(Math.PI * t)) / 2;   // gentle start, gentle landing
       const glide = (now) => {
         if (destroyed || !fg) return;
         const t = Math.min(1, (now - t0) / INTRO_MS);
