@@ -20,8 +20,15 @@ const STEP_MS = 2400;
 const STEP_ORB = ["searching", "connecting", "shaping", "working"];
 let startedAt = 0, lastSeen = 0;
 
-export default function BrainLoader({ kn = false, fullscreen = false }) {
-  const steps = STEPS[kn ? "kn" : "en"];
+// Other screens pass their own steps and orb states (the Map does); the Brain's are the default.
+export const MAP_STEPS = {
+  en: ["Loading the district map", "Reading the day's FIRs", "Finding hotspots", "Drawing the map"],
+  kn: ["ಜಿಲ್ಲಾ ನಕ್ಷೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ", "ದಿನದ FIR ಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ", "ಹಾಟ್‌ಸ್ಪಾಟ್ ಹುಡುಕಲಾಗುತ್ತಿದೆ", "ನಕ್ಷೆ ರಚನೆ"],
+};
+export const MAP_ORBS = ["shaping", "searching", "solving", "working"];
+
+export default function BrainLoader({ kn = false, fullscreen = false, steps: own, orbs = STEP_ORB, className = "" }) {
+  const steps = (own || STEPS)[kn ? "kn" : "en"];
   // The steps run once and hold on the last: looping back to "Loading FIR records" while
   // the graph is being drawn said something that was no longer true.
   const at = () => Math.min(steps.length - 1, Math.floor((Date.now() - startedAt) / STEP_MS));
@@ -38,8 +45,8 @@ export default function BrainLoader({ kn = false, fullscreen = false }) {
   }, [steps.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className={`brl ${fullscreen ? "brl-full" : ""}${handover ? " brl-on" : ""}`} role="status" aria-live="polite">
-      <Orb state={STEP_ORB[i] || "working"} size={64} label={steps[i]} />
+    <div className={`brl ${fullscreen ? "brl-full" : ""}${handover ? " brl-on" : ""}${className ? ` ${className}` : ""}`} role="status" aria-live="polite">
+      <Orb state={orbs[i] || "working"} size={64} label={steps[i]} />
       <div className="brl-cap">
         <div className="brl-steps">
           {steps.map((s, k) => (

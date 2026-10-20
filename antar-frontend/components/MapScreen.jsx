@@ -15,6 +15,7 @@ import ProposeAction from "@/components/ProposeAction";
 import { useForecast, ForecastLayer, ForecastPanel, ForecastCard, ModelCardModal, AsOfChip } from "@/components/ForecastPanel";
 import { makeContains } from "@/lib/forecast";
 import { readSession } from "@/lib/auth";
+import BrainLoader, { MAP_STEPS, MAP_ORBS } from "@/components/BrainLoader";
 import { MAP_AGENTS, MapAgentsMenu, AgentDropLayer, MapAgentResult } from "@/components/MapAgents";
 import { FESTIVALS } from "@/lib/festivals";
 import "leaflet/dist/leaflet.css";
@@ -775,6 +776,17 @@ export default function MapScreen() {
   }
 
   const [resetMapTrigger, setResetMapTrigger] = useState(0);
+  // First load only: the loader covers the frame until the district shapes and the first
+  // day's figures are in, then fades. Later date or filter changes keep the thin top line.
+  const [boot, setBoot] = useState("on");            // "on" | "fade" | "off"
+  useEffect(() => {
+    if (boot === "on" && geo && !giLoading) setBoot("fade");
+  }, [geo, giLoading, boot]);
+  useEffect(() => {
+    if (boot !== "fade") return;
+    const t = setTimeout(() => setBoot("off"), 500);
+    return () => clearTimeout(t);
+  }, [boot]);
   const [keyRoom, setKeyRoom] = useState(260);   // px of empty space left of the state, for the key
   // Opens on my district: the first fit goes straight to it (FitToKarnataka), no second flight.
   const startBounds = useMemo(() => (geo && myGadm && !deepLinked && !openedMine.current ? gadmBounds(myGadm) : null),
@@ -1161,7 +1173,12 @@ export default function MapScreen() {
         )}
 
           <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%", position: "relative" }}>
-            {giLoading && (
+            {boot !== "off" && (
+              <div className={`mx-boot${boot === "fade" ? " out" : ""}`}>
+                <BrainLoader kn={kn} steps={MAP_STEPS} orbs={MAP_ORBS} />
+              </div>
+            )}
+            {giLoading && boot === "off" && (
               <div className="mx-loading" role="status" aria-label={kn ? "ನಕ್ಷೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ" : "Reading the map"}>
                 <span aria-hidden="true" />
               </div>
