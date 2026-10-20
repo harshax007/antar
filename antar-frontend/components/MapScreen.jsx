@@ -1045,7 +1045,7 @@ export default function MapScreen() {
             </Polyline>
           ))}
 
-          <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} />
+          <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} stateView={!selectedDistrict} />
 
           {repeatOn && (repeats?.locations || []).map((r, i) => (
             <CircleMarker key={"rpt" + i} center={[r.lat, r.lon]} radius={4 + Math.min(10, Math.sqrt(r.firs) * 1.4)}
@@ -1119,6 +1119,14 @@ export default function MapScreen() {
           {kn ? "‹ ಕರ್ನಾಟಕ" : "‹ Karnataka"} &middot; {selectedDistrict}
         </button>
       )}
+        {fc.on && (
+          <div className="mx-fckey" role="note">
+            <i aria-hidden="true" />
+            {kn
+              ? <>ಚುಕ್ಕೆಗಳು: ಪೊಲೀಸ್ ಠಾಣೆಗಳು, ಮುಂದಿನ {fc.horizon} ದಿನಗಳಲ್ಲಿ ನಿರೀಕ್ಷಿತ FIR - ಪ್ರಕರಣಗಳಲ್ಲ.{!selectedDistrict && " ಹೆಚ್ಚು ನಿರತ ಠಾಣೆಗಳು ಮಾತ್ರ; ಎಲ್ಲವಕ್ಕೂ ಜಿಲ್ಲೆ ತೆರೆಯಿರಿ."}</>
+              : <>Dots: police {fc.layer?.unit_type === "beat" ? "beats" : "stations"}, FIRs expected in the next {fc.horizon} days - not cases.{!selectedDistrict && " Busiest only; open a district for all."}</>}
+          </div>
+        )}
         <div className="mx-mybar">
           <label className="mx-mydist" title={session.posting ? "Your posting, from your sign-in" : "The district the map opens on, for you"}>
             <select value={myDistrict} onChange={(e) => chooseMyDistrict(e.target.value)} aria-label={kn ? "ನನ್ನ ಜಿಲ್ಲೆ" : "My district"}>

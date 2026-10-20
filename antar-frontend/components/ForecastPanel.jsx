@@ -148,7 +148,9 @@ const canvas = typeof window !== "undefined" ? L.canvas({ padding: 0.4 }) : unde
 // busiest units stand out; only the top two classes get an outline.
 const CLASS_OPACITY = [0.14, 0.22, 0.42, 0.62, 0.82];
 
-export function ForecastLayer({ fc, kn, contains }) {
+// stateView: the whole state is in view, so only the busiest fifth of the units is drawn
+// (the top class); every unit shows once a district is open.
+export function ForecastLayer({ fc, kn, contains, stateView = false }) {
   const lay = fc.layer;
   const f = useMemo(() => {
     const idx = Object.fromEntries((lay?.fields || []).map((k, i) => [k, i]));
@@ -157,8 +159,9 @@ export function ForecastLayer({ fc, kn, contains }) {
       lo: u[idx.lo90], hi: u[idx.hi90], cls: u[idx.class], thin: u[idx.thin],
     }))
       .filter((u) => !contains || contains(u.lat, u.lon))
+      .filter((u) => !stateView || u.cls >= 4 || u.unit === fc.selected)
       .sort((a, b) => a.expected - b.expected);        // big ones drawn last, on top
-  }, [lay, contains]);
+  }, [lay, contains, stateView, fc.selected]);
   return (
     <>
       {fc.firsOn && fc.firPoints.map((p, i) => (
