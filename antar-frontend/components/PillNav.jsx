@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useLang } from "@/components/Providers";
 import { BookOpen, MessageSquare, Brain, Map, TrendingUp, Search , ChevronDown, ChevronRight} from "lucide-react";
 import OfficerSelector from "@/components/OfficerSelector";
+import LangToggle from "@/components/LangToggle";
 import { asset } from "@/lib/assets";
 import { fetchAPI } from "@/lib/api";
 
@@ -295,6 +296,9 @@ export default function PillNav() {
         >
           {kn ? "ನಮ್ಮ ಬಗ್ಗೆ" : "ABOUT"}
         </button>
+
+        {/* EN | ಕನ್ನಡ: in the nav, so it is in the same place on every screen and covers nothing */}
+        <LangToggle />
 
         <button
           type="button"

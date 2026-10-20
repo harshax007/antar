@@ -4296,10 +4296,18 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
   .cx-pill-aux { display: none !important; }      /* Docs and About stay reachable from Account */
 }
 
+/* EN | ಕನ್ನಡ switch, in the top nav on every screen */
+.cx-lang { position: static; display: flex; align-items: center; gap: 7px; flex: none;
+  padding: 5px 10px; border-radius: 8px; cursor: pointer; font: 600 12px 'Inter', sans-serif; color: rgba(255,255,255,.8);
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: all .2s ease; }
+.cx-lang:hover, .cx-lang:focus-visible { background: rgba(255,255,255,.1); color: #fff; outline: none; }
+[data-theme="light"] .cx-lang { color: #1e293b; background: rgba(255,255,255,.8); border-color: rgba(15,23,42,.15); }
+
 /* ── Chat ── */
 @media (max-width: 820px) {
   /* at the top it sat on the headline; above the tab bar it is clear of everything and under the thumb */
-  .cx-lang { top: auto !important; bottom: calc(66px + env(safe-area-inset-bottom)) !important; right: 10px !important; padding: 8px 12px !important; font-size: 12px !important; }
+  .cx-lang { padding: 5px 9px !important; font-size: 12px !important; }
   .cx-tabhint { display: none !important; }        /* there is no Tab key to press */
 }
 

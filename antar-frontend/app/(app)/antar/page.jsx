@@ -1368,7 +1368,7 @@ const MessageRow = memo(({
 export default function ChatPage() {
   const router = useRouter();
   const liveTriggeredRef = useRef(false);
-  const { lang, toggleLang } = useLang();
+  const { lang } = useLang();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const abortControllerRef = useRef(null);
@@ -2360,45 +2360,7 @@ export default function ChatPage() {
       <CinematicBackground />
       <div className="nx-glow" aria-hidden="true" />
       
-      {/* EN / KN Toggle */}
-      <button className="cx-lang"
-        type="button"
-        onClick={toggleLang}
-        style={{
-          position: "fixed",
-          top: "24px",
-          right: "24px",
-          zIndex: 10000,
-          background: "rgba(255, 255, 255, 0.05)",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
-          borderRadius: "8px",
-          padding: "6px 12px",
-          color: "rgba(255, 255, 255, 0.8)",
-          fontSize: "13px",
-          fontWeight: 600,
-          fontFamily: "'Inter', sans-serif",
-          cursor: "pointer",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          transition: "all 0.2s ease"
-        }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-          e.currentTarget.style.color = "#FFFFFF";
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-          e.currentTarget.style.color = "rgba(255, 255, 255, 0.8)";
-        }}
-        title={kn ? "ಇಂಗ್ಲಿಷ್‌ಗೆ ಬದಲಾಯಿಸಿ" : "Switch to Kannada"}
-      >
-        <span style={{ opacity: kn ? 0.5 : 1 }}>EN</span>
-        <span style={{ opacity: 0.3 }}>|</span>
-        <span style={{ opacity: kn ? 1 : 0.5, fontFamily: "'Noto Sans Kannada', sans-serif" }}>ಕನ್ನಡ</span>
-      </button>
+      {/* EN / KN: in the top nav on every screen (components/LangToggle) */}
 
       {!empty && (
         <button
