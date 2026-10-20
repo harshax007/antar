@@ -1121,7 +1121,6 @@ export default function MapScreen() {
       )}
         <div className="mx-mybar">
           <label className="mx-mydist" title={session.posting ? "Your posting, from your sign-in" : "The district the map opens on, for you"}>
-            <span>{kn ? "ನನ್ನ ಜಿಲ್ಲೆ" : "My district"}</span>
             <select value={myDistrict} onChange={(e) => chooseMyDistrict(e.target.value)} aria-label={kn ? "ನನ್ನ ಜಿಲ್ಲೆ" : "My district"}>
               <option value="">{kn ? "ಇಡೀ ಕರ್ನಾಟಕ" : "All Karnataka"}</option>
               {POLICE_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}

@@ -1082,7 +1082,7 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 /* My district and the repeat-locations layer, on the map's top-left */
 /* top of the map frame; the district breadcrumb sits under it */
 .mx-mybar, .mx-mapwrap > .mx-mybar { position: absolute; top: 12px; left: 12px; bottom: auto; right: auto; height: auto; z-index: 900; display: flex; gap: 6px; align-items: center; }
-.mx-mydist { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 999px;
+.mx-mydist { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 8px; border-radius: 999px;
   background: rgba(6,11,20,.82); border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
   font: 600 10.5px 'Chakra Petch'; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .mx-mydist select { background: transparent; border: 0; color: var(--text); font: 600 12px 'Inter', sans-serif;
