@@ -22,8 +22,8 @@ let startedAt = 0, lastSeen = 0;
 
 // Other screens pass their own steps and orb states (the Map does); the Brain's are the default.
 export const MAP_STEPS = {
-  en: ["Loading the district map", "Reading the day's FIRs", "Finding hotspots", "Drawing the map"],
-  kn: ["ಜಿಲ್ಲಾ ನಕ್ಷೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ", "ದಿನದ FIR ಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ", "ಹಾಟ್‌ಸ್ಪಾಟ್ ಹುಡುಕಲಾಗುತ್ತಿದೆ", "ನಕ್ಷೆ ರಚನೆ"],
+  en: ["Loading the map", "Getting the day's cases", "Getting the forecast", "Almost ready"],
+  kn: ["ನಕ್ಷೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ", "ದಿನದ ಪ್ರಕರಣಗಳನ್ನು ಪಡೆಯಲಾಗುತ್ತಿದೆ", "ಮುನ್ಸೂಚನೆ ಪಡೆಯಲಾಗುತ್ತಿದೆ", "ಬಹುತೇಕ ಸಿದ್ಧ"],
 };
 export const MAP_ORBS = ["shaping", "searching", "solving", "working"];
 
