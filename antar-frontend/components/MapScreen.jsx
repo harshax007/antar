@@ -220,6 +220,15 @@ function FlyTo({ bounds }) {
   return null;
 }
 
+// The whole state, a little closer than an exact fit (a quarter step in): the corners are
+// empty sea and neighbouring states, and the districts read larger.
+const STATE_ZOOM_IN = 0.25;
+function fitState(map, bounds, fly = false) {
+  const z = Math.min(map.getBoundsZoom(bounds) + STATE_ZOOM_IN, map.getMaxZoom());
+  if (fly) map.flyTo(bounds.getCenter(), z, { duration: 0.6 });
+  else map.setView(bounds.getCenter(), z, { animate: false });
+}
+
 function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
   const map = useMap();
   const prevDistrictRef = useRef(null);
@@ -234,7 +243,7 @@ function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
       map.invalidateSize();
       // the officer's own district when there is one, else the whole state
       if (startBounds) map.fitBounds(startBounds, { padding: [60, 60], animate: false });
-      else map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0], animate: false });
+      else fitState(map, L.geoJSON(geo).getBounds());
     });
   }, [geo, map]);
 
@@ -251,7 +260,7 @@ function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
       clearTimeout(t);
       t = setTimeout(() => {
         map.invalidateSize();
-        if (!districtRef.current) map.fitBounds(bounds, { padding: [0, 0], animate: false });
+        if (!districtRef.current) fitState(map, bounds);
       }, 60);
     });
     ro.observe(map.getContainer());
@@ -265,7 +274,7 @@ function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
     // When a district is closed/deselected or reset triggered, return to default Karnataka state view
     if (triggerFired || districtClosed) {
       const layer = L.geoJSON(geo);
-      map.flyToBounds(layer.getBounds(), { padding: [0, 0], duration: 0.6 });
+      fitState(map, layer.getBounds(), true);
     }
     prevDistrictRef.current = selectedDistrict;
     prevTriggerRef.current = resetTrigger;

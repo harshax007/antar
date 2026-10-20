@@ -1092,6 +1092,12 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-fckey-dots i:nth-child(2) { width: 8px; height: 8px; opacity: .6; }
 .mx-fckey-dots i:nth-child(3) { width: 12px; height: 12px; opacity: .9; }
 [data-theme="light"] .mx-mapwrap > .mx-fckey { background: rgba(255,255,255,.96); }
+/* Quiet until wanted: nearly see-through, and lit when the pointer is on it */
+.mx-mapwrap > .mx-fckey { background: transparent; border-top-color: transparent; opacity: .28;
+  transition: opacity .25s ease, background .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.mx-mapwrap > .mx-fckey:hover { opacity: 1; background: rgba(6,11,20,.92); border-top-color: rgba(34,230,240,.35);
+  box-shadow: 0 -6px 24px rgba(34,230,240,.14), inset 0 1px 0 rgba(34,230,240,.18); }
+[data-theme="light"] .mx-mapwrap > .mx-fckey:hover { background: rgba(255,255,255,.96); }
 .mx-fckey-dots.day i { width: 9px; height: 9px; background: #E14038; border: 1px solid #ffd2cf; opacity: 1; }
 /* District card, Day view: the day's cases in short */
 .mx-dc-day { margin: 10px 0 4px; padding: 10px 0 4px; border-top: 1px solid var(--glass-border); }
