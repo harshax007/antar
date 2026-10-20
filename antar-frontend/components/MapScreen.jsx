@@ -214,13 +214,6 @@ const POLICE_DISTRICTS = [
 // Height of the forecast key under the map (the map gives up this much while it shows).
 const FCKEY_H = 46;
 
-// Leaflet measures its box once; when the key under it comes or goes it is told again.
-function ResizeWith({ dep }) {
-  const map = useMap();
-  useEffect(() => { const t = setTimeout(() => map.invalidateSize(), 30); return () => clearTimeout(t); }, [dep, map]);
-  return null;
-}
-
 function FlyTo({ bounds }) {
   const map = useMap();
   useEffect(() => { if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.5 }); }, [bounds, map]);
@@ -243,6 +236,26 @@ function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
       if (startBounds) map.fitBounds(startBounds, { padding: [60, 60], animate: false });
       else map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0], animate: false });
     });
+  }, [geo, map]);
+
+  // The frame changes size after the first fit (the key strip under the map comes and goes,
+  // the side panels settle): Leaflet is told, and the state is fitted again so it fills the
+  // frame. Inside a district the view is left where the officer put it.
+  const districtRef = useRef(selectedDistrict);
+  districtRef.current = selectedDistrict;
+  useEffect(() => {
+    if (!geo || typeof ResizeObserver === "undefined") return;
+    const bounds = L.geoJSON(geo).getBounds();
+    let t = null;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        map.invalidateSize();
+        if (!districtRef.current) map.fitBounds(bounds, { padding: [0, 0], animate: false });
+      }, 60);
+    });
+    ro.observe(map.getContainer());
+    return () => { clearTimeout(t); ro.disconnect(); };
   }, [geo, map]);
 
   useEffect(() => {
@@ -531,20 +544,39 @@ export default function MapScreen() {
       .catch((e) => { if (e?.name !== "AbortError") setDayCases({ error: true, cases: [], date: endDate }); });
     return () => ctrl.abort();
   }, [dayView, endDate, crimeType]);
+  // One point-in-shape test per district, for placing the day's cases.
+  const districtContains = useMemo(() => {
+    const by = {};
+    for (const f of geo?.features || []) {
+      const g = f.properties?.district || f.properties?.NAME_2;
+      (by[g] = by[g] || []).push(f);
+    }
+    return Object.fromEntries(Object.entries(by).map(([g, fs]) => [g, makeContains({ features: fs })]));
+  }, [geo]);
   const dayDots = useMemo(() => {
     if (!dayView || dayCases?.date !== endDate) return [];
-    // cases at the same spot (or with no position, at their district's centre) are set in a
-    // small ring around it, so 10 cases read as 10 dots
+    // A case is drawn where it was registered only when that point lies inside its own
+    // district: a position in the sea or in the next district is a bad record, and a dot
+    // there would put the case in the wrong place. Those, and cases with no position, go
+    // to their district's centre. Cases sharing a spot are set in a small ring around it,
+    // so 10 cases read as 10 dots.
     const seen = {};
     return (dayCases.cases || []).map((c) => {
-      let lat = c.lat, lon = c.lon;
-      if (lat == null || lon == null) { const p = coordFor(c.zone); lat = p.lat; lon = p.lon; }
+      const gadm = ZONE_TO_GADM_DISTRICT[c.zone] || c.zone;
+      const inside = districtContains[gadm];
+      let lat = c.lat, lon = c.lon, placed = true;
+      if (lat == null || lon == null || (inside && !inside(lat, lon))) {
+        const p = coordFor(c.zone); lat = p.lat; lon = p.lon; placed = false;
+      }
       const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
       const k = (seen[key] = (seen[key] || 0) + 1) - 1;
-      if (k > 0) { const a = k * 2.4, r = 0.004 * Math.sqrt(k); lat += r * Math.sin(a); lon += r * Math.cos(a); }
-      return { ...c, lat, lon, gadm: ZONE_TO_GADM_DISTRICT[c.zone] || c.zone };
+      if (k > 0) {
+        const a = k * 2.4, r = (placed ? 0.004 : 0.012) * Math.sqrt(k);
+        lat += r * Math.sin(a); lon += r * Math.cos(a);
+      }
+      return { ...c, lat, lon, gadm, placed };
     });
-  }, [dayView, dayCases, endDate]);
+  }, [dayView, dayCases, endDate, districtContains]);
   const dayInDistrict = selectedDistrict ? dayDots.filter((c) => c.gadm === selectedDistrict) : dayDots;
 
   // Repeat locations: places with 3+ FIRs on 2+ days in the 90 days to the selected date.
@@ -991,7 +1023,7 @@ export default function MapScreen() {
                 <span aria-hidden="true" />
               </div>
             )}
-            <MapContainer center={[15.317, 75.713]} zoom={7} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%", transition: "filter 0.4s ease", filter: giLoading ? "grayscale(0.5) brightness(0.8)" : "none" }}>
+            <MapContainer center={[15.317, 75.713]} zoom={7} zoomSnap={0.25} zoomDelta={0.5} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%", transition: "filter 0.4s ease", filter: giLoading ? "grayscale(0.5) brightness(0.8)" : "none" }}>
             <TileLayer 
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" 
               attribution="&copy; Esri" 
@@ -1093,6 +1125,7 @@ export default function MapScreen() {
               <Tooltip className="mx-hs" sticky>
                 <b>{crimeName(c.crime)}</b>{c.head && c.head.toUpperCase() !== c.crime.toUpperCase() ? ` · ${c.head}` : ""}
                 <br />{[c.station, c.area].filter(Boolean).join(" · ")}{c.stage ? ` · ${c.stage}` : ""}
+                {!c.placed && <><br /><i>{kn ? "ಸ್ಥಳ ದಾಖಲಾಗಿಲ್ಲ: ಜಿಲ್ಲೆಯ ಕೇಂದ್ರದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ" : "No usable position on the FIR: shown at the district's centre"}</i></>}
               </Tooltip>
             </CircleMarker>
           ))}
@@ -1159,7 +1192,6 @@ export default function MapScreen() {
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} startBounds={startBounds} />
           <ZoomButtons geo={geo} onReset={closeDistrict} />
-          <ResizeWith dep={fc.on || dayView} />
         
           
 
