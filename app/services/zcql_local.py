@@ -175,6 +175,10 @@ def _virtual_table(spec: QuerySpec) -> list[dict]:
         return _cached_virtual(spec, _case_stages)
     if spec.table == "__time_pattern__":
         return _cached_virtual(spec, _time_pattern)
+    if spec.table == "__fir_link__":
+        return _fir_link(spec)
+    if spec.table == "__event_effect__":
+        return _cached_virtual(spec, _event_effect)
     return []
 
 
@@ -456,7 +460,7 @@ def _time_pattern(spec: QuerySpec) -> list[dict]:
     such days/months in the span, so a count can be read as a per-day average."""
     dim = _fval(spec, "dimension", default="weekday")
     where, args = _fir_where(spec)
-    fmt = "%w" if dim == "weekday" else "%m"
+    fmt = {"weekday": "%w", "month": "%m", "monthday": "%d"}.get(dim, "%w")
     sql = (f"SELECT strftime('{fmt}', SUBSTR(date, 1, 10)) AS k, COUNT(DISTINCT fir_id) AS n, "
            f"COUNT(DISTINCT SUBSTR(date, 1, 10)) AS days, MIN(SUBSTR(date, 1, 10)) AS first_date, "
            f"MAX(SUBSTR(date, 1, 10)) AS last_date "
@@ -472,11 +476,80 @@ def _time_pattern(spec: QuerySpec) -> list[dict]:
         if r.get("k") is None:
             continue
         i = int(r["k"])
-        label = _WEEKDAYS[i] if dim == "weekday" else ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
-                                                         "Aug", "Sep", "Oct", "Nov", "Dec")[i - 1]
+        if dim == "monthday":
+            label = str(i)
+        else:
+            label = _WEEKDAYS[i] if dim == "weekday" else ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+                                                             "Aug", "Sep", "Oct", "Nov", "Dec")[i - 1]
         out.append({"slot": label, "slot_index": i, "n": int(r.get("n") or 0), "days": int(r.get("days") or 0),
                     "first_date": r.get("first_date"), "last_date": r.get("last_date"), "dimension": dim})
     return out
+
+
+# T29: the keys two FIRs share. Each key is a column the FIR records; a shared value is
+# named with the column it came from, so the answer says WHAT links the two cases.
+_LINK_KEYS = (("Accused_ID", "accused ID"), ("Vehicle_Reg_No", "vehicle"), ("UPI_ID", "UPI ID"),
+              ("IP_Address", "IP address"), ("MO_Details", "modus operandi"), ("station", "police station"),
+              ("district_norm", "district"), ("Beat_Name", "beat"), ("crime_type", "crime group"),
+              ("CrimeHead_Name", "sub-heading"))
+
+
+def _fir_link(spec: QuerySpec) -> list[dict]:
+    a, b = _fval(spec, "fir_a"), _fval(spec, "fir_b")
+    cols = ", ".join(c for c, _ in _LINK_KEYS) + ", fir_id, CrimeNo, date, ActSection, FIR_Stage"
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = _dict_factory
+    out = []
+    try:
+        for fid in (a, b):
+            # exact first (index-backed); a lower-case id typed by hand falls back to UPPER()
+            rows = conn.execute(f"SELECT {cols} FROM FIRs WHERE fir_id = ? OR CrimeNo = ?", (fid, fid)).fetchall() \
+                or conn.execute(f"SELECT {cols} FROM FIRs WHERE UPPER(fir_id) = ?", (fid,)).fetchall()
+            keys = {}
+            for c, _ in _LINK_KEYS:
+                vals = sorted({str(r.get(c)).strip() for r in rows if r.get(c) not in (None, "") and str(r.get(c)).strip()})
+                keys[c] = vals
+            r0 = rows[0] if rows else {}
+            out.append({"fir": fid, "found": bool(rows), "keys": keys, "date": (r0.get("date") or "")[:10],
+                        "act": r0.get("ActSection"), "stage": r0.get("FIR_Stage")})
+    finally:
+        conn.close()
+    if len(out) == 2 and out[0]["found"] and out[1]["found"]:
+        shared = []
+        for c, label in _LINK_KEYS:
+            common = sorted(set(out[0]["keys"][c]) & set(out[1]["keys"][c]))
+            if common:
+                shared.append({"key": c, "label": label, "values": common})
+        out[0]["shared"] = shared
+        try:
+            from datetime import date as _d
+            out[0]["days_apart"] = abs((_d.fromisoformat(out[1]["date"]) - _d.fromisoformat(out[0]["date"])).days)
+        except Exception:
+            out[0]["days_apart"] = None
+    return out
+
+
+def _event_effect(spec: QuerySpec) -> list[dict]:
+    """T30: what the record shows an event did, measured by app/services/events.py (the same
+    numbers the Predict page shows), plus when it next falls, in relative words only."""
+    from datetime import date as _d
+    from app.services import events as EV
+    key = _fval(spec, "event") or ""
+    if key not in EV.EVENTS:
+        return []
+    e = EV.EVENTS[key]
+    zones = _fval(spec, "zone", "in")
+    place = tuple(zones) if zones else (tuple(e.places) or None)
+    try:
+        overall = EV.effect(key, place)
+        mv = EV.movers(key, place)
+    except Exception:
+        return []
+    nxt = next((u for u in EV.upcoming(_d.today(), horizon_days=380) if u["key"] == key), None)
+    return [{"event": key, "name": e.name, "what": e.what, "measured_in": ", ".join(zones) if zones else e.area,
+             "overall": overall, "rises": mv.get("rises") or [], "falls": mv.get("falls") or [],
+             "watch": mv.get("watch") or [], "when": (nxt or {}).get("when"),
+             "years": len(EV._measure(key)["years"])}]
 
 
 def _connect_ro() -> sqlite3.Connection:

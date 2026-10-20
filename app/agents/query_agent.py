@@ -397,7 +397,7 @@ _NOT_A_CRIME_WORD = {"show", "me", "list", "give", "get", "find", "display", "te
                      "police", "karnataka", "state", "year", "month", "week", "day", "today", "yesterday",
                      "this", "that", "per", "each", "every", "ipc", "bns", "sll", "please", "can", "you", "us"}
 # Lookups by an identifier: a period named beside them is not a filter they take.
-_NO_PERIOD_CHECK = {"T2", "T9", "T18", "T19", "T20", "T21", "RESEARCH", "FORECAST", "CLARIFY", "NONE", "UNRESOLVED"}
+_NO_PERIOD_CHECK = {"T2", "T9", "T18", "T19", "T20", "T21", "T29", "T30", "RESEARCH", "FORECAST", "CLARIFY", "NONE", "UNRESOLVED"}
 
 
 def unapplied(user_text: str, template_id: str, params: dict | None) -> list[str]:
@@ -1245,14 +1245,28 @@ async def query_agent_run(
                 missing = params.get("missing", "parameters")
                 intent = params.get("intent", "this request")
                 log_step(session_id, "query", "clarify", user_text[:80], f"missing {missing}", ms)
-                clar = (f"Which crime type should I use for the {intent}? For example:\n"
-                        "• theft\n• robbery\n• chain snatching\n"
-                        "Or ask “most crimes?” to rank all crime types together."
-                        if answer_lang == "en" else
-                        "ಯಾವ ಅಪರಾಧ ಪ್ರಕಾರವನ್ನು ನೋಡಬೇಕು? ಉದಾಹರಣೆಗೆ:\n"
-                        "• ಕಳ್ಳತನ\n• ದರೋಡೆ\n• ಸರಗಳ್ಳತನ\n"
-                        "ಎಲ್ಲಾ ಅಪರಾಧಗಳಿಗಾಗಿ “ಅತಿ ಹೆಚ್ಚು ಅಪರಾಧ ಎಲ್ಲಿ?” ಎಂದು ಕೇಳಿ.")
-                rid, detail = "CLARIFY", f"Missing {missing} for {intent} — asked to clarify."
+                if missing == "subject":
+                    # A link / person question with nobody named ("what links case A and case
+                    # B?"). Asking which crime type would answer a question nobody asked.
+                    clar = ("Which cases or person should I look at? Name them, for example:\n"
+                            "• what links FIR PRF-2025-909767 and FIR PRF-2025-909775\n"
+                            "• FIRs for accused ACC-KA-200248\n"
+                            "• FIRs that share UPI ID suman68@ybl or vehicle KA-44-SJ-2221"
+                            if answer_lang == "en" else
+                            "ಯಾವ ಪ್ರಕರಣಗಳು ಅಥವಾ ವ್ಯಕ್ತಿಯನ್ನು ನೋಡಬೇಕು? ಹೆಸರಿಸಿ, ಉದಾಹರಣೆಗೆ:\n"
+                            "• FIR PRF-2025-909767 ಮತ್ತು FIR PRF-2025-909775 ಅನ್ನು ಏನು ಜೋಡಿಸುತ್ತದೆ\n"
+                            "• ಆರೋಪಿ ACC-KA-200248 ರ FIR ಗಳು\n"
+                            "• UPI ID suman68@ybl ಹಂಚಿಕೊಳ್ಳುವ FIR ಗಳು")
+                    rid, detail = "CLARIFY", f"Missing subject for {intent} — asked to name it."
+                else:
+                    clar = (f"Which crime type should I use for the {intent}? For example:\n"
+                            "• theft\n• robbery\n• chain snatching\n"
+                            "Or ask “most crimes?” to rank all crime types together."
+                            if answer_lang == "en" else
+                            "ಯಾವ ಅಪರಾಧ ಪ್ರಕಾರವನ್ನು ನೋಡಬೇಕು? ಉದಾಹರಣೆಗೆ:\n"
+                            "• ಕಳ್ಳತನ\n• ದರೋಡೆ\n• ಸರಗಳ್ಳತನ\n"
+                            "ಎಲ್ಲಾ ಅಪರಾಧಗಳಿಗಾಗಿ “ಅತಿ ಹೆಚ್ಚು ಅಪರಾಧ ಎಲ್ಲಿ?” ಎಂದು ಕೇಳಿ.")
+                    rid, detail = "CLARIFY", f"Missing {missing} for {intent} — asked to clarify."
             else:
                 # Router genuinely could not understand the request (off-topic / gibberish) →
                 # ask to rephrase. (The nearest-matches dead-end message is reserved for the

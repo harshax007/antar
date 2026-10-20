@@ -1501,6 +1501,11 @@ def _t17(p: ActSplit) -> QuerySpec:
 # FIRs.CrimeNo is NOT unique (it repeats across stations); fir_id is the FIR key.
 
 IDENTIFIER_COLUMNS = {"upi": "UPI_ID", "ip": "IP_Address", "vehicle": "Vehicle_Reg_No", "accused": "Accused_ID"}
+# One-value lookups (T20) also take a modus-operandi code. It is kept out of
+# IDENTIFIER_COLUMNS, which T19 scans in full: an MO code is a way of working, not a
+# person's identifier, and it does not belong in the cross-district identity links.
+LOOKUP_COLUMNS = {**IDENTIFIER_COLUMNS, "mo": "MO_Details"}
+_MO_RE = re.compile(r"\bMO-[A-Z0-9][A-Z0-9-]{2,40}\b", re.I)
 
 _KEY_ALIASES = {
     "upi": "upi", "upi_id": "upi", "upiid": "upi", "upi_ids": "upi", "vpa": "upi",
@@ -1510,6 +1515,7 @@ _KEY_ALIASES = {
     "accused": "accused", "accused_id": "accused", "accused_ids": "accused",
     "offender": "accused", "offenders": "accused",
     "any": "any", "all": "any",
+    "mo": "mo", "modus_operandi": "mo", "mo_details": "mo", "signature": "mo", "mo_signature": "mo",
 }
 
 
@@ -1517,7 +1523,7 @@ def _as_key_type(v: Any) -> str:
     return _KEY_ALIASES.get(str(v or "").strip().lower().replace(" ", "_").replace("-", "_"), "any")
 
 
-KeyType = Annotated[Literal["any", "upi", "ip", "vehicle", "accused"], BeforeValidator(_as_key_type)]
+KeyType = Annotated[Literal["any", "upi", "ip", "vehicle", "accused", "mo"], BeforeValidator(_as_key_type)]
 
 _IPV4_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
 _ACC_RE = re.compile(r"ACC[\s_-]?KA[\s_-]?(\d{3,7})", re.I)
@@ -1537,6 +1543,8 @@ def detect_identifier(value: Any) -> Optional[str]:
         return None
     if _ACC_RE.search(v):
         return "accused"
+    if _MO_RE.fullmatch(v):
+        return "mo"
     if _IPV4_RE.match(v):
         return "ip"
     if "@" in v and " " not in v:
@@ -1598,7 +1606,9 @@ def resolve_identifier(params: Any) -> tuple[str, str]:
                                 if k in ("value", "key_type") and v not in (None, "")})
     value = p.value.strip()
     kt = p.key_type if p.key_type != "any" else (detect_identifier(value) or "upi")
-    if kt == "vehicle":
+    if kt == "mo":
+        value = value.strip()
+    elif kt == "vehicle":
         value = normalize_plate(value)
     elif kt == "accused":
         value = normalize_accused_id(value)
@@ -1613,7 +1623,7 @@ def _t20(p: IdentifierLookup) -> QuerySpec:
     """Every FIR that records this UPI ID or IP address (vehicle and accused IDs also accepted).
     The renderer compares UPPER() on both sides, so the lookup is case-insensitive."""
     kt, value = resolve_identifier(p)
-    col = IDENTIFIER_COLUMNS[kt]
+    col = LOOKUP_COLUMNS[kt]
     return QuerySpec(table="FIRs", select=_FIR_CASE_COLUMNS + [col],
                      filters=[Filter(col, "=", value or _NO_VALUE), Filter("date", "<=", _today_cap())],
                      order_by=("date", "desc"), limit=300)
@@ -1821,6 +1831,8 @@ def _t25(p: SubHeadBreakdown) -> QuerySpec:
 # T26 ─ day-of-week and month-of-year pattern ─────────────────────────────────────────
 def _as_time_dimension(v: Any) -> str:
     s = str(v or "").strip().lower().replace(" ", "_")
+    if s in ("monthday", "day_of_month", "payday", "paydays", "salary_day", "date_of_month"):
+        return "monthday"
     return "month" if s in ("month", "months", "month_of_year", "season", "seasonal", "monthly") else "weekday"
 
 
@@ -1832,7 +1844,7 @@ class TimePattern(BaseModel):
     date_from: Optional[str] = None
     date_to: Optional[str] = None
     period: Optional[str] = None
-    dimension: Annotated[Literal["weekday", "month"], BeforeValidator(_as_time_dimension)] = "weekday"
+    dimension: Annotated[Literal["weekday", "month", "monthday"], BeforeValidator(_as_time_dimension)] = "weekday"
 
 
 def _t26(p: TimePattern) -> QuerySpec:
@@ -1936,6 +1948,58 @@ def _t28(p: ActOutcomes) -> QuerySpec:
                      order_by=("conviction_rate", p.order), limit=p.limit)
 
 
+# T29 ─ what links two FIRs ──────────────────────────────────────────────────────────
+_FIR_ID_RE = re.compile(r"\b(?:[A-Z]{2,4}-20\d\d-[A-Z0-9]{3,10}|FIR-20\d\d-[\w-]{4,40}|C\d{5}|\d{15,19})\b")
+
+
+class FirPair(BaseModel):
+    fir_a: str = ""
+    fir_b: str = ""
+
+
+def _t29(p: FirPair) -> QuerySpec:
+    """The two FIRs side by side, and every key they share: accused, vehicle, UPI ID, IP
+    address, modus operandi, station, district, crime and act. "Named shared key per edge"."""
+    a, b = (p.fir_a or "").strip().upper(), (p.fir_b or "").strip().upper()
+    return QuerySpec(table="__fir_link__", filters=[Filter("fir_a", "=", a or _NO_VALUE), Filter("fir_b", "=", b or _NO_VALUE)],
+                     limit=2)
+
+
+# T30 ─ what an event does to registered crime ───────────────────────────────────
+_EVENT_WORDS = {
+    "deepavali": "deepavali", "diwali": "deepavali", "deepawali": "deepavali", "ದೀಪಾವಳಿ": "deepavali",
+    "dasara": "dasara", "dussehra": "dasara", "dasera": "dasara", "ದಸರಾ": "dasara",
+    "ganesha": "ganesha", "ganesh chaturthi": "ganesha", "ganeshotsava": "ganesha", "ಗಣೇಶ": "ganesha",
+    "ugadi": "ugadi", "ಯುಗಾದಿ": "ugadi", "sankranti": "sankranti", "sankranthi": "sankranti", "ಸಂಕ್ರಾಂತಿ": "sankranti",
+    "ramzan": "ramzan", "ramadan": "ramzan", "eid": "ramzan", "ರಂಜಾನ್": "ramzan",
+    "new year": "newyear", "new year's eve": "newyear", "new years eve": "newyear", "ಹೊಸ ವರ್ಷ": "newyear",
+}
+
+
+def find_event(low: str) -> Optional[str]:
+    """The festival or event named in a (lower-cased) question, as an events.py key."""
+    for w, key in sorted(_EVENT_WORDS.items(), key=lambda kv: -len(kv[0])):
+        if (w.isascii() and re.search(r"(?<![a-z])" + re.escape(w) + r"(?![a-z])", low or "")) or (not w.isascii() and w in (low or "")):
+            return key
+    return None
+
+
+class EventEffect(BaseModel):
+    event: str = ""
+    zones: StrList = Field(default_factory=list)
+
+
+def _t30(p: EventEffect) -> QuerySpec:
+    """What past years show a festival or event did to registered cases: all crime, and the
+    crime groups that clearly rose or fell, measured from the FIRs registered in its window
+    against the four weeks either side. When it falls next comes from the event calendar."""
+    filters = [Filter("event", "=", (p.event or "").strip().lower())]
+    zones = resolve_zones(p.zones)
+    if zones:
+        filters.append(Filter("zone", "in", zones))
+    return QuerySpec(table="__event_effect__", filters=filters, limit=1)
+
+
 # ── The whitelist registry ───────────────────────────────────────────────────
 @dataclass
 class Template:
@@ -1995,8 +2059,9 @@ TEMPLATES: dict[str, Template] = {
                     ["which UPI IDs are used in more than one district",
                      "accused who appear across multiple districts",
                      "vehicles linked to FIRs in 3 or more districts"], SharedIdentifiers, _t19),
-    "T20": Template("T20", "All FIRs linked to one UPI ID or IP address (identifier lookup)",
-                    ["FIRs for UPI user1101@bank", "cases linked to IP 103.87.106.22"],
+    "T20": Template("T20", "All FIRs linked to one UPI ID, IP address or modus-operandi code (identifier lookup)",
+                    ["FIRs for UPI user1101@bank", "cases linked to IP 103.87.106.22",
+                     "FIRs sharing modus operandi MO-A1-festival-lockedhouse"],
                     IdentifierLookup, _t20),
     "T21": Template("T21", "Full FIR history of one accused ID across districts, with arrests, charge-sheets and convictions",
                     ["cases for accused ACC-KA-500777", "history of ACC-KA-102883"], AccusedHistory, _t21),
@@ -2013,8 +2078,9 @@ TEMPLATES: dict[str, Template] = {
     "T25": Template("T25", "What a crime group is made of: FIR counts by sub-heading (two-wheeler, house theft, jewellery, extortion …) or by day vs night",
                     ["what share of thefts are two-wheelers", "breakdown of theft by type",
                      "are burglaries more frequent by night or by day"], SubHeadBreakdown, _t25),
-    "T26": Template("T26", "Day-of-week or month-of-year pattern of registered FIRs (by registration date)",
-                    ["day of week pattern for chain snatching", "which months see the most burglary"],
+    "T26": Template("T26", "Day-of-week, day-of-month (paydays) or month-of-year pattern of registered FIRs (by registration date)",
+                    ["day of week pattern for chain snatching", "which months see the most burglary",
+                     "does snatching rise around paydays"],
                     TimePattern, _t26),
     "T27": Template("T27", "Side-by-side comparison of two or more districts, police stations or years: FIR counts and case outcomes",
                     ["compare conviction rate of Bengaluru City and Mysuru", "theft in Hassan vs Mandya",
@@ -2022,6 +2088,10 @@ TEMPLATES: dict[str, Template] = {
     "T28": Template("T28", "Case outcomes by the Act or section a case was registered under (conviction, charge-sheet, arrest rates)",
                     ["which act sections have the lowest conviction rate", "conviction rate under the NDPS Act"],
                     ActOutcomes, _t28),
+    "T29": Template("T29", "What links two FIRs: the keys they share (accused, vehicle, UPI ID, IP address, modus operandi, station, district, crime)",
+                    ["what links FIR PRF-2025-909767 and FIR PRF-2025-909775"], FirPair, _t29),
+    "T30": Template("T30", "What a festival or event does to registered crime (Deepavali, Dasara, Ganesha, Ugadi, Sankranti, Ramzan, New Year), measured from past FIRs",
+                    ["what spikes before Deepavali, and where", "crime during Mysuru Dasara"], EventEffect, _t30),
     "AST": Template("AST", "(internal) Dynamic AST query representation",
                     ["(internal)"], ASTParams, _t_ast, internal=True),
 }

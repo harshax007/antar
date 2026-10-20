@@ -336,6 +336,11 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         if choice.get("template_id") == "NONE" and _agent_ask:
             # An agent question ("any early warnings this week?"): the agent's section is the
             # answer. Left as NONE, self-heal substituted an unrelated 419k-case list.
+            # A link / person question with nobody named asks who, not which crime type:
+            # "what links case A and case B?" used to get "which crime type for the alerts?".
+            if any(a in _agent_ask for a in ("network", "profile")) or command == "connect":
+                return {"template_id": "CLARIFY", "answer_lang": lng,
+                        "params": {"missing": "subject", "intent": "links"}}
             return {"template_id": "CLARIFY", "answer_lang": lng,
                     "params": {"missing": "crime_types", "intent": "alerts"}}
         if use_llm and choice.get("template_id") in ("CLARIFY", "NONE") and not _agent_ask and _route_fn(text)[0] == ["query"]:
@@ -619,7 +624,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     # "any early warnings?", "show network of S0005" — the agent's section IS the answer;
     # a "could you rephrase?" above it would contradict it.
     if template_id in ("NONE", "CLARIFY") and any(k in text_results for k in
-                                                   ("alert_suggest", "network", "profile", "predict")):
+                                                   ("alert_suggest", "network", "profile", "predict", "pattern", "geo")):
         base = ""
     answer  = _synthesize(base, text_results, claims, lang=lang)
 

@@ -197,6 +197,63 @@ def test_time_of_day_is_reported_as_not_recorded():
     assert "not the time of day" in a
 
 
+# ── T29, T30, payday pattern, MO lookup, and the Docs demo questions ─────────────
+
+def test_t29_names_the_shared_keys_of_two_firs():
+    assert route("What links FIR PRF-2025-909767 and FIR PRF-2025-909775?")["template_id"] == "T29"
+    a = answer("What links FIR PRF-2025-909767 and FIR PRF-2025-909775?")
+    assert "ACC-KA-200248" in a.split("\n")[0]
+
+
+def test_t29_says_when_a_fir_is_not_on_record():
+    a = answer("What links FIR PRF-2025-000001 and FIR PRF-2025-909775?")
+    assert "not on the register" in a
+
+
+def test_t30_event_effect_is_measured_not_assumed():
+    assert route("What spikes before Deepavali, and where?")["template_id"] == "T30"
+    a = answer("What spikes before Deepavali, and where?")
+    assert "past years" in a and "Karnataka Police Act" in a
+
+
+def test_t26_payday_pattern():
+    c = route("Does chain snatching rise around paydays?")
+    assert c["template_id"] == "T26" and c["params"]["dimension"] == "monthday"
+    assert "1st to the 5th" in answer("Does chain snatching rise around paydays?")
+
+
+def test_t20_modus_operandi_lookup():
+    c = route("Find the FIRs that share modus operandi MO-A1-festival-lockedhouse")
+    assert c["template_id"] == "T20" and c["params"]["key_type"] == "mo"
+    assert "MO-A1-festival-lockedhouse" in answer("Find the FIRs that share modus operandi MO-A1-festival-lockedhouse")
+
+
+def test_ps_inside_a_word_is_not_a_police_station():
+    assert extract_entities("summary of 2023: the top crime groups")["dimension"] == "zone"
+    assert route("Summary of 2023: total FIRs and the top crime groups")["template_id"] == "T16"
+
+
+def test_every_docs_demo_question_has_an_answer():
+    """The /docs page runs these; each must reach a template and come back with a written answer."""
+    import sqlite3
+    from pathlib import Path
+    db = Path(__file__).resolve().parent.parent / "intelligent.db"
+    if not db.exists():
+        pytest.skip("intelligent.db not present")
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    qs = [r[0] for r in con.execute("SELECT question_en FROM question_bank ORDER BY id")]
+    con.close()
+    bad = []
+    for q in qs:
+        c = route(q)
+        if c["template_id"] in ("NONE", "CLARIFY", "RESEARCH"):
+            bad.append((q, c["template_id"]))
+            continue
+        if not answer(q):
+            bad.append((q, "no answer"))
+    assert not bad, bad
+
+
 def test_exact_lookups_do_not_order_through_the_date_index():
     sql = render_zcql(build_spec("T18", {"plate": "KA-04-MH-1234"}))
     assert "ORDER BY +date" in sql

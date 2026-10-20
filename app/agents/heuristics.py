@@ -420,7 +420,9 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
 
     # Extract geo dimension (city/district/zone vs station)
     geo_dim = "zone"
-    if any(w in low for w in ("station", "stations", "station code", "police station", "ps", "ಠಾಣೆ")):
+    # Whole words: as a substring "ps" fired on "groups", "maps", "steps" and turned
+    # "summary of 2023: the top crime groups" into a ranking of police stations.
+    if re.search(r"\b(stations?|station codes?|police stations?|ps)\b", low) or "ಠಾಣೆ" in low:
         geo_dim = "station_code"
 
     # Extract year / date range
@@ -535,7 +537,7 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
             st = resolve_stations(" ".join(params["zones"]))
             if st:
                 params = {**params, "stations": st[:6], "zones": []}
-        if unknown_place and tid not in ("T2", "T5", "T7", "T9", "T18", "T19", "T20", "T21", "RESEARCH"):
+        if unknown_place and tid not in ("T2", "T5", "T7", "T9", "T18", "T19", "T20", "T21", "T29", "T30", "RESEARCH"):
             params = {**params, "unknown_place": unknown_place}   # the writer flags it
         if period_label and params.get("date_from") and span_kind != "year":
             params = {**params, "period_label": period_label}     # how the answer names the window
@@ -549,6 +551,15 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     # Any suspect id ("profile of S0005", "show network of S0005") is a question about THAT
     # person: their linked cases are the grounded answer and the profile/network agents add
     # their sections on top. Without this "profile of S0005" listed all 419k FIRs.
+    # Two FIRs named: what links them ("what links FIR PRF-2025-909767 and FIR PRF-2025-909775")
+    from app.services.zcql_repo import _FIR_ID_RE, _MO_RE, find_event
+    _firs = list(dict.fromkeys(m.group(0).upper() for m in _FIR_ID_RE.finditer((user_text or "").upper())))
+    if len(_firs) >= 2:
+        return choice("T29", {"fir_a": _firs[0], "fir_b": _firs[1]})
+    # A modus-operandi code: every FIR that records it
+    _mo = _MO_RE.search(user_text or "")
+    if _mo:
+        return choice("T20", {"key_type": "mo", "value": _mo.group(0)})
     # ── Identifier questions come first: an exact ID in the question is the strongest signal.
     # T21 accused history: "cases for accused ACC-KA-500777"
     _acc = re.search(r"\bACC[\s_-]?KA[\s_-]?(\d{3,7})\b", (user_text or "").upper())
@@ -576,7 +587,9 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         or any(w in low for w in ("ಜಿಲ್ಲೆಗಳಲ್ಲಿ", "ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ", "ಹಲವು ಜಿಲ್ಲೆ", "ಠಾಣೆಗಳಾದ್ಯಂತ", "ಬೇರೆ ಬೇರೆ ಜಿಲ್ಲೆ")))
     # "corridors between Bengaluru and Tumakuru", "offenders moving between Mysuru and Hassan":
     # identifiers (UPI, IP, vehicle, accused) seen on FIRs in EACH of the places named.
-    if len(zones) >= 2 and (re.search(r"\bcorridors?\b", low) or re.search(
+    if len(zones) >= 2 and (re.search(r"\bcorridors?\b", low)
+            or re.search(r"\b(identifiers?|links?|linked|linking|connect\w*)\b[^.?!]{0,30}\b(firs?|cases?|crimes?)\b", low)
+            or re.search(
             r"\b(moving|travel\w*|operat\w*|links?|linked|connect\w*|common|shared?)\b[^.?!]{0,40}\bbetween\b", low)
             or re.search(r"\bbetween\b[^.?!]{0,60}\b(links?|linked|connect\w*|corridors?|common|shared?)\b", low)):
         return choice("T19", {"key_type": _kt, "min_districts": 2, "between": zones[:3], "limit": limit_val})
@@ -659,6 +672,11 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
                       or any(w in low for w in ("ಶಿಕ್ಷೆ ಪ್ರಮಾಣ", "ಶಿಕ್ಷೆಯ ಪ್ರಮಾಣ", "ದೋಷಾರೋಪ", "ಬಂಧನ ಪ್ರಮಾಣ", "ಶಿಕ್ಷೆ ದರ")))
     _ord_lo = "asc" if re.search(r"\b(lowest|worst|poorest|least|bottom|weakest|low|fewest)\b", low) or "ಕಡಿಮೆ" in low else "desc"
 
+    # T30 — a festival or event named: what past years show it does to registered crime
+    _ev = find_event(low)
+    if _ev and not _outcome_q:
+        return choice("T30", {"event": _ev, "zones": zones})
+
     # T28 — outcomes by the Act / section a case was registered under
     if _outcome_q and re.search(r"\b(acts?|sections?|statutes?|laws?|u/s)\b", low) \
             and not re.search(r"\b(police act|ndps|pocso|it act|excise)\b", low):
@@ -713,8 +731,11 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
                      r"(?:mon|tues|wednes|thurs|fri|satur|sun)days?)\b", low)
     _moy = re.search(r"\b(month of (?:the )?year|which months|months? of the year|seasonal\w*|seasons?|"
                      r"time of (?:the )?year|every year in|typically in which month)\b", low)
-    if (_dow or _moy) and (ct or heads or zones or stations or re.search(r"\b(crimes?|cases?|firs?|incidents?)\b", low)):
-        return choice("T26", {"crime_types": ct, "zones": zones, "dimension": "weekday" if _dow else "month", **dates})
+    _pay = re.search(r"\b(paydays?|pay days?|salary days?|salary week|start of the month|beginning of the month|"
+                     r"first (?:week|few days) of the month|day of the month|days of the month)\b", low)
+    if (_dow or _moy or _pay) and (ct or heads or zones or stations or re.search(r"\b(crimes?|cases?|firs?|incidents?|snatching)\b", low)):
+        return choice("T26", {"crime_types": ct, "zones": zones,
+                              "dimension": "monthday" if _pay else ("weekday" if _dow else "month"), **dates})
 
     # T25 — what a crime is made of: "share of thefts that are two-wheelers", "breakdown of
     # theft by type", "are burglaries more frequent by night or by day"
@@ -743,7 +764,9 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
 
     # A trend named outright ("monthly trend of robbery across Karnataka in 2023") is a trend,
     # even when a word like "across" would otherwise read as a ranking.
-    if ct and not rank_q and re.search(r"\b(trend|trends|over time|monthly|month[- ]wise|month by month|month[- ]on[- ]month)\b", low):
+    if ct and not rank_q and re.search(r"\b(trend|trends|over time|monthly|month[- ]wise|month by month|month[- ]on[- ]month|"
+                                       r"rising|falling|increasing|decreasing|declining|going (?:up|down)|on the rise|"
+                                       r"getting (?:better|worse))\b", low):
         return choice("T3", {"crime_types": ct, "zones": zones, "months": months,
                              "date_from": date_from, "date_to": date_to})
 
@@ -789,6 +812,11 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     _compare = bool(re.search(r"\b(compare|comparison|vs|versus|growth|growing|grew|change)\b", low))
     if years and (_compare or (len(years) >= 2 and span_kind != "years")):
         return choice("T16", {"year": int(years[-1])})
+    # "Summary of 2023: total FIRs and the top crime groups" is the year summary, whatever
+    # ranking words sit in it.
+    if len(years) == 1 and span_kind in (None, "year") and not zones and not stations and not ct \
+            and re.search(r"\b(summary|summari[sz]e|overview|in brief|recap)\b", low):
+        return choice("T16", {"year": int(years[0])})
     # A year's total — "Cognizable FIRs registered in Karnataka in 2022?" A month or a
     # quarter of that year is not the year: it goes on to the count below, with its dates.
     if years and span_kind in (None, "year") and not ct and not zones and not stations and not rank_q and not status_q \

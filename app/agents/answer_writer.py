@@ -959,12 +959,15 @@ def _w_acts(rows, kn, params, template_id):
 
 _OPEN_STATUS = re.compile(r"investigation|pending|undetected", re.I)
 _IDENT_LABEL = {"upi": ("UPI ID", "UPI ID"), "ip": ("IP address", "IP ವಿಳಾಸ"),
-                "vehicle": ("vehicle", "ವಾಹನ"), "accused": ("accused ID", "ಆರೋಪಿ ID")}
+                "vehicle": ("vehicle", "ವಾಹನ"), "accused": ("accused ID", "ಆರೋಪಿ ID"),
+                "mo": ("modus operandi", "ಕಾರ್ಯವಿಧಾನ (MO)")}
 _IDENT_PLURAL = {"upi": ("UPI IDs", "UPI ID ಗಳು"), "ip": ("IP addresses", "IP ವಿಳಾಸಗಳು"),
                  "vehicle": ("vehicles", "ವಾಹನಗಳು"), "accused": ("accused IDs", "ಆರೋಪಿ ID ಗಳು")}
 _IDENT_THIS = {"upi": ("this UPI ID", "ಈ UPI ID ಗೆ"), "ip": ("this IP address", "ಈ IP ವಿಳಾಸಕ್ಕೆ"),
-               "vehicle": ("this vehicle", "ಈ ವಾಹನಕ್ಕೆ"), "accused": ("this accused ID", "ಈ ಆರೋಪಿಗೆ")}
-_IDENT_EXAMPLE = {"vehicle": "KA-02-M-2093", "upi": "name@bank", "ip": "103.87.106.22", "accused": "ACC-KA-500777"}
+               "vehicle": ("this vehicle", "ಈ ವಾಹನಕ್ಕೆ"), "accused": ("this accused ID", "ಈ ಆರೋಪಿಗೆ"),
+               "mo": ("this modus operandi", "ಈ ಕಾರ್ಯವಿಧಾನಕ್ಕೆ")}
+_IDENT_EXAMPLE = {"vehicle": "KA-02-M-2093", "upi": "name@bank", "ip": "103.87.106.22", "accused": "ACC-KA-500777",
+                  "mo": "MO-A1-festival-lockedhouse"}
 _IDENT_ORDER = ("upi", "ip", "vehicle", "accused")
 _CHALLAN_NOTE = ("• ಗಮನಿಸಿ: ಸಂಚಾರ ದಂಡ (ಚಲನ್) ದಾಖಲೆಗಳು Antar ದತ್ತಾಂಶದಲ್ಲಿಲ್ಲ; FIR ಗಳನ್ನು ಮಾತ್ರ ಪರಿಶೀಲಿಸಲಾಗಿದೆ.",
                  "• Note: traffic challans aren't part of Antar's data; only FIRs were checked.")
@@ -1020,9 +1023,9 @@ def _w_ident(rows, kn, params, template_id):
     if template_id == "T18":
         kt, value = "vehicle", rows[0].get("Vehicle_Reg_No") or params.get("plate")
     else:
-        from app.services.zcql_repo import resolve_identifier, IDENTIFIER_COLUMNS
+        from app.services.zcql_repo import resolve_identifier, LOOKUP_COLUMNS
         kt, value = resolve_identifier(params)
-        value = rows[0].get(IDENTIFIER_COLUMNS[kt]) or value
+        value = rows[0].get(LOOKUP_COLUMNS[kt]) or value
     capped = len(rows) >= 300
     rows = _unique_firs(rows)
     total, r0 = len(rows), rows[0]
@@ -1579,11 +1582,36 @@ def _w_heads(rows, kn, params, template_id):
 
 
 def _w_time(rows, kn, params, template_id):
-    """T26 — day-of-week or month-of-year pattern, by registration date."""
+    """T26 — day-of-week, day-of-month (paydays) or month-of-year pattern, by registration date."""
     weekday = (rows[0].get("dimension") == "weekday")
     rs = [r for r in rows if r.get("slot")]
     if not rs:
         return None
+    if rows[0].get("dimension") == "monthday":
+        total = sum(r["n"] for r in rs)
+        pay = sum(r["n"] for r in rs if int(r.get("slot_index") or 0) <= 5)       # the 1st to the 5th
+        mid = sum(r["n"] for r in rs if 6 <= int(r.get("slot_index") or 0) <= 25)
+        share = _pct(pay, total)
+        even = round(100 * 5 / 30.4)
+        rel = round(100 * (pay / 5) / (mid / 20) - 100) if mid else None
+        zones = params.get("zones") or []
+        where = ", ".join(zones) if zones else ("ಕರ್ನಾಟಕ" if kn else "Karnataka")
+        what = _what(params.get("crime_types"), params.get("heads"), kn)
+        scope = _scope(params, kn)
+        if kn:
+            lead = (f"[COMPUTED] {_in_loc(where, True)} {what}: ತಿಂಗಳ 1–5 ದಿನಗಳಲ್ಲಿ **{share}%** ({_fmt(pay)}), "
+                    f"ಸಮ ಹಂಚಿಕೆಯಲ್ಲಿ ಸುಮಾರು {even}% ({scope}).")
+        else:
+            lead = (f"[COMPUTED] **{share}%** of {what} in {where} are registered on the 1st to the 5th of the month "
+                    f"(the usual paydays), against about {even}% if they were spread evenly"
+                    + (f" — a payday is {abs(rel)}% {'busier' if rel > 0 else 'quieter'} than a mid-month day" if rel else "")
+                    + f" ({scope}).")
+        top = sorted(rs, key=lambda r: -r["n"])[:3]
+        lines = [lead, ("ಹೆಚ್ಚು ದಾಖಲಾದ ದಿನಾಂಕಗಳು: " if kn else "Busiest dates of the month: ")
+                 + ", ".join(f"{r['slot']} ({_fmt(r['n'])})" for r in top)]
+        lines.append("• FIR ದಾಖಲಾದ ದಿನಾಂಕದ ಪ್ರಕಾರ; ಸಂಬಳ ದಿನವನ್ನು ತಿಂಗಳ 1–5 ಎಂದು ತೆಗೆದುಕೊಳ್ಳಲಾಗಿದೆ." if kn else
+                     "• By the date each FIR was registered; paydays are taken as the 1st to the 5th. The register does not record where along a road or ATM a case happened.")
+        return lines
     total = sum(r["n"] for r in rs)
     hi = max(rs, key=lambda r: r["n"])
     lo = min(rs, key=lambda r: r["n"])
@@ -1614,6 +1642,94 @@ def _w_time(rows, kn, params, template_id):
     if not weekday:
         lines.append("• ವರ್ಷಗಳ ವ್ಯಾಪ್ತಿ ಸಮಾನವಾಗಿಲ್ಲ (2016–2022 ಭಾಗಶಃ ದಾಖಲೆ), ಆದ್ದರಿಂದ ತಿಂಗಳುಗಳ ಹೋಲಿಕೆ ಸೂಚಕ ಮಾತ್ರ." if kn else
                      "• Years are not covered evenly (2016–2022 are a partial extract), so read the months as a pattern, not exact totals.")
+    return lines
+
+
+def _w_link(rows, kn, params, template_id):
+    """T29 — what links two FIRs, key by key."""
+    if len(rows) < 2:
+        return None
+    a, b = rows[0], rows[1]
+    missing = [r["fir"] for r in (a, b) if not r.get("found")]
+    if missing:
+        return [(f"[VERIFIED] FIR {', '.join(missing)} ದಾಖಲೆಯಲ್ಲಿ ಇಲ್ಲ; FIR ಸಂಖ್ಯೆ ಪರಿಶೀಲಿಸಿ." if kn else
+                 f"[VERIFIED] FIR {', '.join(missing)} is not on the register, so the two cannot be compared. Check the FIR number.")]
+    shared = a.get("shared") or []
+    strong = [s for s in shared if s["key"] in ("Accused_ID", "Vehicle_Reg_No", "UPI_ID", "IP_Address", "MO_Details")]
+    gap = a.get("days_apart")
+    def vals(s):
+        return ", ".join(s["values"][:3])
+    if kn:
+        lead = (f"[VERIFIED] FIR {a['fir']} ಮತ್ತು FIR {b['fir']} ಅನ್ನು ಜೋಡಿಸುವುದು: "
+                + "; ".join(f"{s['label']} **{vals(s)}**" for s in strong) + "." if strong else
+                f"[VERIFIED] FIR {a['fir']} ಮತ್ತು FIR {b['fir']} ನಡುವೆ ಯಾವುದೇ ಹಂಚಿದ ಆರೋಪಿ, ವಾಹನ, UPI, IP ಅಥವಾ MO ಇಲ್ಲ.")
+    else:
+        lead = (f"[VERIFIED] FIR {a['fir']} and FIR {b['fir']} are linked by "
+                + "; ".join(f"the same {s['label']} **{vals(s)}**" for s in strong) + "." if strong else
+                f"[VERIFIED] FIR {a['fir']} and FIR {b['fir']} share no accused, vehicle, UPI ID, IP address or modus operandi.")
+    lines = [lead]
+    soft = [s for s in shared if s not in strong]
+    if soft:
+        lines.append(("• ಇನ್ನೂ ಹಂಚಿರುವುದು: " if kn else "• They also share: ")
+                     + "; ".join(f"{s['label']} {vals(s)}" for s in soft))
+    if gap is not None:
+        lines.append(f"• ಎರಡು FIR ಗಳ ನಡುವೆ {gap} ದಿನಗಳು ({a['date']} ಮತ್ತು {b['date']})." if kn else
+                     f"• Registered {gap} days apart ({a['date']} and {b['date']}).")
+    for r in (a, b):
+        k = r["keys"]
+        place = ", ".join(k.get("station", [])[:1] + k.get("district_norm", [])[:1])
+        crime = _crime_word((k.get("crime_type") or ["—"])[0], kn)
+        lines.append(f"• FIR {r['fir']} — {crime}, {place}, {r['date']} · {r.get('stage') or '—'}")
+    lines.append("• ಹಂಚಿದ ಕೀ ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸುತ್ತದೆ; ಅದು ಮಾತ್ರ ಒಟ್ಟಿಗೆ ಕೃತ್ಯ ಎಸಗಿದ್ದನ್ನು ತೋರಿಸುವುದಿಲ್ಲ." if kn else
+                 "• A shared key links the cases on the register; on its own it does not show the same person acted in both.")
+    return lines
+
+
+def _low_crime(c) -> str:
+    """A crime group in running text: lower case, except an Act keeps its name."""
+    s = _crime_en(c)
+    if re.search(r"\bact\b", s, re.I):
+        return re.sub(r"\b(\w)", lambda m: m.group(1).upper(), s.lower()).replace(" Act ", " Act ")
+    return s.lower()
+
+
+def _w_event(rows, kn, params, template_id):
+    """T30 — what past years show an event did to registered crime."""
+    r = rows[0]
+    o = r.get("overall")
+    name, where = r.get("name"), r.get("measured_in")
+    def pct_word(ef, kn):
+        p = abs(ef["percent"])
+        return (f"{p}% {'ಹೆಚ್ಚು' if ef['percent'] > 0 else 'ಕಡಿಮೆ'}" if kn else
+                f"{p}% {'higher' if ef['percent'] > 0 else 'lower'}")
+    ups = (r.get("rises") or []) + (r.get("watch") or [])
+    if not o and not ups:
+        return [(f"[COMPUTED] {name}: ಅಳೆಯಲು ಹಿಂದಿನ ವರ್ಷಗಳ ದಾಖಲೆ ಸಾಕಷ್ಟಿಲ್ಲ." if kn else
+                 f"[COMPUTED] The register holds too few past years of {name} in {where} to measure what it does.")]
+    if kn:
+        head = (f"[COMPUTED] {name} ಸಮಯದಲ್ಲಿ {where} ನಲ್ಲಿ ಹಿಂದಿನ {o['years']} ವರ್ಷಗಳಲ್ಲಿ ಎಲ್ಲ ಪ್ರಕರಣಗಳು ಸುತ್ತಲಿನ ವಾರಗಳಿಗಿಂತ "
+                f"{pct_word(o, True)} ({_fmt(o['seen'])} vs {_fmt(round(o['expected']))})." if o else f"[COMPUTED] {name}:")
+        if ups:
+            head += " ಏರಿಕೆ: " + ", ".join(f"**{_crime_word(u['crime'], True)}** {pct_word(u, True)}" for u in ups[:3]) + "."
+    else:
+        head = (f"[COMPUTED] In {o['years']} past years ({o['from_year']}–{o['to_year']}), {where} registered "
+                f"{pct_word(o, False)} cases overall during {name} than in the weeks around it "
+                f"({_fmt(o['seen'])} against {_fmt(round(o['expected']))} expected)." if o else f"[COMPUTED] {name}:")
+        if ups:
+            head += " What goes up: " + ", ".join(
+                f"**{_low_crime(u['crime'])}** {pct_word(u, False)} (higher in {u['years_higher']} of {u['years']} years"
+                + ("" if u in (r.get('rises') or []) else ", less certain") + ")" for u in ups[:3]) + "."
+    lines = [head]
+    falls = r.get("falls") or []
+    if falls:
+        lines.append(("• ಇಳಿಕೆ: " if kn else "• What goes down: ")
+                     + ", ".join(f"{(_crime_word(f['crime'], True) if kn else _low_crime(f['crime']))} {pct_word(f, kn)}" for f in falls[:3]))
+    if r.get("when"):
+        lines.append(f"• ಮುಂದಿನದು: {r['when']}" if kn else f"• Next: {r['when']}.")
+    if o and o.get("percent", 0) < 0 and not kn:
+        lines.append("• Fewer registered cases during an event can mean less crime, or slower reporting and registration while it is on; the record does not say which.")
+    lines.append("• ಉತ್ಸವದ ದಿನಾಂಕ ಕ್ಯಾಲೆಂಡರ್‌ನಿಂದ; ಪರಿಣಾಮವನ್ನು ಹಿಂದಿನ FIR ಗಳಿಂದ ಅಳೆಯಲಾಗಿದೆ (ಸುತ್ತಲಿನ 4 ವಾರಗಳೊಂದಿಗೆ ಹೋಲಿಕೆ)." if kn else
+                 "• The date comes from the event calendar; the effect is measured from past FIRs against the 4 weeks either side — the same figures as the Predict page.")
     return lines
 
 
@@ -1747,6 +1863,7 @@ _WRITERS = {
     "T4": _w_top_suspects, "T5": _w_repeat, "T2": _w_suspects, "T9": _w_linked,
     "T1": _w_list, "T12": _w_list, "T16": _w_year, "T17": _w_acts,
     "T24": _w_stages, "T25": _w_heads, "T26": _w_time, "T27": _w_sides, "T28": _w_outcomes,
+    "T29": _w_link, "T30": _w_event,
 }
 
 
