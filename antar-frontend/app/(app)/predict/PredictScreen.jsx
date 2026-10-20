@@ -1013,7 +1013,7 @@ const PREDICT_MODERN_STYLES = `
 .px-kpi.k-hi { border-top-color: #E14038; } .px-kpi.k-hi b { color: #F87171; }
 .px-kpi.k-up { border-top-color: #FFB020; } .px-kpi.k-up b { color: #FFB020; }
 .px-kpi.k-dn { border-top-color: #22E6F0; } .px-kpi.k-dn b { color: #22E6F0; }
-.px-kpi.k-al { border-top-color: #F472B6; } .px-kpi.k-al b { color: #F9A8D4; }
+.px-kpi.k-al { border-top-color: #60A5FA; } .px-kpi.k-al b { color: #93C5FD; }
 .px-kpi.k-ev { border-top-color: #A78BFA; } .px-kpi.k-ev b { color: #C4B5FD; }
 .px-kpi.zero b { color: #5B6B80; }
 .px-top .pxd-card { scroll-margin-top: 90px; }
@@ -1089,7 +1089,7 @@ const PREDICT_MODERN_STYLES = `
 .px-kpi.k-hi:hover { border-top-color: #E14038; } .px-kpi.k-hi:hover b { color: #F87171; }
 .px-kpi.k-up:hover { border-top-color: #FFB020; } .px-kpi.k-up:hover b { color: #FFB020; }
 .px-kpi.k-dn:hover { border-top-color: #22E6F0; } .px-kpi.k-dn:hover b { color: #22E6F0; }
-.px-kpi.k-al:hover { border-top-color: #F472B6; } .px-kpi.k-al:hover b { color: #F9A8D4; }
+.px-kpi.k-al:hover { border-top-color: #60A5FA; } .px-kpi.k-al:hover b { color: #93C5FD; }
 .px-kpi.k-ev:hover { border-top-color: #A78BFA; } .px-kpi.k-ev:hover b { color: #C4B5FD; }
 
 .px-st.s-hi, .px-st.s-up, .px-st.s-dn, .px-st.s-ev { color: #B4C2D6; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03); transition: all .15s; }
@@ -1146,8 +1146,13 @@ const PREDICT_MODERN_STYLES = `
 .px-st.s-dn::before, .px-plan-list .k-dn .px-act-verb::before, .px-kpi.k-dn span::before { background: #22E6F0; }
 .px-st.s-ev::before, .px-plan-list .k-ev .px-act-verb::before, .px-kpi.k-ev span::before { background: #A78BFA; }
 .px-plan-list .k-ok .px-act-verb::before { background: #18D69A; }
-.px-kpi.k-al span::before { background: #F472B6; }
+.px-kpi.k-al span::before { background: #60A5FA; }
 .px-kpi.zero span::before { background: #3A4A60; }
+/* plan verbs: plain words in sentence case, read at a glance */
+.px-plan-list .px-act-verb { font: 600 12px/1.2 'Inter', sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.px-act-hd { grid-template-columns: 128px minmax(0, 1fr) auto 14px; }
+.px-act-body { padding-left: 158px; }
+@media (max-width: 720px) { .px-act-hd { grid-template-columns: minmax(0, 1fr) 14px; } .px-act-body { padding-left: 16px; } }
 .px-term { text-decoration: underline dotted rgba(180,194,214,.5); text-underline-offset: 3px; cursor: help; }
 .px-ev-up small { font-size: 11.5px; line-height: 1.4; color: #B4C2D6; }
 .px-insp-plain { margin: -8px 0 14px; font-size: 13px; color: #B4C2D6; }
@@ -1490,21 +1495,21 @@ function PredictScreen() {
   // and which event needs a bandobast plan. At most four, the strongest first.
   const plan = [];
   if (P.length) {
-    for (const x of highs.slice(0, 2)) plan.push({ k: "hi", verb: kn ? "ಆದ್ಯತೆ" : "Priority", go: x,
+    for (const x of highs.slice(0, 2)) plan.push({ k: "hi", verb: kn ? "ಆದ್ಯತೆ" : "Act first", go: x,
       title: `${x.zone}: ${cap(x.crime_type)}`, plain: plainCrime(x.crime_type), short: rangeOf(x) ? `${rangeOf(x)} expected` : "High risk",
       text: `High risk${rangeOf(x) ? `, ${rangeOf(x)} expected` : ""}. Put extra beat visits on the stations listed under its forecast.` });
-    for (const x of aboves.filter((a) => !highs.includes(a)).slice(0, Math.max(0, 2 - plan.length))) plan.push({ k: "up", verb: kn ? "ಗಸ್ತು" : "Patrol", go: x,
+    for (const x of aboves.filter((a) => !highs.includes(a)).slice(0, Math.max(0, 2 - plan.length))) plan.push({ k: "up", verb: kn ? "ಗಸ್ತು" : "More patrols", go: x,
       title: `${x.zone}: ${cap(x.crime_type)}`, plain: plainCrime(x.crime_type), short: levelOf(x),
       text: `${levelOf(x)}${rangeOf(x) ? `; ${rangeOf(x)} expected` : ""}. Short, repeated beat visits to the stations named in its forecast.` });
-    if (drops[0]) plan.push({ k: "dn", verb: kn ? "ಪರಿಶೀಲಿಸಿ" : "Check", go: drops[0],
+    if (drops[0]) plan.push({ k: "dn", verb: kn ? "ಪರಿಶೀಲಿಸಿ" : "Check records", go: drops[0],
       title: `${drops[0].zone}: ${cap(drops[0].crime_type)}`, short: "Fewer reports than usual", text: "Far fewer reports than usual. Ask the station whether complaints are being registered before reading it as a fall in crime." });
     const ev = evsAhead.find((e) => e.in_forecast_window) || evsAhead[0];
     if (ev) {
       const up = (ev.rises || [])[0] || (ev.watch || [])[0];
-      plan.push({ k: "ev", verb: kn ? "ಬಂದೋಬಸ್ತ್" : "Bandobast", toEvents: true, title: ev.name, short: ev.when,
+      plan.push({ k: "ev", verb: kn ? "ಬಂದೋಬಸ್ತ್" : "Plan for event", toEvents: true, title: ev.name, short: ev.when,
         text: `${ev.when}.${up ? ` In past years ${cap(up.crime).toLowerCase()} ran ${up.percent}% higher during it.` : ""} Plan deployment for it.` });
     }
-    if (!plan.length) plan.push({ k: "ok", verb: kn ? "ಸಾಮಾನ್ಯ" : "All clear", title: "Every area is at its usual level", short: "Routine beats",
+    if (!plan.length) plan.push({ k: "ok", verb: kn ? "ಸಾಮಾನ್ಯ" : "No change", title: "Every area is at its usual level", short: "Routine beats",
       text: "No area needs extra deployment this week. Routine beats as planned." });
   }
 
