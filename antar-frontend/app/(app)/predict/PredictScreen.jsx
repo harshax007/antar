@@ -1029,6 +1029,69 @@ const PREDICT_MODERN_STYLES = `
   .px-act-body { padding: 0 16px 14px; }
   .px-ev-grid { grid-template-columns: 1fr; }
 }
+
+/* ── quiet colour (2026-10-21): neutral at rest, the meaning shows on hover ── */
+.px-sec-note { margin: -4px 0 12px; font-size: 12.5px; line-height: 1.5; color: #8A99AD; max-width: 90ch; }
+.pxd-card .px-sec-note { margin: 0 0 10px; padding: 0 2px; }
+.px-head .px-howbtn { color: #B4C2D6; background: none; border-color: rgba(255,255,255,.14); }
+.px-head .px-howbtn:hover { color: #22E6F0; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.06); box-shadow: none; }
+
+.px-kpi, .px-kpi.k-hi, .px-kpi.k-up, .px-kpi.k-dn, .px-kpi.k-al, .px-kpi.k-ev { border-top-color: rgba(255,255,255,.1); }
+.px-kpi b, .px-kpi.k-hi b, .px-kpi.k-up b, .px-kpi.k-dn b, .px-kpi.k-al b, .px-kpi.k-ev b { color: #EEF3FA; transition: color .15s; }
+.px-kpi.zero b { color: #5B6B80; }
+.px-kpi em { white-space: normal; line-height: 1.35; margin-top: 2px; }
+.px-kpi:hover { background: #0B111D; }
+.px-kpi.k-hi:hover { border-top-color: #E14038; } .px-kpi.k-hi:hover b { color: #F87171; }
+.px-kpi.k-up:hover { border-top-color: #FFB020; } .px-kpi.k-up:hover b { color: #FFB020; }
+.px-kpi.k-dn:hover { border-top-color: #22E6F0; } .px-kpi.k-dn:hover b { color: #22E6F0; }
+.px-kpi.k-al:hover { border-top-color: #F472B6; } .px-kpi.k-al:hover b { color: #F9A8D4; }
+.px-kpi.k-ev:hover { border-top-color: #A78BFA; } .px-kpi.k-ev:hover b { color: #C4B5FD; }
+
+.px-st.s-hi, .px-st.s-up, .px-st.s-dn, .px-st.s-ev { color: #B4C2D6; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03); transition: all .15s; }
+.px-card:hover .px-st.s-hi, .px-card.on .px-st.s-hi { color: #FCA5A5; border-color: rgba(225,64,56,.45); background: rgba(225,64,56,.1); }
+.px-card:hover .px-st.s-up, .px-card.on .px-st.s-up { color: #FCD34D; border-color: rgba(255,176,32,.4); background: rgba(255,176,32,.08); }
+.px-card:hover .px-st.s-dn, .px-card.on .px-st.s-dn { color: #67E8F9; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.07); }
+.px-card:hover .px-st.s-ev, .px-card.on .px-st.s-ev { color: #C4B5FD; border-color: rgba(167,139,250,.4); background: rgba(167,139,250,.07); }
+.px-say b.up, .px-say b.dn { color: #EEF3FA; transition: color .15s; }
+.px-card:hover .px-say b.up, .px-card.on .px-say b.up { color: #FFB020; }
+.px-card:hover .px-say b.dn, .px-card.on .px-say b.dn { color: #22E6F0; }
+.px-conf2 .px-lvl.l-High, .px-conf2 .px-lvl.l-Medium, .px-conf2 .px-lvl.l-Low { color: #B4C2D6; }
+.px-card:hover .px-lvl.l-High { color: #18D69A; } .px-card:hover .px-lvl.l-Medium { color: #FFB020; }
+.px-tag.ev { color: #B4C2D6; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03); }
+.px-card:hover .px-tag.ev { color: #FFB020; border-color: rgba(255,176,32,.35); background: rgba(255,176,32,.07); }
+.px-know { color: #B4C2D6; background: none; border-color: rgba(255,255,255,.14); }
+.px-know:hover { color: #22E6F0; background: rgba(34,230,240,.08); border-color: rgba(34,230,240,.4); box-shadow: none; }
+.px-card:hover { border-color: rgba(255,255,255,.16); background: #0A101C; }
+.px-card.on { background: rgba(34,230,240,.05); border-color: rgba(34,230,240,.45); box-shadow: none; }
+
+.pxd-sev.hi, .pxd-sev.md, .pxd-sev.lo { color: #B4C2D6; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.12); transition: all .15s; }
+.pxd-alert:hover .pxd-sev.hi, .pxd-alert.on .pxd-sev.hi { color: #F87171; background: rgba(225,64,56,.12); border-color: rgba(225,64,56,.35); }
+.pxd-alert:hover .pxd-sev.md, .pxd-alert.on .pxd-sev.md { color: #FFB020; background: rgba(255,176,32,.1); border-color: rgba(255,176,32,.3); }
+
+.px-plan { background: #070B14; border-color: rgba(255,255,255,.08); }
+.px-plan-list .px-act, .px-plan-list .px-act.k-hi, .px-plan-list .px-act.k-up, .px-plan-list .px-act.k-dn, .px-plan-list .px-act.k-ev, .px-plan-list .px-act.k-ok { border-left-color: rgba(255,255,255,.12); transition: border-color .15s, background .15s; }
+.px-plan-list .px-act .px-act-verb { color: #8FA3BC; transition: color .15s; }
+.px-plan-list .px-act.k-hi:hover, .px-plan-list .px-act.k-hi.open { border-left-color: #E14038; } .px-plan-list .px-act.k-hi:hover .px-act-verb, .px-plan-list .px-act.k-hi.open .px-act-verb { color: #F87171; }
+.px-plan-list .px-act.k-up:hover, .px-plan-list .px-act.k-up.open { border-left-color: #FFB020; } .px-plan-list .px-act.k-up:hover .px-act-verb, .px-plan-list .px-act.k-up.open .px-act-verb { color: #FFB020; }
+.px-plan-list .px-act.k-dn:hover, .px-plan-list .px-act.k-dn.open { border-left-color: #22E6F0; } .px-plan-list .px-act.k-dn:hover .px-act-verb, .px-plan-list .px-act.k-dn.open .px-act-verb { color: #22E6F0; }
+.px-plan-list .px-act.k-ev:hover, .px-plan-list .px-act.k-ev.open { border-left-color: #A78BFA; } .px-plan-list .px-act.k-ev:hover .px-act-verb, .px-plan-list .px-act.k-ev.open .px-act-verb { color: #C4B5FD; }
+.px-plan-list .px-act.k-ok:hover, .px-plan-list .px-act.k-ok.open { border-left-color: #18D69A; } .px-plan-list .px-act.k-ok:hover .px-act-verb, .px-plan-list .px-act.k-ok.open .px-act-verb { color: #34D399; }
+.px-plan-list .px-act:hover { background: #0B111D; }
+.px-act-go { color: #B4C2D6; background: none; border-color: rgba(255,255,255,.14); }
+.px-act-go:hover { color: #22E6F0; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.06); }
+
+.px-ev-count, .px-ev.now .px-ev-count { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.12); transition: all .15s; }
+.px-ev-count b, .px-ev.now .px-ev-count b { color: #EEF3FA; transition: color .15s; }
+.px-ev:hover .px-ev-count { background: rgba(167,139,250,.08); border-color: rgba(167,139,250,.35); }
+.px-ev:hover .px-ev-count b { color: #C4B5FD; }
+.px-ev.now:hover .px-ev-count { background: rgba(255,176,32,.08); border-color: rgba(255,176,32,.4); } .px-ev.now:hover .px-ev-count b { color: #FFB020; }
+.px-ev.now { border-color: rgba(255,255,255,.08); }
+.px-ev-meta span.in { color: #B4C2D6; border-color: rgba(255,255,255,.1); }
+.px-ev:hover .px-ev-meta span.in { color: #FFB020; border-color: rgba(255,176,32,.4); }
+.px-ev-up li, .px-ev-up li.soft { border-left-color: rgba(255,255,255,.14); background: rgba(255,255,255,.02); transition: all .15s; }
+.px-ev:hover .px-ev-up li { border-left-color: #FFB020; background: rgba(255,176,32,.05); }
+.px-ev footer button { color: #B4C2D6; background: none; border-color: rgba(255,255,255,.14); }
+.px-ev footer button:hover { color: #22E6F0; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.06); }
 `;
 
 // useSearchParams() forces client-side bailout, which breaks `output: export`
@@ -1461,7 +1524,7 @@ const avgConf = predictions?.length
           </h1>
           <div className="px-sub">
             {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಯೋಜನೆ: ಗಸ್ತು ಎಲ್ಲಿ, ಯಾವ ಠಾಣೆ ಪರಿಶೀಲಿಸಬೇಕು, ಯಾವ ಉತ್ಸವಕ್ಕೆ ಬಂದೋಬಸ್ತ್."
-                : "Plan the next 7 days: where to send patrols, which stations to check, and which events need bandobast. Every figure shows its reason."}
+                : "What the next 7 days look like, area by area. Read the counts, open any forecast or alert for its reasons, then act on the plan."}
           </div>
         </div>
         <div className="px-head-r">
@@ -1491,17 +1554,17 @@ const avgConf = predictions?.length
       {predictions?.length > 0 && (() => {
         const nextEv = evsAhead[0];
         const tiles = [
-          { k: "hi", n: highs.length, l: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High-risk areas", go: () => { setFlt(highs.length ? "high" : "all"); toForecast(); } },
-          { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
-          { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
-          { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", go: toAlerts },
-          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", sub: nextEv ? `${nextEv.name} · ${nextEv.when.toLowerCase()}` : null, go: toEvents },
+          { k: "hi", n: highs.length, l: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High-risk areas", hint: "Rated high risk for the next 7 days", go: () => { setFlt(highs.length ? "high" : "all"); toForecast(); } },
+          { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", hint: "Recent cases well above the area's usual level", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
+          { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", hint: "Far fewer reports than usual: check registration", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
+          { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", hint: "Recent cases that broke an area's pattern", go: toAlerts },
+          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", hint: nextEv ? `${nextEv.name}, ${nextEv.when.toLowerCase()}` : "No festival or event coming up", go: toEvents },
         ];
         return (
           <div className="px-kpis" role="list" aria-label="The week at a glance">
             {tiles.map((t) => (
               <button type="button" role="listitem" key={t.k} className={`px-kpi k-${t.k}${t.n ? "" : " zero"}`} onClick={t.go}>
-                <b>{t.n}</b><span>{t.l}</span>{t.sub && <em>{t.sub}</em>}
+                <b>{t.n}</b><span>{t.l}</span>{!kn && t.hint && <em>{t.hint}</em>}
               </button>
             ))}
           </div>
@@ -1516,6 +1579,7 @@ const avgConf = predictions?.length
             <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast for the next 7 days"}</span>
             <span className="pxd-sub">{shown.length === A.length ? A.length : `${shown.length} of ${A.length}`} {kn ? "ವಲಯ" : "areas"}</span>
           </div>
+          {!kn && <p className="px-sec-note">Each card is an area: the crime type most likely to move there, how far it is from normal, and the cases expected in the next 7 days. Pick one for its reasons.</p>}
           <div className="px-flt" role="toolbar" aria-label="Narrow the forecast list">
             {FILTERS.map(([key, label, test]) => {
               const count = A.filter(test).length;
@@ -1879,6 +1943,7 @@ const avgConf = predictions?.length
           <h2>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}{plan.length > 0 && <small>{Math.min(plan.length, 4)} {Math.min(plan.length, 4) === 1 ? "action" : "actions"}</small>}</h2>
           <button type="button" className="px-linkbtn" onClick={copyBrief} disabled={!brief.length}>{copied ? "Copied" : "Copy for the briefing note"}</button>
         </div>
+        {!kn && <p className="px-sec-note">What to do this week, strongest first: where to patrol, which station to check, which event to plan for. Open a line for the reason and the stations.</p>}
         {predictions === null && <p className="px-brief-wait">{kn ? "ದಾಖಲೆಗಳನ್ನು ಓದುತ್ತಿದೆ…" : "Reading the records…"}</p>}
         {predictions?.length === 0 && <p className="px-brief-wait">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "There is nothing to forecast yet."}</p>}
         {plan.length > 0 && (
