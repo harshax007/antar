@@ -700,6 +700,12 @@ export default function MapScreen() {
   const [repeatOn, setRepeatOn] = useState(false);
   const [repeats, setRepeats] = useState(null);
   const [rptSel, setRptSel] = useState(null);
+  // Only places on land inside Karnataka: a point out at sea (coastal-security FIRs carry
+  // the boat's or the post's position) or across the border is not a place to send a beat.
+  const rptOutside = useMemo(() => (repeats?.locations || []).filter((r) => karnatakaContains && !karnatakaContains(r.lat, r.lon)).length,
+    [repeats, karnatakaContains]);
+  const rptShown = useMemo(() => (repeats?.locations || []).filter((r) => !karnatakaContains || karnatakaContains(r.lat, r.lon)),
+    [repeats, karnatakaContains]);
   const rptRefs = useRef([]);
   const policeUnitsIn = (g) => Object.entries(ZONE_TO_GADM_DISTRICT)
     .filter(([z, gg]) => gg === g && POLICE_DISTRICTS.includes(z)).map(([z]) => z);
@@ -1263,7 +1269,7 @@ export default function MapScreen() {
             </CircleMarker>
           ))}
 
-          {repeatOn && (repeats?.locations || []).map((r, i) => (
+          {repeatOn && rptShown.map((r, i) => (
             <CircleMarker key={"rpt" + i} ref={(m) => { rptRefs.current[i] = m; }} center={[r.lat, r.lon]}
               radius={(selectedDistrict ? 7 : 5) + Math.min(9, Math.sqrt(r.firs) * 1.3)}
               eventHandlers={{ click: () => setRptSel(i), popupclose: () => setRptSel((v) => (v === i ? null : v)) }}
@@ -1384,7 +1390,7 @@ export default function MapScreen() {
                   onClick={() => setRepeatOn((v) => !v)}
                   title="Places with 3 or more FIRs on 2 or more days in the last 90 days">
             <i aria-hidden="true" />{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat locations"}
-            {repeatOn && repeats?.locations ? <b>{repeats.locations.length}</b> : null}
+            {repeatOn && repeats?.locations ? <b>{rptShown.length}</b> : null}
           </button>
         </div>
         <MapAgentsMenu kn={kn} district={selectedDistrict} dragging={!!dragAgent} onDrag={setDragAgent}
@@ -1539,11 +1545,11 @@ export default function MapScreen() {
             </div>
             {repeats?.busy && !repeats?.locations?.length && <p className="mx-rpt-none">{kn ? "ಓದಲಾಗುತ್ತಿದೆ…" : "Reading the register…"}</p>}
             {repeats?.error && <p className="mx-rpt-none">{kn ? "ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "Could not be read just now."}</p>}
-            {repeats && !repeats.busy && !repeats.error && !repeats.locations.length && (
+            {repeats && !repeats.busy && !repeats.error && !rptShown.length && (
               <p className="mx-rpt-none">{kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಸ್ಥಳ ಇಲ್ಲ." : "No place had 3 or more FIRs on 2 or more days in this period."}</p>
             )}
             <ol>
-              {(repeats?.locations || []).slice(0, 8).map((r, i) => (
+              {rptShown.slice(0, 8).map((r, i) => (
                 <li key={i} className={rptSel === i ? "sel" : ""}>
                   <button type="button" onClick={() => {
                     setRptSel(i);
@@ -1568,7 +1574,9 @@ export default function MapScreen() {
                   ["station_default", "a station's default point, used when no location was typed in"],
                   ["unit_position", "a unit's own position on demonstration records"],
                   ["placeholder", "made-up coordinates such as 13.000, 77.000"],
-                ].filter(([k]) => repeats?.left_out?.[k]).map(([k, t]) => `${t} (${repeats.left_out[k]})`).join("; ") || "nothing in this period"}
+                  ["outside", "points outside the state's land boundary, such as out at sea"],
+                ].filter(([k]) => ({ ...repeats?.left_out, outside: rptOutside })[k])
+                  .map(([k, t]) => `${t} (${({ ...repeats.left_out, outside: rptOutside })[k]})`).join("; ") || "nothing in this period"}
                 {". Missing-person reports and CrPC cases are not counted."}</p>
             </details>
           </div>
