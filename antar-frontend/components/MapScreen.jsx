@@ -330,6 +330,8 @@ function FlyTo({ bounds }) {
 // The whole state, fitted to the frame; STATE_ZOOM_IN takes it closer (the corners are
 // empty sea and neighbouring states) at the cost of clipping Bidar and Chamarajanagara.
 const STATE_ZOOM_IN = 0;
+// A Leaflet map still on the page (not removed, container still attached).
+const mapAlive = (map) => !!(map && map._loaded && map._container && map._container.isConnected && map._mapPane);
 function fitState(map, bounds, fly = false) {
   const z = Math.min(map.getBoundsZoom(bounds) + STATE_ZOOM_IN, map.getMaxZoom());
   if (fly) map.flyTo(bounds.getCenter(), z, { duration: 0.6 });
@@ -345,13 +347,18 @@ function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
   const fitted = useRef(false);
   useEffect(() => {
     if (!geo || fitted.current) return;
-    fitted.current = true;
-    requestAnimationFrame(() => {
+    // The fit waits a frame; the map can be taken down in between (leaving the page, a
+    // dev reload), and Leaflet then reads a container that is gone. Cancelled on cleanup,
+    // and marked done only once it has actually run.
+    const id = requestAnimationFrame(() => {
+      if (!mapAlive(map)) return;
+      fitted.current = true;
       map.invalidateSize();
       // the officer's own district when there is one, else the whole state
       if (startBounds) map.fitBounds(startBounds, { padding: [60, 60], animate: false });
       else fitState(map, L.geoJSON(geo).getBounds());
     });
+    return () => cancelAnimationFrame(id);
   }, [geo, map]);
 
   // The frame changes size after the first fit (the key strip under the map comes and goes,
@@ -366,6 +373,7 @@ function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
     const ro = new ResizeObserver(() => {
       clearTimeout(t);
       t = setTimeout(() => {
+        if (!mapAlive(map)) return;
         map.invalidateSize();
         if (!districtRef.current) fitState(map, bounds);
       }, 60);
