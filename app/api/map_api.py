@@ -181,6 +181,51 @@ async def gi_star_hotspots(crime_type: Optional[str] = None, days: int = 30, end
     }
 
 
+@router.get("/repeat_locations")
+async def repeat_locations_api(crime_type: Optional[str] = None, days: int = 90, end_date: Optional[str] = None,
+                               district: Optional[str] = None) -> dict:
+    """Places where cases keep being registered: 3+ FIRs on 2+ different days within about
+    110 m, in the `days` ending on `end_date`. Online-crime stations, a station's default
+    point and placeholder coordinates are left out (see app/services/repeat_locations.py)."""
+    import asyncio
+    from datetime import date as _date
+    from types import SimpleNamespace
+    from app.forecast.asof import current
+    from app.services.repeat_locations import repeat_locations
+    from app.services.zcql_repo import _crime_head_filters, normalize_crime_types, resolve_zones
+    today_dt = current().as_of
+    try:
+        anchor = _date.fromisoformat(end_date[:10]) if end_date else today_dt
+    except ValueError:
+        raise HTTPException(status_code=422, detail="end_date must be an ISO date (YYYY-MM-DD)")
+    anchor = min(anchor, today_dt)
+    days = max(7, min(int(days or 90), 365))
+    crime_filter = None
+    if crime_type:
+        # the same crime resolution as the chat templates (chain snatching and vehicle theft
+        # include the real register's sub-headings), rendered as parameterised SQL
+        parts, args = [], []
+        for f in _crime_head_filters(SimpleNamespace(crime_types=normalize_crime_types([crime_type]), heads=[]),
+                                     "crime_type", "CrimeHead_Name"):
+            if f.op == "in":
+                parts.append(f"UPPER(TRIM({f.column})) IN ({', '.join('?' * len(f.value))})")
+                args += [str(v).strip().upper() for v in f.value]
+            elif f.op == "head_or":
+                heads, labels, tc = f.value
+                parts.append(f"(UPPER(TRIM(CrimeHead_Name)) IN ({', '.join('?' * len(heads))}) "
+                             f"OR UPPER(TRIM({tc})) IN ({', '.join('?' * len(labels))}))")
+                args += [str(v).strip().upper() for v in heads] + [str(v).strip().upper() for v in labels]
+        if parts:
+            crime_filter = (" AND ".join(parts), args)
+    dists = None
+    if district:
+        from app.services.zcql_repo import POLICE_UNITS
+        # one police district, or several (a map shape such as Belagavi holds City and Dist)
+        names = [d.strip() for d in district.split(",") if d.strip()][:8]
+        dists = [z for z in resolve_zones(names) if z not in POLICE_UNITS] or names
+    return await asyncio.to_thread(repeat_locations, anchor, days, crime_filter, dists)
+
+
 @router.get("/flow")
 async def flow(crime_type: Optional[str] = None, period: Optional[str] = None) -> dict:
     return {"flow": []}

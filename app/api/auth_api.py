@@ -46,7 +46,8 @@ async def login(req: LoginRequest) -> dict:
     if not acct:
         raise HTTPException(status_code=401, detail="User ID or password is incorrect.")
     return {"token": mint_token(acct["id"], acct["role"], posting=acct.get("posting")), "officer": acct["id"], "role": acct["role"],
-            "name": acct["name"], "expires_at": int(time.time()) + int(settings.ANTAR_TOKEN_TTL_S)}
+            "name": acct["name"], "posting": acct.get("posting") or "",
+            "expires_at": int(time.time()) + int(settings.ANTAR_TOKEN_TTL_S)}
 
 
 @router.post("/logout")

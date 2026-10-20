@@ -201,13 +201,23 @@ function LabelLayout({ labels, callouts, onChange }) {
   return null;
 }
 
+// Police districts and commissionerates an officer can be posted to (the register's own
+// names; seeded localities and statewide units are not districts).
+const POLICE_DISTRICTS = [
+  "Bagalkot", "Ballari", "Belagavi City", "Belagavi Dist", "Bengaluru City", "Bengaluru Dist", "Bidar",
+  "Chamarajanagar", "Chickballapura", "Chikkamagaluru", "Chitradurga", "Dakshina Kannada", "Davanagere",
+  "Dharwad", "Gadag", "Hassan", "Haveri", "Hubballi Dharwad City", "K.G.F", "Kalaburagi", "Kalaburagi City",
+  "Kodagu", "Kolar", "Koppal", "Mandya", "Mangaluru City", "Mysuru City", "Mysuru Dist", "Raichur",
+  "Ramanagara", "Shivamogga", "Tumakuru", "Udupi", "Uttara Kannada", "Vijayanagara", "Vijayapur", "Yadgir",
+];
+
 function FlyTo({ bounds }) {
   const map = useMap();
   useEffect(() => { if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.5 }); }, [bounds, map]);
   return null;
 }
 
-function FitToKarnataka({ geo, selectedDistrict, resetTrigger }) {
+function FitToKarnataka({ geo, selectedDistrict, resetTrigger, startBounds }) {
   const map = useMap();
   const prevDistrictRef = useRef(null);
   const prevTriggerRef = useRef(resetTrigger);
@@ -219,7 +229,9 @@ function FitToKarnataka({ geo, selectedDistrict, resetTrigger }) {
     fitted.current = true;
     requestAnimationFrame(() => {
       map.invalidateSize();
-      map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0], animate: false });
+      // the officer's own district when there is one, else the whole state
+      if (startBounds) map.fitBounds(startBounds, { padding: [60, 60], animate: false });
+      else map.fitBounds(L.geoJSON(geo).getBounds(), { padding: [0, 0], animate: false });
     });
   }, [geo, map]);
 
@@ -472,6 +484,47 @@ export default function MapScreen() {
       });
   }, [districtFirTotals]);
 
+  // My district: the officer's posting from the sign-in, or the district they chose here
+  // (kept per officer in this browser). The map opens on it; "All Karnataka" is one click.
+  const session = useMemo(() => readSession() || {}, []);
+  const prefKey = `antar_my_district:${session.officer || "anon"}`;
+  const [myDistrict, setMyDistrict] = useState(() => {
+    if (session.posting) return session.posting;
+    try { return localStorage.getItem(prefKey) || ""; } catch { return ""; }
+  });
+  const myGadm = myDistrict ? (ZONE_TO_GADM_DISTRICT[myDistrict] || myDistrict) : null;
+  const deepLinked = !!(sp?.get("unit") || sp?.get("zone") || sp?.get("district"));
+  const openedMine = useRef(false);
+  function chooseMyDistrict(name) {
+    setMyDistrict(name);
+    try { if (name) localStorage.setItem(prefKey, name); else localStorage.removeItem(prefKey); } catch {}
+    const g = name ? (ZONE_TO_GADM_DISTRICT[name] || name) : null;
+    if (g && geo) openDistrict(g, gadmBounds(g)); else closeDistrict();
+  }
+  function gadmBounds(g) {
+    const feats = (geo?.features || []).filter((f) => (f.properties?.district || f.properties?.NAME_2) === g);
+    return feats.length ? L.geoJSON({ type: "FeatureCollection", features: feats }).getBounds() : null;
+  }
+
+  // Repeat locations: places with 3+ FIRs on 2+ days in the 90 days to the selected date.
+  const [repeatOn, setRepeatOn] = useState(false);
+  const [repeats, setRepeats] = useState(null);
+  const policeUnitsIn = (g) => Object.entries(ZONE_TO_GADM_DISTRICT)
+    .filter(([z, gg]) => gg === g && POLICE_DISTRICTS.includes(z)).map(([z]) => z);
+  useEffect(() => {
+    if (!repeatOn) return;
+    const ctrl = new AbortController();
+    const q = new URLSearchParams({ days: "90", end_date: endDate });
+    if (crimeType) q.set("crime_type", crimeType);
+    if (selectedDistrict) { const u = policeUnitsIn(selectedDistrict); if (u.length) q.set("district", u.join(",")); }
+    setRepeats((r) => (r ? { ...r, busy: true } : { busy: true, locations: [] }));
+    fetch(`${API}/api/map/repeat_locations?${q}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("repeat"))))
+      .then((d) => setRepeats({ ...d, busy: false }))
+      .catch((e) => { if (e?.name !== "AbortError") setRepeats({ error: true, locations: [] }); });
+    return () => ctrl.abort();
+  }, [repeatOn, endDate, crimeType, selectedDistrict]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Which labels and callouts are drawn (LabelLayout decides; see there).
   const [declutter, setDeclutter] = useState({ labels: new Set(), callouts: new Set() });
   const layoutLabels = useMemo(() => Object.entries(GADM_CENTROIDS).map(([name, at]) =>
@@ -507,6 +560,14 @@ export default function MapScreen() {
   }
 
   const [resetMapTrigger, setResetMapTrigger] = useState(0);
+  // Opens on my district: the first fit goes straight to it (FitToKarnataka), no second flight.
+  const startBounds = useMemo(() => (geo && myGadm && !deepLinked && !openedMine.current ? gadmBounds(myGadm) : null),
+    [geo]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (openedMine.current || !geo) return;
+    openedMine.current = true;
+    if (startBounds) setSelectedDistrict(myGadm);
+  }, [geo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function closeDistrict() {
     setSelectedDistrict(null);
@@ -986,6 +1047,16 @@ export default function MapScreen() {
 
           <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} />
 
+          {repeatOn && (repeats?.locations || []).map((r, i) => (
+            <CircleMarker key={"rpt" + i} center={[r.lat, r.lon]} radius={4 + Math.min(10, Math.sqrt(r.firs) * 1.4)}
+              pathOptions={{ color: "#FFB020", weight: 1.6, fillColor: "#FFB020", fillOpacity: 0.18 }}>
+              <Tooltip className="mx-hs" sticky>
+                <b>{r.firs} FIRs on {r.days} different days</b> at this spot · {r.crimes.map((c) => c.crime.toLowerCase()).join(", ")}
+                <br />{[r.area, r.beat, r.stations.join(", ")].filter(Boolean).join(" · ")} · last {r.last}
+              </Tooltip>
+            </CircleMarker>
+          ))}
+
           {/* Gi*-ranked "suggested patrol" labels predate the forecast and carry no measured
               basis; with the forecast on, the forecast (back-tested, with ranges) replaces them. */}
           {!fc.on && patrolZones.map((pz, i) => {
@@ -1036,7 +1107,7 @@ export default function MapScreen() {
           <LabelLayout labels={layoutLabels} callouts={layoutCallouts} onChange={onDeclutter} />
           <FlyTo bounds={flyBounds} />
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
-          <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} />
+          <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} startBounds={startBounds} />
           <ZoomButtons geo={geo} onReset={closeDistrict} />
         
           
@@ -1048,6 +1119,21 @@ export default function MapScreen() {
           {kn ? "‹ ಕರ್ನಾಟಕ" : "‹ Karnataka"} &middot; {selectedDistrict}
         </button>
       )}
+        <div className="mx-mybar">
+          <label className="mx-mydist" title={session.posting ? "Your posting, from your sign-in" : "The district the map opens on, for you"}>
+            <span>{kn ? "ನನ್ನ ಜಿಲ್ಲೆ" : "My district"}</span>
+            <select value={myDistrict} onChange={(e) => chooseMyDistrict(e.target.value)} aria-label={kn ? "ನನ್ನ ಜಿಲ್ಲೆ" : "My district"}>
+              <option value="">{kn ? "ಇಡೀ ಕರ್ನಾಟಕ" : "All Karnataka"}</option>
+              {POLICE_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </label>
+          <button type="button" className={`mx-rpt-btn ${repeatOn ? "on" : ""}`} aria-pressed={repeatOn}
+                  onClick={() => setRepeatOn((v) => !v)}
+                  title="Places with 3 or more FIRs on 2 or more days in the last 90 days">
+            <i aria-hidden="true" />{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat locations"}
+            {repeatOn && repeats?.locations ? <b>{repeats.locations.length}</b> : null}
+          </button>
+        </div>
         <MapAgentsMenu kn={kn} district={selectedDistrict} dragging={!!dragAgent} onDrag={setDragAgent}
                        onRun={(id) => runMapAgent(id, selectedDistrict)} />
         {dragAgent && (
@@ -1188,6 +1274,28 @@ export default function MapScreen() {
           </div>
       </button>
       
+        {repeatOn && (
+          <div className="mx-panel mx-rpt-list" inert={reportOpen || showDossier ? "" : undefined}>
+            <div className="mx-bars-h">{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat locations"}<small>{kn ? "90 ದಿನ" : "last 90 days"}</small></div>
+            {repeats?.busy && !repeats?.locations?.length && <p className="mx-rpt-none">{kn ? "ಓದಲಾಗುತ್ತಿದೆ…" : "Reading the register…"}</p>}
+            {repeats?.error && <p className="mx-rpt-none">{kn ? "ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "Could not be read just now."}</p>}
+            {repeats && !repeats.busy && !repeats.error && !repeats.locations.length && (
+              <p className="mx-rpt-none">{kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಸ್ಥಳ ಇಲ್ಲ." : "No place had 3+ FIRs on 2+ days in this period."}</p>
+            )}
+            <ol>
+              {(repeats?.locations || []).slice(0, 8).map((r, i) => (
+                <li key={i}>
+                  <button type="button" onClick={() => setFlyBounds(L.latLngBounds([r.lat - 0.012, r.lon - 0.012], [r.lat + 0.012, r.lon + 0.012]))}>
+                    <b>{r.area || r.beat || r.stations[0]}</b>
+                    <span>{r.firs} FIRs · {r.days} days · {r.crimes[0]?.crime.toLowerCase()} · {r.stations[0]}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <p className="mx-rpt-note">{kn ? "ಆನ್‌ಲೈನ್ ಅಪರಾಧ, ಕಾಣೆಯಾದವರು, ಠಾಣೆಯ ಡೀಫಾಲ್ಟ್ ಸ್ಥಳ ಹೊರತುಪಡಿಸಲಾಗಿದೆ." :
+              "Within about 110 m. Online crime, missing persons and a station's own default point are left out: they are not places."}</p>
+          </div>
+        )}
         {/* Simple Bar Chart Legend */}
         {Object.keys(districtFirTotals).length > 0 && (
           <div inert={reportOpen || showDossier ? "" : undefined} className="mx-panel" style={{ marginTop: "12px", padding: "16px", background: "rgba(6,11,20,0.85)", border: "1px solid var(--glass-border)", borderRadius: "12px", pointerEvents: "auto", backdropFilter: "blur(10px)", zIndex: 10 }}>

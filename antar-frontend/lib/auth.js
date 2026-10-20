@@ -88,7 +88,9 @@ export async function signIn(id, password) {
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw Object.assign(new Error(typeof body.detail === "string" ? body.detail : "refused"), { status: res.status });
-  const session = { officer: body.officer, role: body.role, name: body.name, token: body.token, exp: body.expires_at, ts: Date.now() };
+  // `posting` is the officer's police district (from the account): the Map opens on it.
+  const session = { officer: body.officer, role: body.role, name: body.name, token: body.token, exp: body.expires_at,
+                    posting: body.posting || "", ts: Date.now() };
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch {}
   return session;
 }

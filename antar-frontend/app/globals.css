@@ -1079,6 +1079,29 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-risk-l { background: rgba(24,214,154,.12); color: var(--green); }
 .mx-breadcrumb { position: absolute; top: 120px; left: 264px; z-index: 910; font-family: 'Chakra Petch'; font-size: 11px; color: var(--muted); background: rgba(6,11,20,.55); backdrop-filter: blur(10px); border-radius: 999px; padding: 6px 13px; cursor: pointer; border: 1px solid var(--glass-border); }
 [data-theme="light"] .mx-breadcrumb { background: rgba(255,255,255,.85); }
+/* My district and the repeat-locations layer, on the map's top-left */
+/* below the district breadcrumb (top 12px in the map frame) */
+.mx-mybar { position: absolute; top: 50px; left: 12px; z-index: 900; display: flex; gap: 6px; align-items: center; }
+.mx-mydist { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 999px;
+  background: rgba(6,11,20,.82); border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
+  font: 600 10.5px 'Chakra Petch'; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.mx-mydist select { background: transparent; border: 0; color: var(--text); font: 600 12px 'Inter', sans-serif;
+  text-transform: none; letter-spacing: 0; cursor: pointer; outline: none; max-width: 190px; }
+.mx-mydist select option { background: #0b1220; color: #e2e8f0; }
+.mx-rpt-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  background: rgba(6,11,20,.82); border: 1px solid var(--glass-border); color: var(--muted); backdrop-filter: blur(10px);
+  font: 600 11px 'Chakra Petch'; letter-spacing: .04em; }
+.mx-rpt-btn i { width: 9px; height: 9px; border-radius: 50%; border: 1.6px solid #FFB020; }
+.mx-rpt-btn:hover { color: var(--text); }
+.mx-rpt-btn.on { color: #FFB020; border-color: rgba(255,176,32,.5); background: rgba(255,176,32,.08); }
+.mx-rpt-btn b { font: 700 10px 'JetBrains Mono', monospace; color: #FFB020; }
+.mx-rpt-list { margin-top: 12px; padding: 14px 16px; border-radius: 12px; background: rgba(6,11,20,.85); border: 1px solid var(--glass-border); }
+.mx-rpt-list ol { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.mx-rpt-list li button { width: 100%; text-align: left; background: none; border: 0; padding: 6px 4px; border-radius: 6px; cursor: pointer; display: grid; gap: 1px; }
+.mx-rpt-list li button:hover { background: rgba(255,176,32,.07); }
+.mx-rpt-list li b { font: 600 12px 'Inter', sans-serif; color: var(--text); }
+.mx-rpt-list li span { font-size: 10.5px; color: var(--muted); }
+.mx-rpt-none, .mx-rpt-note { margin: 6px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--muted); }
 .mx-breadcrumb:hover { color: var(--text); border-color: rgba(34,230,240,.4); }
 
 .mx-patrol-card { background: rgba(255,176,32,.15); backdrop-filter: blur(12px); border: 1px solid rgba(255,176,32,.4); border-radius: 10px; padding: 9px 13px; color: var(--text); font-size: 11px; white-space: nowrap; box-shadow: 0 4px 20px rgba(255,176,32,.15); }

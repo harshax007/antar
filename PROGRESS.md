@@ -2193,3 +2193,10 @@ Every question officers had asked (98 distinct, audit log) was run through the r
 * **Speed:** cross-district links 23.5 s → 3.4 s; vehicle and accused lookups 8.8 s → 0.7 s; outcomes by section 38 s → 7 s.
 * Tests: `tests/test_templates_t24_t28.py` (41). 265 existing routing, template and golden tests pass. Run read-only with `OBS_ENABLED=0 --noconftest`.
 * Not changed: "assault" still maps to the seeded ASSAULT label only (the register files assaults under Cases of hurt and others; which heads count is the owner's call). Kannada routing for the new templates covers ಹೋಲಿಕೆ / ಬಾಕಿ / ತನಿಖೆಯಲ್ಲಿ only. Needs a backend restart.
+
+## Map: my district, and repeat locations - 2026-10-21
+
+* **My district:** the Map opens on the officer's own police district. It comes from the account's `posting` (now in the sign-in response and the session) or, when the account has none, from a "My district" chooser on the map, kept per officer in this browser. "All Karnataka" returns to the state. A deep link (`?district=`, `?zone=`, `?unit=`) still wins. The first fit goes straight to the district: no second flight.
+* **Repeat locations** (`GET /api/map/repeat_locations`, `app/services/repeat_locations.py`): places with 3+ FIRs on 2+ different days within about 110 m, in the 90 days to the selected date, following the crime filter and the open district. Amber rings on the map, top 8 listed with a fly-to. Left out because they are not places: online crime (CEN / Cyber / CID), missing persons and CrPC cases, a station's own default point, and typed-in placeholder coordinates. 2023 tops: Anjanadri Layout (Sampigehalli PS), S.S. Circle Tumakuru, Ganganagar (R.T. Nagar PS).
+* Needs a backend restart for the new route and the posting field. Demo accounts carry no posting, so they use the chooser.
+* Tests: `tests/test_repeat_locations.py` (read-only).
