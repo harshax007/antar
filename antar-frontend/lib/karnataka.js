@@ -95,6 +95,25 @@ export const ZONE_TO_GADM_DISTRICT = {
   // "CID", "Central", "Karnataka Railways", "Coastal Security Police"
 };
 
+// The map is drawn with revenue-district shapes (Bengaluru Urban, Belagavi …), but the
+// police work in police districts and commissionerates (Bengaluru City, Belagavi City and
+// Belagavi Dist …) and every FIR is filed under one of those. Counts, lists and callouts
+// name the police units a shape holds; the map's own place labels stay geographic.
+const POLICE_LABELS = {
+  "Bengaluru Urban": "Bengaluru City",
+  "Bengaluru Rural": "Bengaluru Dist",
+  "Belagavi": "Belagavi City + Dist",
+  "Mysuru": "Mysuru City + Dist",
+  "Kalaburagi": "Kalaburagi City + Dist",
+  "Dharwad": "Hubballi-Dharwad City + Dharwad",
+  "Dakshina Kannada": "Mangaluru City + Dakshina Kannada",
+  "Kolar": "Kolar + K.G.F",
+  "Ballari": "Ballari + Vijayanagara",
+};
+export function policeLabel(gadmName) {
+  return POLICE_LABELS[gadmName] || gadmName;
+}
+
 // Canonical zone coordinates (lat, lng) - verified against real Karnataka
 // geography. The backend seed has a few drifted points (e.g. Mangaluru showed
 // inland); the frontend ALWAYS prefers these over backend lat/lon.

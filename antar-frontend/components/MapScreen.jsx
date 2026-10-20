@@ -1,12 +1,12 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Polyline, Polygon, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
-import { KARNATAKA_GEOJSON_URL, KARNATAKA_TOPOJSON_URL, ZONE_TO_GADM_DISTRICT, ZONE_COORDS, coordFor, aggregateByDistrict } from "@/lib/karnataka";
+import { KARNATAKA_GEOJSON_URL, KARNATAKA_TOPOJSON_URL, policeLabel, ZONE_TO_GADM_DISTRICT, ZONE_COORDS, coordFor, aggregateByDistrict } from "@/lib/karnataka";
 import { feature as topoFeature, merge as topoMerge } from "topojson-client";
 import { parseCSV, fromRecords, prepare, aliasFor } from "@/lib/crimeGraph";
 import { X } from "lucide-react";
@@ -164,6 +164,43 @@ function AutoResize() {
   return null;
 }
 
+// Place labels that would collide are not drawn. Callouts (the busiest districts, with
+// their counts) are placed first, then district names by how many cases they hold, so a
+// busy district keeps its name and a quiet neighbour gives way; a district that has a
+// callout drops its plain label, since the callout names it. Positions come from the map's
+// own projection and an estimate of each label's size, recomputed on zoom and resize, so
+// the result does not depend on when Leaflet happens to draw the labels.
+function LabelLayout({ labels, callouts, onChange }) {
+  const map = useMap();
+  const compute = useCallback(() => {
+    if (!map) return;
+    const kept = [];
+    const hit = (r) => kept.some((k) => r.l < k.r + 3 && r.r + 3 > k.l && r.t < k.b + 2 && r.b + 2 > k.t);
+    const hiddenCallouts = new Set(), hiddenLabels = new Set(), named = new Set();
+    for (const c of callouts) {
+      const p = map.latLngToContainerPoint(c.end);
+      const w = c.text.length * 5.6 + 16, h = 20;
+      const r = c.west ? { l: p.x - w / 2, r: p.x + w / 2, t: p.y - 3 - h - 6, b: p.y - 3 - 6 }
+                       : { l: p.x + 4 + 6, r: p.x + 4 + 6 + w, t: p.y - h / 2, b: p.y + h / 2 };
+      if (hit(r)) { hiddenCallouts.add(c.name); continue; }
+      kept.push(r);
+      named.add(c.name);
+    }
+    for (const lb of [...labels].sort((a, b) => b.pri - a.pri)) {
+      if (named.has(lb.name)) { hiddenLabels.add(lb.name); continue; }
+      const p = map.latLngToContainerPoint(lb.at);
+      const w = lb.name.length * 5.9 + 2, h = 11;
+      const r = { l: p.x - w / 2, r: p.x + w / 2, t: p.y - h / 2, b: p.y + h / 2 };
+      if (hit(r)) { hiddenLabels.add(lb.name); continue; }
+      kept.push(r);
+    }
+    onChange({ labels: hiddenLabels, callouts: hiddenCallouts });
+  }, [map, labels, callouts, onChange]);
+  useEffect(() => { compute(); }, [compute]);
+  useMapEvents({ zoomend: compute, resize: compute });
+  return null;
+}
+
 function FlyTo({ bounds }) {
   const map = useMap();
   useEffect(() => { if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.5 }); }, [bounds, map]);
@@ -250,6 +287,15 @@ export default function MapScreen() {
   const [selDay, setSelDay] = useState(initDate.getDate());
   const rawEnd = isoDate(calYear, calMonth, Math.min(selDay, daysInMonth(calYear, calMonth)));
   const endDate = rawEnd > todayIso ? todayIso : rawEnd;
+  // The window the map counts over, ending on the selected day. A day is the morning crime
+  // review ("what happened since yesterday"); 7 and 28 days are the weekly review and the
+  // hotspot picture, which a single day is too thin to show.
+  const [win, setWin] = useState(() => { const w = Number(sp?.get("days")); return [1, 7, 28].includes(w) ? w : 1; });
+  const winStart = shiftIso(endDate, -(win - 1));
+  const W = win === 1
+    ? { on: kn ? "ಈ ದಿನ" : "on this day", prev: kn ? "ಹಿಂದಿನ ದಿನ" : "the day before", list: kn ? "ಈ ದಿನ" : "this day" }
+    : { on: kn ? `ಈ ${win} ದಿನಗಳಲ್ಲಿ` : `in these ${win} days`, prev: kn ? `ಹಿಂದಿನ ${win} ದಿನ` : `the ${win} days before`,
+        list: kn ? `${win} ದಿನ` : `last ${win} days` };
 
   const [geo, setGeo] = useState(null);
   const [stateOutline, setStateOutline] = useState(null);
@@ -363,11 +409,11 @@ export default function MapScreen() {
     // Q for 1-day (daily)
     const qDaily = new URLSearchParams();
     if (crimeType) qDaily.set("crime_type", crimeType);
-    qDaily.set("days", "1");
+    qDaily.set("days", String(win));
     qDaily.set("end_date", endDate);
     
     const qDailyPrev = new URLSearchParams(qDaily);
-    qDailyPrev.set("end_date", shiftIso(endDate, -1));
+    qDailyPrev.set("end_date", shiftIso(endDate, -win));
 
     // Q for 30-day (monthly)
     const qMonthly = new URLSearchParams();
@@ -378,7 +424,7 @@ export default function MapScreen() {
     // A date or crime type that was already read this session is drawn at once from memory
     // and refreshed behind it: flipping between two days no longer waits on three requests
     // each time. Only a view never seen before shows the loading state.
-    const key = `${crimeType}|${endDate}`;
+    const key = `${crimeType}|${endDate}|${win}`;
     const apply = ([curDaily, prevDaily, curMonthly]) => {
       setGiStar(curDaily || { zones: [] });
       setGiPrevTotal(prevDaily?.zones ? prevDaily.zones.reduce((sum, z) => sum + (z.observed || 0), 0) : null);
@@ -399,7 +445,7 @@ export default function MapScreen() {
       .catch((err) => { if (err?.name !== "AbortError") { setGiStar({ zones: [] }); setGiPrevTotal(null); setGiMonthlyTotal(null); } })
       .finally(() => { if (!ctrl.signal.aborted) setGiLoading(false); });
     return () => ctrl.abort();
-  }, [crimeType, endDate]);
+  }, [crimeType, endDate, win]);
 
   const districtFirTotals = useMemo(
     () => aggregateByDistrict(giStar.zones || [], "observed"),
@@ -425,6 +471,19 @@ export default function MapScreen() {
         return { name, n, share: Math.round((100 * n) / total), from: [lat, lon], end, west };
       });
   }, [districtFirTotals]);
+
+  // Which labels and callouts are drawn (LabelLayout decides; see there).
+  const [declutter, setDeclutter] = useState({ labels: new Set(), callouts: new Set() });
+  const layoutLabels = useMemo(() => Object.entries(GADM_CENTROIDS).map(([name, at]) =>
+    ({ name, at, pri: districtFirTotals[name] || 0 })), [districtFirTotals]);
+  const layoutCallouts = useMemo(() => (selectedDistrict ? [] : callouts).map((c) => ({
+    name: c.name, end: c.end, west: c.west,
+    text: `${policeLabel(c.name)} · ${c.n} FIRs · ${c.share}% of state`,
+  })), [callouts, selectedDistrict]);
+  const onDeclutter = useCallback((d) => setDeclutter((prev) => {
+    const same = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
+    return same(prev.labels, d.labels) && same(prev.callouts, d.callouts) ? prev : d;
+  }), []);
 
   function colorFor(firs) {
     const t = Math.min(firs / maxFir, 1);
@@ -548,8 +607,8 @@ export default function MapScreen() {
   const shownTotal = useAnimatedNumber(totalObserved);
   const deltaPct = giPrevTotal ? Math.round(((totalObserved - giPrevTotal) / giPrevTotal) * 100) : null;
   const dayChange = deltaPct == null ? null
-    : Math.abs(deltaPct) < 1 ? "The same as the day before"
-    : `${Math.abs(deltaPct)}% ${deltaPct > 0 ? "more" : "fewer"} than the day before`;
+    : Math.abs(deltaPct) < 1 ? `The same as ${W.prev}`
+    : `${Math.abs(deltaPct)}% ${deltaPct > 0 ? "more" : "fewer"} than ${W.prev}`;
   const busiestZones = useMemo(
     () => [...(giStar.zones || [])].filter((z) => z.observed > 0).sort((a, b) => b.observed - a.observed).slice(0, 4),
     [giStar]
@@ -769,8 +828,8 @@ export default function MapScreen() {
     if (leadZone) items.push({
       dot: "var(--red)",
       text: leadZone.is_hotspot
-        ? `${leadZone.zone} is a hotspot: ${leadZone.observed} ${leadZone.observed === 1 ? "case" : "cases"} on this day, more than its neighbours by a margin unlikely to be chance.`
-        : `${leadZone.zone} is the most concentrated area in this view, with ${leadZone.observed} ${leadZone.observed === 1 ? "case" : "cases"} on this day. It is not a confirmed hotspot.`,
+        ? `${leadZone.zone} is a hotspot: ${leadZone.observed} ${leadZone.observed === 1 ? "case" : "cases"} ${W.on}, more than its neighbours by a margin unlikely to be chance.`
+        : `${leadZone.zone} is the most concentrated area in this view, with ${leadZone.observed} ${leadZone.observed === 1 ? "case" : "cases"} ${W.on}. It is not a confirmed hotspot.`,
       src: "map hotspots",
     });
     if (topAlert) items.push({
@@ -852,7 +911,7 @@ export default function MapScreen() {
                   mouseout: () => { if (selectedDistrict !== name) layer.setStyle(geoStyle(feature)); },
                   click: () => openDistrict(name, layer.getBounds()),
                 });
-                layer.bindTooltip(`${name} · ${firs} FIRs`, { sticky: true, className: "mx-hs" });
+                layer.bindTooltip(`${policeLabel(name)} · ${firs} FIRs ${W.on}`, { sticky: true, className: "mx-hs" });
               }}
             />
           )}
@@ -862,23 +921,23 @@ export default function MapScreen() {
           )}
 
           {/* Busiest districts: a faint leader line and one line of context */}
-          {geo && !selectedDistrict && callouts.map((c) => (
+          {geo && !selectedDistrict && callouts.filter((c) => !declutter.callouts.has(c.name)).map((c) => (
             <Polyline key={"co-" + c.name} positions={[c.from, c.end]} interactive={false}
                       pathOptions={{ color: "#22E6F0", weight: 1, opacity: 0.3, dashArray: "2 4" }} />
           ))}
-          {geo && !selectedDistrict && callouts.map((c) => (
+          {geo && !selectedDistrict && callouts.filter((c) => !declutter.callouts.has(c.name)).map((c) => (
             <CircleMarker key={"col-" + c.name} center={c.end} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
               <Tooltip permanent direction={c.west ? "top" : "right"} offset={c.west ? [0, -3] : [4, 0]} className="mx-callout">
-                <b>{c.name}</b> · {c.n.toLocaleString("en-IN")} FIR{kn || c.n === 1 ? "" : "s"} · {c.share}% {kn ? "ರಾಜ್ಯದ" : "of state"}
+                <b data-callout={c.name}>{policeLabel(c.name)}</b> · {c.n.toLocaleString("en-IN")} FIR{kn || c.n === 1 ? "" : "s"} · {c.share}% {kn ? "ರಾಜ್ಯದ" : "of state"}
               </Tooltip>
             </CircleMarker>
           ))}
 
           {/* Permanent District Labels - rendered when geo bounds are ready so they do not jump */}
-          {geo && Object.entries(GADM_CENTROIDS).map(([name, coords]) => (
+          {geo && Object.entries(GADM_CENTROIDS).filter(([name]) => !declutter.labels.has(name)).map(([name, coords]) => (
             <CircleMarker key={"lbl-"+name} center={coords} radius={0} pathOptions={{ opacity: 0, fillOpacity: 0 }} interactive={false}>
               <Tooltip permanent direction="center" className="mx-district-lbl">
-                {name}
+                <span className="t" data-name={name} data-pri={districtFirTotals[name] || 0}>{name}</span>
               </Tooltip>
             </CircleMarker>
           ))}
@@ -974,6 +1033,7 @@ export default function MapScreen() {
           ))}
 
           <AutoResize />
+          <LabelLayout labels={layoutLabels} callouts={layoutCallouts} onChange={onDeclutter} />
           <FlyTo bounds={flyBounds} />
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} />
@@ -1044,6 +1104,15 @@ export default function MapScreen() {
             >&raquo;</button>
           </div>
         </div>
+        <div className="mx-win" role="radiogroup" aria-label={kn ? "ಅವಧಿ" : "Period"}>
+          {[[1, kn ? "ದಿನ" : "Day"], [7, kn ? "7 ದಿನ" : "7 days"], [28, kn ? "28 ದಿನ" : "28 days"]].map(([d, l]) => (
+            <button key={d} type="button" role="radio" aria-checked={win === d} className={win === d ? "on" : ""}
+                    onClick={() => setWin(d)}
+                    title={d === 1 ? "The selected day: the morning crime review"
+                           : d === 7 ? "The 7 days ending on the selected day: the weekly review"
+                           : "The 28 days ending on the selected day: the hotspot picture"}>{l}</button>
+          ))}
+        </div>
         <table className="mx-cal-grid">
           <thead><tr>{DOW_EN.map((d) => <th key={d}>{d[0]}</th>)}</tr></thead>
           <tbody>
@@ -1066,7 +1135,7 @@ export default function MapScreen() {
                   cells.push(
                     <td
                       key={c}
-                      className={`${d === selDay ? "sel" : ""} ${isFuture ? "mute" : ""}`}
+                      className={`${d === selDay ? "sel" : ""} ${isFuture ? "mute" : ""} ${win > 1 && iso >= winStart && iso <= endDate && d !== selDay ? "inwin" : ""}`}
                       style={isFuture ? { opacity: 0.22, cursor: "not-allowed", border: "1px dashed rgba(255,255,255,0.05)" } : {}}
                       onClick={() => {
                         if (isFuture) return;
@@ -1098,18 +1167,18 @@ export default function MapScreen() {
         <div key={`${endDate}|${crimeType}`} className="mx-swap">
             <div className="mx-day-top">
               <b>{giLoading && !totalObserved ? "–" : shownTotal.toLocaleString("en-IN")}</b>
-              <span>{kn ? "ಪ್ರಕರಣಗಳು" : (totalObserved === 1 ? "case" : "cases")}<small>{prettyDate(endDate, kn)}</small></span>
+              <span>{kn ? "ಪ್ರಕರಣಗಳು" : (totalObserved === 1 ? "case" : "cases")}<small>{win === 1 ? prettyDate(endDate, kn) : `${prettyDate(winStart, kn)} – ${prettyDate(endDate, kn)}`}</small></span>
             </div>
             <dl className="mx-day-rows">
               {dayChange && !giLoading && (
                 <div>
-                  <dt>{kn ? "ಹಿಂದಿನ ದಿನಕ್ಕೆ ಹೋಲಿಸಿದರೆ" : "Against the day before"}</dt>
+                  <dt>{kn ? `${W.prev}ಕ್ಕೆ ಹೋಲಿಸಿದರೆ` : `Against ${W.prev}`}</dt>
                   <dd className={deltaPct > 2 ? "up" : deltaPct < -2 ? "down" : ""}>
                     {deltaPct >= 1 ? `${deltaPct}% more` : deltaPct <= -1 ? `${Math.abs(deltaPct)}% fewer` : "The same"}
                   </dd>
                 </div>
               )}
-              {giMonthlyTotal !== null && !giLoading && (
+              {giMonthlyTotal !== null && !giLoading && win < 28 && (
                 <div>
                   <dt>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</dt>
                   <dd>{giMonthlyTotal.toLocaleString("en-IN")} {kn ? "ಪ್ರಕರಣಗಳು" : "cases"}</dd>
@@ -1122,14 +1191,14 @@ export default function MapScreen() {
         {/* Simple Bar Chart Legend */}
         {Object.keys(districtFirTotals).length > 0 && (
           <div inert={reportOpen || showDossier ? "" : undefined} className="mx-panel" style={{ marginTop: "12px", padding: "16px", background: "rgba(6,11,20,0.85)", border: "1px solid var(--glass-border)", borderRadius: "12px", pointerEvents: "auto", backdropFilter: "blur(10px)", zIndex: 10 }}>
-            <div className="mx-bars-h">{kn ? "ಅಗ್ರ ಜಿಲ್ಲೆಗಳು (ದೈನಂದಿನ)" : "Districts with most cases"}<small>{kn ? "" : "this day"}</small></div>
+            <div className="mx-bars-h">{kn ? "ಅಗ್ರ ಪೊಲೀಸ್ ಜಿಲ್ಲೆಗಳು" : "Police districts with most cases"}<small>{W.list}</small></div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {Object.entries(districtFirTotals)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 5)
                 .map(([name, count]) => (
                   <div key={name} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ width: "90px", fontSize: "11px", color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={name}>{name}</div>
+                    <div style={{ width: "112px", fontSize: "11px", color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={`${policeLabel(name)} (${name} on the map)`}>{policeLabel(name)}</div>
                     <div style={{ flex: 1, height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px", overflow: "hidden" }}>
                       <div style={{ width: `${(count / Math.max(1, maxFir)) * 100}%`, height: "100%", background: count === maxFir ? "var(--red)" : "var(--cyan)", borderRadius: "3px" }} />
                     </div>
