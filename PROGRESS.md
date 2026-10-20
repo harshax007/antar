@@ -2207,3 +2207,13 @@ Every question officers had asked (98 distinct, audit log) was run through the r
 * **Day used to read two days:** the map asked gi_star for `days=win`, and its window is `[end - days, end]`, so "Day" counted 16 and 17 Oct together (108 instead of 56), 7 days counted 8 and "last 30 days" 31. Now `win - 1` and 29, as the district card already did.
 * Needs a backend restart for the new route.
 * **Repeat locations, improved (2026-10-21):** the panel now says what a repeat location is and what to do with it (beat visit, lighting / CCTV, a word with people there), with a "How this is worked out" fold listing what was left out and how many. Rings are solid when active (a case in the last 14 days) and dashed when quiet; a ring or list row opens a card with the FIR count, different days, first and last dates, what was reported and the station. Demonstration rows on a unit's own position (a code such as BLR-YPR-02 with no area, or the generic "<City> Central PS / Beat 1" point) are now left out: Oct 2026 goes from 40 entries, 15 of them codes, to 11 real places (railway platforms, Vardhan Nagar, Talapady ...). 2023 is unchanged.
+
+## Predict: reordered for the officer's week - 2026-10-21
+
+Top to bottom, in the order a station or district officer uses it on a Monday:
+
+* **The week at a glance:** five counts (high-risk areas, above normal, reporting drops, active alerts, events in 3 weeks). Each one jumps to that part of the page, and the count tiles filter the forecast list (a new "High risk" filter).
+* **Forecast for the next 7 days** beside **Active alerts**, now at the top.
+* **Why this forecast** opens only once a forecast or an alert is picked, and has a Close. Nothing is explained, and nothing is fetched for it, until then.
+* **This week's plan:** one line per action (verb, area and crime, a short reason), each opened on click for the detail and the link to its stations.
+* **Events ahead:** a countdown and the dates, how many days it lasts, and where (statewide or the places). "Brief the force on" lists the crime types that rose in past years, how much and in how many of those years. "Overall" gives seen-against-expected, plus what is usually registered less (with the caveat that fewer FIRs can mean slower reporting). The year-by-year measurement is folded. "Copy a bandobast note" copies a plain summary; "Ask Antar about past years" sends the question to the chat (T30).

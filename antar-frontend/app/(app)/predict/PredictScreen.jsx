@@ -349,36 +349,88 @@ function EffectRow({ label, ef, soft }) {
   );
 }
 
-function EventCard({ ev, areas, onOpen }) {
+// An event ahead, for bandobast: when it falls, what past years say to brief on, and the
+// measured detail on request. Everything is counted from FIRs in the event's own window
+// against the four weeks either side; nothing here is a guess about this year.
+function EventCard({ ev, kn, areas, onOpen, onAsk }) {
   const o = ev.overall, n = ev.occurrences_measured || 0;
-  const ups = [...(ev.rises || []), ...(ev.watch || [])];
-  const reading = !o ? "The record has too few past years to measure this event here."
-    : o.clear && o.percent < 0 ? "Fewer cases are registered while this is on than in the weeks around it. The record does not say why: it can be less crime, or slower reporting and registration during the event."
-    : o.clear && o.percent > 0 ? "More cases are registered while this is on than in the weeks around it."
-    : "Registered cases overall do not move clearly with this event.";
+  const [copied, setCopied] = useState(false);
+  const day = (d) => { const t = new Date(); t.setDate(t.getDate() + d); return t.toLocaleDateString("en-IN", { day: "numeric", month: "short" }); };
+  const starts = ev.starts_in_days, ends = ev.ends_in_days;
+  const now = ev.phase === "under way";
+  const dates = starts == null ? null : now ? `On now, until ${day(Math.max(0, ends ?? 0))}`
+    : `${day(starts)}${ends != null && ends !== starts ? ` to ${day(ends)}` : ""}`;
+  const brief = [...(ev.rises || []).map((x) => ({ ...x, sure: true })), ...(ev.watch || []).map((x) => ({ ...x, sure: false }))];
+  const quieter = (ev.falls || []).slice(0, 3);
+  const times = (x) => (x.ratio >= 1.5 ? `${x.ratio.toFixed(1)}× usual` : `${Math.abs(x.percent)}% more`);
+  const where = ev.statewide ? (kn ? "ರಾಜ್ಯಾದ್ಯಂತ" : "Statewide") : (ev.places || []).join(", ") || ev.measured_in;
+  const overallLine = !o ? (kn ? "ಅಳೆಯಲು ಸಾಕಷ್ಟು ಹಿಂದಿನ ವರ್ಷಗಳಿಲ್ಲ." : "Too few past years on record to measure this event.")
+    : o.clear ? `${Math.abs(o.percent)}% ${o.percent < 0 ? "fewer" : "more"} cases registered overall while it is on.`
+    : "Registered cases overall do not move clearly with it.";
+  const note = () => [
+    `${ev.name} (${where}), ${dates || ev.when}.`,
+    brief.length ? `Brief on: ${brief.map((x) => `${cap(x.crime)} (${times(x)}, higher in ${x.years_higher} of ${x.years} years)`).join("; ")}.` : null,
+    o ? `Overall: ${overallLine}` : null,
+    `Measured from FIRs ${o ? `${o.from_year} to ${o.to_year}` : ""}, the event window against the 4 weeks either side.`,
+  ].filter(Boolean).join("\n");
+  const copy = async () => { try { await navigator.clipboard.writeText(note()); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* no clipboard */ } };
   return (
-    <article className="px-ev">
+    <article className={`px-ev${now ? " now" : ""}`}>
       <header>
-        <div>
+        <div className="px-ev-count" aria-hidden="true">
+          {now ? <b>{kn ? "ಈಗ" : "Now"}</b> : <><b>{starts}</b><span>{starts === 1 ? "day" : "days"}</span></>}
+        </div>
+        <div className="px-ev-ttl">
           <h4>{ev.name}</h4>
           <p>{ev.what}</p>
+          <div className="px-ev-meta">
+            {dates && <span>{dates}</span>}
+            {ev.window_days ? <span>{ev.window_days} {ev.window_days === 1 ? "day" : "days"}</span> : null}
+            <span>{where}</span>
+            {ev.in_forecast_window && <span className="in">{kn ? "ಈ ವಾರದ ಮುನ್ಸೂಚನೆಯಲ್ಲಿ" : "In this week's forecast"}</span>}
+          </div>
         </div>
-        <span className={`px-ev-when ${ev.phase === "under way" ? "now" : ""}`}>{ev.when}</span>
       </header>
-      {n >= 4 ? (
-        <>
-          <h5>What {n} past years show in {ev.measured_in}{o ? ` (${o.from_year} to ${o.to_year})` : ""}</h5>
+
+      <div className="px-ev-grid">
+        <div className="px-ev-col">
+          <h5>{kn ? "ಬ್ರೀಫ್ ಮಾಡಬೇಕಾದದ್ದು" : "Brief the force on"}</h5>
+          {brief.length ? (
+            <ul className="px-ev-up">
+              {brief.map((x) => (
+                <li key={x.crime} className={x.sure ? "" : "soft"}>
+                  <b>{cap(x.crime)}</b>
+                  <span>{times(x)} · higher in {x.years_higher} of {x.years} years{x.sure ? "" : " · less certain"}</span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="px-ev-none">{kn ? "ಯಾವುದೇ ಅಪರಾಧ ಸ್ಪಷ್ಟವಾಗಿ ಏರುವುದಿಲ್ಲ." : "No crime type rises clearly during it in past years."}</p>}
+        </div>
+        <div className="px-ev-col">
+          <h5>{kn ? "ಒಟ್ಟಾರೆ" : "Overall"}</h5>
+          <p className="px-ev-all">{overallLine}{o ? <em> {num(o.seen)} cases against {num(Math.round(o.expected))} expected, {o.years} years.</em> : null}</p>
+          {quieter.length > 0 && (
+            <p className="px-ev-dn">{kn ? "ಸಾಮಾನ್ಯವಾಗಿ ಕಡಿಮೆ: " : "Usually fewer registered: "}{quieter.map((x) => cap(x.crime)).join(", ")}.
+              <em> {kn ? "" : "Fewer FIRs can mean slower reporting during an event, not less crime."}</em></p>
+          )}
+        </div>
+      </div>
+
+      {n >= 4 && (
+        <details className="px-ev-more">
+          <summary>{kn ? "ವರ್ಷವಾರು ಅಳತೆ" : `How it was measured: ${n} past years in ${ev.measured_in}${o ? `, ${o.from_year} to ${o.to_year}` : ""}`}</summary>
           <EffectRow label="All registered cases" ef={o} />
           {(ev.rises || []).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} />)}
           {(ev.watch || []).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} soft />)}
-          {(ev.falls || []).slice(0, 2).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} />)}
-        </>
-      ) : null}
-      <p className="px-ev-read">{reading}{ups.length ? ` What goes up: ${ups.map((x) => cap(x.crime).toLowerCase()).join(", ")}.` : ""}</p>
+          {(ev.falls || []).slice(0, 3).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} />)}
+          <p className="px-ev-src">Date from the {ev.date_source === "internet" ? "internet calendar" : ev.date_source === "fixed date" ? "fixed annual date" : "built-in calendar"}. Effect: FIRs in the event window against the 4 weeks either side, each past year.</p>
+        </details>
+      )}
+
       <footer>
-        <span>Date: {ev.date_source === "internet" ? "internet calendar" : ev.date_source === "fixed date" ? "fixed each year" : "built-in calendar"}</span>
-        <span>Effect: measured from FIRs, compared with the 4 weeks either side</span>
-        {areas.map((a) => <button type="button" key={a.zone} onClick={() => onOpen(a)}>Open {a.zone}</button>)}
+        <button type="button" onClick={copy}>{copied ? "Copied" : (kn ? "ಬಂದೋಬಸ್ತ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ" : "Copy a bandobast note")}</button>
+        <button type="button" onClick={() => onAsk(`What did ${ev.name} do to crime in ${ev.measured_in} in past years?`)}>{kn ? "ಅಂತರ್‌ಗೆ ಕೇಳಿ" : "Ask Antar about past years"}</button>
+        {areas.map((a) => <button type="button" key={a.zone} onClick={() => onOpen(a)}>{kn ? "ತೆರೆಯಿರಿ" : "Open"} {a.zone}</button>)}
       </footer>
     </article>
   );
@@ -904,6 +956,79 @@ const PREDICT_MODERN_STYLES = `
   .px-brief-body li { animation: none !important; opacity: 1; }
   .pxd-liner { animation: none !important; stroke-dashoffset: 0; }
 }
+
+/* ── production layout (2026-10-21) ── */
+.px-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.px-kpi { text-align: left; display: grid; gap: 2px; padding: 12px 14px; border-radius: 11px; cursor: pointer; color: #EEF3FA;
+  background: #070B14; border: 1px solid rgba(255,255,255,0.08); border-top: 2px solid #3A4A60; transition: background .15s, border-color .15s; }
+.px-kpi:hover { background: #0C1322; border-color: rgba(34,230,240,.28); }
+.px-kpi b { font: 700 24px/1.1 'JetBrains Mono', monospace; }
+.px-kpi span { font-size: 12px; color: #B4C2D6; }
+.px-kpi em { font-style: normal; font-size: 11px; color: #8A99AD; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-kpi.k-hi { border-top-color: #E14038; } .px-kpi.k-hi b { color: #F87171; }
+.px-kpi.k-up { border-top-color: #FFB020; } .px-kpi.k-up b { color: #FFB020; }
+.px-kpi.k-dn { border-top-color: #22E6F0; } .px-kpi.k-dn b { color: #22E6F0; }
+.px-kpi.k-al { border-top-color: #F472B6; } .px-kpi.k-al b { color: #F9A8D4; }
+.px-kpi.k-ev { border-top-color: #A78BFA; } .px-kpi.k-ev b { color: #C4B5FD; }
+.px-kpi.zero b { color: #5B6B80; }
+.px-top .pxd-card { scroll-margin-top: 90px; }
+.px-explain { scroll-margin-top: 90px; animation: pxRise .3s ease both; }
+.px-explain-x { margin-left: 12px; font: 600 12px 'Inter', sans-serif; color: #B4C2D6; background: none; border: 1px solid rgba(255,255,255,.12);
+  border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.px-explain-x:hover { color: #EEF3FA; border-color: rgba(34,230,240,.35); }
+
+.px-plan { margin-top: 20px; }
+.px-plan-hd h2 small { margin-left: 10px; font: 500 12px 'Inter', sans-serif; color: #8A99AD; }
+.px-plan-list { display: grid; gap: 8px; }
+.px-plan-list .px-act { padding: 0; display: block; cursor: default; }
+.px-act-hd { width: 100%; display: grid; grid-template-columns: 96px minmax(0, 1fr) auto 14px; align-items: center; gap: 14px;
+  padding: 12px 16px; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.px-act-hd b { font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-act-short { font-size: 12.5px; color: #B4C2D6; white-space: nowrap; }
+.px-act-hd i { width: 8px; height: 8px; border-right: 1.6px solid #8FA3BC; border-bottom: 1.6px solid #8FA3BC; transform: rotate(45deg); transition: transform .2s; justify-self: end; margin-top: -4px; }
+.px-act.open .px-act-hd i { transform: rotate(-135deg); margin-top: 4px; }
+.px-act-body { padding: 0 16px 14px 126px; display: grid; gap: 10px; animation: pxRise .25s ease both; }
+.px-act-body p { margin: 0; font-size: 13px; line-height: 1.55; color: #D5DEEA; max-width: 80ch; }
+.px-act-go { justify-self: start; font: 600 12px 'Inter', sans-serif; color: #22E6F0; background: rgba(34,230,240,.08);
+  border: 1px solid rgba(34,230,240,.3); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+.px-act-go:hover { background: rgba(34,230,240,.16); }
+
+.px-evs { margin-top: 24px; }
+.px-ev header { justify-content: flex-start; align-items: stretch; }
+.px-ev.now { border-color: rgba(255,176,32,.35); }
+.px-ev-count { flex: none; width: 64px; border-radius: 10px; display: grid; place-content: center; text-align: center;
+  background: rgba(167,139,250,.08); border: 1px solid rgba(167,139,250,.3); }
+.px-ev-count b { font: 700 24px/1 'JetBrains Mono', monospace; color: #C4B5FD; }
+.px-ev-count span { font-size: 10.5px; color: #8A99AD; margin-top: 3px; }
+.px-ev.now .px-ev-count { background: rgba(255,176,32,.08); border-color: rgba(255,176,32,.4); }
+.px-ev.now .px-ev-count b { color: #FFB020; font-size: 18px; }
+.px-ev-ttl { min-width: 0; }
+.px-ev-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.px-ev-meta span { font-size: 11.5px; color: #B4C2D6; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; padding: 2px 10px; }
+.px-ev-meta span.in { color: #FFB020; border-color: rgba(255,176,32,.4); }
+.px-ev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.06); }
+.px-ev-col h5 { margin: 0 0 8px; font: 600 11px 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: #8FA3BC; }
+.px-ev-up { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.px-ev-up li { display: grid; gap: 1px; padding: 6px 10px; border-left: 2px solid #FFB020; background: rgba(255,176,32,.05); border-radius: 0 6px 6px 0; }
+.px-ev-up li.soft { border-left-style: dashed; background: none; }
+.px-ev-up b { font-size: 13px; color: #EEF3FA; }
+.px-ev-up span { font-size: 11.5px; color: #B4C2D6; }
+.px-ev-all, .px-ev-dn, .px-ev-none { margin: 0; font-size: 13px; line-height: 1.5; color: #D5DEEA; }
+.px-ev-dn { margin-top: 8px; color: #B4C2D6; }
+.px-ev-all em, .px-ev-dn em { font-style: normal; color: #8A99AD; font-size: 12px; }
+.px-ev-more { margin-top: 12px; }
+.px-ev-more summary { cursor: pointer; font-size: 12.5px; color: #8FA3BC; }
+.px-ev-more summary:hover { color: #EEF3FA; }
+.px-ev-src { margin: 8px 0 0; font-size: 11.5px; color: #8A99AD; }
+@media (max-width: 1100px) { .px-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+  .px-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .px-act-hd { grid-template-columns: minmax(0, 1fr) 14px; gap: 4px 10px; }
+  .px-act-hd .px-act-verb { grid-column: 1; } .px-act-hd b { grid-column: 1; white-space: normal; } .px-act-short { grid-column: 1; }
+  .px-act-hd i { grid-column: 2; grid-row: 1 / span 3; }
+  .px-act-body { padding: 0 16px 14px; }
+  .px-ev-grid { grid-template-columns: 1fr; }
+}
 `;
 
 // useSearchParams() forces client-side bailout, which breaks `output: export`
@@ -959,6 +1084,10 @@ function PredictScreen() {
   const [findArea, setFindArea] = useState("");
   const [whyUnit, setWhyUnit] = useState(null);       // the station whose forecast is taken apart
   const [planFor, setPlanFor] = useState(null);       // the station whose shift plan is open
+  const [explainOpen, setExplainOpen] = useState(initFocus === "alert");  // "Why this forecast" opens only once something is picked
+  const [planOpen, setPlanOpen] = useState(null);     // the plan action that is open
+  const forecastRef = useRef(null);
+  const alertsRef = useRef(null);
   const [stations, setStations] = useState(null);    // station forecasts for the area being explained
   const [copied, setCopied] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState(toRfNodes(DEMO_NODES));
@@ -1010,7 +1139,7 @@ function PredictScreen() {
     fetch(`${API}/api/predict/dashboard`).then((r) => r.json()).then(setDash).catch(() => setDash("offline"));
 
     const handler = (e) => {
-      if (e.detail?.wow === 3) { setFocusKind("prediction"); setSelected(0); setShowReasoning(true); }
+      if (e.detail?.wow === 3) { setFocusKind("prediction"); setSelected(0); setExplainOpen(true); setShowReasoning(true); }
     };
     window.addEventListener("antar-demo-trigger", handler);
     return () => window.removeEventListener("antar-demo-trigger", handler);
@@ -1018,7 +1147,7 @@ function PredictScreen() {
 
   // Whatever is being explained below - a ranked prediction or a clicked alert.
   const rawAlert = alertList[selAlert];
-  const focusItem = focusKind === "alert" && rawAlert
+  const focusItem = !explainOpen ? null : focusKind === "alert" && rawAlert
     ? { ...alertToPrediction(rawAlert), suggestion: rawAlert.suggestion, event_context: rawAlert.event_context }
     : predictions?.[selected];
   const fZone = focusItem?.zone || null;
@@ -1240,18 +1369,20 @@ function PredictScreen() {
   const plan = [];
   if (P.length) {
     for (const x of highs.slice(0, 2)) plan.push({ k: "hi", verb: kn ? "ಆದ್ಯತೆ" : "Priority", go: x,
-      title: `${x.zone}: ${cap(x.crime_type)}`, text: `High risk${rangeOf(x) ? `, ${rangeOf(x)} expected` : ""}. Put extra beat visits on the stations listed under its forecast.` });
+      title: `${x.zone}: ${cap(x.crime_type)}`, short: rangeOf(x) ? `${rangeOf(x)} expected` : "High risk",
+      text: `High risk${rangeOf(x) ? `, ${rangeOf(x)} expected` : ""}. Put extra beat visits on the stations listed under its forecast.` });
     for (const x of aboves.filter((a) => !highs.includes(a)).slice(0, Math.max(0, 2 - plan.length))) plan.push({ k: "up", verb: kn ? "ಗಸ್ತು" : "Patrol", go: x,
-      title: `${x.zone}: ${cap(x.crime_type)}`, text: `${levelOf(x)}${rangeOf(x) ? `; ${rangeOf(x)} expected` : ""}. Short, repeated beat visits to the stations named in its forecast.` });
+      title: `${x.zone}: ${cap(x.crime_type)}`, short: levelOf(x),
+      text: `${levelOf(x)}${rangeOf(x) ? `; ${rangeOf(x)} expected` : ""}. Short, repeated beat visits to the stations named in its forecast.` });
     if (drops[0]) plan.push({ k: "dn", verb: kn ? "ಪರಿಶೀಲಿಸಿ" : "Check", go: drops[0],
-      title: `${drops[0].zone}: ${cap(drops[0].crime_type)}`, text: "Far fewer reports than usual. Ask the station whether complaints are being registered before reading it as a fall in crime." });
+      title: `${drops[0].zone}: ${cap(drops[0].crime_type)}`, short: "Fewer reports than usual", text: "Far fewer reports than usual. Ask the station whether complaints are being registered before reading it as a fall in crime." });
     const ev = evsAhead.find((e) => e.in_forecast_window) || evsAhead[0];
     if (ev) {
       const up = (ev.rises || [])[0] || (ev.watch || [])[0];
-      plan.push({ k: "ev", verb: kn ? "ಬಂದೋಬಸ್ತ್" : "Bandobast", toEvents: true, title: ev.name,
+      plan.push({ k: "ev", verb: kn ? "ಬಂದೋಬಸ್ತ್" : "Bandobast", toEvents: true, title: ev.name, short: ev.when,
         text: `${ev.when}.${up ? ` In past years ${cap(up.crime).toLowerCase()} ran ${up.percent}% higher during it.` : ""} Plan deployment for it.` });
     }
-    if (!plan.length) plan.push({ k: "ok", verb: kn ? "ಸಾಮಾನ್ಯ" : "All clear", title: "Every area is at its usual level",
+    if (!plan.length) plan.push({ k: "ok", verb: kn ? "ಸಾಮಾನ್ಯ" : "All clear", title: "Every area is at its usual level", short: "Routine beats",
       text: "No area needs extra deployment this week. Routine beats as planned." });
   }
 
@@ -1271,9 +1402,18 @@ function PredictScreen() {
   const openItem = (it) => {
     const i = P.indexOf(it);
     if (i < 0) return;
-    setFocusKind("prediction"); setSelected(i);
-    setTimeout(() => reasonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    setFocusKind("prediction"); setSelected(i); setExplainOpen(true);
+    setTimeout(() => reasonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
+  // A forecast or an alert, picked: its explanation opens under the lists.
+  const pick = (kind, i) => {
+    setFocusKind(kind);
+    if (kind === "alert") setSelAlert(i); else setSelected(i);
+    setExplainOpen(true);
+    setTimeout(() => reasonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
+  const toForecast = () => forecastRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const toAlerts = () => alertsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const toEvents = () => eventsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const toConfidence = () => { setRelOpen(true); setEngOpen(true); setTimeout(() => confRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80); };
@@ -1285,6 +1425,7 @@ function PredictScreen() {
   const needsAttention = (x) => x.risk === "HIGH" || x.direction === "silence" || (Number(x.z_score) || 0) >= 2 || (x.events || []).length > 0;
   const FILTERS = [
     ["attention", "Needs attention", needsAttention],
+    ["high", "High risk", (x) => x.risk === "HIGH"],
     ["all", "All areas", () => true],
     ["above", "Above normal", (x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2],
     ["drops", "Reporting drops", (x) => x.direction === "silence"],
@@ -1346,40 +1487,31 @@ const avgConf = predictions?.length
         </div>
       </div>
 
-      {/* This week's plan: what to do, first */}
-      <section className="px-plan" aria-label="This week's plan">
-        <div className="px-plan-hd">
-          <h2>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}</h2>
-          <button type="button" className="px-linkbtn" onClick={copyBrief} disabled={!brief.length}>{copied ? "Copied" : "Copy for the briefing note"}</button>
-        </div>
-        {predictions === null && <p className="px-brief-wait">{kn ? "ದಾಖಲೆಗಳನ್ನು ಓದುತ್ತಿದೆ…" : "Reading the records…"}</p>}
-        {predictions?.length === 0 && <p className="px-brief-wait">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "There is nothing to forecast yet."}</p>}
-        {plan.length > 0 && (
-          <div className="px-plan-row">
-            {plan.slice(0, 4).map((a, i) => (
-              <button type="button" key={i} className={`px-act k-${a.k}`} style={{ animationDelay: `${i * 80}ms` }}
-                      onClick={a.go ? () => openItem(a.go) : a.toEvents ? toEvents : undefined} disabled={!a.go && !a.toEvents}>
-                <span className="px-act-verb">{a.verb}</span>
-                <b>{a.title}</b>
-                <span className="px-act-tx">{a.text}</span>
-                {(a.go || a.toEvents) && <em>{a.go ? (kn ? "ಕಾರಣ ಮತ್ತು ಠಾಣೆಗಳು" : "Why, and which stations") : (kn ? "ಹಿಂದಿನ ವರ್ಷಗಳು" : "What past years show")} →</em>}
+      {/* The week at a glance: each figure takes the officer to it */}
+      {predictions?.length > 0 && (() => {
+        const nextEv = evsAhead[0];
+        const tiles = [
+          { k: "hi", n: highs.length, l: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High-risk areas", go: () => { setFlt(highs.length ? "high" : "all"); toForecast(); } },
+          { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
+          { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
+          { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", go: toAlerts },
+          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", sub: nextEv ? `${nextEv.name} · ${nextEv.when.toLowerCase()}` : null, go: toEvents },
+        ];
+        return (
+          <div className="px-kpis" role="list" aria-label="The week at a glance">
+            {tiles.map((t) => (
+              <button type="button" role="listitem" key={t.k} className={`px-kpi k-${t.k}${t.n ? "" : " zero"}`} onClick={t.go}>
+                <b>{t.n}</b><span>{t.l}</span>{t.sub && <em>{t.sub}</em>}
               </button>
             ))}
           </div>
-        )}
-        {(brief.length > 0 || reading) && (
-          <details className="px-plan-more">
-            <summary>{kn ? "ವಾರದ ಸಾರಾಂಶ" : "The whole week in brief"}</summary>
-            <ul className="px-plan-brief">{brief.map((b, i) => <li key={i} className={`k-${b.k}`}>{b.t}</li>)}</ul>
-            {reading && <p className="px-plan-ai"><span>{kn ? "ಅಂತರ್ ಓದು" : "Antar's reading"}</span>{reading}</p>}
-          </details>
-        )}
-      </section>
+        );
+      })()}
 
       {/* The forecast, area by area, and the alerts behind it */}
       <div className="px-top">
         {/* 1 · Predict · Next 7 Days (scrollable) */}
-        <div className="pxd-card">
+        <div className="pxd-card" ref={forecastRef}>
           <div className="pxd-hd">
             <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast for the next 7 days"}</span>
             <span className="pxd-sub">{shown.length === A.length ? A.length : `${shown.length} of ${A.length}`} {kn ? "ವಲಯ" : "areas"}</span>
@@ -1412,10 +1544,10 @@ const avgConf = predictions?.length
                 key={i}
                 role="button"
                 tabIndex={0}
-                className={`px-card ${focusKind === "prediction" && selected === i ? "on" : ""} ${acked.has(keyOf(p)) ? "acked" : ""}`}
-                aria-pressed={focusKind === "prediction" && selected === i}
-                onClick={() => { setFocusKind("prediction"); setSelected(i); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFocusKind("prediction"); setSelected(i); } }}
+                className={`px-card ${explainOpen && focusKind === "prediction" && selected === i ? "on" : ""} ${acked.has(keyOf(p)) ? "acked" : ""}`}
+                aria-pressed={explainOpen && focusKind === "prediction" && selected === i}
+                onClick={() => pick("prediction", i)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick("prediction", i); } }}
               >
                 <div className="px-card-top">
                   <span className="px-zone">{p.zone}</span>
@@ -1426,7 +1558,7 @@ const avgConf = predictions?.length
                   <button
                     type="button"
                     className="px-know"
-                    onClick={(e) => { e.stopPropagation(); setFocusKind("prediction"); setSelected(i); setShowReasoning(true); }}
+                    onClick={(e) => { e.stopPropagation(); pick("prediction", i); setShowReasoning(true); }}
                     aria-label={`${kn ? "ತರ್ಕದಲ್ಲಿ ಇನ್ನಷ್ಟು ತಿಳಿಯಿರಿ" : "Why this forecast"} - ${p.zone}`}
                   >
                     {kn ? "ಏಕೆ?" : "Why?"}
@@ -1463,8 +1595,8 @@ const avgConf = predictions?.length
               </span>
               {unitCards.map(({ p, i }) => (
                 <button type="button" key={p.zone} title={`${p.unit || UNIT_NAMES[p.zone]}: ${cap(p.crime_type)}, ${levelOf(p).toLowerCase()}`}
-                        className={`${focusKind === "prediction" && selected === i ? "on" : ""} s-${statusOf(p).k}`}
-                        onClick={() => { setFocusKind("prediction"); setSelected(i); }}>
+                        className={`${explainOpen && focusKind === "prediction" && selected === i ? "on" : ""} s-${statusOf(p).k}`}
+                        onClick={() => pick("prediction", i)}>
                   <i aria-hidden="true" />{p.zone}
                 </button>
               ))}
@@ -1473,11 +1605,11 @@ const avgConf = predictions?.length
         </div>
 
         {/* 3 · Active alerts (all, scrollable, clickable) */}
-        <div className="pxd-card">
+        <div className="pxd-card" ref={alertsRef}>
           <div className="pxd-hd pxd-hd2">
             <div>
               <span className="pxd-ttl">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts"} <i>{alertGroups.length}</i></span>
-              <span className="pxd-note">{kn ? "ಸಾಮಾನ್ಯ ಮಾದರಿಯಿಂದ ಭಿನ್ನವಾದ ವಲಯಗಳು" : "Areas where recent cases departed from the usual pattern. Click one to see why."}</span>
+              <span className="pxd-note">{kn ? "ಸಾಮಾನ್ಯ ಮಾದರಿಯಿಂದ ಭಿನ್ನವಾದ ವಲಯಗಳು" : "Recent cases that broke from an area's usual pattern. Pick one to see why."}</span>
             </div>
           </div>
           <div className="pxd-scroll pxd-alerts">
@@ -1489,7 +1621,7 @@ const avgConf = predictions?.length
               // was painted with the Medium style. Both come off the same test now.
               const sevlbl = hi ? "High" : z >= 2.5 ? "Medium" : "Low";
               const sev = hi ? "hi" : z >= 2.5 ? "md" : "lo";
-              const on = focusKind === "alert" && selAlert === i;
+              const on = explainOpen && focusKind === "alert" && selAlert === i;
               return (
                 <div
                   key={i}
@@ -1497,8 +1629,8 @@ const avgConf = predictions?.length
                   tabIndex={0}
                   className={`pxd-alert ${on ? "on" : ""}`}
                   aria-pressed={on}
-                  onClick={() => { setFocusKind("alert"); setSelAlert(i); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFocusKind("alert"); setSelAlert(i); } }}
+                  onClick={() => pick("alert", i)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick("alert", i); } }}
                 >
                   <div className="pxd-alert-main">
                     <div className="pxd-alert-ttl">
@@ -1524,12 +1656,15 @@ const avgConf = predictions?.length
 
       </div>
 
-      {/* Explanation section - full width, drives off the focused prediction OR alert */}
+      {/* Why this forecast: opens when a forecast or an alert is picked, closes on request */}
+      {explainOpen && focusItem && (
       <div className="px-panel px-explain" ref={reasonRef}>
         <div className="px-panel-hd">
           <span>{kn ? "ಮುನ್ಸೂಚನೆ ವಿವರಣೆ" : "Why this forecast"}</span>
           <span className="px-hint">
             {focusKind === "alert" ? (kn ? "ಅಂತರ ಎಚ್ಚರಿಕೆಯಿಂದ" : "From an active alert") : (kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಂದ" : "From the 7-day forecast")}
+            <button type="button" className="px-explain-x" onClick={() => { setExplainOpen(false); setShowReasoning(false); }}
+                    aria-label={kn ? "ಮುಚ್ಚಿ" : "Close the explanation"}>{kn ? "ಮುಚ್ಚಿ" : "Close"} ×</button>
           </span>
         </div>
 
@@ -1736,18 +1871,64 @@ const avgConf = predictions?.length
           )}
         </div>
       </div>
+      )}
+
+      {/* This week's plan: one line per action, opened for the detail */}
+      <section className="px-plan" aria-label="This week's plan">
+        <div className="px-plan-hd">
+          <h2>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}{plan.length > 0 && <small>{Math.min(plan.length, 4)} {Math.min(plan.length, 4) === 1 ? "action" : "actions"}</small>}</h2>
+          <button type="button" className="px-linkbtn" onClick={copyBrief} disabled={!brief.length}>{copied ? "Copied" : "Copy for the briefing note"}</button>
+        </div>
+        {predictions === null && <p className="px-brief-wait">{kn ? "ದಾಖಲೆಗಳನ್ನು ಓದುತ್ತಿದೆ…" : "Reading the records…"}</p>}
+        {predictions?.length === 0 && <p className="px-brief-wait">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "There is nothing to forecast yet."}</p>}
+        {plan.length > 0 && (
+          <div className="px-plan-list">
+            {plan.slice(0, 4).map((a, i) => {
+              const open = planOpen === i;
+              return (
+                <div key={i} className={`px-act k-${a.k}${open ? " open" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
+                  <button type="button" className="px-act-hd" aria-expanded={open} onClick={() => setPlanOpen(open ? null : i)}>
+                    <span className="px-act-verb">{a.verb}</span>
+                    <b>{a.title}</b>
+                    <span className="px-act-short">{a.short}</span>
+                    <i aria-hidden="true" />
+                  </button>
+                  {open && (
+                    <div className="px-act-body">
+                      <p>{a.text}</p>
+                      {(a.go || a.toEvents) && (
+                        <button type="button" className="px-act-go" onClick={a.go ? () => openItem(a.go) : toEvents}>
+                          {a.go ? (kn ? "ಕಾರಣ ಮತ್ತು ಠಾಣೆಗಳು" : "Why, and which stations") : (kn ? "ಹಿಂದಿನ ವರ್ಷಗಳು" : "What past years show")} →
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {(brief.length > 0 || reading) && (
+          <details className="px-plan-more">
+            <summary>{kn ? "ವಾರದ ಸಾರಾಂಶ" : "The whole week in brief"}</summary>
+            <ul className="px-plan-brief">{brief.map((b, i) => <li key={i} className={`k-${b.k}`}>{b.t}</li>)}</ul>
+            {reading && <p className="px-plan-ai"><span>{kn ? "ಅಂತರ್ ಓದು" : "Antar's reading"}</span>{reading}</p>}
+          </details>
+        )}
+      </section>
 
       {/* Events ahead, then the investigation leads and how far to trust the forecast */}
       {/* Events ahead: when each falls, and what the real register shows it did before */}
       {eng && eng !== "missing" && (
         <section className="px-evs" ref={eventsRef} aria-label="Events ahead">
           <div className="px-evs-hd">
-            <h2>{kn ? "ಮುಂಬರುವ ಉತ್ಸವಗಳು · ಬಂದೋಬಸ್ತ್" : "Events ahead: bandobast planning"}</h2>
-            <span>What each event did to registered cases in past years, measured from FIRs, so deployment can be planned for it.</span>
+            <h2>{kn ? "ಮುಂಬರುವ ಉತ್ಸವಗಳು · ಬಂದೋಬಸ್ತ್" : "Events ahead"}</h2>
+            <span>{kn ? "ಹಿಂದಿನ ವರ್ಷಗಳ FIR ಗಳಿಂದ ಅಳೆದದ್ದು." : "Festivals and events in the next 3 weeks, and what each did to registered cases in past years. Measured from FIRs, for bandobast planning."}</span>
           </div>
           {evsAhead.length === 0 && <p className="px-evs-none">No listed event falls in the next 3 weeks.</p>}
           {evsAhead.map((e) => (
-            <EventCard key={e.key} ev={e} areas={P.filter((x) => (e.places || []).includes(x.zone)).slice(0, 4)} onOpen={openItem} />
+            <EventCard key={e.key} ev={e} kn={kn} areas={P.filter((x) => (e.places || []).includes(x.zone)).slice(0, 4)} onOpen={openItem}
+                       onAsk={(q) => { try { sessionStorage.setItem("antar_initial_question", q); localStorage.setItem("antar_initial_question", q); } catch {} router.push("/antar"); }} />
           ))}
         </section>
       )}
