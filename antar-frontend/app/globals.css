@@ -1079,12 +1079,19 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-risk-l { background: rgba(24,214,154,.12); color: var(--green); }
 .mx-breadcrumb { position: absolute; top: 120px; left: 264px; z-index: 910; font-family: 'Chakra Petch'; font-size: 11px; color: var(--muted); background: rgba(6,11,20,.55); backdrop-filter: blur(10px); border-radius: 999px; padding: 6px 13px; cursor: pointer; border: 1px solid var(--glass-border); }
 [data-theme="light"] .mx-breadcrumb { background: rgba(255,255,255,.85); }
-/* What the forecast dots are, on the map's bottom-left */
-.mx-fckey, .mx-mapwrap > .mx-fckey { position: absolute; left: 12px; bottom: 22px; top: auto; height: auto; z-index: 900; max-width: min(440px, calc(100% - 90px));
-  display: flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; pointer-events: none;
-  background: rgba(6,11,20,.82); border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
-  font-size: 11px; line-height: 1.35; color: var(--muted); }
-.mx-fckey i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #E14038; opacity: .8; }
+/* What the forecast dots are: a strip along the bottom of the map frame, under the map */
+.mx-mapwrap > .mx-fckey { position: absolute; left: 0; right: 0; bottom: 0; top: auto; z-index: 900;
+  display: flex; align-items: center; gap: 12px; padding: 0 16px; overflow: hidden;
+  background: rgba(6,11,20,.96); border-top: 1px solid var(--glass-border); }
+.mx-fckey p { margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mx-fckey p b { color: var(--text); font-weight: 600; }
+.mx-fckey-dots { flex: none; display: flex; align-items: center; gap: 4px; }
+.mx-fckey-dots i { display: block; border-radius: 50%; background: #E14038; }
+.mx-fckey-dots i:nth-child(1) { width: 5px; height: 5px; opacity: .35; }
+.mx-fckey-dots i:nth-child(2) { width: 8px; height: 8px; opacity: .6; }
+.mx-fckey-dots i:nth-child(3) { width: 12px; height: 12px; opacity: .9; }
+[data-theme="light"] .mx-mapwrap > .mx-fckey { background: rgba(255,255,255,.96); }
 /* My district and the repeat-locations layer, on the map's top-left */
 /* top of the map frame; the district breadcrumb sits under it */
 .mx-mybar, .mx-mapwrap > .mx-mybar { position: absolute; top: 12px; left: 12px; bottom: auto; right: auto; height: auto; z-index: 900; display: flex; gap: 6px; align-items: center; }

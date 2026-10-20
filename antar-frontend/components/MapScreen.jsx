@@ -211,6 +211,16 @@ const POLICE_DISTRICTS = [
   "Ramanagara", "Shivamogga", "Tumakuru", "Udupi", "Uttara Kannada", "Vijayanagara", "Vijayapur", "Yadgir",
 ];
 
+// Height of the forecast key under the map (the map gives up this much while it shows).
+const FCKEY_H = 46;
+
+// Leaflet measures its box once; when the key under it comes or goes it is told again.
+function ResizeWith({ dep }) {
+  const map = useMap();
+  useEffect(() => { const t = setTimeout(() => map.invalidateSize(), 30); return () => clearTimeout(t); }, [dep, map]);
+  return null;
+}
+
 function FlyTo({ bounds }) {
   const map = useMap();
   useEffect(() => { if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.5 }); }, [bounds, map]);
@@ -944,7 +954,7 @@ export default function MapScreen() {
                              dateLabel={prettyDate(endDate, false)} onClose={() => setShowDossier(false)} />
         )}
 
-          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%", position: "relative" }}>
+          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: fc.on ? `calc(100% - ${FCKEY_H}px)` : "100%", position: "relative" }}>
             {giLoading && (
               <div className="mx-loading" role="status" aria-label={kn ? "ನಕ್ಷೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ" : "Reading the map"}>
                 <span aria-hidden="true" />
@@ -1109,24 +1119,36 @@ export default function MapScreen() {
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} startBounds={startBounds} />
           <ZoomButtons geo={geo} onReset={closeDistrict} />
+          <ResizeWith dep={fc.on} />
         
           
 
         </MapContainer></div>
+        {/* What the forecast dots are: a strip under the map, never over it */}
+        {fc.on && (() => {
+          const ci = (fc.layer?.fields || []).indexOf("class");
+          const units = fc.layer?.units || [];
+          const busiest = ci >= 0 ? units.filter((u) => u[ci] >= 4).length : 0;
+          const beat = fc.layer?.unit_type === "beat";
+          return (
+            <div className="mx-fckey" role="note" style={{ height: FCKEY_H }}>
+              <span className="mx-fckey-dots" aria-hidden="true"><i /><i /><i /></span>
+              <p>{kn ? <>
+                  <b>ಪ್ರತಿ ಚುಕ್ಕೆ ಒಂದು {beat ? "ಬೀಟ್" : "ಪೊಲೀಸ್ ಠಾಣೆ"}.</b> ದೊಡ್ಡ ಮತ್ತು ಕೆಂಪು ಚುಕ್ಕೆ = ಮುಂದಿನ {fc.horizon} ದಿನಗಳಲ್ಲಿ ಹೆಚ್ಚು FIR ನಿರೀಕ್ಷೆ. ಇದು ಮುನ್ಸೂಚನೆ, ದಾಖಲಾದ ಪ್ರಕರಣಗಳಲ್ಲ.
+                  {!selectedDistrict && busiest > 0 && <> {units.length} ರಲ್ಲಿ ಹೆಚ್ಚು ನಿರತ {busiest} ಠಾಣೆಗಳನ್ನು ತೋರಿಸಲಾಗಿದೆ; ಎಲ್ಲವನ್ನೂ ನೋಡಲು ಜಿಲ್ಲೆ ತೆರೆಯಿರಿ.</>}
+                </> : <>
+                  <b>Each dot is a police {beat ? "beat" : "station"}.</b> A bigger, redder dot means more FIRs are expected there in the next {fc.horizon} days. It is a forecast, not cases already reported.
+                  {!selectedDistrict && busiest > 0 && <> Showing the {busiest} busiest of {units.length} stations; open a district to see all of its beats.</>}
+                </>}</p>
+            </div>
+          );
+        })()}
         {/* inside the map frame, so it sits on the map, not on the page grid */}
       {selectedDistrict && (
         <button className="mx-breadcrumb" onClick={closeDistrict}>
           {kn ? "‹ ಕರ್ನಾಟಕ" : "‹ Karnataka"} &middot; {selectedDistrict}
         </button>
       )}
-        {fc.on && (
-          <div className="mx-fckey" role="note">
-            <i aria-hidden="true" />
-            {kn
-              ? <>ಚುಕ್ಕೆಗಳು: ಪೊಲೀಸ್ ಠಾಣೆಗಳು, ಮುಂದಿನ {fc.horizon} ದಿನಗಳಲ್ಲಿ ನಿರೀಕ್ಷಿತ FIR - ಪ್ರಕರಣಗಳಲ್ಲ.{!selectedDistrict && " ಹೆಚ್ಚು ನಿರತ ಠಾಣೆಗಳು ಮಾತ್ರ; ಎಲ್ಲವಕ್ಕೂ ಜಿಲ್ಲೆ ತೆರೆಯಿರಿ."}</>
-              : <>Dots: police {fc.layer?.unit_type === "beat" ? "beats" : "stations"}, FIRs expected in the next {fc.horizon} days - not cases.{!selectedDistrict && " Busiest only; open a district for all."}</>}
-          </div>
-        )}
         <div className="mx-mybar">
           <label className="mx-mydist" title={session.posting ? "Your posting, from your sign-in" : "The district the map opens on, for you"}>
             <select value={myDistrict} onChange={(e) => chooseMyDistrict(e.target.value)} aria-label={kn ? "ನನ್ನ ಜಿಲ್ಲೆ" : "My district"}>
