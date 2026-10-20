@@ -5,10 +5,13 @@ Operates as an isolated, standalone open-source intelligence and forensic decodi
 workbench for Karnataka State Police (KSP) investigators:
   1. ForensicDecoderModule: Deterministic Indian identifier decoding (70+ Karnataka RTOs,
      30+ UPI VPA Payment Service Providers & Nodal Banks, Indian E.164 Telecom & Email/Handle).
-  2. MaltegoLinkageModule: Multi-node open-source entity & attribution topology.
-  3. PhoneInfogaModule: Indian telecom numbering plan, E.164, TRAI series & SHA-256 footprinting.
-  4. SherlockHandleModule: Quarantined public surface & handle verification matrix.
-  5. BBOTScanTreeModule: Chronological event-driven reconnaissance trace log.
+  2. Link map: the items an identifier points to (RTO, bank, circle), built from the identifier itself.
+  3. Phone-number decoder: E.164 form, TRAI series and the circle the number was first allocated to.
+  4. Handle check links: public profile and court-index links for an officer to open by hand.
+  5. Step log: what was done, in order.
+  None of these runs an outside tool or opens a page; each works from the identifier typed in.
+  The output keys keep their earlier names (maltego_linkage, phone_infoga, sherlock_handles,
+  bbot_scan_tree) because the Search page and the tests read them.
   6. StatutoryRequisitionModule: BNSS §94 / §106 & IT Act law-enforcement notice generator.
 
 CRITICAL ISOLATION & SECURITY GUARDRAILS:
@@ -325,11 +328,11 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
         }
         prefix4 = nat_num[:4] if len(nat_num) >= 4 else ""
         if prefix4.startswith(("9845", "9900", "9880", "9945", "9740", "9686", "8971")):
-            circle_hint = "Karnataka Telecom Circle (Primary Allocation Block)"
+            circle_hint = "First allocated in Karnataka circle (may have been ported since)"
         elif prefix4.startswith(("9844", "9901", "9886", "9731", "9611", "9448", "9449", "9480")):
-            circle_hint = "Karnataka Telecom Circle (BSNL / Legacy Block)"
+            circle_hint = "First allocated in Karnataka circle, BSNL block (may have been ported since)"
         elif len(nat_num) == 10:
-            circle_hint = "India National Mobile Numbering Plan (+91 / Pan-India MNP)"
+            circle_hint = "Indian mobile number; the circle cannot be told from the number (numbers can be ported)"
         else:
             circle_hint = "Cryptographic Phone Hash Identifier"
 
@@ -345,7 +348,8 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
             "decoded_fields": [
                 {"label": "E.164 Normalized", "value": e164},
                 {"label": "TRAI Numbering Series", "value": series_map.get(first_digit, "Hash / Non-standard")},
-                {"label": "Telecom Circle / Block", "value": circle_hint},
+                {"label": "Circle first allocated", "value": circle_hint},
+                {"label": "Note", "value": "Mobile numbers can move between operators and circles (MNP); the current operator comes only from the operator or the MNP clearing house."},
                 {"label": "SHA-256 Privacy Hash", "value": f"HASH-{ph_hash}"},
                 {"label": "Statutory Nodal", "value": "DoT LSA Karnataka / TSP Nodal Officer (BNSS §94)"},
             ],
@@ -397,7 +401,8 @@ def _build_statutory_requisition(query: str, decoded: dict[str, Any]) -> dict[st
 
     if ttype == "phone":
         return {
-            "statute": "Section 94, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 (formerly §91 CrPC)",
+            "available": True,
+        "statute": "Section 94, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 (formerly §91 CrPC)",
             "recipient": "Nodal Law Enforcement Officer — Telecom Service Provider (Airtel / Jio / Vi / BSNL), Karnataka LSA",
             "subject": f"URGENT REQUISITION: Subscriber KYC (CAF), CDR, IMEI History & IPDR for {norm}",
             "records_requested": [
@@ -425,7 +430,8 @@ def _build_statutory_requisition(query: str, decoded: dict[str, Any]) -> dict[st
         bank = decoded.get("sponsor_bank", "Sponsoring PSP Bank")
         psp = decoded.get("psp_app", "TPAP Provider")
         return {
-            "statute": "Sections 94 & 106, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023",
+            "available": True,
+        "statute": "Sections 94 & 106, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023",
             "recipient": f"Nodal Cyber Cell Officer — {bank} & {psp} / NPCI Law Enforcement Desk",
             "subject": f"REQUISITION FOR UPI VPA KYC, LINKED BANK ACCOUNT & TRANSACTION TRAIL: {norm}",
             "records_requested": [
@@ -450,7 +456,8 @@ def _build_statutory_requisition(query: str, decoded: dict[str, Any]) -> dict[st
     if ttype == "vehicle_plate":
         rto = decoded.get("rto_office", "Regional Transport Office")
         return {
-            "statute": "Section 94, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 & Motor Vehicles Act",
+            "available": True,
+        "statute": "Section 94, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 & Motor Vehicles Act",
             "recipient": f"Regional Transport Officer ({rto}) / ICCC ANPR & NHAI NETC FASTag Nodal Cell",
             "subject": f"REQUISITION FOR VAHAN B-EXTRACT, FASTAG TOLL LOGS & ANPR SIGHTINGS: {norm}",
             "records_requested": [
@@ -471,7 +478,23 @@ def _build_statutory_requisition(query: str, decoded: dict[str, Any]) -> dict[st
             ),
         }
 
+    if ttype != "handle":
+        # A personal name or a place has no holder to send a notice to: a §94 notice goes to
+        # whoever holds the record (an operator, a bank, an RTO, a platform). Drafting one
+        # addressed to nobody invited it to be sent somewhere it should not go.
+        return {
+            "available": False,
+            "statute": "",
+            "recipient": "",
+            "subject": "",
+            "records_requested": [],
+            "template_text": "",
+            "reason": ("No notice was drafted. A Section 94 BNSS notice goes to whoever holds the record, so it needs "
+                       "an identifier with a holder: a phone number (operator), a UPI ID (bank), a vehicle number (RTO) "
+                       "or an online handle (platform). A name alone has no recipient."),
+        }
     return {
+        "available": True,
         "statute": "Section 94, BNSS 2023 & Section 79(3)(b) Information Technology Act, 2000",
         "recipient": "Grievance / Nodal Law Enforcement Officer — Significant Social Media Intermediary (SSMI)",
         "subject": f"PRESERVATION & BASIC SUBSCRIBER INFORMATION (BSI) REQUEST FOR: {norm}",
@@ -503,9 +526,17 @@ def run_multi_module_recon(
     When called from `/api/osint/recon`, `internal_rows` is None — this module NEVER touches
     the FIR database or Antar core state.
     """
-    query_clean = (query or "").strip()
-    if not query_clean:
+    # The same screen the open-web search applies: visible text only, bounded, and nothing
+    # instruction-shaped. Unscreened, "ignore previous instructions ..." was copied into the
+    # step log and into the BNSS notice draft.
+    from app.core.rag_security import normalize_untrusted, detect_injection
+    query_clean = normalize_untrusted(query or "", max_len=120).strip()
+    refused = bool(query_clean) and bool(detect_injection(query_clean))
+    if not query_clean or refused:
         return {
+            "refused": refused,
+            "reason": ("The text entered reads as an instruction, not an identifier, so nothing was decoded."
+                       if refused else "No identifier entered."),
             "query": "",
             "isolation_mode": "STANDALONE_NO_FIR_ACCESS",
             "forensic_decoder": {},
@@ -535,12 +566,12 @@ def run_multi_module_recon(
     decoded = _classify_and_decode_target(query_clean)
     requisition = _build_statutory_requisition(query_clean, decoded)
 
-    # 1. BBOT Event Trace log
+    # 1. Step log
     scan_tree = [
         {
             "id": "EVT-01",
             "event_type": "SCAN_INIT",
-            "source": "BBOTReconOrchestrator",
+            "source": "StepLog",
             "detail": (
                 f"Initialized standalone OSINT reconnaissance for target '{query_clean}' "
                 f"(depth={depth}, isolation=NO_FIR_ACCESS)"
@@ -556,13 +587,13 @@ def run_multi_module_recon(
         },
     ]
 
-    # 2. PhoneInfoga Telecom Footprint Analysis
+    # 2. Phone-number decoder
     phone_info = _run_phone_infoga_module(query_clean, decoded, rows, scan_tree)
 
-    # 3. Maltego Entity & Linkage Graph
+    # 3. Link map
     maltego_graph = _run_maltego_linkage_module(query_clean, decoded, rows, scan_tree)
 
-    # 4. Sherlock Quarantined Digital Handle Discovery
+    # 4. Handle check links (nothing is opened)
     sherlock_handles = _run_sherlock_module(query_clean, decoded, scan_tree)
 
     # 5. OSINT Verification Vectors & Corroboration
@@ -630,7 +661,7 @@ def _run_phone_infoga_module(
         if decoded.get("target_type") == "phone"
         else ("Embedded Mobile in UPI VPA" if embedded_mobile else ("Cellular / Mobile Telecom" if is_phone_query else "Alphanumeric / Non-MSISDN Target"))
     )
-    circle_val = decoded.get("circle") or ("India (+91 / MNP Circle)" if is_phone_query else "N/A (Non-Telecom Identifier)")
+    circle_val = decoded.get("circle") or ("Not known from the number (numbers can be ported)" if is_phone_query else "N/A (not a phone number)")
 
     result = {
         "is_phone_query": is_phone_query,
@@ -655,11 +686,11 @@ def _run_phone_infoga_module(
     scan_tree.append({
         "id": "EVT-03",
         "event_type": "TELECOM_SCAN",
-        "source": "PhoneInfogaModule",
+        "source": "PhoneNumberDecoder",
         "detail": (
-            f"E.164 telecom analysis completed for '{e164_val}' ({line_classification}; circle={circle_val})"
+            f"Phone number decoded: '{e164_val}' ({line_classification}; circle={circle_val})"
             if is_phone_query
-            else f"Target '{query}' evaluated by PhoneInfoga: non-MSISDN identifier (SHA-256={decoded.get('sha256_fingerprint')})"
+            else f"Target '{query}' checked by the phone-number decoder: not a phone number (SHA-256={decoded.get('sha256_fingerprint')})"
         ),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
@@ -672,7 +703,7 @@ def _run_maltego_linkage_module(
     rows: list[dict],
     scan_tree: list[dict],
 ) -> dict[str, Any]:
-    """Generates multi-node open-source Maltego entity & forensic attribution topology."""
+    """The items the identifier itself points to (RTO, bank, circle). Nothing is looked up outside."""
     nodes = []
     edges = []
     seen_nodes = set()
@@ -730,7 +761,7 @@ def _run_maltego_linkage_module(
     elif ttype == "phone":
         circle_id = f"CIRCLE:{decoded['circle']}"
         _add_node(circle_id, decoded["circle"], "telecom_circle")
-        edges.append({"source": seed_id, "target": circle_id, "label": "allocated_in", "verified": False})
+        edges.append({"source": seed_id, "target": circle_id, "label": "first_allocated_in", "verified": False})
 
         series_id = f"SERIES:{decoded['trai_series'][:13]}"
         _add_node(series_id, decoded["trai_series"], "numbering_plan")
@@ -788,8 +819,8 @@ def _run_maltego_linkage_module(
     scan_tree.append({
         "id": "EVT-04",
         "event_type": "GRAPH_LINKAGE",
-        "source": "MaltegoLinkageModule",
-        "detail": f"Multi-hop open-source graph mapped {len(nodes)} entities and {len(edges)} attribution links",
+        "source": "LinkMap",
+        "detail": f"Link map built from the identifier: {len(nodes)} items and {len(edges)} links (none checked against an outside source)",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
@@ -801,7 +832,7 @@ def _run_sherlock_module(
     decoded: dict[str, Any],
     scan_tree: list[dict],
 ) -> list[dict]:
-    """Generates Sherlock public surface & handle verification targets.
+    """Links an officer can open by hand to check whether a profile exists. None is opened here.
     All discovered handles are strictly quarantined (`unverified=True`, `status="quarantined"`).
     """
     clean_handle = re.sub(r"[^A-Za-z0-9_.-]", "", query.lstrip("@")).lower() or "target"
@@ -860,9 +891,9 @@ def _run_sherlock_module(
 
     scan_tree.append({
         "id": "EVT-05",
-        "event_type": "SHERLOCK_RECON",
-        "source": "SherlockHandleModule",
-        "detail": f"Prepared {len(handles)} quarantined public surface verification probes under §0.4-2 rules",
+        "event_type": "HANDLE_LINKS",
+        "source": "HandleCheckLinks",
+        "detail": f"Prepared {len(handles)} links to check by hand; none was opened, so none is a finding",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
     return handles

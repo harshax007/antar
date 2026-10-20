@@ -42,12 +42,13 @@ async def get_osint_recon(
     Standalone Multi-Module OSINT & Indian Forensic Reconnaissance Endpoint.
     Operates with ZERO FIR database access (`internal_rows=None`).
     Returns:
-      • Indian Forensic Identifier Decoder (70+ KA RTOs, 30+ UPI PSPs, TRAI E.164)
-      • Statutory BNSS §94 / §106 Requisition Draft
-      • Maltego Open-Source Entity Topology (nodes & edges)
-      • PhoneInfoga Telecom Footprint Analysis
-      • Sherlock Quarantined Digital Surface Matrix
-      • BBOT Chronological Event Scan Tree
+      • Identifier decoder (Karnataka RTOs, UPI apps and banks, TRAI numbering)
+      • BNSS §94 / §106 notice draft, only for an identifier with a holder to send it to
+      • Link map built from the identifier itself
+      • Phone-number decoder (circle first allocated; numbers can be ported)
+      • Handle check links for an officer to open by hand
+      • Step log
+    Nothing here runs an outside tool or opens a page. Text that reads as an instruction is refused.
     """
     source_list = [s.strip() for s in sources.split(",") if s.strip()] if sources else None
     report = run_multi_module_recon(entity, internal_rows=None, sources=source_list, depth=depth)

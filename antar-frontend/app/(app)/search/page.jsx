@@ -368,7 +368,7 @@ function SearchContent() {
         setReconData(r);
         const decodedLabel = r?.forensic_decoder?.target_label || "Identifier";
         appendOsintAudit(
-          `Decoded [${decodedLabel}] · ${claimList.length} open-web signals · ${r?.sherlock_handles?.length || 0} surface probes`
+          `Decoded [${decodedLabel}] · ${claimList.length} open-web signals · ${r?.sherlock_handles?.length || 0} handle check links`
         );
       })
       .finally(() => setOsintLoading(false));
@@ -830,16 +830,19 @@ function SearchContent() {
                       </div>
 
                       {/* 5-TAB STANDALONE FORENSIC & MULTI-MODULE RECON WORKBENCH */}
-                      {reconData && (
+                      {reconData?.refused && (
+                        <div className="sx-osint-empty"><p>{reconData.reason}</p></div>
+                      )}
+                      {reconData && !reconData.refused && (
                         <div className="sx-recon-workbench">
                           <div className="sx-recon-tabs">
                             {[
                               ["decoder", kn ? "ಫಾರೆನ್ಸಿಕ್ ಡಿಕೋಡರ್" : "Forensic Decoder"],
                               ["bnss94", kn ? "BNSS §94 ನೋಟಿಸ್" : "BNSS §94 Notice"],
-                              ["maltego", "Maltego Graph"],
-                              ["telecom", "PhoneInfoga"],
-                              ["sherlock", "Sherlock Handles"],
-                              ["bbot", "BBOT Scan Tree"],
+                              ["maltego", kn ? "ಸಂಪರ್ಕ ನಕ್ಷೆ" : "Link Map"],
+                              ["telecom", kn ? "ಫೋನ್ ಸಂಖ್ಯೆ" : "Phone Number"],
+                              ["sherlock", kn ? "ಹ್ಯಾಂಡಲ್ ಪರಿಶೀಲನೆ" : "Handle Check Links"],
+                              ["bbot", kn ? "ಹಂತಗಳ ದಾಖಲೆ" : "Step Log"],
                             ].map(([k, label]) => (
                               <button
                                 type="button"
@@ -885,7 +888,12 @@ function SearchContent() {
                               </div>
                             )}
 
-                            {reconTab === "bnss94" && (
+                            {reconTab === "bnss94" && reconData.statutory_requisition?.available === false && (
+                              <div className="sx-recon-sub" style={{ textTransform: "none", lineHeight: 1.6 }}>
+                                {reconData.statutory_requisition.reason}
+                              </div>
+                            )}
+                            {reconTab === "bnss94" && reconData.statutory_requisition?.available !== false && (
                               <div>
                                 <div className="sx-recon-sub" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                   <span>{reconData.statutory_requisition?.statute || "BNSS §94 Statutory Notice"}</span>
@@ -929,7 +937,7 @@ function SearchContent() {
                             {reconTab === "maltego" && (
                               <div>
                                 <div className="sx-recon-sub">
-                                  maltego open-source topology · {reconData.maltego_linkage?.nodes?.length || 0} nodes · {reconData.maltego_linkage?.edges?.length || 0} edges
+                                  link map from the identifier itself · {reconData.maltego_linkage?.nodes?.length || 0} items · {reconData.maltego_linkage?.edges?.length || 0} links · nothing checked outside
                                 </div>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
                                   {(reconData.maltego_linkage?.nodes || []).map((n, idx) => (
@@ -954,12 +962,12 @@ function SearchContent() {
                             {reconTab === "telecom" && (
                               <div>
                                 <div className="sx-recon-sub">
-                                  phoneinfoga telecom footprint · e.164 & trai numbering plan
+                                  phone number decoder · e.164 & trai numbering · circle first allocated (numbers can be ported)
                                 </div>
                                 <div style={{ fontSize: "12px", color: "#E2E8F0", lineHeight: 1.65 }}>
                                   <div><b>Normalized Target / MSISDN:</b> {reconData.phone_infoga?.phone_query || reconData.phone_infoga?.normalized_input || "N/A"}</div>
                                   <div><b>Line / Series Classification:</b> {reconData.phone_infoga?.line_type || reconData.phone_infoga?.carrier_type || "Unknown"}</div>
-                                  <div><b>Telecom Circle / Allocation:</b> {reconData.phone_infoga?.telecom_circle || reconData.phone_infoga?.country || "India (+91)"}</div>
+                                  <div><b>Circle first allocated:</b> {reconData.phone_infoga?.telecom_circle || reconData.phone_infoga?.country || "India (+91)"}</div>
                                   <div><b>SHA-256 Privacy Hash:</b> <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{reconData.phone_infoga?.sha256_fingerprint || "N/A"}</span></div>
                                   <div><b>Statutory Nodal Escalation:</b> {reconData.phone_infoga?.nodal_authority || "N/A"}</div>
                                   {(reconData.phone_infoga?.whatsapp_surface || reconData.phone_infoga?.telegram_surface) && (
@@ -983,7 +991,7 @@ function SearchContent() {
                             {reconTab === "sherlock" && (
                               <div>
                                 <div className="sx-recon-sub">
-                                  sherlock digital surface matrix · strict unverified quarantine
+                                  links to open by hand · none was opened, so none is a finding
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                                   {(reconData.sherlock_handles || []).map((h, i) => (
@@ -1002,7 +1010,7 @@ function SearchContent() {
                                             rel="noopener noreferrer nofollow"
                                             style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: "#E2E8F0", textDecoration: "underline" }}
                                           >
-                                            probe ↗
+                                            open ↗
                                           </a>
                                         )}
                                         <span className="bdg">{h?.badge || "OSINT / UNVERIFIED"}</span>
@@ -1016,7 +1024,7 @@ function SearchContent() {
                             {reconTab === "bbot" && (
                               <div>
                                 <div className="sx-recon-sub">
-                                  bbot event scan tree · chronological standalone recon audit
+                                  step log · what was done, in order
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace" }}>
                                   {(reconData.bbot_scan_tree || []).map((e, idx) => (
@@ -1045,7 +1053,7 @@ function SearchContent() {
                       {osint && osint.claims.length === 0 && !osintLoading && (
                         <div className="sx-osint-empty">
                           <p>
-                            {osint.summary || (kn ? "ಯಾವುದೇ ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ." : "No external open-web snippets returned. Deterministic forensic decoding, Sherlock probes, and BNSS §94 requisition above remain ready for field use.")}
+                            {osint.summary || (kn ? "ಯಾವುದೇ ಮುಕ್ತ-ವೆಬ್ ಸಿಗ್ನಲ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ." : "No open-web result came back. The identifier decoding, the handle check links and any BNSS §94 notice draft above do not depend on it.")}
                           </p>
                         </div>
                       )}
