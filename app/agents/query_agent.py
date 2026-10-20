@@ -367,7 +367,8 @@ _ELSEWHERE = (
 # Things a question can ask for that no template can filter on. Each is reported with the
 # reason, because "the register has no time of day" is itself useful to an officer.
 _CANNOT_FILTER = (
-    (re.compile(r"\b(?:at night|by night|night[- ]?time|during the (?:day|night)|day[- ]?time|in the (?:morning|"
+    (re.compile(r"\b(?:hours? of the day|what time of (?:the )?day|what time|which hours?|time of (?:the )?day|"
+                r"at night|by night|night[- ]?time|during the (?:day|night)|day[- ]?time|in the (?:morning|"
                 r"evening|afternoon)|after dark|around midnight|early hours|between \d{1,2}\s*(?:am|pm)[^.?!]{0,20})", re.I),
      "the register records the date of a case and not the time of day, so {q} was not applied"),
     (re.compile(r"\b(?:on |during |over )?(?:the )?(?:weekends?|weekdays?|(?:mon|tues|wednes|thurs|fri|satur|sun)days?)\b", re.I),
@@ -428,7 +429,7 @@ def unapplied(user_text: str, template_id: str, params: dict | None) -> list[str
 
     # the period
     if template_id not in _NO_PERIOD_CHECK:
-        timed = any(p.get(k) for k in ("date_from", "date_to", "period", "year", "year_from"))
+        timed = any(p.get(k) for k in ("date_from", "date_to", "period", "year", "year_from", "years"))
         phrase = mentions_time(text, data_today(), data_first_year())
         if phrase and not timed and not (template_id == "T3" and re.search(r"\d+\s*months?", low)):
             out.append(f"the period {q(phrase)} was not applied, so this covers every year on record")
@@ -445,7 +446,8 @@ def unapplied(user_text: str, template_id: str, params: dict | None) -> list[str
 
     # a crime word the register does not have at all
     phrase = _named_crime_phrase(text)
-    if phrase and not named and not p.get("crime_types") and template_id in ("T1", "T3", "T8", "T11", "T12", "T13", "T22", "T23"):
+    if phrase and not named and not p.get("crime_types") and not p.get("heads") and not p.get("stations") \
+            and template_id in ("T1", "T3", "T8", "T11", "T12", "T13", "T22", "T23", "T24", "T26"):
         words = [w for w in re.split(r"[\s\-/&]+", phrase) if w]
         zone_words = {w.lower() for z in (ent.get("zones") or []) for w in str(z).split()}
         if (len(words) <= 3 and all(w.isalpha() for w in words) and not _STATUS_WORD_RE.search(phrase)
@@ -454,14 +456,19 @@ def unapplied(user_text: str, template_id: str, params: dict | None) -> list[str
 
     # a case status
     sm = _STATUS_WORD_RE.search(low)
-    if sm and template_id not in ("T8", "T22") and not p.get("status") and not p.get("arrest_status"):
+    if sm and template_id not in ("T8", "T22", "T24", "T27", "T28") and not p.get("status") and not p.get("arrest_status"):
         out.append(f"the case status {q(sm.group(0))} was not applied")
 
     # things no template can filter on
-    by_time_of_day = any(" - NIGHT" in str(c).upper() or " - DAY" in str(c).upper() for c in (p.get("crime_types") or []))
+    by_time_of_day = any(" - NIGHT" in str(c).upper() or " - DAY" in str(c).upper() for c in (p.get("crime_types") or [])) \
+        or (template_id == "T25" and p.get("by") == "group")
+    # Phone numbers are not a link key on the register.
+    if template_id == "T19" and re.search(r"\b(phone|mobile|cell)\s*(numbers?|nos?|hash(es)?)?\b", low):
+        out.append("phone numbers are not recorded as a link between FIRs, so the links shown are by UPI ID, "
+                   "IP address, vehicle and accused ID")
     for rx, why in _CANNOT_FILTER:
         m = rx.search(low)
-        if not m or (("day of the week" in why) and p.get("dimension") == "weekday"):
+        if not m or (("day of the week" in why) and (p.get("dimension") == "weekday" or template_id == "T26")):
             continue
         if "time of day" in why and by_time_of_day:
             continue                    # burglary is filed by day and by night, and that was applied

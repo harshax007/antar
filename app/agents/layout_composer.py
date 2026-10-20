@@ -89,9 +89,31 @@ def _chart_from_rows(query: dict, rows: list[dict]) -> dict | None:
     """A compact, minimal inline chart spec — only from REAL aggregate rows.
     Trend templates → line; breakdown/hotspot templates → bar. None otherwise,
     so the chat never renders a chart it can't back with data."""
-    if not rows or "n" not in rows[0]:
+    if not rows:
         return None
     template = query.get("template_id", "")
+    # T24 stages per station/district, T27 sides: bars of the count each row stands on.
+    if template in ("T24", "T27") and "grp" in rows[0] and rows[0].get("grp") != "ALL":
+        key = "under_investigation" if template == "T24" else "firs"
+        pts = [{"label": str(r.get("grp")), "value": _num(r.get(key))}
+               for r in rows if _num(r.get(key)) is not None][:8]
+        return {"kind": "bar", "unit": "cases", "points": pts} if len(pts) >= 2 else None
+    # T26 day-of-week / month-of-year: bars in calendar order
+    if template == "T26" and "slot" in rows[0]:
+        pts = [{"label": str(r.get("slot")), "value": _num(r.get("n"))}
+               for r in sorted(rows, key=lambda r: r.get("slot_index") or 0)]
+        return {"kind": "bar", "unit": "cases", "points": pts} if len(pts) >= 2 else None
+    if "n" not in rows[0]:
+        return None
+    if template == "T25":
+        try:
+            from app.services.zcql_repo import head_label
+        except Exception:
+            head_label = str
+        k = "CrimeHead_Name" if "CrimeHead_Name" in rows[0] else "crime_type"
+        pts = [{"label": head_label(r.get(k)) if k == "CrimeHead_Name" else str(r.get(k)).title(),
+                "value": _num(r.get("n"))} for r in rows if r.get(k) and _num(r.get("n")) is not None][:8]
+        return {"kind": "bar", "unit": "cases", "points": pts} if len(pts) >= 2 else None
     # Trend over months → line
     if template == "T3" and "month" in rows[0]:
         pts = [{"label": str(r.get("month")), "value": _num(r.get("n"))}

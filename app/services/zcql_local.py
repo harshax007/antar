@@ -19,7 +19,7 @@ from app.core.db_path import DB_PATH, ensure_db_staged
 # NAMED_PREDICATES); the counts are stored as a mix of INTEGER and TEXT, hence the CASTs.
 CRIMES_VIEW_SQL = """CREATE VIEW crimes AS SELECT
   fir_id AS crime_id, COALESCE(CrimeNo, fir_id) AS fir_number, crime_type,
-  ActSection AS act, ActSection AS acts_sections, zone, district_norm AS district,
+  ActSection AS act, ActSection AS acts_sections, CrimeHead_Name AS sub_head, zone, district_norm AS district,
   station AS station_code, date AS occurred_at, status, IOName AS io_name,
   geo_lat AS lat, geo_lon AS lon, is_synthetic_row,
   CAST(Accused_Count AS INTEGER) AS accused, CAST(Arrested_Count_No_ AS INTEGER) AS arrested
@@ -171,6 +171,10 @@ def _virtual_table(spec: QuerySpec) -> list[dict]:
         return _cached_virtual(spec, _shared_identifiers)
     if spec.table == "__case_outcomes__":
         return _cached_virtual(spec, _case_outcomes)
+    if spec.table == "__case_stages__":
+        return _cached_virtual(spec, _case_stages)
+    if spec.table == "__time_pattern__":
+        return _cached_virtual(spec, _time_pattern)
     return []
 
 
@@ -228,7 +232,9 @@ def _shared_identifiers(spec: QuerySpec) -> list[dict]:
     try:
         for t in types:
             col = IDENTIFIER_COLUMNS[t]
-            where = [f"{col} IS NOT NULL", f"TRIM({col}) <> ''", "date <= ?"]
+            # "+date": without the unary plus SQLite drove this through the date index — a
+            # million row lookups for the ~1k rows that carry an identifier (6 s per type).
+            where = [f"{col} IS NOT NULL", f"TRIM({col}) <> ''", "+date <= ?"]
             args: list = [_today_cap()]
             c_sql, c_args = _in_clause("crime_type", cts)
             if c_sql:
@@ -238,6 +244,22 @@ def _shared_identifiers(spec: QuerySpec) -> list[dict]:
                 z_sql, z_args = _in_clause("zone", zones)
                 where.append(f"TRIM({col}) IN (SELECT TRIM({col}) FROM FIRs WHERE {z_sql} AND {col} IS NOT NULL)")
                 args += z_args
+            # "between A and B": the value must turn up on FIRs in each place named. Read the
+            # (value, place) pairs once and intersect here; an IN-subquery per side took 37 s.
+            sides = _fval(spec, "between") or ()
+            if sides:
+                pairs = conn.execute(f"SELECT DISTINCT TRIM({col}), UPPER(TRIM(zone)) FROM FIRs "
+                                     f"WHERE {col} IS NOT NULL AND TRIM({col}) <> ''").fetchall()
+                seen: dict[str, set] = {}
+                for r in pairs:
+                    v, z = list(r.values()) if isinstance(r, dict) else r
+                    seen.setdefault(v, set()).add(z)
+                want = [{str(x).strip().upper() for x in side} for side in sides]
+                keep = [v for v, zs in seen.items() if all(zs & w for w in want)][:900]
+                if not keep:
+                    continue
+                where.append(f"TRIM({col}) IN ({', '.join('?' * len(keep))})")
+                args += keep
             sql = (f"SELECT ? AS key_type, TRIM({col}) AS key_value, "
                    f"COUNT(DISTINCT fir_id) AS firs, COUNT(DISTINCT district_norm) AS districts, "
                    f"GROUP_CONCAT(DISTINCT district_norm) AS district_list, "
@@ -266,43 +288,111 @@ _STAGE_BUCKETS = {
 }
 
 
-def _case_outcomes(spec: QuerySpec) -> list[dict]:
-    """T22: FIR stage buckets plus accused-level arrest / charge-sheet / conviction totals and
-    rates, grouped by district, crime type or overall."""
-    dim = _fval(spec, "dimension", default="none")
-    grp = {"district": "d", "crime_type": "ct"}.get(dim, "'ALL'")
-    bucket_sql, bucket_args = [], []
-    for name, values in _STAGE_BUCKETS.items():
-        bucket_sql.append(f"SUM(CASE WHEN st IN ({', '.join('?' * len(values))}) THEN 1 ELSE 0 END) AS {name}")
-        bucket_args += list(values)
+# What each grouping reads, per FIR. The act is the text before " U/s" in ActSection
+# ("IPC 1860 U/s: 379" → "IPC 1860"); the section adds the first section number after it
+# ("IPC 1860 s.379"). A multi-act entry ("IT ACT … && IT ACT …") is filed under its first.
+_ACT_RAW = "UPPER(REPLACE(TRIM(ActSection), '  ', ' '))"
+_ACT_EXPR = (f"TRIM(CASE WHEN INSTR({_ACT_RAW}, ' U/S') > 0 "
+             f"THEN SUBSTR({_ACT_RAW}, 1, INSTR({_ACT_RAW}, ' U/S') - 1) ELSE {_ACT_RAW} END)")
+_SEC_REST = f"TRIM(SUBSTR({_ACT_RAW}, INSTR({_ACT_RAW}, 'U/S:') + 4))"
+_SEC_FIRST = (f"TRIM(SUBSTR({_SEC_REST}, 1, CASE WHEN INSTR({_SEC_REST}, ',') > 0 "
+              f"THEN INSTR({_SEC_REST}, ',') - 1 ELSE LENGTH({_SEC_REST}) END))")
+_SEC_EXPR = (f"CASE WHEN INSTR({_ACT_RAW}, 'U/S:') > 0 THEN {_ACT_EXPR} || ' s.' || "
+             f"TRIM(SUBSTR({_SEC_FIRST}, 1, CASE WHEN INSTR({_SEC_FIRST}, ' ') > 0 "
+             f"THEN INSTR({_SEC_FIRST}, ' ') - 1 ELSE LENGTH({_SEC_FIRST}) END)) ELSE {_ACT_EXPR} END")
+_GROUP_EXPR = {
+    "district": "MIN(district_norm)", "crime_type": "MIN(UPPER(TRIM(crime_type)))",
+    "station": "MIN(station)", "year": "MIN(SUBSTR(date, 1, 4))",
+    "act": f"MIN({_ACT_EXPR})", "section": f"MIN({_SEC_EXPR})",
+}
+
+
+def _fir_where(spec: QuerySpec) -> tuple[list[str], list]:
+    """The WHERE clause every per-FIR virtual table shares: zone, crime type, station,
+    sub-heading, years and a date range — all as ? parameters."""
     where, args = ["date <= ?"], [_today_cap()]
-    for col, vals in (("zone", _fval(spec, "zone", "in")), ("crime_type", _fval(spec, "crime_type", "in"))):
+    for col, vals in (("zone", _fval(spec, "zone", "in")), ("crime_type", _fval(spec, "crime_type", "in")),
+                      ("station", _fval(spec, "station", "in")), ("CrimeHead_Name", _fval(spec, "sub_head", "in"))):
         c_sql, c_args = _in_clause(col, vals)
         if c_sql:
             where.append(c_sql)
             args += c_args
+    ho = _fval(spec, "sub_head", "head_or")
+    if ho:
+        heads, labels, _tc = ho
+        h_sql, h_args = _in_clause("CrimeHead_Name", heads)
+        l_sql, l_args = _in_clause("crime_type", labels)
+        parts = [x for x in (h_sql, l_sql) if x]
+        if parts:
+            where.append("(" + " OR ".join(parts) + ")")
+            args += h_args + l_args
+    years = _fval(spec, "year", "in")
+    if years:
+        where.append(f"SUBSTR(date, 1, 4) IN ({', '.join('?' * len(years))})")
+        args += [str(y) for y in years]
     between = _fval(spec, "date", "between")
     if between:
         where.append("date BETWEEN ? AND ?")
         args += [between[0], between[1]]
+    return where, args
+
+
+def _act_of(raw: str | None, section: bool) -> str:
+    """'IPC 1860 U/s: 379,34 ' → 'IPC 1860' (act) or 'IPC 1860 s.379' (section). A multi-act
+    entry ('A U/s: x && B U/s: y') is filed under its first act."""
+    t = " ".join(str(raw or "").upper().split())
+    if not t:
+        return "NOT RECORDED"
+    first = t.split("&&")[0].strip()
+    i = first.find(" U/S")
+    act = (first[:i] if i > 0 else first).strip(" ,") or "NOT RECORDED"
+    if not section or "U/S:" not in first:
+        return act
+    sec = first.split("U/S:", 1)[1].strip()
+    sec = sec.split(",")[0].strip().split(" ")[0].strip()
+    return f"{act} s.{sec}" if sec else act
+
+
+def _case_outcomes(spec: QuerySpec) -> list[dict]:
+    """T22 / T27 / T28: FIR stage buckets plus accused-level arrest / charge-sheet / conviction
+    totals and rates — overall, or by district, crime type, station, year, act or section."""
+    dim = _fval(spec, "dimension", default="none")
+    fold = dim in ("act", "section")
+    # Act and section are folded from the raw ActSection text in Python: ~144k distinct
+    # values, where string surgery in SQL on a million rows took 38 s.
+    grp_expr = "MIN(ActSection)" if fold else _GROUP_EXPR.get(dim, "'ALL'")
+    bucket_sql, bucket_args = [], []
+    for name, values in _STAGE_BUCKETS.items():
+        bucket_sql.append(f"SUM(CASE WHEN st IN ({', '.join('?' * len(values))}) THEN 1 ELSE 0 END) AS {name}")
+        bucket_args += list(values)
+    where, args = _fir_where(spec)
     # One row per FIR first: ~2k fir_ids repeat with different stages / counts, and summing the
     # raw rows put those FIRs in two stage buckets and double-counted their accused.
     # CAST because ~5.7k rows store the counts as text.
     num = lambda c: f"MAX(CAST(COALESCE({c}, 0) AS INTEGER))"
-    per_fir = (f"SELECT fir_id, MIN(district_norm) AS d, MIN(UPPER(TRIM(crime_type))) AS ct, "
+    per_fir = (f"SELECT fir_id, {grp_expr} AS g, "
                f"MAX(LOWER(REPLACE(TRIM(FIR_Stage), '_', ' '))) AS st, "
                f"{num('Accused_Count')} AS acc, {num('Arrested_Count_No_')} AS arr, "
                f"{num('Accused_ChargeSheeted_Count')} AS chs, {num('Conviction_Count')} AS conv "
                f"FROM FIRs WHERE {' AND '.join(where)} GROUP BY fir_id")
-    sql = (f"SELECT {grp} AS grp, COUNT(*) AS firs, {', '.join(bucket_sql)}, "
+    sql = (f"SELECT g AS grp, COUNT(*) AS firs, {', '.join(bucket_sql)}, "
            f"SUM(acc) AS accused, SUM(arr) AS arrested, SUM(chs) AS chargesheeted, SUM(conv) AS convicted_accused "
-           f"FROM ({per_fir}) GROUP BY grp ORDER BY firs DESC")
+           f"FROM ({per_fir}) GROUP BY g ORDER BY firs DESC")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = _dict_factory
     try:
         rows = conn.execute(sql, bucket_args + args).fetchall()
     finally:
         conn.close()
+    if fold:
+        merged: dict[str, dict] = {}
+        for r in rows:
+            key = _act_of(r.get("grp"), dim == "section")
+            m = merged.setdefault(key, {"grp": key})
+            for k, v in r.items():
+                if k != "grp" and isinstance(v, (int, float)):
+                    m[k] = (m.get(k) or 0) + v
+        rows = sorted(merged.values(), key=lambda r: -(r.get("firs") or 0))
     for r in rows:
         acc, cs = r.get("accused") or 0, r.get("chargesheeted") or 0
         cv, ar, firs = r.get("convicted_accused") or 0, r.get("arrested") or 0, r.get("firs") or 0
@@ -311,6 +401,82 @@ def _case_outcomes(spec: QuerySpec) -> list[dict]:
         r["conviction_rate"] = round(100 * min(cv, cs) / cs, 1) if cs else None
         r["undetected_share"] = round(100 * (r.get("undetected") or 0) / firs, 1) if firs else None
     return [r for r in rows if r.get("grp") is not None]
+
+
+_OPEN_INV = ("under investigation", "transferred - under investigation")
+
+
+def _case_stages(spec: QuerySpec) -> list[dict]:
+    """T24: per station / district / crime type (or overall), how many FIRs sit at each stage
+    and how long the open investigations have been open (days since registration)."""
+    from app.services.zcql_repo import data_today
+    dim = _fval(spec, "dimension", default="none")
+    grp_expr = {"station": "MIN(station)", "district": "MIN(district_norm)",
+                "crime_type": "MIN(UPPER(TRIM(crime_type)))"}.get(dim, "'ALL'")
+    older = int(_fval(spec, "older_than_days", default=0) or 0)
+    today = data_today().isoformat()
+    where, args = _fir_where(spec)
+    bucket_sql, bucket_args = [], []
+    for name, values in _STAGE_BUCKETS.items():
+        bucket_sql.append(f"SUM(CASE WHEN st IN ({', '.join('?' * len(values))}) THEN 1 ELSE 0 END) AS {name}")
+        bucket_args += list(values)
+    ui = ", ".join("?" * len(_OPEN_INV))
+    per_fir = (f"SELECT fir_id, {grp_expr} AS g, MIN(district_norm) AS dist, MIN(date) AS dt, "
+               f"MAX(LOWER(REPLACE(TRIM(FIR_Stage), '_', ' '))) AS st "
+               f"FROM FIRs WHERE {' AND '.join(where)} GROUP BY fir_id")
+    age = "(julianday(?) - julianday(SUBSTR(dt, 1, 10)))"
+    sql = (f"SELECT g AS grp, MIN(dist) AS district, COUNT(*) AS firs, {', '.join(bucket_sql)}, "
+           f"SUM(CASE WHEN st IN ({ui}) AND {age} > 90 THEN 1 ELSE 0 END) AS ui_over_90, "
+           f"SUM(CASE WHEN st IN ({ui}) AND {age} > 365 THEN 1 ELSE 0 END) AS ui_over_365, "
+           f"SUM(CASE WHEN st IN ({ui}) AND {age} > ? THEN 1 ELSE 0 END) AS ui_older, "
+           f"MIN(CASE WHEN st IN ({ui}) THEN SUBSTR(dt, 1, 10) END) AS oldest_open "
+           f"FROM ({per_fir}) GROUP BY g")
+    q_args = (bucket_args + list(_OPEN_INV) + [today] + list(_OPEN_INV) + [today]
+              + list(_OPEN_INV) + [today, older] + list(_OPEN_INV) + args)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = _dict_factory
+    try:
+        rows = conn.execute(sql, q_args).fetchall()
+    finally:
+        conn.close()
+    key = "ui_older" if older else "under_investigation"
+    asc = bool(spec.order_by and spec.order_by[1] == "asc")
+    rows = [r for r in rows if r.get("grp") is not None]
+    rows.sort(key=lambda r: (r.get(key) or 0), reverse=not asc)
+    for r in rows:
+        r["older_than_days"] = older
+    return rows
+
+
+_WEEKDAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+
+
+def _time_pattern(spec: QuerySpec) -> list[dict]:
+    """T26: FIRs per day of the week (0 = Sunday) or per calendar month, with the number of
+    such days/months in the span, so a count can be read as a per-day average."""
+    dim = _fval(spec, "dimension", default="weekday")
+    where, args = _fir_where(spec)
+    fmt = "%w" if dim == "weekday" else "%m"
+    sql = (f"SELECT strftime('{fmt}', SUBSTR(date, 1, 10)) AS k, COUNT(DISTINCT fir_id) AS n, "
+           f"COUNT(DISTINCT SUBSTR(date, 1, 10)) AS days, MIN(SUBSTR(date, 1, 10)) AS first_date, "
+           f"MAX(SUBSTR(date, 1, 10)) AS last_date "
+           f"FROM FIRs WHERE {' AND '.join(where)} AND date IS NOT NULL GROUP BY k ORDER BY k")
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = _dict_factory
+    try:
+        rows = conn.execute(sql, args).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        if r.get("k") is None:
+            continue
+        i = int(r["k"])
+        label = _WEEKDAYS[i] if dim == "weekday" else ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+                                                         "Aug", "Sep", "Oct", "Nov", "Dec")[i - 1]
+        out.append({"slot": label, "slot_index": i, "n": int(r.get("n") or 0), "days": int(r.get("days") or 0),
+                    "first_date": r.get("first_date"), "last_date": r.get("last_date"), "dimension": dim})
+    return out
 
 
 def _connect_ro() -> sqlite3.Connection:

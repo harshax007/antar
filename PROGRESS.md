@@ -2176,3 +2176,20 @@ Read each screen as it renders and replaced the technical words an officer or a 
 * **Brain / Data Overview:** "rendered", "click a node", "Intelligent Data", "ACC/Arr." are plain; the full-dataset blurb no longer claims "unfiltered … without sampling" and says which years are partial or demonstration data.
 * **Account, Answer History (was Trace & Telemetry), Approvals, page guide, Docs, About:** jargon and two overclaims removed ("0.0% hallucination", "sandboxed OSINT layer").
 * Not changed: names of the agents in the Brain strip; "Dis/acq", which is a value in the data; test sessions listed on Answer History. The evidence badge words come from the backend and need a restart.
+
+## Query templates T24-T28 and the routing misses - 2026-10-20
+
+Every question officers had asked (98 distinct, audit log) was run through the router; 16 got the wrong answer. All 16 now route to a template that answers them.
+
+* **T24 Case stages and pendency:** under investigation / pending trial / convicted per station, district or crime type, with how long open investigations have been open (90 days, 1 year, or "more than N days"). "Stations with the most pending investigations in Mysuru", "POCSO cases that reached trial in 2023".
+* **T25 What a crime is made of:** counts by sub-heading ("49% of thefts are two-wheelers"), and burglary by night vs day (filed as Burglary - Night / - Day; 4.1 to 1).
+* **T26 Day-of-week / month-of-year pattern,** by registration date, saying the register has no time of the offence.
+* **T27 Side by side:** two or more districts, stations or years, counts and outcome rates; year pairs across 2022/2023 carry the partial-extract note.
+* **T28 Outcomes by Act or section** ("which act sections have the lowest conviction rate").
+* **Sub-headings** (`zcql_repo.HEAD_ALIASES`): extortion, two-wheelers, house theft, jewellery, sand, cattle, matka … now narrow a question. **Vehicle theft and chain snatching** count the real register (Theft › automobiles, Robbery › Chain Snatching) as well as the seeded label: vehicle theft in Bengaluru City 175 → 29,224; chain snatching statewide ~300 → 3,548.
+* **Police stations** (`zcql_repo.resolve_stations`): "thefts in Koramangala", "Koramangala PS" filter to the station instead of answering for all of Karnataka; "beats in Jayanagar" uses Jayanagar PS.
+* **Places:** Mangaluru, Hubballi, Belagavi, Mysuru mean the real districts (the seeded localities stay included); Vijayapura, Gulbarga, Shimoga, Tumkur, Bellary, Coorg, KGF … and "Hubballi-Dharwad" are recognised; compared places keep the order asked.
+* **Routing fixes:** monthly trend no longer becomes a ranking; "profile for suspect Saleem Malik" is a name lookup; phone-number links say phones are not a link key and show UPI/IP/vehicle/accused links; corridors between two districts; patrol deployment → beats over the last 12 months of the real register; "hotspots in Bengaluru" ranks its stations; "increase or decrease between 2024 and 2025" compares the years; "hours of the day" says the register has no time.
+* **Speed:** cross-district links 23.5 s → 3.4 s; vehicle and accused lookups 8.8 s → 0.7 s; outcomes by section 38 s → 7 s.
+* Tests: `tests/test_templates_t24_t28.py` (41). 265 existing routing, template and golden tests pass. Run read-only with `OBS_ENABLED=0 --noconftest`.
+* Not changed: "assault" still maps to the seeded ASSAULT label only (the register files assaults under Cases of hurt and others; which heads count is the owner's call). Kannada routing for the new templates covers ಹೋಲಿಕೆ / ಬಾಕಿ / ತನಿಖೆಯಲ್ಲಿ only. Needs a backend restart.

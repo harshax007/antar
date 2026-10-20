@@ -420,7 +420,7 @@ def _w_types(rows, kn, params, template_id):
         among = " among cases with accused still at large" if _absc(params) else ""
         lead = (f"[COMPUTED] **{_crime_en(top)}** is the most common crime in {where}{among} — "
                 f"**{_fmt(n)}** FIRs{share_s} ({scope}).")
-    lines = [lead] + ([] if _absc(params) else [_dir_line(_trend([top], zones), kn)])
+    lines = [lead] + ([] if _absc(params) or params.get("stations") else [_dir_line(_trend([top], zones), kn)])
     lines.append("ಪ್ರಮುಖ ಅಪರಾಧ ಪ್ರಕಾರಗಳು:" if kn else "Most common crime types:")
     for i, r in enumerate(rows[:6], 1):
         c = int(r.get("n") or 0)
@@ -857,12 +857,17 @@ def _w_count(rows, kn, params, template_id):
                 (" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "FIRs") + _absq(params, False) + _statq(params, False)
         lead = f"[VERIFIED] **{_fmt(total)}** {what} are on record {_in_loc(where, False)} ({scope})."
     lines = [lead]
-    if not params.get("date_from") and not _absc(params):
+    if not params.get("date_from") and not _absc(params) and not params.get("stations") and not params.get("heads"):
         lines.append(_dir_line(_trend(cts, zones), kn))
     dates = {k: params.get(k) for k in ("date_from", "date_to", "period")}
+    for k in ("stations", "heads"):          # the breakdown counts exactly what the total counted
+        if params.get(k):
+            dates[k] = params[k]
     if _absc(params):
         dates["arrest_status"] = "absconding"   # the breakdown must carry the same filter
-    if not zones:
+    if params.get("stations"):
+        br, head, label = [], "", str         # one station: a district breakdown says nothing
+    elif not zones:
         br = _breakdown("T11", {"crime_types": cts, "limit": 5, **dates}, "zone")
         head, label = ("ಹೆಚ್ಚು ದಾಖಲಾದ ಜಿಲ್ಲೆಗಳು:" if kn else "Where they were registered:"), str
     elif not cts:
@@ -1246,8 +1251,13 @@ def _metric_bullet(m: str, r: dict, kn: bool) -> str:
 def _w_outcomes(rows, kn, params, template_id):
     """T22 — conviction, charge-sheet, arrest and undetected rates. The lead and the ranking
     follow the rate that was asked ("charge sheet rate …" leads with the charge-sheet rate)."""
-    from app.services.zcql_repo import _as_outcome_dimension
-    dim = _as_outcome_dimension(params.get("dimension"))
+    from app.services.zcql_repo import _as_outcome_dimension, _as_act_dimension
+    dim = _as_act_dimension(params.get("dimension")) if template_id == "T28" else _as_outcome_dimension(params.get("dimension"))
+    if template_id == "T28":
+        # "IPC 1860 s.00MP" is the missing-person register entry, not a section of a law
+        rows = [r for r in rows if "00MP" not in str(r.get("grp") or "").upper() and str(r.get("grp") or "") != "NOT RECORDED"]
+        if not rows:
+            return None
     metric = _outcome_metric(str(params.get("_q") or ""))
     rate_f, base_f, _, name_en, name_kn = _METRICS[metric]
     floor = _MIN_BASE[base_f]
@@ -1315,8 +1325,8 @@ def _w_outcomes(rows, kn, params, template_id):
     top = ranked[0]
     tot_part = sum(_metric_parts(metric, r)[0] for r in rows)
     tot_base = sum(_metric_parts(metric, r)[1] for r in rows)
-    among_en = "districts" if dim == "district" else "crime types"
-    among_kn = "ಜಿಲ್ಲೆಗಳಲ್ಲಿ" if dim == "district" else "ಅಪರಾಧ ಪ್ರಕಾರಗಳಲ್ಲಿ"
+    among_en = {"district": "districts", "act": "Acts", "section": "sections"}.get(dim, "crime types")
+    among_kn = {"district": "ಜಿಲ್ಲೆಗಳಲ್ಲಿ", "act": "ಕಾಯ್ದೆಗಳಲ್ಲಿ", "section": "ಸೆಕ್ಷನ್‌ಗಳಲ್ಲಿ"}.get(dim, "ಅಪರಾಧ ಪ್ರಕಾರಗಳಲ್ಲಿ")
     if kn:
         lead = (f"[COMPUTED] {among_kn} {'ಅತಿ ಕಡಿಮೆ' if asc else 'ಅತಿ ಹೆಚ್ಚು'} {name_kn} **{label(top)}** ನಲ್ಲಿ"
                 f"{(' (' + ', '.join(zones) + ')') if zones else ''} ({scope}): {_metric_sentence(metric, top, True)}.")
@@ -1392,6 +1402,295 @@ def _w_beats(rows, kn, params, template_id):
     return lines
 
 
+# ── T24–T28 ──────────────────────────────────────────────────────────────────────
+
+def _days_word(d: int, kn: bool) -> str:
+    if d >= 365 and d % 365 == 0:
+        y = d // 365
+        return (f"{y} ವರ್ಷ" if kn else f"{y} year" + ("s" if y > 1 else ""))
+    if d >= 30 and d % 30 == 0:
+        m = d // 30
+        return (f"{m} ತಿಂಗಳು" if kn else f"{m} month" + ("s" if m > 1 else ""))
+    return f"{d} ದಿನ" if kn else f"{d} days"
+
+
+def _what(cts, heads, kn: bool) -> str:
+    """The crime the answer is about, in the officer's words (sub-heading first)."""
+    from app.services.zcql_repo import head_label
+    if heads:
+        return ", ".join(dict.fromkeys(head_label(h) for h in heads[:3])) + (" ಪ್ರಕರಣಗಳು" if kn else " cases")
+    if cts:
+        return (", ".join(_crime_word(c, True) for c in cts) + " ಪ್ರಕರಣಗಳು") if kn else \
+               (" / ".join(_crime_word(c, False) for c in cts) + " cases")
+    return "ಪ್ರಕರಣಗಳು" if kn else "cases"
+
+
+def _w_stages(rows, kn, params, template_id):
+    """T24 — where cases sit (under investigation, pending trial …) and how long the open
+    investigations have been open."""
+    from app.services.zcql_repo import _as_pend_dimension
+    dim = _as_pend_dimension(params.get("dimension"))
+    q = str(params.get("_q") or "").lower()
+    older = _as_int(params.get("older_than_days"), 0)
+    trial = bool(re.search(r"trial|charge[- ]?sheet", q)) and not re.search(r"under investigation|pending investigation", q)
+    zones = params.get("zones") or []
+    where = ", ".join(zones) if zones else ("ಕರ್ನಾಟಕ" if kn else "Karnataka")
+    what = _what(params.get("crime_types"), params.get("heads"), kn)
+    scope = _scope(params, kn)
+    lim = max(1, _as_int(params.get("limit"), 10))
+    note = ("• ಹಂತವು FIR ನ ಇಂದಿನ ಹಂತ; ಅವಧಿಯನ್ನು FIR ದಾಖಲಾದ ದಿನದಿಂದ ಎಣಿಸಲಾಗಿದೆ." if kn else
+            "• Stage is each FIR's current stage on the register; time open is counted from the date it was registered.")
+    if dim == "none":
+        r = rows[0]
+        firs = r.get("firs") or 0
+        ui, pt = r.get("under_investigation") or 0, r.get("pending_trial") or 0
+        o90, o365, oo = r.get("ui_over_90") or 0, r.get("ui_over_365") or 0, r.get("ui_older") or 0
+        if kn:
+            if trial:
+                lead = f"[COMPUTED] {_in_loc(where, True)} {what} ({scope}): **{_fmt(pt)}** ವಿಚಾರಣೆ ಬಾಕಿ / ದೋಷಾರೋಪ ಪಟ್ಟಿ ಹಂತದಲ್ಲಿವೆ — {_fmt(firs)} FIR ಗಳಲ್ಲಿ {_pct(pt, firs)}%."
+            elif older:
+                lead = f"[COMPUTED] {_in_loc(where, True)} {what} ({scope}): **{_fmt(oo)}** {_days_word(older, True)} ಗಿಂತ ಹೆಚ್ಚು ಕಾಲದಿಂದ ತನಿಖೆಯಲ್ಲಿವೆ."
+            else:
+                lead = f"[COMPUTED] {_in_loc(where, True)} {what} ({scope}): **{_fmt(ui)}** ತನಿಖೆಯಲ್ಲಿವೆ — {_fmt(o365)} ಒಂದು ವರ್ಷಕ್ಕಿಂತ ಹಳೆಯವು."
+        else:
+            if trial:
+                lead = (f"[COMPUTED] **{_fmt(pt)}** {what} in {where} ({scope}) are pending trial or charge-sheeted — "
+                        f"{_pct(pt, firs)}% of {_fmt(firs)} FIRs.")
+            elif older:
+                lead = (f"[COMPUTED] **{_fmt(oo)}** {what} in {where} ({scope}) have been under investigation "
+                        f"for more than {_days_word(older, False)}, of {_fmt(ui)} under investigation.")
+            else:
+                lead = (f"[COMPUTED] **{_fmt(ui)}** {what} in {where} ({scope}) are under investigation — "
+                        f"{_fmt(o90)} for more than 90 days and {_fmt(o365)} for more than a year.")
+        lines = [lead]
+        if r.get("oldest_open") and not trial:
+            lines.append(f"• ಅತಿ ಹಳೆಯ ತೆರೆದ ತನಿಖೆ: {_date(r['oldest_open'])} ರಿಂದ" if kn else
+                         f"• Oldest open investigation: registered {_date(r['oldest_open'])}")
+        lines.append(f"ಪ್ರಕರಣ ಹಂತಗಳು ({_fmt(firs)} FIR):" if kn else f"Case stages ({_fmt(firs)} FIRs):")
+        i = 0
+        for k, c in sorted(((k, r.get(k) or 0) for k in _STAGE_KEYS), key=lambda x: -x[1]):
+            if c:
+                i += 1
+                lines.append(f"{i}. {_STAGE_LABEL[k][1 if kn else 0]} — {_fmt(c)} ({_pct(c, firs)}%)")
+        lines.append(note)
+        return lines
+    key = "ui_older" if older else ("pending_trial" if trial else "under_investigation")
+    asc = str(params.get("order") or "").lower().startswith("asc")
+    ranked = sorted([r for r in rows if r.get("grp")], key=lambda r: (r.get(key) or 0), reverse=not asc)
+    if not ranked:
+        return None
+
+    def label(r):
+        g = r.get("grp")
+        if dim == "crime_type":
+            return _crime_word(g, True) if kn else _crime_en(g)
+        if dim == "station" and r.get("district") and len(zones) != 1:
+            return f"{g} ({r['district']})"
+        return str(g)
+
+    top = ranked[0]
+    unit_en = {"station": "police station", "district": "district", "crime_type": "crime type"}[dim]
+    unit_kn = {"station": "ಠಾಣೆ", "district": "ಜಿಲ್ಲೆ", "crime_type": "ಅಪರಾಧ ಪ್ರಕಾರ"}[dim]
+    state_en = (f"under investigation for more than {_days_word(older, False)}" if older else
+                "pending trial or charge-sheeted" if trial else "under investigation")
+    state_kn = (f"{_days_word(older, True)} ಗಿಂತ ಹೆಚ್ಚು ಕಾಲದಿಂದ ತನಿಖೆಯಲ್ಲಿ" if older else
+                "ವಿಚಾರಣೆ ಬಾಕಿ" if trial else "ತನಿಖೆಯಲ್ಲಿ")
+    total = sum((r.get(key) or 0) for r in rows)
+    if kn:
+        lead = (f"[COMPUTED] {_in_loc(where, True)} {state_kn} ಇರುವ {what} {'ಅತಿ ಕಡಿಮೆ' if asc else 'ಅತಿ ಹೆಚ್ಚು'} "
+                f"**{label(top)}** {unit_kn}ಯಲ್ಲಿ — **{_fmt(top.get(key))}** ({scope}).")
+        head = f"{'ಕಡಿಮೆ' if asc else 'ಅಗ್ರ'} {min(lim, len(ranked))}:"
+    else:
+        lead = (f"[COMPUTED] **{label(top)}** has the {'fewest' if asc else 'most'} {what} {state_en} among "
+                f"{unit_en}s in {where} — **{_fmt(top.get(key))}**, of {_fmt(total)} ({scope}).")
+        head = f"{'Fewest' if asc else 'Most'} {state_en}:"
+    lines = [lead, head]
+    for i, r in enumerate(ranked[:lim], 1):
+        if kn:
+            lines.append(f"{i}. {label(r)} — ತನಿಖೆಯಲ್ಲಿ {_fmt(r.get('under_investigation'))}"
+                         f" · 1 ವರ್ಷ+ {_fmt(r.get('ui_over_365'))} · ವಿಚಾರಣೆ ಬಾಕಿ {_fmt(r.get('pending_trial'))}"
+                         f" · {_fmt(r.get('firs'))} FIR")
+        else:
+            lines.append(f"{i}. {label(r)} — {_fmt(r.get('under_investigation'))} under investigation"
+                         f" ({_fmt(r.get('ui_over_365'))} over a year) · {_fmt(r.get('pending_trial'))} pending trial"
+                         f" · {_fmt(r.get('firs'))} FIRs")
+    lines.append(note)
+    return lines
+
+
+def _w_heads(rows, kn, params, template_id):
+    """T25 — what a crime is made of: its sub-headings, or day against night."""
+    from app.services.zcql_repo import head_label
+    by_group = "crime_type" in rows[0]
+    key = "crime_type" if by_group else "CrimeHead_Name"
+    total = _total_like(template_id, params) or sum(int(r.get("n") or 0) for r in rows)
+    zones = params.get("zones") or []
+    where = ", ".join(zones) if zones else ("ಕರ್ನಾಟಕ" if kn else "Karnataka")
+    scope = _scope(params, kn)
+    cts = params.get("crime_types") or []
+    crime_en = " / ".join(_crime_word(c, False) for c in cts) if cts else "crime"
+    crime_kn = ", ".join(_crime_word(c, True) for c in cts) if cts else "ಅಪರಾಧ"
+    if by_group:
+        night = sum(int(r.get("n") or 0) for r in rows if "NIGHT" in str(r.get(key)).upper())
+        day = sum(int(r.get("n") or 0) for r in rows if "DAY" in str(r.get(key)).upper())
+        unsplit = total - night - day
+        if not (night or day):
+            return None
+        ratio = (night / day) if day else None
+        if kn:
+            lead = (f"[COMPUTED] {_in_loc(where, True)} ಕನ್ನಗಳವು **ರಾತ್ರಿ {_fmt(night)}**, ಹಗಲು {_fmt(day)} ದಾಖಲಾಗಿವೆ"
+                    + (f" — ರಾತ್ರಿಯಲ್ಲಿ {ratio:.1f} ಪಟ್ಟು" if ratio else "") + f" ({scope}).")
+            lines = [lead]
+            if unsplit > 0:
+                lines.append(f"• {_fmt(unsplit)} FIR ಗಳಲ್ಲಿ ಹಗಲು/ರಾತ್ರಿ ದಾಖಲಾಗಿಲ್ಲ.")
+            lines.append("• ಹಗಲು/ರಾತ್ರಿ ವಿಭಾಗವು FIR ದಾಖಲಾದ ಅಪರಾಧ ಶೀರ್ಷಿಕೆಯಿಂದ; ನಿಖರ ಸಮಯ ದಾಖಲೆಯಲ್ಲಿಲ್ಲ.")
+            return lines
+        lead = (f"[COMPUTED] Burglaries in {where} are registered far more often by night: **{_fmt(night)}** night "
+                f"burglaries against **{_fmt(day)}** by day" + (f" — {ratio:.1f} times as many" if ratio else "") + f" ({scope}).")
+        lines = [lead]
+        if unsplit > 0:
+            lines.append(f"• {_fmt(unsplit)} more FIRs are filed as burglary without saying day or night.")
+        lines.append("• Day and night come from the head each FIR is registered under (Burglary - Day / - Night); "
+                     "the register does not record the hour.")
+        return lines
+    asked = [h.upper() for h in (params.get("heads") or [])]
+    hit = sum(int(r.get("n") or 0) for r in rows if str(r.get(key) or "").strip().upper() in asked)
+    named = [r for r in rows if r.get(key)]
+    if not named:
+        return None
+    top = named[0]
+    if asked and hit:
+        nm = ", ".join(head_label(h) for h in (params.get("heads") or [])[:2])
+        lead = (f"[COMPUTED] {_in_loc(where, True)} {crime_kn} ಪ್ರಕರಣಗಳಲ್ಲಿ **{_pct(hit, total)}%** {nm}: "
+                f"{_fmt(total)} ರಲ್ಲಿ {_fmt(hit)} ({scope})." if kn else
+                f"[COMPUTED] **{_pct(hit, total)}%** of {crime_en.lower()} cases in {where} are {nm}: "
+                f"{_fmt(hit)} of {_fmt(total)} ({scope}).")
+    else:
+        t = int(top.get("n") or 0)
+        lead = (f"[COMPUTED] {_in_loc(where, True)} {crime_kn} ಪ್ರಕರಣಗಳಲ್ಲಿ ಅತಿ ದೊಡ್ಡ ಭಾಗ **{head_label(top.get(key))}** — "
+                f"{_fmt(t)} ({_pct(t, total)}%) ({scope})." if kn else
+                f"[COMPUTED] The largest part of {crime_en.lower()} in {where} is **{head_label(top.get(key))}** — "
+                f"**{_fmt(t)}** FIRs, {_pct(t, total)}% of {_fmt(total)} ({scope}).")
+    lines = [lead, "ಉಪ-ಶೀರ್ಷಿಕೆವಾರು:" if kn else "By sub-heading on the register:"]
+    for i, r in enumerate(named[:10], 1):
+        c = int(r.get("n") or 0)
+        lines.append(f"{i}. {head_label(r.get(key))} — {_fmt(c)} ({_pct(c, total)}%)")
+    return lines
+
+
+def _w_time(rows, kn, params, template_id):
+    """T26 — day-of-week or month-of-year pattern, by registration date."""
+    weekday = (rows[0].get("dimension") == "weekday")
+    rs = [r for r in rows if r.get("slot")]
+    if not rs:
+        return None
+    total = sum(r["n"] for r in rs)
+    hi = max(rs, key=lambda r: r["n"])
+    lo = min(rs, key=lambda r: r["n"])
+    zones = params.get("zones") or []
+    where = ", ".join(zones) if zones else ("ಕರ್ನಾಟಕ" if kn else "Karnataka")
+    what = _what(params.get("crime_types"), params.get("heads"), kn)
+    scope = _scope(params, kn)
+    gap = round(100 * (hi["n"] - lo["n"]) / hi["n"]) if hi["n"] else 0
+    order = sorted(rs, key=lambda r: r.get("slot_index") or 0)
+    if weekday:
+        even = round(100 / 7)
+        lead = (f"[COMPUTED] {_in_loc(where, True)} {what} ಹೆಚ್ಚು ದಾಖಲಾಗುವ ದಿನ **{hi['slot']}** — {_fmt(hi['n'])} "
+                f"({_pct(hi['n'], total)}%); ಕಡಿಮೆ {lo['slot']} — {_fmt(lo['n'])}, {gap}% ಕಡಿಮೆ ({scope})." if kn else
+                f"[COMPUTED] **{hi['slot']}** is the busiest day for {what} in {where}: **{_fmt(hi['n'])}** FIRs "
+                f"({_pct(hi['n'], total)}% of the week, against an even {even}%). The quietest is {lo['slot']} with "
+                f"{_fmt(lo['n'])}, {gap}% fewer ({scope}).")
+    else:
+        lead = (f"[COMPUTED] {_in_loc(where, True)} {what} ಹೆಚ್ಚು ದಾಖಲಾಗುವ ತಿಂಗಳು **{hi['slot']}** — {_fmt(hi['n'])}; "
+                f"ಕಡಿಮೆ {lo['slot']} — {_fmt(lo['n'])} ({scope})." if kn else
+                f"[COMPUTED] **{hi['slot']}** is the busiest month of the year for {what} in {where}: "
+                f"**{_fmt(hi['n'])}** FIRs across the years on record; the quietest is {lo['slot']} with {_fmt(lo['n'])}, "
+                f"{gap}% fewer ({scope}).")
+    lines = [lead, ("ದಿನವಾರು:" if weekday else "ತಿಂಗಳುವಾರು:") if kn else ("By day of the week:" if weekday else "By month of the year:")]
+    for r in order:
+        lines.append(f"• {r['slot']} — {_fmt(r['n'])} ({_pct(r['n'], total)}%)")
+    lines.append("• FIR ದಾಖಲಾದ ದಿನಾಂಕದ ಪ್ರಕಾರ; ಅಪರಾಧ ನಡೆದ ದಿನ ಅಥವಾ ಸಮಯ ದಾಖಲೆಯಲ್ಲಿಲ್ಲ." if kn else
+                 "• By the date each FIR was registered; the register does not hold the day or time of the offence itself.")
+    if not weekday:
+        lines.append("• ವರ್ಷಗಳ ವ್ಯಾಪ್ತಿ ಸಮಾನವಾಗಿಲ್ಲ (2016–2022 ಭಾಗಶಃ ದಾಖಲೆ), ಆದ್ದರಿಂದ ತಿಂಗಳುಗಳ ಹೋಲಿಕೆ ಸೂಚಕ ಮಾತ್ರ." if kn else
+                     "• Years are not covered evenly (2016–2022 are a partial extract), so read the months as a pattern, not exact totals.")
+    return lines
+
+
+def _w_sides(rows, kn, params, template_id):
+    """T27 — places, stations or years side by side: counts first, outcomes beside them."""
+    dim = str(params.get("dimension") or "district")
+    rs = [r for r in rows if r.get("grp")]
+    if dim == "year":
+        rs.sort(key=lambda r: str(r.get("grp")))
+    else:                                       # in the order the officer named them
+        asked = [str(z).lower() for z in (params.get("stations") if dim == "station" else params.get("zones")) or []]
+        pos = lambda g: next((i for i, z in enumerate(asked) if z == g.lower() or z in g.lower() or g.lower() in z), 99)
+        rs.sort(key=lambda r: pos(str(r.get("grp"))))
+    if not rs:
+        return None
+    zones_y = params.get("zones") or []
+    if dim == "year" and len(rs) >= 2 and not re.search(r"convict|charge[- ]?sheet|chargesheet|arrest|undetected|outcome", str(params.get("_q") or ""), re.I):
+        what_y = _what(params.get("crime_types"), params.get("heads"), kn)
+        where_y = ", ".join(zones_y) if zones_y else ("ಕರ್ನಾಟಕ" if kn else "Karnataka")
+        first, last = rs[0], rs[-1]
+        n1, n2 = int(first.get("firs") or 0), int(last.get("firs") or 0)
+        ch = round(100 * (n2 - n1) / n1) if n1 else None
+        if kn:
+            lead = (f"[COMPUTED] {_in_loc(where_y, True)} {what_y}: {first['grp']} ರಲ್ಲಿ **{_fmt(n1)}**, {last['grp']} ರಲ್ಲಿ **{_fmt(n2)}**"
+                    + (f" ({abs(ch)}% {'ಹೆಚ್ಚು' if ch > 0 else 'ಕಡಿಮೆ'})" if ch else "") + ".")
+        else:
+            lead = (f"[COMPUTED] {what_y[:1].upper() + what_y[1:]} in {where_y}: **{_fmt(n1)}** in {first['grp']} against "
+                    f"**{_fmt(n2)}** in {last['grp']}" + (f" — {'up' if ch > 0 else 'down'} {abs(ch)}%" if ch else "") + ".")
+        rows = rs
+        params = {**params, "_lead": lead}
+    q = str(params.get("_q") or "")
+    outcome = bool(re.search(r"convict|charge[- ]?sheet|chargesheet|arrest|undetected|detection|outcome|solv", q, re.I))
+    metric = _outcome_metric(q)
+    rate_f = _METRICS[metric][0]
+    what = _what(params.get("crime_types"), params.get("heads"), kn)
+    scope = _scope(params, kn) if dim != "year" else ""
+    a, b = rs[0], rs[1] if len(rs) > 1 else None
+    if outcome and b:
+        name = _METRICS[metric][4] if kn else _METRICS[metric][3]
+        lead = (f"[COMPUTED] {name}: **{a['grp']} {_rate(a.get(rate_f))}** · **{b['grp']} {_rate(b.get(rate_f))}**"
+                + ("".join(f" · {r['grp']} {_rate(r.get(rate_f))}" for r in rs[2:5]))
+                + (f" ({scope})." if scope else "."))
+    elif b:
+        na, nb = int(a.get("firs") or 0), int(b.get("firs") or 0)
+        diff = (round(100 * (na - nb) / nb) if nb else None)
+        if kn:
+            lead = (f"[COMPUTED] {what}: **{a['grp']} {_fmt(na)}** · **{b['grp']} {_fmt(nb)}**"
+                    + ("".join(f" · {r['grp']} {_fmt(r.get('firs'))}" for r in rs[2:5])) + (f" ({scope})." if scope else "."))
+        else:
+            rel = (f" — {abs(diff)}% {'more' if diff > 0 else 'fewer'} in {a['grp']}" if diff not in (None, 0) else "")
+            lead = (f"[COMPUTED] **{a['grp']}** recorded **{_fmt(na)}** {what} against **{_fmt(nb)}** in **{b['grp']}**{rel}"
+                    + (f" ({scope})." if scope else "."))
+    else:
+        lead = (f"[COMPUTED] {what}: **{a['grp']} {_fmt(a.get('firs'))}** FIR." if kn else
+                f"[COMPUTED] Only {a['grp']} has {what} on record for this comparison: **{_fmt(a.get('firs'))}** FIRs.")
+    lead = params.get("_lead") or lead
+    lines = [lead, "ಪಕ್ಕಪಕ್ಕದಲ್ಲಿ:" if kn else "Side by side:"]
+    for r in rs[:8]:
+        if kn:
+            lines.append(f"• {r['grp']} — {_fmt(r.get('firs'))} FIR · ಶಿಕ್ಷೆ {_rate(r.get('conviction_rate'))} · ದೋಷಾರೋಪ "
+                         f"{_rate(r.get('chargesheet_rate'))} · ಬಂಧನ {_rate(r.get('arrest_rate'))} · ಪತ್ತೆಯಾಗಿಲ್ಲ {_rate(r.get('undetected_share'))}")
+        else:
+            lines.append(f"• {r['grp']} — {_fmt(r.get('firs'))} FIRs · convicted {_rate(r.get('conviction_rate'))} · "
+                         f"charge-sheeted {_rate(r.get('chargesheet_rate'))} · arrested {_rate(r.get('arrest_rate'))} · "
+                         f"undetected {_rate(r.get('undetected_share'))}")
+    if dim == "year":
+        ys = [str(r.get("grp")) for r in rs]
+        if any(y <= "2022" for y in ys) and any(y >= "2023" for y in ys):
+            lines.append("• ಗಮನಿಸಿ: 2016–2022 ದಾಖಲೆ ಪ್ರತಿ ವರ್ಷದ ಸುಮಾರು ಮೂರನೇ ಒಂದು ಭಾಗ ಮಾತ್ರ, ಆದ್ದರಿಂದ ಎಣಿಕೆಗಳನ್ನು ನೇರವಾಗಿ ಹೋಲಿಸಬೇಡಿ; ಪ್ರಮಾಣಗಳನ್ನು ಹೋಲಿಸಿ." if kn else
+                         "• Note: the register holds only about a third of each year's FIRs for 2016–2022, so compare the rates, not the raw counts, across that line.")
+    if any(str(r.get("grp")) in ("Mysuru-Devaraja", "Mysuru-Nazarbad", "Mangaluru", "Hubballi", "Belagavi") for r in rs):
+        lines.append("• ಕೆಲವು ಸಾಲುಗಳು ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ಪ್ರದೇಶಗಳು." if kn else "• Rows named after a locality are demonstration records.")
+    lines.append("• ಶಿಕ್ಷೆ ಪ್ರಮಾಣ = ಶಿಕ್ಷೆಗೊಳಗಾದ ÷ ದೋಷಾರೋಪಿತ ಆರೋಪಿಗಳು." if kn else
+                 "• Conviction rate = convicted accused ÷ charge-sheeted accused; charge-sheet and arrest rates are out of all accused.")
+    return lines
+
+
 def no_hit_answer(template_id: str, params: dict | None, user_text: str = "", lang: str = "en") -> str | None:
     """Answer for identifier templates that found nothing: "not on record" IS the answer."""
     kn = lang == "kn"
@@ -1447,6 +1746,7 @@ _WRITERS = {
     "T11": _w_rank, "T13": _w_types, "T3": _w_trend, "T7": _w_split, "T8": _w_split,
     "T4": _w_top_suspects, "T5": _w_repeat, "T2": _w_suspects, "T9": _w_linked,
     "T1": _w_list, "T12": _w_list, "T16": _w_year, "T17": _w_acts,
+    "T24": _w_stages, "T25": _w_heads, "T26": _w_time, "T27": _w_sides, "T28": _w_outcomes,
 }
 
 
@@ -1497,10 +1797,43 @@ def write_answer(rows: list[dict], template_id: str, lang: str = "en",
         lines = fn(rows, kn, p, template_id)
     if not lines:
         return None
+    # A police station named: the answer is about the station, not the district or the state.
+    st = [s_ for s_ in (p.get("stations") or []) if s_]
+    if st and lines:
+        lines = list(lines)
+        label = ", ".join(st[:3])
+        zones_s = ", ".join(p.get("zones") or [])
+        first = lines[0]
+        if zones_s and zones_s in first:
+            first = first.replace(zones_s, label, 1)
+        elif "Karnataka" in first:
+            first = first.replace("Karnataka", label, 1)
+        elif "ಕರ್ನಾಟಕ" in first:
+            first = first.replace("ಕರ್ನಾಟಕ", label, 1)
+        elif " are on record" in first:
+            first = first.replace(" are on record", f" are on record in {label}", 1)
+        else:
+            lines.insert(1, ("• ಪೊಲೀಸ್ ಠಾಣೆ: " if kn else "• Police station: ") + label + ".")
+        lines[0] = first
+        for i in range(1, min(4, len(lines))):        # list headers ("Top 9 beats in Karnataka:")
+            if not zones_s and lines[i].rstrip().endswith(":"):
+                lines[i] = lines[i].replace("in Karnataka", f"in {label}").replace("ಕರ್ನಾಟಕ", label)
+    # A sub-heading asked ("two-wheeler thefts") narrows the count; say which, unless the
+    # writer already named it in its lead.
+    hd = [h for h in (p.get("heads") or []) if h]
+    if hd and template_id not in ("T24", "T25", "T26", "T27") and lines:
+        from app.services.zcql_repo import head_label
+        lines = list(lines)
+        lines.insert(1, ("• ಉಪ-ಶೀರ್ಷಿಕೆ ಮಾತ್ರ: " if kn else "• Counted under the sub-heading only: ")
+                     + ", ".join(dict.fromkeys(head_label(h) for h in hd)) + ".")
     try:
         from app.services.zcql_repo import demo_only_crime_types
         named = p.get("crime_types") or []
         demo = demo_only_crime_types(named)
+        # Chain snatching and vehicle theft now also count the real register's sub-headings
+        # (Robbery › Chain Snatching, Theft › two-wheelers …), so they are not demo-only.
+        from app.services.zcql_repo import HEAD_BACKED
+        demo = [c for c in demo if str(c).strip().upper() not in HEAD_BACKED]
         # Only when the WHOLE count is demonstration data. "Crimes against women" carries
         # one seeded spelling (domestic_violence) beside ten real heads; the count is real.
         if len(set(demo)) < len(set(named)):

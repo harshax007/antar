@@ -115,13 +115,28 @@ REGIONS = {
     "Bengaluru North": ["Rajajinagar", "Malleshwaram", "Yeshwanthpur", "Hebbal"],
     "Bengaluru South": ["Jayanagar", "Banashankari", "Indiranagar", "Whitefield"],
     "Bangalore": ["Bengaluru City", "Bengaluru Dist", "ISD Bengaluru"] + BENGALURU_ZONES,
-    "Mysore": ["Mysuru City", "Mysuru Dist"],
-    "Mysuru": ["Mysuru City", "Mysuru Dist"],
-    "Hubli": ["Dharwad"],
-    "Mangalore": ["Dakshina Kannada"],
-    "Belagavi": ["Belagavi Dist"],
-    "Belgaum": ["Belagavi Dist"],
+    # A city name means its real police districts. "Mangaluru", "Hubballi" and "Belagavi"
+    # are also seeded localities with ~150 rows each; matched alone they shadowed the real
+    # districts (Mangaluru City holds 15,743 FIRs), so "murders in Mangaluru" counted the
+    # seeded locality only. The localities stay in, so nothing that matched before is lost.
+    "Mysore": ["Mysuru City", "Mysuru Dist", "Mysuru-Devaraja", "Mysuru-Nazarbad"],
+    "Mysuru": ["Mysuru City", "Mysuru Dist", "Mysuru-Devaraja", "Mysuru-Nazarbad"],
+    "Hubli": ["Hubballi Dharwad City", "Dharwad", "Hubballi"],
+    "Hubballi": ["Hubballi Dharwad City", "Hubballi"],
+    "Mangalore": ["Mangaluru City", "Dakshina Kannada", "Mangaluru"],
+    "Mangaluru": ["Mangaluru City", "Mangaluru"],
+    "Belagavi": ["Belagavi City", "Belagavi Dist", "Belagavi"],
+    "Belgaum": ["Belagavi City", "Belagavi Dist", "Belagavi"],
     "Kalaburagi": ["Kalaburagi"],
+    # Other spellings officers use for districts on the register
+    "Vijayapura": ["Vijayapur"], "Bijapur": ["Vijayapur"],
+    "Gulbarga": ["Kalaburagi", "Kalaburagi City"],
+    "Davangere": ["Davanagere"], "Shimoga": ["Shivamogga"], "Tumkur": ["Tumakuru"],
+    "Bellary": ["Ballari"], "Chikkaballapura": ["Chickballapura"], "Chikballapur": ["Chickballapura"],
+    "Chikmagalur": ["Chikkamagaluru"], "Chamarajanagara": ["Chamarajanagar"],
+    "Coorg": ["Kodagu"], "Madikeri": ["Kodagu"], "Karwar": ["Uttara Kannada"],
+    "Hubli Dharwad": ["Hubballi Dharwad City"], "Hubballi Dharwad": ["Hubballi Dharwad City"],
+    "Kolar Gold Fields": ["K.G.F"], "KGF": ["K.G.F"],
     "Udupi": ["Udupi"],
     "Ballari": ["Ballari"],
     "Shivamogga": ["Shivamogga"],
@@ -399,6 +414,154 @@ def demo_only_crime_types(concepts: list[str]) -> list[str]:
 # Make every concept the registry knows about nameable by the template selector, so the
 # LLM can pick "ATTEMPT TO MURDER" or "CRIMINAL TRESPASS" instead of guessing a near-miss.
 CRIME_TYPES += [c for c in _concept_map() if c not in CRIME_TYPES]
+
+
+# ── Crime sub-headings (CrimeHead_Name) ──────────────────────────────────────────────
+# The register files a case under a crime GROUP (Theft) and a sub-heading under it
+# (Of Automobiles - Of Two Wheelers, House Theft, Extortion ...). Officers ask in the
+# sub-heading's words: "two-wheeler thefts", "extortion cases", "sand theft". None of
+# those is a group, so they matched nothing and the question was answered for all crime.
+# Each phrase maps to the exact sub-heading values on the register.
+HEAD_ALIASES: list[tuple[str, tuple[str, ...]]] = [
+    (r"two[- ]?wheelers?|bikes?|motor ?cycles?|motor ?bikes?|scooters?",
+     ("Of Automobiles - Of Two Wheelers",)),
+    (r"three[- ]?wheelers?|auto[- ]?rickshaws?|autos",
+     ("Of Automobiles - Of Three Wheelers",)),
+    (r"four[- ]?wheelers?|cars?|jeeps?", ("Of Automobiles - Of Cars/Jeeps",)),
+    (r"vehicle (?:parts|accessories)|accessories of (?:motor )?vehicles?", ("Of Accessories Of Motor Vehicle",)),
+    (r"house[- ]?theft|house[- ]?break(?:ing|ins?)?|home theft", ("House Theft",)),
+    (r"residential(?: premises)?|homes?", ("At Residential Premises",)),
+    (r"commercial(?: places?| premises| establishments?)?|shops?|establishments?",
+     ("At Commercial Places / Establishments",)),
+    (r"temples?", ("Temple Theft",)),
+    (r"jewell?e?ry|gold ornaments?|gold", ("Jewellery",)),
+    (r"sand", ("Of Sand",)),
+    (r"cattle|cows?|livestock", ("Of Cattle",)),
+    (r"cash", ("Cash",)),
+    (r"extortion|extort\w*", ("Extortion", "To Extort Property")),
+    (r"servant theft|domestic servants?", ("Servant Theft",)),
+    (r"electronic goods|electronics", ("Electronic Goods (Radio,TV,VCR,ACs,Office Automation Equipments)",)),
+    (r"matka", ("Gambling - Matka (78 Class C)",)),
+    (r"street gambling", ("Street Gambling (87)",)),
+    (r"betting", ("Betting",)),
+    (r"national highways?", ("National Highways",)),
+    (r"state highways?", ("State Highways",)),
+    (r"excise|illicit liquor|arrack", ("Karnataka Excise Act 1965",)),
+    (r"cow slaughter", ("Karnataka Cow Slaughter Act",)),
+    (r"illegal mining|mining|minerals?", ("Mmdr (Mines & Minerals Regulation Development) Act 1957",
+                                          "Karnataka Minor Mineral Consistent Rule 1994")),
+    (r"missing girls?", ("Missing-Girl",)),
+    (r"missing boys?", ("Missing-Boy",)),
+]
+# "vehicle theft" is Theft of an automobile on the real register. The seeded VEHICLE_THEFT
+# label holds ~250 demonstration rows; asked by its name it answered 175 FIRs for
+# Bengaluru City against the ~19,000 two-wheeler thefts registered there.
+VEHICLE_HEADS = ("Of Automobiles - Of Two Wheelers", "Of Automobiles - Of Three Wheelers",
+                 "Of Automobiles - Of Cars/Jeeps")
+
+
+# Concepts the real register files as a sub-heading of a broader group, and the seeded
+# demonstration rows file under a label of their own (with no sub-heading). Asked by name,
+# both must count: the real cases (Robbery › Chain Snatching, 3,253 FIRs) and the seeded
+# ones (chain_snatching, 318). Before, only the seeded label matched.
+HEAD_BACKED: dict[str, tuple[str, tuple[str, ...]]] = {
+    "CHAIN_SNATCHING": ("ROBBERY", ("Chain Snatching",)),
+    "VEHICLE_THEFT": ("THEFT", VEHICLE_HEADS),
+}
+
+
+def resolve_heads(low: str) -> list[str]:
+    """Sub-headings named in a (lower-cased) question, as register values."""
+    out: list[str] = []
+    for rx, heads in HEAD_ALIASES:
+        if re.search(r"(?<![a-z])(?:" + rx + r")(?![a-z])", low or ""):
+            out.extend(heads)
+    return list(dict.fromkeys(out))
+
+
+def head_label(head: str) -> str:
+    """A sub-heading as an officer says it: "Of Automobiles - Of Two Wheelers" → "two-wheelers"."""
+    h = " ".join(str(head or "").split())
+    for k, v in {"Of Automobiles - Of Two Wheelers": "two-wheelers", "Of Automobiles - Of Three Wheelers": "three-wheelers",
+                 "Of Automobiles - Of Cars/Jeeps": "cars and jeeps", "Of Accessories Of Motor Vehicle": "vehicle accessories",
+                 "At Residential Premises": "homes", "At Commercial Places / Establishments": "shops and establishments",
+                 "Electronic Goods (Radio,TV,VCR,ACs,Office Automation Equipments)": "electronic goods",
+                 "Gambling - Matka (78 Class C)": "matka gambling", "Street Gambling (87)": "street gambling",
+                 "Mmdr (Mines & Minerals Regulation Development) Act 1957": "mining (MMDR Act)",
+                 "Other Items Not Included Above": "other items",
+                 "Extortion": "extortion", "To Extort Property": "extortion",
+                 "To Extort Confession": "extortion of a confession"}.items():
+        if h.lower() == k.lower():
+            return v
+    h = re.sub(r"^(?:Of|At|In)\s+", "", h)
+    # An Act keeps its capitals ("Karnataka Excise Act 1965"); anything else reads in lower case.
+    return h if re.search(r"\bAct\b", h) else h.lower()
+
+
+# ── Police stations ──────────────────────────────────────────────────────────────
+@lru_cache(maxsize=1)
+def station_index() -> dict[str, list[tuple[str, str]]]:
+    """Station base name (lower case, without "PS") → [(station, district)].
+
+    "Koramangala" is no district, so "thefts in Koramangala" was answered for all of
+    Karnataka. It is a police station (Koramangala PS, Bengaluru City, 2,104 FIRs)."""
+    out: dict[str, list[tuple[str, str]]] = {}
+    try:
+        import sqlite3
+        from app.core.db_path import DB_PATH
+        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        try:
+            rows = con.execute("SELECT station, MIN(district_norm), COUNT(*) FROM FIRs "
+                               "WHERE station IS NOT NULL AND TRIM(station) <> '' GROUP BY station").fetchall()
+        finally:
+            con.close()
+    except Exception:
+        return out
+    for st, dist, n in rows:
+        name = " ".join(str(st).split())
+        base = re.sub(r"\s+(?:police station|ps)$", "", name, flags=re.I).strip().lower()
+        if len(base) >= 4 and n >= 20:
+            out.setdefault(base, []).append((name, str(dist or "")))
+    return out
+
+
+_STATION_KINDS = ("traffic", "cen", "women", "rural", "town", "east", "west", "north", "south", "extension")
+
+
+def resolve_stations(text: str, districts: Optional[list[str]] = None) -> list[str]:
+    """Police stations named in a question.
+
+    "Koramangala PS", "Jayanagar police station" or a bare "Koramangala" (when it names
+    no district). A base name matches its law-and-order station; the Traffic / CEN /
+    Women stations of the same name only when that word is said too. With districts
+    named, a station name shared across districts (Vijayanagar) keeps the one asked."""
+    low = " ".join((text or "").lower().split())
+    idx = station_index()
+    if not idx or not low:
+        return []
+    want_kind = [k for k in _STATION_KINDS if re.search(r"(?<![a-z])" + k + r"(?![a-z])", low)]
+    found: list[str] = []
+    for base, items in idx.items():
+        root = base
+        kind = next((k for k in _STATION_KINDS if root.endswith(" " + k)), None)
+        if kind:
+            root = root[: -len(kind) - 1]
+            if kind not in want_kind:
+                continue
+        if not re.search(r"(?<![a-z])" + re.escape(root) + r"(?![a-z])", low):
+            continue
+        for name, dist in items:
+            if districts and dist and not any(dist.lower() == d.lower() or d.lower() in dist.lower() for d in districts):
+                continue
+            found.append(name)
+    # the longest name wins its words: "Whitefield CEN Crime PS" over "Whitefield PS" when CEN was said
+    return list(dict.fromkeys(found))
+
+
+def stations_district(stations: list[str]) -> list[str]:
+    idx = station_index()
+    by = {n.lower(): d for items in idx.values() for n, d in items}
+    return list(dict.fromkeys(by[s.lower()] for s in stations if s.lower() in by and by[s.lower()]))
 
 
 def resolve_zones(names: list[str]) -> list[str]:
@@ -765,6 +928,12 @@ def render_zcql(spec: QuerySpec) -> str:
             clauses.append(f"({NAMED_PREDICATES[f.column]})")
             continue
         caseless = f.column in _CASE_INVARIANT_COLUMNS
+        if f.op == "head_or":
+            heads, labels, type_col = f.value
+            hv = ", ".join(_esc(str(x).strip().upper()) for x in heads) or "''"
+            lv = ", ".join(_esc(str(x).strip().upper()) for x in labels) or "''"
+            clauses.append(f"(TRIM(UPPER({f.column})) IN ({hv}) OR TRIM(UPPER({type_col})) IN ({lv}))")
+            continue
         if f.op == "in":
             # TRIM both sides so messy real values (' CYBER CRIME' vs 'CYBER CRIME',
             # zone case/whitespace variants) match reliably. The matching expression
@@ -790,6 +959,11 @@ def render_zcql(spec: QuerySpec) -> str:
                                f"AND UPPER({f.column}) < {_esc(hi)}")
             else:
                 clauses.append(f"UPPER({f.column}) LIKE UPPER({_esc(f.value)})")
+        elif caseless and f.column == "date" and f.op == "<=":
+            # The bound-to-today cap matches nearly every row; through the date index it
+            # cost a million lookups (6.6 s for one vehicle plate). "+" keeps it off the index
+            # so the selective filter beside it (plate, accused ID, zone) drives the query.
+            clauses.append(f"+{f.column} <= {_esc(f.value)}")
         elif caseless:
             clauses.append(f"{f.column} {f.op} {_esc(f.value)}")
         else:
@@ -799,7 +973,13 @@ def render_zcql(spec: QuerySpec) -> str:
     if spec.group_by:
         sql += " GROUP BY " + ", ".join(spec.group_by)
     if spec.order_by:
-        sql += f" ORDER BY {spec.order_by[0]} {spec.order_by[1].upper()}"
+        col = spec.order_by[0]
+        # An exact lookup (one plate, one accused ID) matches a handful of FIRs. Ordering it
+        # through the date index walked all million rows (8.8 s); "+date" sorts the few hits.
+        if spec.table == "FIRs" and col == "date" and any(
+                f.op == "=" and f.column not in _CASE_INVARIANT_COLUMNS for f in spec.filters):
+            col = "+date"
+        sql += f" ORDER BY {col} {spec.order_by[1].upper()}"
     if spec.limit is not None:
         sql += f" LIMIT {int(spec.limit)}"
     return sql
@@ -807,6 +987,41 @@ def render_zcql(spec: QuerySpec) -> str:
 
 # ── Param models + template builders ─────────────────────────────────────────
 # Each template: a Pydantic model (validation) + a builder (params -> QuerySpec).
+
+
+def _place_head_filters(p, station_col: str = "station_code", head_col: str = "sub_head") -> list["Filter"]:
+    """The police-station filter: `stations` narrows a district to the stations named
+    ("thefts in Koramangala"). Sub-headings are applied with the crime type, below."""
+    st = [x for x in (getattr(p, "stations", None) or []) if str(x).strip()]
+    return [Filter(station_col, "in", st)] if st else []
+
+
+def _crime_head_filters(p, type_col: str = "crime_type", head_col: str = "sub_head") -> list["Filter"]:
+    """Crime-type and sub-heading filters together.
+
+    Plain: crime_type IN (the groups asked) AND sub-heading IN (the sub-headings asked).
+    A head-backed concept (chain snatching, vehicle theft) also brings its parent group and
+    its sub-headings, and a row counts when it has one of those sub-headings OR carries the
+    concept's own seeded label:
+        crime_type IN (labels ∪ parent) AND (sub-heading IN heads OR crime_type IN labels)
+    so the real register and the seeded rows are counted together, and an explicit broader
+    group in the same question ("robbery and chain snatching") still counts in full."""
+    cts = [c for c in (getattr(p, "crime_types", None) or []) if str(c).strip()]
+    heads = [h for h in (getattr(p, "heads", None) or []) if str(h).strip()]
+    backed = [c for c in cts if str(c).strip().upper() in HEAD_BACKED]
+    out: list[Filter] = []
+    if backed:
+        labels = expand_crime_types(cts)
+        parents = [HEAD_BACKED[str(c).strip().upper()][0] for c in backed]
+        bheads = [h for c in backed for h in HEAD_BACKED[str(c).strip().upper()][1]]
+        out.append(Filter(type_col, "in", list(dict.fromkeys(labels + expand_crime_types(parents)))))
+        out.append(Filter(head_col, "head_or", (tuple(dict.fromkeys(bheads + heads)), tuple(labels), type_col)))
+        return out
+    if cts:
+        out.append(Filter(type_col, "in", expand_crime_types(cts)))
+    if heads:
+        out.append(Filter(head_col, "in", heads))
+    return out
 
 class TypeZonePeriod(BaseModel):
     crime_types: CrimeTypeList = Field(default_factory=list)
@@ -816,6 +1031,8 @@ class TypeZonePeriod(BaseModel):
     date_to: Optional[str] = None
     period: Optional[str] = None         # relative keyword (this_month, last_3_months, …)
     arrest_status: Optional[str] = None   # a NAMED_PREDICATES key, e.g. "absconding"
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
     limit: int = 100
 
     @field_validator("limit")
@@ -826,8 +1043,7 @@ class TypeZonePeriod(BaseModel):
 
 def _t1(p: TypeZonePeriod) -> QuerySpec:
     filters = []
-    if p.crime_types:
-        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
     zones = resolve_zones(p.zones)
     if zones:
         filters.append(Filter("zone", "in", zones))
@@ -841,6 +1057,7 @@ def _t1(p: TypeZonePeriod) -> QuerySpec:
     if df and dt:
         filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))
     filters += _named(p.arrest_status)
+    filters += _place_head_filters(p)
     return QuerySpec(
         table="crimes",
         select=["crime_id", "fir_number", "crime_type", "act", "acts_sections", "zone",
@@ -885,6 +1102,8 @@ class TrendByMonth(BaseModel):
     # to the full registry when the filter has no real rows at all (the seeded demo
     # sub-zones — Rajajinagar, Whitefield, Jayanagar — are synthetic-only by design).
     real_only: bool = False
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
 
     @field_validator("months")
     @classmethod
@@ -894,8 +1113,7 @@ class TrendByMonth(BaseModel):
 
 def _t3(p: TrendByMonth) -> QuerySpec:
     filters = []
-    if p.crime_types:
-        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
     zones = resolve_zones(p.zones)
     if zones:
         filters.append(Filter("zone", "in", zones))
@@ -906,6 +1124,7 @@ def _t3(p: TrendByMonth) -> QuerySpec:
     # other templates do via _date_range / resolve_period.
     if p.real_only:
         filters.append(Filter("is_synthetic_row", "=", 0))
+    filters += _place_head_filters(p)
     df, dt = _date_range(p.date_from, p.date_to, None)
     if df and dt:
         filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))
@@ -1031,6 +1250,8 @@ class ZoneHotspots(BaseModel):
     limit: int = 10
     order: Order = "desc"     # "asc" answers "least crime district"
     arrest_status: Optional[str] = None   # a NAMED_PREDICATES key, e.g. "absconding"
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
 
     @field_validator("limit")
     @classmethod
@@ -1040,8 +1261,7 @@ class ZoneHotspots(BaseModel):
 
 def _t11(p: ZoneHotspots) -> QuerySpec:
     filters = []
-    if p.crime_types:
-        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
     zones = resolve_zones(p.zones)
     if zones:
         filters.append(Filter("zone", "in", zones))
@@ -1049,6 +1269,7 @@ def _t11(p: ZoneHotspots) -> QuerySpec:
     if df and dt:
         filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))
     filters += _named(p.arrest_status)
+    filters += _place_head_filters(p)
     dim = getattr(p, "dimension", "zone") or "zone"
     # A ranking "by district" groups on the district, not on `zone`: 3,868 seeded rows
     # carry a locality there (Jayanagar, Whitefield, Mysuru-Devaraja) and each was listed
@@ -1080,20 +1301,22 @@ class RecentCrimes(BaseModel):
     zones: StrList = Field(default_factory=list)
     crime_types: CrimeTypeList = Field(default_factory=list)
     arrest_status: Optional[str] = None   # a NAMED_PREDICATES key, e.g. "absconding"
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
     limit: int = 10
 
 
 def _t12(p: RecentCrimes) -> QuerySpec:
     zones = resolve_zones(p.zones)
     filters = [Filter("zone", "in", zones)] if zones else []
-    if p.crime_types:                       # "recent burglaries in Whitefield"
-        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
     # Cap to data_today so future-dated synthetic rows never bubble up (drop_future_rows
     # would strip them anyway, leaving an empty result for a perfectly valid "recent" query).
     # ponytail: simple date cap; upgrade to a configurable horizon if needed
     anchor = data_today().isoformat()
     filters.append(Filter("occurred_at", "<=", anchor))
     filters += _named(p.arrest_status)
+    filters += _place_head_filters(p)
     return QuerySpec(table="crimes",
                      select=["crime_id", "fir_number", "crime_type", "zone",
                              "occurred_at", "status"] + (["accused", "arrested"] if p.arrest_status else []),
@@ -1107,6 +1330,8 @@ class CountByStatus(BaseModel):
     date_from: Optional[str] = None
     date_to: Optional[str] = None
     period: Optional[str] = None
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
 
 
 def _t8(p: CountByStatus) -> QuerySpec:
@@ -1116,11 +1341,11 @@ def _t8(p: CountByStatus) -> QuerySpec:
     zones = resolve_zones(p.zones)
     if zones:
         filters.append(Filter("zone", "in", zones))
-    if p.crime_types:
-        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
     df, dt = _date_range(p.date_from, p.date_to, p.period)
     if df and dt:
         filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))
+    filters += _place_head_filters(p)
     # 20 groups: the status column holds ~18 raw spellings; 10 silently dropped the tail.
     return QuerySpec(table="crimes", select=["status"],
                      aggregates=[Aggregate("count", "crime_id", "n")],
@@ -1134,6 +1359,7 @@ class CrimeTypeBreakdown(BaseModel):
     date_to: Optional[str] = None
     period: Optional[str] = None
     arrest_status: Optional[str] = None   # a NAMED_PREDICATES key, e.g. "absconding"
+    stations: StrList = Field(default_factory=list)
 
 
 def _t13(p: CrimeTypeBreakdown) -> QuerySpec:
@@ -1146,6 +1372,7 @@ def _t13(p: CrimeTypeBreakdown) -> QuerySpec:
     if df and dt:
         filters.append(Filter("occurred_at", "between", (df, dt + " 23:59")))
     filters += _named(p.arrest_status)
+    filters += _place_head_filters(p)
     return QuerySpec(
         table="crimes", select=["crime_type"],
         aggregates=[Aggregate("count", "crime_id", "n")],
@@ -1324,6 +1551,8 @@ class SharedIdentifiers(BaseModel):
     key_type: KeyType = "any"
     min_districts: int = 2
     zones: StrList = Field(default_factory=list)
+    # "corridors between Bengaluru and Tumakuru": only identifiers seen on FIRs in EACH place
+    between: StrList = Field(default_factory=list)
     crime_types: CrimeTypeList = Field(default_factory=list)
     limit: int = 10
 
@@ -1347,6 +1576,9 @@ def _t19(p: SharedIdentifiers) -> QuerySpec:
         filters.append(Filter("zone", "in", zones))
     if p.crime_types:
         filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    sides = [resolve_zones([b]) for b in p.between if str(b).strip()][:3]
+    if len(sides) >= 2:
+        filters.append(Filter("between", "=", tuple(tuple(x) for x in sides)))
     return QuerySpec(table="__shared_identifiers__", filters=filters, limit=p.limit)
 
 
@@ -1422,6 +1654,8 @@ class CaseOutcomes(BaseModel):
     dimension: Annotated[Literal["none", "district", "crime_type"], BeforeValidator(_as_outcome_dimension)] = "none"
     order: Order = "desc"
     limit: int = 10
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
 
     @field_validator("limit")
     @classmethod
@@ -1436,11 +1670,11 @@ def _t22(p: CaseOutcomes) -> QuerySpec:
     zones = resolve_zones(p.zones)
     if zones:
         filters.append(Filter("zone", "in", zones))
-    if p.crime_types:
-        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
     df, dt = _date_range(p.date_from, p.date_to, p.period)
     if df and dt:
         filters.append(Filter("date", "between", (df, dt + " 23:59")))
+    filters += _place_head_filters(p, "station", "sub_head")
     return QuerySpec(table="__case_outcomes__", filters=filters,
                      order_by=("conviction_rate", p.order), limit=p.limit)
 
@@ -1461,6 +1695,8 @@ class BeatHotspots(BaseModel):
     dimension: Annotated[Literal["beat", "area"], BeforeValidator(_as_beat_dimension)] = "beat"
     order: Order = "desc"
     limit: int = 10
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
 
     @field_validator("limit")
     @classmethod
@@ -1475,8 +1711,7 @@ def _t23(p: BeatHotspots) -> QuerySpec:
     zones = resolve_zones(p.zones)
     if zones:
         filters.append(Filter("zone", "in", zones))
-    if p.crime_types:
-        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    filters += _crime_head_filters(p, "crime_type", "CrimeHead_Name")
     df, dt = _date_range(p.date_from, p.date_to, p.period)
     if df and dt:
         filters.append(Filter("date", "between", (df, dt + " 23:59")))
@@ -1485,8 +1720,220 @@ def _t23(p: BeatHotspots) -> QuerySpec:
     col_name = "Village_Area_Name" if p.dimension == "area" else "Beat_Name"
     cols = [col_name, "district_norm"] if p.dimension == "area" else [col_name, "UnitName"]
     filters += [Filter(col_name, "!=", junk) for junk in _PLACEHOLDER_PLACES]
+    filters += _place_head_filters(p, "station", "CrimeHead_Name")
     return QuerySpec(table="FIRs", select=cols, aggregates=[Aggregate("count", "fir_id", "n")],
                      filters=filters, group_by=cols, order_by=("n", p.order), limit=p.limit, olap=True)
+
+
+# T24 ─ case stages and pendency, by station / district ─────────────────────────────
+def _as_pend_dimension(v: Any) -> str:
+    s = str(v or "").strip().lower().replace(" ", "_")
+    if s in ("station", "stations", "station_code", "police_station", "ps", "unit", "units"):
+        return "station"
+    if s in ("district", "districts", "zone", "zones", "city", "cities"):
+        return "district"
+    if s in ("crime_type", "crime", "crimes", "type", "types"):
+        return "crime_type"
+    return "none"
+
+
+class CaseStages(BaseModel):
+    zones: StrList = Field(default_factory=list)
+    stations: StrList = Field(default_factory=list)
+    crime_types: CrimeTypeList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    period: Optional[str] = None
+    dimension: Annotated[Literal["none", "station", "district", "crime_type"], BeforeValidator(_as_pend_dimension)] = "none"
+    older_than_days: int = 0          # "under investigation for more than 90 days"
+    order: Order = "desc"
+    limit: int = 10
+
+    @field_validator("limit")
+    @classmethod
+    def _vl(cls, v):
+        return max(1, min(int(v), 50))
+
+    @field_validator("older_than_days")
+    @classmethod
+    def _vo(cls, v):
+        return max(0, min(int(v or 0), 3650))
+
+
+def _t24(p: CaseStages) -> QuerySpec:
+    """Every FIR's current stage (under investigation, pending trial, convicted …) and how
+    long the open investigations have been open, by station, district or crime type."""
+    filters = [Filter("dimension", "=", p.dimension), Filter("older_than_days", "=", p.older_than_days)]
+    zones = resolve_zones(p.zones)
+    if zones:
+        filters.append(Filter("zone", "in", zones))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
+    df, dt = _date_range(p.date_from, p.date_to, p.period)
+    if df and dt:
+        filters.append(Filter("date", "between", (df, dt + " 23:59")))
+    filters += _place_head_filters(p, "station", "sub_head")
+    return QuerySpec(table="__case_stages__", filters=filters, order_by=("under_investigation", p.order), limit=p.limit)
+
+
+# T25 ─ what a crime group is made of: its sub-headings ──────────────────────────────
+def _as_head_by(v: Any) -> str:
+    s = str(v or "").strip().lower()
+    return "group" if s in ("group", "groups", "crime_type", "type", "day_night", "day/night") else "head"
+
+
+class SubHeadBreakdown(BaseModel):
+    crime_types: CrimeTypeList = Field(default_factory=list)
+    zones: StrList = Field(default_factory=list)
+    stations: StrList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)     # the sub-heading the officer asked about (led with)
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    period: Optional[str] = None
+    by: Annotated[Literal["head", "group"], BeforeValidator(_as_head_by)] = "head"
+    limit: int = 12
+
+    @field_validator("limit")
+    @classmethod
+    def _vl(cls, v):
+        return max(1, min(int(v), 40))
+
+
+def _t25(p: SubHeadBreakdown) -> QuerySpec:
+    """FIR counts per sub-heading inside the crime group(s) asked ("which share of thefts
+    are two-wheelers"), or per crime group when it splits by group (burglary by day vs night)."""
+    filters = [Filter("date", "<=", _today_cap())]
+    if p.crime_types:
+        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    zones = resolve_zones(p.zones)
+    if zones:
+        filters.append(Filter("zone", "in", zones))
+    df, dt = _date_range(p.date_from, p.date_to, p.period)
+    if df and dt:
+        filters.append(Filter("date", "between", (df, dt + " 23:59")))
+    if p.stations:
+        filters.append(Filter("station", "in", p.stations))
+    col = "crime_type" if p.by == "group" else "CrimeHead_Name"
+    return QuerySpec(table="FIRs", select=[col], aggregates=[Aggregate("count", "fir_id", "n")],
+                     filters=filters, group_by=[col], order_by=("n", "desc"), limit=p.limit, olap=True)
+
+
+# T26 ─ day-of-week and month-of-year pattern ─────────────────────────────────────────
+def _as_time_dimension(v: Any) -> str:
+    s = str(v or "").strip().lower().replace(" ", "_")
+    return "month" if s in ("month", "months", "month_of_year", "season", "seasonal", "monthly") else "weekday"
+
+
+class TimePattern(BaseModel):
+    crime_types: CrimeTypeList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
+    zones: StrList = Field(default_factory=list)
+    stations: StrList = Field(default_factory=list)
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    period: Optional[str] = None
+    dimension: Annotated[Literal["weekday", "month"], BeforeValidator(_as_time_dimension)] = "weekday"
+
+
+def _t26(p: TimePattern) -> QuerySpec:
+    """FIRs per day of the week, or per calendar month across years — by REGISTRATION date:
+    the register holds the date a case was registered, not the time of the offence."""
+    filters = [Filter("dimension", "=", p.dimension)]
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
+    zones = resolve_zones(p.zones)
+    if zones:
+        filters.append(Filter("zone", "in", zones))
+    df, dt = _date_range(p.date_from, p.date_to, p.period)
+    if df and dt:
+        filters.append(Filter("date", "between", (df, dt + " 23:59")))
+    filters += _place_head_filters(p, "station", "sub_head")
+    return QuerySpec(table="__time_pattern__", filters=filters, limit=12)
+
+
+# T27 ─ side-by-side comparison of places or years ────────────────────────────────────
+def _as_compare_dimension(v: Any) -> str:
+    s = str(v or "").strip().lower().replace(" ", "_")
+    if s in ("year", "years", "yearly"):
+        return "year"
+    if s in ("station", "stations", "ps"):
+        return "station"
+    return "district"
+
+
+def _as_year_list(v: Any) -> list[int]:
+    out = []
+    for x in _as_str_list(v) if not isinstance(v, list) else v:
+        m = re.search(r"\b(19|20)\d\d\b", str(x))
+        if m:
+            out.append(int(m.group(0)))
+    return sorted(set(out))
+
+
+class CompareSides(BaseModel):
+    zones: StrList = Field(default_factory=list)        # the places compared (two or more)
+    stations: StrList = Field(default_factory=list)
+    years: Annotated[list[int], BeforeValidator(_as_year_list)] = Field(default_factory=list)
+    crime_types: CrimeTypeList = Field(default_factory=list)
+    heads: StrList = Field(default_factory=list)
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    period: Optional[str] = None
+    dimension: Annotated[Literal["district", "station", "year"], BeforeValidator(_as_compare_dimension)] = "district"
+
+
+def _t27(p: CompareSides) -> QuerySpec:
+    """Counts and case outcomes for each place (or each year) named, side by side."""
+    filters = [Filter("dimension", "=", p.dimension)]
+    zones = resolve_zones(p.zones)
+    if zones:
+        filters.append(Filter("zone", "in", zones))
+    filters += _crime_head_filters(p, "crime_type", "sub_head")
+    if p.years:
+        filters.append(Filter("year", "in", [str(y) for y in p.years]))
+    else:
+        df, dt = _date_range(p.date_from, p.date_to, p.period)
+        if df and dt:
+            filters.append(Filter("date", "between", (df, dt + " 23:59")))
+    filters += _place_head_filters(p, "station", "sub_head")
+    return QuerySpec(table="__case_outcomes__", filters=filters, order_by=("firs", "desc"), limit=50)
+
+
+# T28 ─ case outcomes by the act / section a case was registered under ──────────────
+def _as_act_dimension(v: Any) -> str:
+    s = str(v or "").strip().lower()
+    return "section" if s.startswith("section") or s in ("sec", "sections", "u/s") else "act"
+
+
+class ActOutcomes(BaseModel):
+    zones: StrList = Field(default_factory=list)
+    crime_types: CrimeTypeList = Field(default_factory=list)
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    period: Optional[str] = None
+    dimension: Annotated[Literal["act", "section"], BeforeValidator(_as_act_dimension)] = "act"
+    order: Order = "desc"
+    limit: int = 10
+
+    @field_validator("limit")
+    @classmethod
+    def _vl(cls, v):
+        return max(1, min(int(v), 50))
+
+
+def _t28(p: ActOutcomes) -> QuerySpec:
+    """Conviction / charge-sheet / arrest rates per Act (IPC, NDPS, POCSO, IT Act …) or per
+    section of an Act, from the act/section each FIR was registered under."""
+    filters = [Filter("dimension", "=", p.dimension)]
+    zones = resolve_zones(p.zones)
+    if zones:
+        filters.append(Filter("zone", "in", zones))
+    if p.crime_types:
+        filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+    df, dt = _date_range(p.date_from, p.date_to, p.period)
+    if df and dt:
+        filters.append(Filter("date", "between", (df, dt + " 23:59")))
+    return QuerySpec(table="__case_outcomes__", filters=filters,
+                     order_by=("conviction_rate", p.order), limit=p.limit)
 
 
 # ── The whitelist registry ───────────────────────────────────────────────────
@@ -1559,6 +2006,22 @@ TEMPLATES: dict[str, Template] = {
     "T23": Template("T23", "Beat-level or village/area-level crime hotspots inside a district (patrol planning)",
                     ["top beats for theft in Bengaluru City",
                      "which villages in Mysuru Dist have the most crime"], BeatHotspots, _t23),
+    "T24": Template("T24", "Case stages and pendency: cases under investigation, pending trial, convicted, and how long open investigations have been open, by police station, district or crime type",
+                    ["stations with the most pending investigations in Mysuru",
+                     "cases under investigation for more than 90 days in Bengaluru City",
+                     "how many POCSO cases reached trial stage in 2023"], CaseStages, _t24),
+    "T25": Template("T25", "What a crime group is made of: FIR counts by sub-heading (two-wheeler, house theft, jewellery, extortion …) or by day vs night",
+                    ["what share of thefts are two-wheelers", "breakdown of theft by type",
+                     "are burglaries more frequent by night or by day"], SubHeadBreakdown, _t25),
+    "T26": Template("T26", "Day-of-week or month-of-year pattern of registered FIRs (by registration date)",
+                    ["day of week pattern for chain snatching", "which months see the most burglary"],
+                    TimePattern, _t26),
+    "T27": Template("T27", "Side-by-side comparison of two or more districts, police stations or years: FIR counts and case outcomes",
+                    ["compare conviction rate of Bengaluru City and Mysuru", "theft in Hassan vs Mandya",
+                     "murder cases 2022 vs 2023 in Belagavi"], CompareSides, _t27),
+    "T28": Template("T28", "Case outcomes by the Act or section a case was registered under (conviction, charge-sheet, arrest rates)",
+                    ["which act sections have the lowest conviction rate", "conviction rate under the NDPS Act"],
+                    ActOutcomes, _t28),
     "AST": Template("AST", "(internal) Dynamic AST query representation",
                     ["(internal)"], ASTParams, _t_ast, internal=True),
 }

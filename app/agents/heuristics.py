@@ -95,14 +95,17 @@ def _match_places(low: str) -> list[str]:
     """Place names in the text; the most specific wins ("bengaluru city" over the "bengaluru"
     region it contains, "bengaluru north" over "bengaluru")."""
     found: dict[str, str] = {}
+    low = low.replace("-", " ")             # "Hubballi-Dharwad City" is "Hubballi Dharwad City"
     for k, v in {**_db_places(), **_ZONE_LOOKUP, **_REGION_LOOKUP}.items():
         if re.search(r"(?<![a-z0-9])" + re.escape(k) + r"(?![a-z0-9])", low):
             found[k] = v
     for k, v in _KN_ZONES.items():
         if _norm(k) in low:
             found[_norm(k)] = v
-    keep = [v for k, v in found.items() if not any(k != o and k in o for o in found)]
-    return list(dict.fromkeys(keep))
+    keep = [(k, v) for k, v in found.items() if not any(k != o and k in o for o in found)]
+    # in the order they were said: "theft in Hassan vs Mandya" compares Hassan first
+    keep.sort(key=lambda kv: (low.find(kv[0]) if low.find(kv[0]) >= 0 else 10 ** 6))
+    return list(dict.fromkeys(v for _, v in keep))
 
 
 def _syn_hit(key: str, low: str) -> bool:
@@ -301,9 +304,68 @@ def _match_crime_terms(low: str) -> list[str]:
     return found
 
 
+@lru_cache(maxsize=1)
+def _head_groups() -> dict[str, set[str]]:
+    """Sub-heading (upper case) → the crime groups it is filed under on the register."""
+    out: dict[str, set[str]] = {}
+    try:
+        import sqlite3
+        from app.core.db_path import DB_PATH
+        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        try:
+            for h, g in con.execute("SELECT DISTINCT TRIM(CrimeHead_Name), UPPER(TRIM(crime_type)) FROM FIRs "
+                                    "WHERE CrimeHead_Name IS NOT NULL"):
+                out.setdefault(str(h).upper(), set()).add(str(g))
+        finally:
+            con.close()
+    except Exception:
+        pass
+    return out
+
+
+# Words that name a sub-heading only next to a crime ("car theft", "shop burglary"); on
+# their own they are ordinary words ("accidents involving cars").
+_GENERIC_HEADS = {"Of Automobiles - Of Cars/Jeeps", "At Residential Premises", "At Commercial Places / Establishments",
+                  "Cash", "Jewellery", "Temple Theft", "National Highways", "State Highways"}
+
+
+def _heads_for(low: str, crime_types: list[str]) -> list[str]:
+    """Sub-headings named in the question that fit the crime asked about.
+
+    "two-wheeler thefts" → Theft › two-wheelers; "extortion cases" → Extortion. A head is
+    dropped when a crime is named and the head is never filed under it ("accidents involving
+    cars" keeps its accident filter and gets no Theft › cars head)."""
+    from app.services.zcql_repo import resolve_heads, expand_crime_types
+    heads = resolve_heads(low)
+    if not heads:
+        return []
+    if not crime_types:
+        return [h for h in heads if h not in _GENERIC_HEADS]
+    groups = {str(g).strip().upper() for g in expand_crime_types(crime_types)}
+    hg = _head_groups()
+    return [h for h in heads if hg.get(h.upper(), set()) & groups]
+
+
+_PS_RE = re.compile(r"\b([A-Z][\w.]+(?:\s+[A-Z][\w.]+){0,3})\s+(?:PS|P\.S\.?|[Pp]olice [Ss]tation)\b")
+
+
+def _stations_for(text: str, unknown_place: str | None, zones: list[str]) -> list[str]:
+    """Police stations a question names: "Koramangala PS", "Jayanagar police station", or a
+    place that is no district but is a station ("thefts in Koramangala")."""
+    from app.services.zcql_repo import resolve_stations
+    named = [m.group(1) for m in _PS_RE.finditer(text or "")]
+    out: list[str] = []
+    for n in named:
+        out += resolve_stations(n, zones or None)
+    if not out and unknown_place:
+        out = resolve_stations(unknown_place, None)
+    return list(dict.fromkeys(out))[:6]
+
+
 def _volume_q(low: str) -> bool:
     """A ranking of ALL crime: "by FIR volume", "most FIRs", "busiest stations"."""
-    return bool(re.search(r"\b(fir volume|by volume|volume of firs?|most firs|by firs?|busiest)\b", low)
+    return bool(re.search(r"\b(fir volume|by volume|volume of firs?|most firs|by firs?|busiest|crime volume|"
+                          r"total crimes?|all crimes?|overall crime|total firs|total cases)\b", low)
                 or "ಪ್ರಮಾಣದ ಪ್ರಕಾರ" in low)
 
 
@@ -413,12 +475,24 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
         statuses = [s for s in statuses if s != "pending"]     # the longer phrase is the one meant
     statuses = normalize_statuses(statuses)
 
+    # Sub-headings ("two-wheeler", "extortion") and police stations ("Koramangala PS").
+    try:
+        heads = _heads_for(low, crime_types)
+    except Exception:
+        heads = []
+    try:
+        stations = _stations_for(text, unknown_place, zones)
+    except Exception:
+        stations = []
+    if stations and unknown_place and any(unknown_place.lower() in s_.lower() for s_ in stations):
+        unknown_place = None                 # it is a police station on the register
+
     return {
         "crime_types": crime_types, "zones": zones, "months": months,
         "limit": limit_val, "dimension": geo_dim, "statuses": statuses,
         "date_from": date_from, "date_to": date_to, "period": period,
         "period_label": period_label, "span_kind": span_kind,
-        "unknown_place": unknown_place,
+        "unknown_place": unknown_place, "heads": heads, "stations": stations,
     }
 
 
@@ -443,8 +517,24 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
 
     unknown_place = ent.get("unknown_place")
     period_label, span_kind = ent.get("period_label"), ent.get("span_kind")
+    heads = ent.get("heads") or []
+    stations = ent.get("stations") or []
+    _TAKES_STATION = {"T1", "T3", "T8", "T11", "T12", "T13", "T22", "T23", "T24", "T25", "T26", "T27"}
+    _TAKES_HEAD = {"T1", "T3", "T8", "T11", "T12", "T22", "T23", "T24", "T25", "T26", "T27"}
 
     def choice(tid, params):
+        if stations and tid in _TAKES_STATION and "stations" not in params:
+            params = {**params, "stations": stations}
+        if heads and tid in _TAKES_HEAD and "heads" not in params:
+            params = {**params, "heads": heads}
+        # A seeded locality (Jayanagar, Whitefield …) carries no beats or stages of its own;
+        # the police station of that name does. "Which beats in Jayanagar …" → Jayanagar PS.
+        if tid in ("T23", "T24") and not params.get("stations") and params.get("zones") \
+                and all(z in ALL_ZONES for z in params["zones"]):
+            from app.services.zcql_repo import resolve_stations
+            st = resolve_stations(" ".join(params["zones"]))
+            if st:
+                params = {**params, "stations": st[:6], "zones": []}
         if unknown_place and tid not in ("T2", "T5", "T7", "T9", "T18", "T19", "T20", "T21", "RESEARCH"):
             params = {**params, "unknown_place": unknown_place}   # the writer flags it
         if period_label and params.get("date_from") and span_kind != "year":
@@ -484,6 +574,14 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
                    r"cross[- ]?(district|station|city|jurisdiction)s?|in \d+ (or more )?districts)\b", low)
          and re.search(r"\b(districts?|stations?|cities|city|jurisdictions?)\b", low))
         or any(w in low for w in ("ಜಿಲ್ಲೆಗಳಲ್ಲಿ", "ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ", "ಹಲವು ಜಿಲ್ಲೆ", "ಠಾಣೆಗಳಾದ್ಯಂತ", "ಬೇರೆ ಬೇರೆ ಜಿಲ್ಲೆ")))
+    # "corridors between Bengaluru and Tumakuru", "offenders moving between Mysuru and Hassan":
+    # identifiers (UPI, IP, vehicle, accused) seen on FIRs in EACH of the places named.
+    if len(zones) >= 2 and (re.search(r"\bcorridors?\b", low) or re.search(
+            r"\b(moving|travel\w*|operat\w*|links?|linked|connect\w*|common|shared?)\b[^.?!]{0,40}\bbetween\b", low)
+            or re.search(r"\bbetween\b[^.?!]{0,60}\b(links?|linked|connect\w*|corridors?|common|shared?)\b", low)):
+        return choice("T19", {"key_type": _kt, "min_districts": 2, "between": zones[:3], "limit": limit_val})
+    if re.search(r"\bcorridors?\b", low) and zones:
+        return choice("T19", {"key_type": _kt, "min_districts": 2, "zones": zones, "limit": limit_val})
     if _spread and (_kt != "any" or re.search(r"\b(identifiers?|links?|linked|connections?|connected|connects?)\b", low)):
         _md = re.search(r"\b(\d{1,2})\s*(?:\+|or more)?\s*districts\b", low)
         _min = int(_md.group(1)) if _md and int(_md.group(1)) >= 2 else 2
@@ -511,6 +609,17 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     if any(w in low for w in ["deep research", "investigate", "everything about", "who could be behind", "research", "kul", "dossier"]):
         anchor_val = _extract_name(user_text) or (zones[0] if zones else user_text.replace("deep research", "").replace("research", "").replace("investigate", "").replace("on", "").strip())
         return choice("RESEARCH", {"anchor": anchor_val or user_text})
+
+    # A named person: "profile for suspect Saleem Malik", "crime history of accused Ravi Kumar".
+    # The name must be capitalised; "suspects involved in burglary" is not a name.
+    _who = _PERSON_RE.search(user_text or "")
+    if _who and _who.group(1).split()[0].lower() not in _NOT_A_NAME:
+        return choice("T2", {"name_or_alias": _who.group(1).strip()})
+
+    # Phone numbers are not a link key on the register; the cross-district links that ARE
+    # (UPI, IP, vehicle, accused) answer the question, and the answer says what was not used.
+    if re.search(r"\b(phone|mobile|cell)\s*(numbers?|nos?|hash(es)?)?\b", low) and _spread:
+        return choice("T19", {"key_type": "any", "min_districts": 2, "zones": zones, "limit": limit_val})
 
     # "suspects with more than 3 cases" is the repeat-offender list with its own bar. It
     # used to match nothing, and self-heal answered with every FIR on record.
@@ -545,6 +654,99 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         or "ಎಷ್ಟು" in low or "ಒಟ್ಟು" in low \
         or bool(years and re.search(r"\b(firs?|registered)\b", low))
     dates = {"date_from": date_from, "date_to": date_to, "period": period}
+    _outcome_q = bool(re.search(r"\b(convict\w*|charge[- ]?sheet\w*|chargesheet\w*|arrest rates?|detection rates?|"
+                                r"clearance rates?|disposal rates?|case outcomes?|outcomes? of cases|solv(e|ing) rates?|acquitt\w*)\b", low)
+                      or any(w in low for w in ("ಶಿಕ್ಷೆ ಪ್ರಮಾಣ", "ಶಿಕ್ಷೆಯ ಪ್ರಮಾಣ", "ದೋಷಾರೋಪ", "ಬಂಧನ ಪ್ರಮಾಣ", "ಶಿಕ್ಷೆ ದರ")))
+    _ord_lo = "asc" if re.search(r"\b(lowest|worst|poorest|least|bottom|weakest|low|fewest)\b", low) or "ಕಡಿಮೆ" in low else "desc"
+
+    # T28 — outcomes by the Act / section a case was registered under
+    if _outcome_q and re.search(r"\b(acts?|sections?|statutes?|laws?|u/s)\b", low) \
+            and not re.search(r"\b(police act|ndps|pocso|it act|excise)\b", low):
+        return choice("T28", {"zones": zones, "crime_types": ct, "order": _ord_lo, "limit": limit_val,
+                              "dimension": "section" if re.search(r"\bsections?\b|\bu/s\b", low) else "act", **dates})
+
+    # T27 — two places, two stations or two years side by side
+    _cmp = bool(re.search(r"\b(compare|comparison|comparing|vs\.?|versus|against each other|difference between|"
+                          r"how does .{1,40} compare|increase or decrease|increased or decreased|rise or fall|"
+                          r"rose or fell|go up or down|went up or down|changed? between)\b", low)
+                or "ಹೋಲಿಕೆ" in low or "ಹೋಲಿಸಿ" in low)
+    if _cmp and (len(zones) >= 2 or len(stations) >= 2
+                 or (len(years) >= 2 and (ct or zones or stations or heads or _outcome_q))):
+        if len(stations) >= 2:
+            dim = "station"
+        elif len(zones) >= 2 or len(years) < 2:
+            dim = "district"
+        else:
+            dim = "year"
+        prm = {"zones": zones, "crime_types": ct, "dimension": dim}
+        if dim == "year":
+            prm["years"] = [int(y) for y in years]
+        else:
+            prm.update(dates)
+        return choice("T27", prm)
+
+    # T24 — case stages and pendency: "stations with the most pending investigations",
+    # "cases under investigation for more than 90 days", "POCSO cases that reached trial"
+    _stage = bool(re.search(r"\b(pending|under investigation|uninvestigated|open (?:cases?|investigations?|firs?)|"
+                            r"unsolved|backlog|pendency|ageing|aging|long[- ]pending|oldest open|trial stage|"
+                            r"reached (?:the )?trial|pending trial|in trial|stage of (?:the )?(?:case|investigation)|case stages?|"
+                            r"case status(?:es)?|status(?:es)? of (?:the )?cases|stage[- ]wise|status[- ]wise)\b", low)
+                  or any(w in low for w in ("ಬಾಕಿ", "ತನಿಖೆಯಲ್ಲಿ")))
+    _age = re.search(r"\b(?:more than|over|older than|above|beyond|exceeding|longer than)\s+(\d{1,4})\s*(days?|weeks?|months?|years?)\b", low)
+    _by_place = bool(re.search(r"\b(stations?|ps|districts?|zones?|cities|units?)\b", low) or "ಠಾಣೆ" in low or "ಜಿಲ್ಲೆ" in low)
+    _trial = bool(re.search(r"\b(trial stage|reached (?:the )?trial|in trial|pending trial|stage)\b", low))
+    if _stage and (_age or (_by_place and rank_q) or _trial or re.search(
+            r"\b(backlog|pendency|ageing|aging|long[- ]pending|currently|case status(?:es)?|statuses|stage[- ]wise|status[- ]wise)\b", low)):
+        days = 0
+        if _age:
+            n_, unit = int(_age.group(1)), _age.group(2)
+            days = n_ * (1 if unit.startswith("day") else 7 if unit.startswith("week") else 30 if unit.startswith("month") else 365)
+        dim = ("station" if re.search(r"\b(stations?|ps|units?)\b", low) or "ಠಾಣೆ" in low else
+               "district" if re.search(r"\b(districts?|zones?|cities)\b", low) or "ಜಿಲ್ಲೆ" in low else
+               "crime_type" if re.search(r"\b(crime types?|which crimes?|by crime)\b", low) else "none")
+        return choice("T24", {"zones": zones, "crime_types": ct, "dimension": dim, "older_than_days": days,
+                              "order": "asc" if re.search(r"\b(least|fewest|lowest)\b", low) else "desc",
+                              "limit": limit_val, **dates})
+
+    # T26 — day-of-week / month-of-year pattern (by registration date)
+    _dow = re.search(r"\b(day of (?:the )?week|days of (?:the )?week|weekdays?|weekends?|which day|busiest day|"
+                     r"(?:mon|tues|wednes|thurs|fri|satur|sun)days?)\b", low)
+    _moy = re.search(r"\b(month of (?:the )?year|which months|months? of the year|seasonal\w*|seasons?|"
+                     r"time of (?:the )?year|every year in|typically in which month)\b", low)
+    if (_dow or _moy) and (ct or heads or zones or stations or re.search(r"\b(crimes?|cases?|firs?|incidents?)\b", low)):
+        return choice("T26", {"crime_types": ct, "zones": zones, "dimension": "weekday" if _dow else "month", **dates})
+
+    # T25 — what a crime is made of: "share of thefts that are two-wheelers", "breakdown of
+    # theft by type", "are burglaries more frequent by night or by day"
+    _night_day = bool(re.search(r"\bnight\b", low) and re.search(r"\bday\b|\bdaytime\b", low))
+    if _night_day and any("BURGLARY" in str(c).upper() for c in ct):
+        return choice("T25", {"crime_types": ["BURGLARY"], "zones": zones, "by": "group", **dates})
+    _share = re.search(r"\b(proportion|share|percentage|percent|what (?:kind|kinds|type|types|sort)s? of|"
+                       r"which (?:kind|kinds|type|types)s? of|break ?down of|breakdown|sub[- ]?(?:heads?|types?|categor\w+)|"
+                       r"split of|kinds? of|types? of)\b", low)
+    if _share and (ct or heads) and not (rank_q and _by_place) and "second brain" not in low \
+            and not re.search(r"\bcase (?:status|stage)\w*|\bstatus(?:es)?\b", low):
+        return choice("T25", {"crime_types": ct, "zones": zones, "by": "head", **dates})
+
+    # Patrol and deployment for a place: where in it the crime concentrates, beat by beat,
+    # over the last year — "where should patrol vans be deployed in Belagavi"
+    if (zones or stations) and re.search(r"\b(patrol\w*|deploy\w*|bandobast|vans?|where should (?:we|i|police|the police))\b", low):
+        # The latest 12 months of the REAL register: deployment is planned on what was
+        # registered recently, and the seeded months carry no beats for most stations.
+        _d0 = None
+        if not (date_from or date_to or period):
+            from app.services.zcql_repo import real_data_today
+            _end = real_data_today()
+            _d0 = {"date_from": (_end - _dt.timedelta(days=365)).isoformat(), "date_to": _end.isoformat()}
+        return choice("T23", {"zones": zones, "crime_types": ct, "dimension": "beat", "limit": limit_val,
+                              **(_d0 or dates)})
+
+    # A trend named outright ("monthly trend of robbery across Karnataka in 2023") is a trend,
+    # even when a word like "across" would otherwise read as a ranking.
+    if ct and not rank_q and re.search(r"\b(trend|trends|over time|monthly|month[- ]wise|month by month|month[- ]on[- ]month)\b", low):
+        return choice("T3", {"crime_types": ct, "zones": zones, "months": months,
+                             "date_from": date_from, "date_to": date_to})
+
     # Case outcomes — "conviction rate by district in 2023", "charge sheet rate for murder"
     if re.search(r"\b(convict\w*|charge[- ]?sheet\w*|chargesheet\w*|arrest rates?|detection rates?|"
                  r"clearance rates?|disposal rates?|case outcomes?|outcomes? of cases|solv(e|ing) rates?)\b", low) \
@@ -589,7 +791,7 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         return choice("T16", {"year": int(years[-1])})
     # A year's total — "Cognizable FIRs registered in Karnataka in 2022?" A month or a
     # quarter of that year is not the year: it goes on to the count below, with its dates.
-    if years and span_kind in (None, "year") and not ct and not zones and not rank_q and not status_q \
+    if years and span_kind in (None, "year") and not ct and not zones and not stations and not rank_q and not status_q \
             and re.search(r"\b(firs?|registered|cogni[sz]able|summary|what happened|overall|total|how many)\b", low):
         return choice("T16", {"year": int(years[0])})
     # Fewest — "least crime district", "safest district"
@@ -637,8 +839,12 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
                 return choice("T13", {"zones": zones, "date_from": date_from,
                                       "date_to": date_to, "period": period})
             return choice("CLARIFY", {"missing": "crime_types", "intent": "hotspots"})
+        # "burglary hotspots in Bengaluru": the hotspots INSIDE the place named are its
+        # stations. Ranked by district instead, the place was dropped and the answer covered
+        # all of Karnataka.
         return choice("T11", {
-            "crime_types": ct, "limit": limit_val, "dimension": geo_dim,
+            "crime_types": ct, "limit": limit_val,
+            "dimension": "station_code" if zones and not re.search(r"\b(districts?|cities|zones?)\b", low) else geo_dim,
             "date_from": date_from, "date_to": date_to, "period": period
         })
     # crime type breakdown
@@ -658,6 +864,10 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         return choice("T8", {"zones": zones, "crime_types": ct, **dates})
     # suspect lookup by name (capitalised token or after 'who is'/'find')
     name = _extract_name(user_text)
+    # "find burglary cases involving …" names a crime, not a person
+    if name and ct and "who is" not in low and any(
+            w in name.lower() for w in ("case", "crime", "fir", "theft", "burglar", "robber", "murder", "fraud", "cheat")):
+        name = None
     if any(w in low for w in ["who is", "find suspect", "find name", "find -name", "find", "look up", "details of"]) or name:
         if name:
             return choice("T2", {"name_or_alias": name})
@@ -697,6 +907,12 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
 
 _NAME_RE = re.compile(r"(?:who is|find suspect|find name|find -name|find|look up|details of|profile of)\s+([A-Z][\w.]+(?:\s+[A-Z][\w.]+)?)",
                       re.IGNORECASE)
+# A person named after a role word. The name itself must be capitalised (no IGNORECASE on it).
+_PERSON_RE = re.compile(r"(?i:\b(?:suspect|accused|offender|criminal|person|profile (?:of|for)|history (?:of|for)|"
+                        r"record (?:of|for)|background of|antecedents of))\s+(?:named\s+|called\s+)?"
+                        r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b")
+_NOT_A_NAME = {"in", "of", "for", "the", "a", "an", "and", "with", "who", "from", "at", "on", "list", "show",
+               "top", "most", "all", "any", "repeat", "habitual", "named", "involved"}
 
 
 def _extract_name(text: str) -> str | None:
