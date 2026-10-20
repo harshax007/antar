@@ -54,7 +54,7 @@
     },
     "query": {
       "path": "app/agents/query_agent.py",
-      "sha256": "9f46c1ec6b99bd8ce40c284a94cc4b7a9b756e11513d6c1836dbfd4ce02de7f7"
+      "sha256": "bc3cc9193a1623c1b7711d355e4ad2d3b31fb8dfedc174684d9969ec0574d77f"
     },
     "research": {
       "path": "app/agents/graph.py",
@@ -62,7 +62,7 @@
     },
     "sentinel": {
       "path": "app/agents/sentinel_agent.py",
-      "sha256": "a79e840229425e6fd4a4e7aa78381a4bf5005ebc46bdad2a2098673fbf4b7d2b"
+      "sha256": "63524d447f49808dd39faafbc0ef8dff7838b9aaf1c2d487fd9a26b0f82ac8f0"
     },
     "social": {
       "path": "app/agents/social_agent.py",
