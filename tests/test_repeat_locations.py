@@ -48,7 +48,8 @@ def test_day_cases_match_the_day_count():
     counted = sum(z["observed"] for z in gi_star_surface(days=0, end_date=day))
     assert r["total"] == counted and r["date"] == day.isoformat()
     assert all(set(c) >= {"zone", "crime", "station", "lat", "lon"} for c in r["cases"])
-    assert not any(k in c for c in r["cases"] for k in ("IOName", "Accused_ID", "accused"))
+    assert not any(k in c for c in r["cases"] for k in ("IOName", "Accused_ID", "Complaint_Mode"))
+    assert all(c["accused"] is None or isinstance(c["accused"], int) for c in r["cases"])   # a count, not a name
 
 
 def test_day_case_details_hold_no_names_or_placeholders():
