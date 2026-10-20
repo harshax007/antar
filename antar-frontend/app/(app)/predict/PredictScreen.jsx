@@ -129,6 +129,50 @@ const cap = (s) => {
   }).join(" ");
 };
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? (Math.round(n * 10) / 10).toLocaleString("en-IN") : null; };
+
+// The register's heads that are a law's name or a legal term, said in plain words: what
+// cases are filed under it. Shown beside the name wherever it appears, so a reader who has
+// never seen "Karnataka Police Act 1963" knows it is mostly gambling and public nuisance.
+const CRIME_PLAIN = [
+  [/KARNATAKA POLICE ACT/, "Public-order cases: mostly gambling (cards, matka), public nuisance and drunken disorder"],
+  [/KARNATAKA STATE LOCAL ACT/, "Cases under Karnataka's local laws, such as excise and liquor sale"],
+  [/COTPA|CIGARETTES/, "Tobacco law: smoking in public places, sale near schools or to minors"],
+  [/NDPS|NARCOTIC/, "Drugs: possession, sale or use of narcotics"],
+  [/POCSO/, "Sexual offences against children"],
+  [/^CRPC$|CRIMINAL PROCEDURE/, "Preventive cases filed by the police to stop a breach of peace"],
+  [/MOTOR VEHICLES ACT/, "Traffic law cases, such as driving without a licence"],
+  [/MOTOR VEHICLE ACCIDENTS NON-FATAL/, "Road accidents where people were hurt"],
+  [/MOTOR VEHICLE ACCIDENTS FATAL/, "Road accidents where someone died"],
+  [/NEGLIGENT ACT/, "Careless acts that endangered or harmed someone"],
+  [/CASES OF HURT/, "Assault that caused injury"],
+  [/CRIMINAL INTIMIDATION/, "Threatening a person"],
+  [/CRIMINAL TRESPASS/, "Entering property unlawfully"],
+  [/MISCHIEF/, "Damaging someone's property"],
+  [/AFFRAY/, "A public fight that disturbs the peace"],
+  [/RIOTS/, "Violence by a group of five or more"],
+  [/DACOITY/, "Robbery by a gang of five or more"],
+  [/MOLESTATION/, "Sexual harassment or assault on a woman"],
+  [/CRIMES RELATED TO WOMEN|ASSAULT ON WOMEN/, "Offences against women, such as harassment and cruelty"],
+  [/PUBLIC SAFETY/, "Acts that put the public at risk, such as rash conduct in public places"],
+  [/ARMS ACT/, "Carrying or keeping weapons without a licence"],
+  [/EXCISE/, "Illegal liquor: making, carrying or selling it"],
+  [/IT ACT|CYBER/, "Online crime: fraud, hacking or misuse of a phone or computer"],
+  [/\bSC\b.?\bST\b|ATROCIT/,"Offences against Scheduled Castes and Scheduled Tribes"],
+  [/DOWRY/, "Demanding or giving dowry"],
+  [/OFFENCES PROMOTING ENEMITY/, "Spreading hatred between groups"],
+];
+const plainCrime = (name) => {
+  const k = String(name || "").replace(/_/g, " ").trim().toUpperCase();
+  const hit = CRIME_PLAIN.find(([re]) => re.test(k));
+  return hit ? hit[1] : null;
+};
+// A crime name with its plain meaning on hover (a dotted underline says there is one).
+function CrimeName({ name, className }) {
+  const plain = plainCrime(name);
+  return plain
+    ? <span className={`px-term${className ? ` ${className}` : ""}`} title={plain}>{cap(name)}</span>
+    : <span className={className}>{cap(name)}</span>;
+}
 const RISK_WORD = { HIGH: "High risk", MEDIUM: "Medium risk", LOW: "Low risk" };
 // Statewide police units register FIRs under their own name, so they arrive in the board
 // beside the districts. They are not areas: no beat goes to "CID". The server tags them
@@ -400,6 +444,7 @@ function EventCard({ ev, kn, areas, onOpen, onAsk }) {
               {brief.map((x) => (
                 <li key={x.crime} className={x.sure ? "" : "soft"}>
                   <b>{cap(x.crime)}</b>
+                  {plainCrime(x.crime) && <small>{plainCrime(x.crime)}</small>}
                   <span>{times(x)} · higher in {x.years_higher} of {x.years} years{x.sure ? "" : " · less certain"}</span>
                 </li>
               ))}
@@ -1092,6 +1137,20 @@ const PREDICT_MODERN_STYLES = `
 .px-ev:hover .px-ev-up li { border-left-color: #FFB020; background: rgba(255,176,32,.05); }
 .px-ev footer button { color: #B4C2D6; background: none; border-color: rgba(255,255,255,.14); }
 .px-ev footer button:hover { color: #22E6F0; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.06); }
+
+/* ── meaning dots: a small coloured dot says the level at rest; the rest stays grey ── */
+.px-st::before, .pxd-sev::before, .px-plan-list .px-act-verb::before, .px-kpi span::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; background: #5B6B80; }
+.px-st.s-hi::before, .pxd-sev.hi::before, .px-plan-list .k-hi .px-act-verb::before, .px-kpi.k-hi span::before { background: #E14038; }
+.px-st.s-up::before, .pxd-sev.md::before, .px-plan-list .k-up .px-act-verb::before, .px-kpi.k-up span::before { background: #FFB020; }
+.px-st.s-dn::before, .px-plan-list .k-dn .px-act-verb::before, .px-kpi.k-dn span::before { background: #22E6F0; }
+.px-st.s-ev::before, .px-plan-list .k-ev .px-act-verb::before, .px-kpi.k-ev span::before { background: #A78BFA; }
+.px-plan-list .k-ok .px-act-verb::before { background: #18D69A; }
+.px-kpi.k-al span::before { background: #F472B6; }
+.px-kpi.zero span::before { background: #3A4A60; }
+.px-term { text-decoration: underline dotted rgba(180,194,214,.5); text-underline-offset: 3px; cursor: help; }
+.px-ev-up small { font-size: 11.5px; line-height: 1.4; color: #B4C2D6; }
+.px-insp-plain { margin: -8px 0 14px; font-size: 13px; color: #B4C2D6; }
 `;
 
 // useSearchParams() forces client-side bailout, which breaks `output: export`
@@ -1432,10 +1491,10 @@ function PredictScreen() {
   const plan = [];
   if (P.length) {
     for (const x of highs.slice(0, 2)) plan.push({ k: "hi", verb: kn ? "ಆದ್ಯತೆ" : "Priority", go: x,
-      title: `${x.zone}: ${cap(x.crime_type)}`, short: rangeOf(x) ? `${rangeOf(x)} expected` : "High risk",
+      title: `${x.zone}: ${cap(x.crime_type)}`, plain: plainCrime(x.crime_type), short: rangeOf(x) ? `${rangeOf(x)} expected` : "High risk",
       text: `High risk${rangeOf(x) ? `, ${rangeOf(x)} expected` : ""}. Put extra beat visits on the stations listed under its forecast.` });
     for (const x of aboves.filter((a) => !highs.includes(a)).slice(0, Math.max(0, 2 - plan.length))) plan.push({ k: "up", verb: kn ? "ಗಸ್ತು" : "Patrol", go: x,
-      title: `${x.zone}: ${cap(x.crime_type)}`, short: levelOf(x),
+      title: `${x.zone}: ${cap(x.crime_type)}`, plain: plainCrime(x.crime_type), short: levelOf(x),
       text: `${levelOf(x)}${rangeOf(x) ? `; ${rangeOf(x)} expected` : ""}. Short, repeated beat visits to the stations named in its forecast.` });
     if (drops[0]) plan.push({ k: "dn", verb: kn ? "ಪರಿಶೀಲಿಸಿ" : "Check", go: drops[0],
       title: `${drops[0].zone}: ${cap(drops[0].crime_type)}`, short: "Fewer reports than usual", text: "Far fewer reports than usual. Ask the station whether complaints are being registered before reading it as a fall in crime." });
@@ -1618,7 +1677,7 @@ const avgConf = predictions?.length
                   <span className={`px-st s-${statusOf(p).k}`}>{statusOf(p).t}</span>
                 </div>
                 <div className="px-crime-row">
-                  <span className="px-crime" title={cap(p.crime_type)}>{cap(p.crime_type)}</span>
+                  <CrimeName name={p.crime_type} className="px-crime" />
                   <button
                     type="button"
                     className="px-know"
@@ -1698,7 +1757,7 @@ const avgConf = predictions?.length
                 >
                   <div className="pxd-alert-main">
                     <div className="pxd-alert-ttl">
-                      <span>{cap(a.crime_type)}{count > 1 && <small className="pxd-rep" title="Raised this many times">×{count}</small>}</span>
+                      <span><CrimeName name={a.crime_type} />{count > 1 && <small className="pxd-rep" title="Raised this many times">×{count}</small>}</span>
                       <span className={`pxd-sev ${sev}`}>{sevlbl}</span>
                     </div>
                     <div className="pxd-alert-sub" title={`Unusual-activity score ${Number(z).toFixed(2)} (2 is unusual, 4 is rare)`}>
@@ -1744,6 +1803,7 @@ const avgConf = predictions?.length
                 {/* left: the explanation */}
                 <div key={keyOf(focusItem) + focusKind} className="px-fade">
                   <div className="px-insp-title">{focusItem.zone}: {cap(focusItem.crime_type)}</div>
+                  {plainCrime(focusItem.crime_type) && <p className="px-insp-plain">{cap(focusItem.crime_type)}: {plainCrime(focusItem.crime_type).toLowerCase()}.</p>}
                   <div className="px-insp-why">{generateNarrative(focusItem)}</div>
 
                   <div className="px-big">
@@ -1954,7 +2014,7 @@ const avgConf = predictions?.length
                 <div key={i} className={`px-act k-${a.k}${open ? " open" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
                   <button type="button" className="px-act-hd" aria-expanded={open} onClick={() => setPlanOpen(open ? null : i)}>
                     <span className="px-act-verb">{a.verb}</span>
-                    <b>{a.title}</b>
+                    <b title={a.plain || undefined}>{a.title}</b>
                     <span className="px-act-short">{a.short}</span>
                     <i aria-hidden="true" />
                   </button>
