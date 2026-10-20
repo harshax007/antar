@@ -1154,6 +1154,24 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-rpt-list li b { font: 600 12px 'Inter', sans-serif; color: var(--text); }
 .mx-rpt-list li span { font-size: 10.5px; color: var(--muted); }
 .mx-rpt-none, .mx-rpt-note { margin: 6px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--muted); }
+.mx-rpt-what { margin: 4px 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--text); opacity: .85; }
+.mx-rpt-legend { display: flex; gap: 14px; margin: 0 0 6px; font-size: 10.5px; color: var(--muted); }
+.mx-rpt-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.mx-rpt-legend i { width: 10px; height: 10px; border-radius: 50%; border: 1.6px dashed rgba(255,176,32,.6); }
+.mx-rpt-legend i.on { border: 1.8px solid #FFB020; background: rgba(255,176,32,.25); }
+.mx-rpt-list li.sel button { background: rgba(255,176,32,.1); }
+.mx-rpt-list li b em { margin-left: 6px; padding: 1px 6px; border-radius: 999px; font: 600 9px 'Chakra Petch'; letter-spacing: .05em;
+  text-transform: uppercase; font-style: normal; color: #FFB020; background: rgba(255,176,32,.12); border: 1px solid rgba(255,176,32,.35); vertical-align: 1px; }
+.mx-rpt-how { margin-top: 8px; font-size: 10.5px; color: var(--muted); }
+.mx-rpt-how summary { cursor: pointer; font-weight: 600; color: var(--text); opacity: .75; }
+.mx-rpt-how summary:hover { opacity: 1; }
+.mx-rpt-how p { margin: 6px 0 0; line-height: 1.45; }
+.mx-rpt-pop .leaflet-popup-content-wrapper, .mx-rpt-pop .leaflet-popup-tip { border-color: rgba(255,176,32,.5); }
+.mx-rpt-card .mx-case-h b { color: #FFB020; }
+.mx-rpt-state { margin-top: 6px; display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10.5px;
+  color: var(--muted); border: 1px dashed rgba(255,176,32,.4); }
+.mx-rpt-state.on { color: #FFB020; border-style: solid; background: rgba(255,176,32,.1); }
+.mx-rpt-card .mx-case-n b { font-size: 13px; }
 .mx-breadcrumb:hover { color: var(--text); border-color: rgba(34,230,240,.4); }
 
 .mx-patrol-card { background: rgba(255,176,32,.15); backdrop-filter: blur(12px); border: 1px solid rgba(255,176,32,.4); border-radius: 10px; padding: 9px 13px; color: var(--text); font-size: 11px; white-space: nowrap; box-shadow: 0 4px 20px rgba(255,176,32,.15); }

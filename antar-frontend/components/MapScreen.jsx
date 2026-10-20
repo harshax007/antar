@@ -280,6 +280,47 @@ function CasePopup({ c, kn }) {
   );
 }
 
+// "VARDHAN NAGAR" -> "Vardhan Nagar"; names already in mixed case are left as typed.
+function titleCase(t) {
+  if (!t) return t;
+  if (/^[A-Z0-9-]+$/.test(t) && t.includes("-")) return t;          // a unit code stays a code
+  return t === t.toUpperCase() ? t.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()) : t;
+}
+const placeName = (r) => titleCase(r.area || r.beat || r.stations[0]);
+const shortDate = (iso) => { try { return new Date(iso + "T00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" }); } catch { return iso; } };
+const crimeMix = (r) => r.crimes.slice(0, 2).map((c) => crimeName(c.crime).toLowerCase()).join(", ");
+
+// A repeat location, opened from its ring: what keeps happening there, and since when.
+function RepeatPopup({ r, kn, from }) {
+  return (
+    <div className="mx-case mx-rpt-card">
+      <div className="mx-case-h">
+        <b>{placeName(r)}</b>
+        <span>{[r.beat && titleCase(r.beat) !== placeName(r) ? titleCase(r.beat) : null, r.stations.join(", ")].filter(Boolean).join(" · ")}</span>
+      </div>
+      <div className={`mx-rpt-state ${r.active ? "on" : ""}`}>
+        {r.active
+          ? (kn ? "ಸಕ್ರಿಯ" : `Active: last case ${r.days_since_last === 0 ? "today" : r.days_since_last === 1 ? "yesterday" : `${r.days_since_last} days ago`}`)
+          : (kn ? "ಹಿಂದಿನದು" : `Quiet for ${r.days_since_last} days`)}
+      </div>
+      <div className="mx-case-n">
+        <div><b>{r.firs}</b><span>{kn ? "FIR" : "FIRs"}</span></div>
+        <div><b>{r.days}</b><span>{kn ? "ಬೇರೆ ದಿನಗಳು" : "different days"}</span></div>
+        <div><b>{shortDate(r.first)}</b><span>{kn ? "ಮೊದಲು" : "first"}</span></div>
+        <div><b>{shortDate(r.last)}</b><span>{kn ? "ಕೊನೆಯ" : "last"}</span></div>
+      </div>
+      <dl>
+        <div><dt>{kn ? "ದಾಖಲಾದವು" : "Reported"}</dt>
+          <dd>{r.crimes.map((c) => `${crimeName(c.crime)}${c.n > 1 ? ` ×${c.n}` : ""}`).join(", ")}</dd></div>
+        {r.district && <div><dt>{kn ? "ಜಿಲ್ಲೆ" : "District"}</dt><dd>{r.district}</dd></div>}
+      </dl>
+      <p className="mx-case-note">{kn
+        ? "ಸುಮಾರು 110 ಮೀ ಒಳಗೆ ಒಂದೇ ಸ್ಥಳ."
+        : `${r.firs} FIRs at this same spot (within about 110 m) on ${r.days} different days since ${shortDate(from)}. Worth a beat visit and a look at lighting and CCTV.`}</p>
+    </div>
+  );
+}
+
 function FlyTo({ bounds }) {
   const map = useMap();
   useEffect(() => { if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.5 }); }, [bounds, map]);
@@ -658,6 +699,8 @@ export default function MapScreen() {
   // Repeat locations: places with 3+ FIRs on 2+ days in the 90 days to the selected date.
   const [repeatOn, setRepeatOn] = useState(false);
   const [repeats, setRepeats] = useState(null);
+  const [rptSel, setRptSel] = useState(null);
+  const rptRefs = useRef([]);
   const policeUnitsIn = (g) => Object.entries(ZONE_TO_GADM_DISTRICT)
     .filter(([z, gg]) => gg === g && POLICE_DISTRICTS.includes(z)).map(([z]) => z);
   useEffect(() => {
@@ -666,10 +709,19 @@ export default function MapScreen() {
     const q = new URLSearchParams({ days: "90", end_date: endDate });
     if (crimeType) q.set("crime_type", crimeType);
     if (selectedDistrict) { const u = policeUnitsIn(selectedDistrict); if (u.length) q.set("district", u.join(",")); }
+    setRptSel(null);
     setRepeats((r) => (r ? { ...r, busy: true } : { busy: true, locations: [] }));
     fetch(`${API}/api/map/repeat_locations?${q}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("repeat"))))
-      .then((d) => setRepeats({ ...d, busy: false }))
+      .then((d) => {
+        // days since the last FIR, and "active", when an older server did not send them
+        const end = new Date((d.to || endDate) + "T00:00");
+        const locations = (d.locations || []).map((r) => {
+          const since = r.days_since_last ?? Math.round((end - new Date(r.last + "T00:00")) / 864e5);
+          return { ...r, days_since_last: since, active: r.active ?? since < (d.active_days || 14) };
+        });
+        setRepeats({ ...d, locations, busy: false });
+      })
       .catch((e) => { if (e?.name !== "AbortError") setRepeats({ error: true, locations: [] }); });
     return () => ctrl.abort();
   }, [repeatOn, endDate, crimeType, selectedDistrict]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1212,11 +1264,17 @@ export default function MapScreen() {
           ))}
 
           {repeatOn && (repeats?.locations || []).map((r, i) => (
-            <CircleMarker key={"rpt" + i} center={[r.lat, r.lon]} radius={4 + Math.min(10, Math.sqrt(r.firs) * 1.4)}
-              pathOptions={{ color: "#FFB020", weight: 1.6, fillColor: "#FFB020", fillOpacity: 0.18 }}>
+            <CircleMarker key={"rpt" + i} ref={(m) => { rptRefs.current[i] = m; }} center={[r.lat, r.lon]}
+              radius={(selectedDistrict ? 7 : 5) + Math.min(9, Math.sqrt(r.firs) * 1.3)}
+              eventHandlers={{ click: () => setRptSel(i), popupclose: () => setRptSel((v) => (v === i ? null : v)) }}
+              pathOptions={{ color: "#FFB020", weight: rptSel === i ? 3 : 1.8, opacity: r.active ? 1 : 0.6,
+                             dashArray: r.active ? undefined : "3 3", fillColor: "#FFB020", fillOpacity: r.active ? 0.24 : 0.08 }}>
+              <Popup className="mx-case-pop mx-rpt-pop" maxWidth={320} minWidth={260} autoPanPadding={[24, 24]}>
+                <RepeatPopup r={r} kn={kn} from={repeats.from} />
+              </Popup>
               <Tooltip className="mx-hs" sticky>
-                <b>{r.firs} FIRs on {r.days} different days</b> at this spot · {r.crimes.map((c) => c.crime.toLowerCase()).join(", ")}
-                <br />{[r.area, r.beat, r.stations.join(", ")].filter(Boolean).join(" · ")} · last {r.last}
+                <b>{placeName(r)}</b> · {r.firs} FIRs on {r.days} different days{r.active ? " · active" : ""}
+                <br /><small>{kn ? "ವಿವರಗಳಿಗೆ ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click for the details"}</small>
               </Tooltip>
             </CircleMarker>
           ))}
@@ -1471,24 +1529,48 @@ export default function MapScreen() {
       
         {repeatOn && (
           <div className="mx-panel mx-rpt-list" inert={reportOpen || showDossier ? "" : undefined}>
-            <div className="mx-bars-h">{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat locations"}<small>{kn ? "90 ದಿನ" : "last 90 days"}</small></div>
+            <div className="mx-bars-h">{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat locations"}<small>{kn ? "90 ದಿನ" : `90 days to ${shortDate(repeats?.to || endDate)}`}</small></div>
+            <p className="mx-rpt-what">{kn
+              ? "ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ ಮತ್ತೆ ಮತ್ತೆ ಅಪರಾಧ ದಾಖಲಾಗುವ ಜಾಗಗಳು: ಬೀಟ್ ಭೇಟಿ, ದೀಪ / CCTV ಪರಿಶೀಲನೆ ಮತ್ತು ಸ್ಥಳೀಯರೊಂದಿಗೆ ಮಾತುಕತೆಗೆ ಯೋಗ್ಯ."
+              : "Places where crime keeps coming back to the same spot. Each one is worth a beat visit, a look at the lighting and CCTV, and a word with the people there."}</p>
+            <div className="mx-rpt-legend">
+              <span><i className="on" />{kn ? "ಸಕ್ರಿಯ: ಕಳೆದ 14 ದಿನಗಳಲ್ಲಿ ಪ್ರಕರಣ" : "Active: a case in the last 14 days"}</span>
+              <span><i />{kn ? "ಹಿಂದೆ" : "Earlier"}</span>
+            </div>
             {repeats?.busy && !repeats?.locations?.length && <p className="mx-rpt-none">{kn ? "ಓದಲಾಗುತ್ತಿದೆ…" : "Reading the register…"}</p>}
             {repeats?.error && <p className="mx-rpt-none">{kn ? "ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "Could not be read just now."}</p>}
             {repeats && !repeats.busy && !repeats.error && !repeats.locations.length && (
-              <p className="mx-rpt-none">{kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಸ್ಥಳ ಇಲ್ಲ." : "No place had 3+ FIRs on 2+ days in this period."}</p>
+              <p className="mx-rpt-none">{kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಸ್ಥಳ ಇಲ್ಲ." : "No place had 3 or more FIRs on 2 or more days in this period."}</p>
             )}
             <ol>
               {(repeats?.locations || []).slice(0, 8).map((r, i) => (
-                <li key={i}>
-                  <button type="button" onClick={() => setFlyBounds(L.latLngBounds([r.lat - 0.012, r.lon - 0.012], [r.lat + 0.012, r.lon + 0.012]))}>
-                    <b>{r.area || r.beat || r.stations[0]}</b>
-                    <span>{r.firs} FIRs · {r.days} days · {r.crimes[0]?.crime.toLowerCase()} · {r.stations[0]}</span>
+                <li key={i} className={rptSel === i ? "sel" : ""}>
+                  <button type="button" onClick={() => {
+                    setRptSel(i);
+                    setFlyBounds(L.latLngBounds([r.lat - 0.012, r.lon - 0.012], [r.lat + 0.012, r.lon + 0.012]));
+                    setTimeout(() => rptRefs.current[i]?.openPopup(), 650);
+                  }}>
+                    <b>{placeName(r)}{r.active && <em>{kn ? "ಸಕ್ರಿಯ" : "active"}</em>}</b>
+                    <span>{r.firs} FIRs on {r.days} days · {crimeMix(r)}</span>
+                    <span>{r.stations[0]} · last {shortDate(r.last)}</span>
                   </button>
                 </li>
               ))}
             </ol>
-            <p className="mx-rpt-note">{kn ? "ಆನ್‌ಲೈನ್ ಅಪರಾಧ, ಕಾಣೆಯಾದವರು, ಠಾಣೆಯ ಡೀಫಾಲ್ಟ್ ಸ್ಥಳ ಹೊರತುಪಡಿಸಲಾಗಿದೆ." :
-              "Within about 110 m. Online crime, missing persons and a station's own default point are left out: they are not places."}</p>
+            <details className="mx-rpt-how">
+              <summary>{kn ? "ಇದನ್ನು ಹೇಗೆ ಲೆಕ್ಕಿಸಲಾಗಿದೆ" : "How this is worked out"}</summary>
+              <p>{kn
+                ? "ಸುಮಾರು 110 ಮೀ ಒಳಗೆ, 90 ದಿನಗಳಲ್ಲಿ 2 ಅಥವಾ ಹೆಚ್ಚು ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3 ಅಥವಾ ಹೆಚ್ಚು FIR."
+                : "The same spot, within about 110 m, with 3 or more FIRs on 2 or more different days in the 90 days up to the selected date. It follows the crime filter and the open district."}</p>
+              <p>{kn ? "ಹೊರಗಿಡಲಾಗಿದೆ: " : "Left out, because they are not places a patrol can go to: "}
+                {[
+                  ["online_station", "online crime (filed at the station's own position)"],
+                  ["station_default", "a station's default point, used when no location was typed in"],
+                  ["unit_position", "a unit's own position on demonstration records"],
+                  ["placeholder", "made-up coordinates such as 13.000, 77.000"],
+                ].filter(([k]) => repeats?.left_out?.[k]).map(([k, t]) => `${t} (${repeats.left_out[k]})`).join("; ") || "nothing in this period"}
+                {". Missing-person reports and CrPC cases are not counted."}</p>
+            </details>
           </div>
         )}
         {/* Simple Bar Chart Legend */}

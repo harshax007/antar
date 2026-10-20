@@ -61,3 +61,15 @@ def test_day_case_details_hold_no_names_or_placeholders():
         assert "complaint" not in " ".join(c).lower()
         assert not (c["place"] or "").lower().startswith("random")
         assert c["fir_no"] is None or c["fir_no"][:4].isdigit()
+
+
+def test_unit_positions_are_not_places():
+    """Demonstration rows filed under a unit code with no area, and the generic
+    '<City> Central PS / Beat 1' point, are a unit's own position - not a repeat location."""
+    import re
+    code = re.compile(r"^[A-Z0-9]+(-[A-Z0-9]+)+$")
+    r = repeat_locations(date(2026, 10, 20))
+    for loc in r["locations"]:
+        assert not (all(code.match(s) for s in loc["stations"]) and not loc["area"])
+        assert not all(s.upper().endswith("CENTRAL PS") for s in loc["stations"])
+        assert isinstance(loc["active"], bool) and loc["days_since_last"] >= 0

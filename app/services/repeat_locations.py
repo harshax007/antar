@@ -12,7 +12,10 @@ a patrol to them would be sending it to a police station or to a typing default:
   * online-crime stations (CEN, Cyber, CID): their FIRs carry the station's own position;
   * a station's default point: the single point holding a large share of everything a
     station has ever registered (where a location was not entered);
-  * placeholder coordinates (13.0, 77.0 or 12.123, 75.123).
+  * placeholder coordinates (13.0, 77.0 or 12.123, 75.123);
+  * a unit's own position: rows filed under a unit code ("BLR-YPR-02", "SCRB-HQ") with no
+    area, and the generic "<City> Central PS / City Beat 1" point the demonstration rows
+    are placed on. Neither names a place a patrol could go to.
 
 Read-only. Parameterised SQL; no user text reaches a query.
 """
@@ -27,6 +30,8 @@ from functools import lru_cache
 from app.core.db_path import DB_PATH
 
 _ONLINE = re.compile(r"\b(CEN|CYBER|CID)\b", re.I)
+_UNIT_CODE = re.compile(r"^[A-Z0-9]+(-[A-Z0-9]+)+$")     # BLR-YPR-02, KLB-01, SCRB-HQ
+ACTIVE_DAYS = 14            # a repeat location is "active" when its last FIR is this recent
 GRID = 3                    # decimal places: ~110 m in latitude
 MIN_FIRS, MIN_DAYS = 3, 2   # a repeat: at least 3 FIRs, on at least 2 different days
 
@@ -106,7 +111,7 @@ def repeat_locations(end: date, days: int = 90, crime_filter: tuple[str, list] |
     finally:
         con.close()
     defaults = station_default_points()
-    out, dropped = [], {"online_station": 0, "station_default": 0, "placeholder": 0}
+    out, dropped = [], {"online_station": 0, "station_default": 0, "placeholder": 0, "unit_position": 0}
     for r in rows:
         stations = [s for s in (r["stations"] or "").split(",") if s]
         if stations and all(_ONLINE.search(s) for s in stations):
@@ -121,19 +126,30 @@ def repeat_locations(end: date, days: int = 90, crime_filter: tuple[str, list] |
         if _placeholder(r["la"], r["lo"]):
             dropped["placeholder"] += 1
             continue
+        beats_raw = [b.strip().upper() for b in (r["beats"] or "").split(",") if b.strip()]
+        if (stations and all(_UNIT_CODE.match(s.strip()) for s in stations) and not r["areas"]) or (
+                beats_raw and all(b in ("BEAT 1", "CITY BEAT 1") for b in beats_raw)
+                and all(s.strip().upper().endswith("CENTRAL PS") for s in stations)):
+            dropped["unit_position"] += 1
+            continue
         crimes: dict[str, int] = {}
         for c in (r["crimes"] or "").split("|"):
             if c:
-                crimes[c.strip().upper()] = crimes.get(c.strip().upper(), 0) + 1
+                k = c.strip().upper().replace("_", " ")
+                crimes[k] = crimes.get(k, 0) + 1
         mix = sorted(crimes.items(), key=lambda kv: -kv[1])[:3]
         beats = [b for b in (r["beats"] or "").split(",") if b and b.strip().upper() not in ("OTHER", "OTHERS", "OTHER BEAT")]
         areas = [a for a in (r["areas"] or "").split(",") if a]
+        since = (end - date.fromisoformat(r["last"])).days if r["last"] else None
         out.append({"lat": r["la"], "lon": r["lo"], "firs": r["n"], "days": r["days"], "first": r["first"],
-                    "last": r["last"], "stations": stations[:3], "district": r["district"],
+                    "last": r["last"], "days_since_last": since,
+                    "active": since is not None and since < ACTIVE_DAYS,
+                    "stations": stations[:3], "district": r["district"],
                     "crimes": [{"crime": c, "n": n} for c, n in mix],
                     "beat": beats[0] if beats else None, "area": areas[0] if areas else None})
         if len(out) >= limit:
             break
     return {"locations": out, "window_days": days, "from": start.isoformat(), "to": end.isoformat(),
             "rule": f"{MIN_FIRS}+ FIRs on {MIN_DAYS}+ different days within ~110 m",
+            "active_days": ACTIVE_DAYS,
             "left_out": dropped}
