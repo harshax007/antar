@@ -220,9 +220,9 @@ function FlyTo({ bounds }) {
   return null;
 }
 
-// The whole state, a little closer than an exact fit (a quarter step in): the corners are
+// The whole state, a little closer than an exact fit (half a step in): the corners are
 // empty sea and neighbouring states, and the districts read larger.
-const STATE_ZOOM_IN = 0.25;
+const STATE_ZOOM_IN = 0.5;
 function fitState(map, bounds, fly = false) {
   const z = Math.min(map.getBoundsZoom(bounds) + STATE_ZOOM_IN, map.getMaxZoom());
   if (fly) map.flyTo(bounds.getCenter(), z, { duration: 0.6 });
@@ -1026,7 +1026,7 @@ export default function MapScreen() {
                              dateLabel={prettyDate(endDate, false)} onClose={() => setShowDossier(false)} />
         )}
 
-          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: fc.on || dayView ? `calc(100% - ${FCKEY_H}px)` : "100%", position: "relative" }}>
+          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%", position: "relative" }}>
             {giLoading && (
               <div className="mx-loading" role="status" aria-label={kn ? "ನಕ್ಷೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ" : "Reading the map"}>
                 <span aria-hidden="true" />
