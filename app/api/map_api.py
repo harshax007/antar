@@ -226,13 +226,46 @@ async def repeat_locations_api(crime_type: Optional[str] = None, days: int = 90,
     return await asyncio.to_thread(repeat_locations, anchor, days, crime_filter, dists)
 
 
+_FIR_NO = re.compile(r"^\d{4}-[A-Z]{2,5}-\d{1,6}$")
+
+
+def _count(v) -> Optional[int]:
+    try:
+        return int(float(v)) if v not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _stage(v) -> Optional[str]:
+    return v.replace("_", " ").strip().capitalize() if v else None
+
+
+def _details(r) -> dict:
+    """The case-detail fields a dot opens, cleaned: no placeholder text, no names."""
+    ftype = (r["FIR_Type"] or "").strip()
+    place = (r["Place_of_Offence"] or "").strip()
+    group = (r["CrimeGroup_Name"] or "").strip()
+    return {
+        "fir_no": ftype if _FIR_NO.match(ftype) else None,
+        "gravity": ftype if ftype in ("Heinous", "Non Heinous") else None,
+        "group": group if group and group.upper() != (r["crime_type"] or "").strip().upper() else None,
+        "act": (r["ActSection"] or "").strip() or None,
+        "place": place if place and not place.lower().startswith("random") else None,
+        "distance": (r["Distance_from_PS"] or "").strip() or None,
+        "victims": _count(r["VICTIM_COUNT"]), "accused": _count(r["Accused_Count"]),
+        "arrested": _count(r["Arrested_Count_No_"]), "chargesheeted": _count(r["Accused_ChargeSheeted_Count"]),
+    }
+
+
 @router.get("/day_cases")
 async def day_cases(date: Optional[str] = None, crime_type: Optional[str] = None) -> dict:
     """The FIRs registered on one day across Karnataka, one row per FIR, for the Map's Day
     view: a dot per case, and the cases listed on a district's card. The same rows the
     day's counts come from (gi_star with days=0: FIRs.zone, the date, the exact crime type).
 
-    No person is named: what the crime was, where, which station, and how far it has got."""
+    No person is named: what the crime was, where, which station, and how far it has got.
+    Complaint_Mode is never read (the seeded rows carry a complainant's name in it), and a
+    field holding a placeholder ("Random Street in ...") is left empty rather than shown."""
     import asyncio
     from datetime import date as _date
     from app.forecast.asof import current
@@ -253,14 +286,17 @@ async def day_cases(date: Optional[str] = None, crime_type: Optional[str] = None
         try:
             rows = con.execute(
                 "SELECT fir_id, zone, district_norm, crime_type, CrimeHead_Name, station, geo_lat, geo_lon, "
-                "Village_Area_Name, Beat_Name, FIR_Stage FROM FIRs WHERE " + " AND ".join(where) +
+                "Village_Area_Name, Beat_Name, FIR_Stage, status, FIR_Type, CrimeGroup_Name, ActSection, "
+                "Place_of_Offence, Distance_from_PS, VICTIM_COUNT, Accused_Count, Arrested_Count_No_, "
+                "Accused_ChargeSheeted_Count FROM FIRs WHERE " + " AND ".join(where) +
                 " ORDER BY zone, station LIMIT 2000", args).fetchall()
         finally:
             con.close()
         return [{"fir_id": r["fir_id"], "zone": r["zone"], "district": r["district_norm"],
                  "crime": (r["crime_type"] or "").strip(), "head": r["CrimeHead_Name"],
                  "station": r["station"], "lat": r["geo_lat"], "lon": r["geo_lon"],
-                 "area": r["Village_Area_Name"], "beat": r["Beat_Name"], "stage": r["FIR_Stage"]} for r in rows]
+                 "area": r["Village_Area_Name"], "beat": r["Beat_Name"],
+                 "stage": _stage(r["FIR_Stage"] or r["status"]), **_details(r)} for r in rows]
 
     cases = await asyncio.to_thread(read)
     return {"date": day.isoformat(), "crime_type": crime_type or "all", "total": len(cases), "cases": cases}

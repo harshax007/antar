@@ -1098,6 +1098,27 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-mapwrap > .mx-fckey:hover { opacity: 1; }
 .mx-mapwrap > .mx-fckey:hover p { text-shadow: 0 0 10px rgba(34,230,240,.45), 0 1px 3px rgba(0,0,0,.9); }
 .mx-fckey-dots.day i { width: 9px; height: 9px; background: #E14038; border: 1px solid #ffd2cf; opacity: 1; }
+/* One case, opened from its dot */
+.mx-case-pop .leaflet-popup-content-wrapper { background: rgba(8,14,26,.97); color: var(--text); border-radius: 12px;
+  border: 1px solid rgba(225,64,56,.45); box-shadow: 0 12px 36px rgba(0,0,0,.55), 0 0 18px rgba(225,64,56,.12); }
+.mx-case-pop .leaflet-popup-tip { background: rgba(8,14,26,.97); border: 1px solid rgba(225,64,56,.45); }
+.mx-case-pop .leaflet-popup-content { margin: 12px 14px; font-family: 'Inter', sans-serif; }
+.mx-case-pop a.leaflet-popup-close-button { color: var(--muted); top: 6px; right: 6px; }
+.mx-case-h { display: grid; gap: 1px; padding-right: 14px; }
+.mx-case-h b { font-size: 14px; font-weight: 700; color: #ff8a80; }
+.mx-case-h span { font-size: 11.5px; color: var(--muted); }
+.mx-case-id { margin-top: 4px; font: 500 10.5px 'JetBrains Mono', monospace; color: var(--muted); }
+.mx-case-id em { font-style: normal; opacity: .7; }
+.mx-case dl { margin: 10px 0 0; display: grid; gap: 5px; }
+.mx-case dl div { display: grid; grid-template-columns: 62px 1fr; gap: 8px; }
+.mx-case dt { font: 600 10px 'Chakra Petch'; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding-top: 1px; }
+.mx-case dd { margin: 0; font-size: 12px; line-height: 1.4; color: var(--text); }
+.mx-case-n { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--glass-border); display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.mx-case-n div { display: grid; text-align: center; }
+.mx-case-n b { font: 700 15px 'JetBrains Mono', monospace; color: var(--text); }
+.mx-case-n span { font-size: 9.5px; color: var(--muted); }
+.mx-case-note { margin: 9px 0 0; font-size: 10.5px; color: var(--muted); font-style: italic; }
+[data-theme="light"] .mx-case-pop .leaflet-popup-content-wrapper, [data-theme="light"] .mx-case-pop .leaflet-popup-tip { background: #fff; }
 /* District card, Day view: the day's cases in short */
 .mx-dc-day { margin: 10px 0 4px; padding: 10px 0 4px; border-top: 1px solid var(--glass-border); }
 .mx-dc-day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px;

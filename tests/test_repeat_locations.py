@@ -49,3 +49,14 @@ def test_day_cases_match_the_day_count():
     assert r["total"] == counted and r["date"] == day.isoformat()
     assert all(set(c) >= {"zone", "crime", "station", "lat", "lon"} for c in r["cases"])
     assert not any(k in c for c in r["cases"] for k in ("IOName", "Accused_ID", "accused"))
+
+
+def test_day_case_details_hold_no_names_or_placeholders():
+    """Complaint_Mode carries a complainant's name in the seeded rows; it never leaves."""
+    import asyncio
+    from app.api.map_api import day_cases
+    r = asyncio.run(day_cases("2026-10-20"))
+    for c in r["cases"]:
+        assert "complaint" not in " ".join(c).lower()
+        assert not (c["place"] or "").lower().startswith("random")
+        assert c["fir_no"] is None or c["fir_no"][:4].isdigit()

@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Polyline, Polygon, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Polyline, Polygon, Tooltip, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
@@ -234,6 +234,50 @@ function KeyRoom({ contains, onChange }) {
   useEffect(() => { measure(); }, [measure]);
   useMapEvents({ moveend: measure, zoomend: measure, resize: measure });
   return null;
+}
+
+// "IPC 1860 U/s: 279 && IPC 1860 U/s: 337" -> "IPC 279, 337"; BNS sections as written.
+function actText(act) {
+  if (!act) return null;
+  const by = [];
+  for (const part of act.split("&&")) {
+    const m = part.trim().match(/^([A-Za-z.&\s]+?)\s*(\d{4})?\s*U\/s:?\s*(.+)$/);
+    if (!m) { by.push([part.trim(), null]); continue; }
+    const law = m[1].trim(), sec = m[3].trim();
+    const row = by.find((b) => b[0] === law && b[1]);
+    if (row) row[1].push(sec); else by.push([law, [sec]]);
+  }
+  return by.map(([law, secs]) => (secs ? `${law} ${secs.join(", ")}` : law)).join(" · ");
+}
+
+// One case, opened from its dot on the map. Only what the record holds; no person named.
+function CasePopup({ c, kn }) {
+  const rows = [
+    [kn ? "ಠಾಣೆ" : "Station", c.station],
+    [kn ? "ಸ್ಥಳ" : "Area", [c.area, c.beat].filter(Boolean).join(" · ")],
+    [kn ? "ಎಲ್ಲಿ" : "Where", [c.place, c.distance && c.distance.toLowerCase()].filter(Boolean).join(" · ")],
+    [kn ? "ಕಾನೂನು" : "Law", actText(c.act)],
+    [kn ? "ಹಂತ" : "Stage", c.stage],
+    [kn ? "ಸ್ವರೂಪ" : "Gravity", c.gravity],
+  ].filter(([, v]) => v);
+  const people = [
+    [kn ? "ಸಂತ್ರಸ್ತರು" : "Victims", c.victims], [kn ? "ಆರೋಪಿಗಳು" : "Accused", c.accused],
+    [kn ? "ಬಂಧನ" : "Arrested", c.arrested], [kn ? "ಆರೋಪಪಟ್ಟಿ" : "Charge-sheeted", c.chargesheeted],
+  ].filter(([, v]) => v != null);
+  return (
+    <div className="mx-case">
+      <div className="mx-case-h">
+        <b>{crimeName(c.crime)}</b>
+        {c.head && c.head.toUpperCase() !== c.crime.toUpperCase() && <span>{c.head}</span>}
+      </div>
+      <div className="mx-case-id">{c.fir_no || c.fir_id}{c.fir_no && <em> · {c.fir_id}</em>}</div>
+      <dl>{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+      {people.length > 0 && (
+        <div className="mx-case-n">{people.map(([k, v]) => <div key={k}><b>{v}</b><span>{k}</span></div>)}</div>
+      )}
+      {!c.placed && <p className="mx-case-note">{kn ? "ಸ್ಥಳ ದಾಖಲಾಗಿಲ್ಲ: ಜಿಲ್ಲೆಯ ಕೇಂದ್ರದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ." : "No usable position on the FIR: the dot is at the district's centre."}</p>}
+    </div>
+  );
 }
 
 function FlyTo({ bounds }) {
@@ -1155,10 +1199,14 @@ export default function MapScreen() {
           {dayView && dayDots.map((c) => (
             <CircleMarker key={"day" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 8 : 3.6}
               pathOptions={{ color: "#ffd2cf", weight: 1, fillColor: "#E14038", fillOpacity: 0.9 }}>
+              <Popup className="mx-case-pop" maxWidth={320} minWidth={250} autoPanPadding={[24, 24]}>
+                <CasePopup c={c} kn={kn} />
+              </Popup>
               <Tooltip className="mx-hs" sticky>
                 <b>{crimeName(c.crime)}</b>{c.head && c.head.toUpperCase() !== c.crime.toUpperCase() ? ` · ${c.head}` : ""}
                 <br />{[c.station, c.area].filter(Boolean).join(" · ")}{c.stage ? ` · ${c.stage}` : ""}
                 {!c.placed && <><br /><i>{kn ? "ಸ್ಥಳ ದಾಖಲಾಗಿಲ್ಲ: ಜಿಲ್ಲೆಯ ಕೇಂದ್ರದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ" : "No usable position on the FIR: shown at the district's centre"}</i></>}
+                <br /><small>{kn ? "ವಿವರಗಳಿಗೆ ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click for the case details"}</small>
               </Tooltip>
             </CircleMarker>
           ))}
