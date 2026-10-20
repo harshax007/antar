@@ -242,9 +242,9 @@ function FlyTo({ bounds }) {
   return null;
 }
 
-// The whole state, a little closer than an exact fit (half a step in): the corners are
-// empty sea and neighbouring states, and the districts read larger.
-const STATE_ZOOM_IN = 0.5;
+// The whole state, fitted to the frame; STATE_ZOOM_IN takes it closer (the corners are
+// empty sea and neighbouring states) at the cost of clipping Bidar and Chamarajanagara.
+const STATE_ZOOM_IN = 0;
 function fitState(map, bounds, fly = false) {
   const z = Math.min(map.getBoundsZoom(bounds) + STATE_ZOOM_IN, map.getMaxZoom());
   if (fly) map.flyTo(bounds.getCenter(), z, { duration: 0.6 });
@@ -602,12 +602,13 @@ export default function MapScreen() {
       const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
       const k = (seen[key] = (seen[key] || 0) + 1) - 1;
       if (k > 0) {
-        const a = k * 2.4, r = (placed ? 0.004 : 0.012) * Math.sqrt(k);
+        // wider apart inside a district, where the dots are drawn larger
+        const a = k * 2.4, r = (placed ? 0.004 : 0.012) * (selectedDistrict ? 3 : 1) * Math.sqrt(k);
         lat += r * Math.sin(a); lon += r * Math.cos(a);
       }
       return { ...c, lat, lon, gadm, placed };
     });
-  }, [dayView, dayCases, endDate, districtContains]);
+  }, [dayView, dayCases, endDate, districtContains, selectedDistrict]);
   const dayInDistrict = selectedDistrict ? dayDots.filter((c) => c.gadm === selectedDistrict) : dayDots;
 
   // Repeat locations: places with 3+ FIRs on 2+ days in the 90 days to the selected date.
@@ -1152,7 +1153,7 @@ export default function MapScreen() {
 
           {!dayView && <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} stateView={!selectedDistrict} />}
           {dayView && dayDots.map((c) => (
-            <CircleMarker key={"day" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 5 : 3.6}
+            <CircleMarker key={"day" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 8 : 3.6}
               pathOptions={{ color: "#ffd2cf", weight: 1, fillColor: "#E14038", fillOpacity: 0.9 }}>
               <Tooltip className="mx-hs" sticky>
                 <b>{crimeName(c.crime)}</b>{c.head && c.head.toUpperCase() !== c.crime.toUpperCase() ? ` · ${c.head}` : ""}
