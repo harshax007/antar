@@ -36,3 +36,16 @@ def test_placeholder_detection():
 def test_district_filter_keeps_to_the_district():
     r = repeat_locations(END, districts=["Mysuru City"])
     assert r["locations"] and all(l["district"] == "Mysuru City" for l in r["locations"])
+
+
+def test_day_cases_match_the_day_count():
+    """The Map's Day dots are the same FIRs the day's count is made of (gi_star, days=0)."""
+    import asyncio
+    from app.api.map_api import day_cases
+    from app.services.anomaly import gi_star_surface
+    day = date(2026, 10, 17)
+    r = asyncio.run(day_cases(day.isoformat()))
+    counted = sum(z["observed"] for z in gi_star_surface(days=0, end_date=day))
+    assert r["total"] == counted and r["date"] == day.isoformat()
+    assert all(set(c) >= {"zone", "crime", "station", "lat", "lon"} for c in r["cases"])
+    assert not any(k in c for c in r["cases"] for k in ("IOName", "Accused_ID", "accused"))

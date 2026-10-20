@@ -1092,6 +1092,19 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-fckey-dots i:nth-child(2) { width: 8px; height: 8px; opacity: .6; }
 .mx-fckey-dots i:nth-child(3) { width: 12px; height: 12px; opacity: .9; }
 [data-theme="light"] .mx-mapwrap > .mx-fckey { background: rgba(255,255,255,.96); }
+.mx-fckey-dots.day i { width: 9px; height: 9px; background: #E14038; border: 1px solid #ffd2cf; opacity: 1; }
+/* District card, Day view: the day's cases in short */
+.mx-dc-day { margin: 10px 0 4px; padding: 10px 0 4px; border-top: 1px solid var(--glass-border); }
+.mx-dc-day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  font: 600 11px 'Chakra Petch'; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.mx-dc-day-h small { font: 500 10.5px 'Inter', sans-serif; text-transform: none; letter-spacing: 0; }
+.mx-dc-day ol { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 1px; max-height: 260px; overflow-y: auto; }
+.mx-dc-day li button { width: 100%; text-align: left; background: none; border: 0; border-left: 2px solid #E14038;
+  padding: 5px 8px; cursor: pointer; display: grid; gap: 1px; border-radius: 0 6px 6px 0; }
+.mx-dc-day li button:hover { background: rgba(225,64,56,.08); }
+.mx-dc-day li b { font: 600 12px 'Inter', sans-serif; color: var(--text); }
+.mx-dc-day li span { font-size: 10.5px; color: var(--muted); }
+.mx-dc-day .none { margin: 6px 0 0; font-size: 11px; color: var(--muted); }
 /* My district and the repeat-locations layer, on the map's top-left */
 /* top of the map frame; the district breadcrumb sits under it */
 .mx-mybar, .mx-mapwrap > .mx-mybar { position: absolute; top: 12px; left: 12px; bottom: auto; right: auto; height: auto; z-index: 900; display: flex; gap: 6px; align-items: center; }

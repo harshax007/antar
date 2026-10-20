@@ -226,6 +226,46 @@ async def repeat_locations_api(crime_type: Optional[str] = None, days: int = 90,
     return await asyncio.to_thread(repeat_locations, anchor, days, crime_filter, dists)
 
 
+@router.get("/day_cases")
+async def day_cases(date: Optional[str] = None, crime_type: Optional[str] = None) -> dict:
+    """The FIRs registered on one day across Karnataka, one row per FIR, for the Map's Day
+    view: a dot per case, and the cases listed on a district's card. The same rows the
+    day's counts come from (gi_star with days=0: FIRs.zone, the date, the exact crime type).
+
+    No person is named: what the crime was, where, which station, and how far it has got."""
+    import asyncio
+    from datetime import date as _date
+    from app.forecast.asof import current
+    today_dt = current().as_of
+    try:
+        day = _date.fromisoformat(date[:10]) if date else today_dt
+    except ValueError:
+        raise HTTPException(status_code=422, detail="date must be an ISO date (YYYY-MM-DD)")
+    day = min(day, today_dt)
+
+    def read() -> list[dict]:
+        where, args = ["SUBSTR(date, 1, 10) = ?", "zone IS NOT NULL"], [day.isoformat()]
+        if crime_type:
+            where.append("crime_type = ?")
+            args.append(crime_type)
+        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con.row_factory = sqlite3.Row
+        try:
+            rows = con.execute(
+                "SELECT fir_id, zone, district_norm, crime_type, CrimeHead_Name, station, geo_lat, geo_lon, "
+                "Village_Area_Name, Beat_Name, FIR_Stage FROM FIRs WHERE " + " AND ".join(where) +
+                " ORDER BY zone, station LIMIT 2000", args).fetchall()
+        finally:
+            con.close()
+        return [{"fir_id": r["fir_id"], "zone": r["zone"], "district": r["district_norm"],
+                 "crime": (r["crime_type"] or "").strip(), "head": r["CrimeHead_Name"],
+                 "station": r["station"], "lat": r["geo_lat"], "lon": r["geo_lon"],
+                 "area": r["Village_Area_Name"], "beat": r["Beat_Name"], "stage": r["FIR_Stage"]} for r in rows]
+
+    cases = await asyncio.to_thread(read)
+    return {"date": day.isoformat(), "crime_type": crime_type or "all", "total": len(cases), "cases": cases}
+
+
 @router.get("/flow")
 async def flow(crime_type: Optional[str] = None, period: Optional[str] = None) -> dict:
     return {"flow": []}

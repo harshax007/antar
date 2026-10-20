@@ -431,7 +431,7 @@ export default function MapScreen() {
     // Q for 1-day (daily)
     const qDaily = new URLSearchParams();
     if (crimeType) qDaily.set("crime_type", crimeType);
-    qDaily.set("days", String(win));
+    qDaily.set("days", String(win - 1));      // the window is [end - days, end]: Day is days=0
     qDaily.set("end_date", endDate);
     
     const qDailyPrev = new URLSearchParams(qDaily);
@@ -440,7 +440,7 @@ export default function MapScreen() {
     // Q for 30-day (monthly)
     const qMonthly = new URLSearchParams();
     if (crimeType) qMonthly.set("crime_type", crimeType);
-    qMonthly.set("days", "30");
+    qMonthly.set("days", "29");
     qMonthly.set("end_date", endDate);
 
     // A date or crime type that was already read this session is drawn at once from memory
@@ -515,6 +515,37 @@ export default function MapScreen() {
     const feats = (geo?.features || []).filter((f) => (f.properties?.district || f.properties?.NAME_2) === g);
     return feats.length ? L.geoJSON({ type: "FeatureCollection", features: feats }).getBounds() : null;
   }
+
+  // Day view: every FIR registered on the selected day, one dot each, and listed on the
+  // district card. The 7- and 28-day views keep the forecast instead.
+  const dayView = win === 1;
+  const [dayCases, setDayCases] = useState(null);
+  useEffect(() => {
+    if (!dayView) return;
+    const ctrl = new AbortController();
+    const q = new URLSearchParams({ date: endDate });
+    if (crimeType) q.set("crime_type", crimeType);
+    fetch(`${API}/api/map/day_cases?${q}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("day"))))
+      .then(setDayCases)
+      .catch((e) => { if (e?.name !== "AbortError") setDayCases({ error: true, cases: [], date: endDate }); });
+    return () => ctrl.abort();
+  }, [dayView, endDate, crimeType]);
+  const dayDots = useMemo(() => {
+    if (!dayView || dayCases?.date !== endDate) return [];
+    // cases at the same spot (or with no position, at their district's centre) are set in a
+    // small ring around it, so 10 cases read as 10 dots
+    const seen = {};
+    return (dayCases.cases || []).map((c) => {
+      let lat = c.lat, lon = c.lon;
+      if (lat == null || lon == null) { const p = coordFor(c.zone); lat = p.lat; lon = p.lon; }
+      const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+      const k = (seen[key] = (seen[key] || 0) + 1) - 1;
+      if (k > 0) { const a = k * 2.4, r = 0.004 * Math.sqrt(k); lat += r * Math.sin(a); lon += r * Math.cos(a); }
+      return { ...c, lat, lon, gadm: ZONE_TO_GADM_DISTRICT[c.zone] || c.zone };
+    });
+  }, [dayView, dayCases, endDate]);
+  const dayInDistrict = selectedDistrict ? dayDots.filter((c) => c.gadm === selectedDistrict) : dayDots;
 
   // Repeat locations: places with 3+ FIRs on 2+ days in the 90 days to the selected date.
   const [repeatOn, setRepeatOn] = useState(false);
@@ -954,7 +985,7 @@ export default function MapScreen() {
                              dateLabel={prettyDate(endDate, false)} onClose={() => setShowDossier(false)} />
         )}
 
-          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: fc.on ? `calc(100% - ${FCKEY_H}px)` : "100%", position: "relative" }}>
+          <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: fc.on || dayView ? `calc(100% - ${FCKEY_H}px)` : "100%", position: "relative" }}>
             {giLoading && (
               <div className="mx-loading" role="status" aria-label={kn ? "ನಕ್ಷೆಯನ್ನು ಓದಲಾಗುತ್ತಿದೆ" : "Reading the map"}>
                 <span aria-hidden="true" />
@@ -1055,7 +1086,16 @@ export default function MapScreen() {
             </Polyline>
           ))}
 
-          <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} stateView={!selectedDistrict} />
+          {!dayView && <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} stateView={!selectedDistrict} />}
+          {dayView && dayDots.map((c) => (
+            <CircleMarker key={"day" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 5 : 3.6}
+              pathOptions={{ color: "#ffd2cf", weight: 1, fillColor: "#E14038", fillOpacity: 0.9 }}>
+              <Tooltip className="mx-hs" sticky>
+                <b>{crimeName(c.crime)}</b>{c.head && c.head.toUpperCase() !== c.crime.toUpperCase() ? ` · ${c.head}` : ""}
+                <br />{[c.station, c.area].filter(Boolean).join(" · ")}{c.stage ? ` · ${c.stage}` : ""}
+              </Tooltip>
+            </CircleMarker>
+          ))}
 
           {repeatOn && (repeats?.locations || []).map((r, i) => (
             <CircleMarker key={"rpt" + i} center={[r.lat, r.lon]} radius={4 + Math.min(10, Math.sqrt(r.firs) * 1.4)}
@@ -1119,13 +1159,25 @@ export default function MapScreen() {
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} startBounds={startBounds} />
           <ZoomButtons geo={geo} onReset={closeDistrict} />
-          <ResizeWith dep={fc.on} />
+          <ResizeWith dep={fc.on || dayView} />
         
           
 
         </MapContainer></div>
         {/* What the forecast dots are: a strip under the map, never over it */}
-        {fc.on && (() => {
+        {dayView && (
+          <div className="mx-fckey" role="note" style={{ height: FCKEY_H }}>
+            <span className="mx-fckey-dots day" aria-hidden="true"><i /></span>
+            <p>{dayCases?.error ? <>{kn ? "ಈ ದಿನದ ಪ್ರಕರಣಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "The cases for this day could not be read just now."}</> : kn ? <>
+                <b>ಪ್ರತಿ ಚುಕ್ಕೆ {prettyDate(endDate, true)} ರಂದು ದಾಖಲಾದ ಒಂದು FIR.</b> ಕರ್ನಾಟಕದಲ್ಲಿ {dayDots.length}{selectedDistrict ? `, ಈ ಜಿಲ್ಲೆಯಲ್ಲಿ ${dayInDistrict.length}` : ""}. {selectedDistrict ? "ಜಿಲ್ಲೆ ಕಾರ್ಡ್‌ನಲ್ಲಿ ಪಟ್ಟಿ ಇದೆ." : "ಪ್ರಕರಣಗಳನ್ನು ಓದಲು ಜಿಲ್ಲೆ ತೆರೆಯಿರಿ."}
+              </> : <>
+                <b>Each dot is one FIR registered on {prettyDate(endDate, false)}.</b>{" "}
+                {dayDots.length} across Karnataka{selectedDistrict ? `, ${dayInDistrict.length} in ${policeLabel(selectedDistrict)} - listed on the district card` : ""}.
+                {!selectedDistrict && " Open a district to read its cases."}
+              </>}</p>
+          </div>
+        )}
+        {fc.on && !dayView && (() => {
           const ci = (fc.layer?.fields || []).indexOf("class");
           const units = fc.layer?.units || [];
           const busiest = ci >= 0 ? units.filter((u) => u[ci] >= 4).length : 0;
@@ -1477,6 +1529,27 @@ export default function MapScreen() {
                         <div><b>{n(d.last_7)}</b><span>{kn ? "ಕಳೆದ 7 ದಿನ" : "Last 7 days"}</span></div>
                         <div><b>{n(d.last_30)}</b><span>{kn ? "ಕಳೆದ 30 ದಿನ" : "Last 30 days"}</span></div>
                       </div>
+                      {dayView && (
+                        <div className="mx-dc-day">
+                          <div className="mx-dc-day-h">
+                            {kn ? "ಈ ದಿನದ ಪ್ರಕರಣಗಳು" : `Cases on ${prettyDate(endDate, false)}`}
+                            <small>{dayInDistrict.length} · {policeLabel(selectedDistrict)}</small>
+                          </div>
+                          {dayInDistrict.length ? (
+                            <ol>
+                              {dayInDistrict.slice(0, 25).map((c) => (
+                                <li key={c.fir_id}>
+                                  <button type="button" onClick={() => setFlyBounds(L.latLngBounds([c.lat - 0.02, c.lon - 0.02], [c.lat + 0.02, c.lon + 0.02]))}>
+                                    <b>{crimeName(c.crime)}</b>
+                                    <span>{[c.station, c.area].filter(Boolean).join(" · ")}{c.stage ? ` · ${c.stage}` : ""}</span>
+                                  </button>
+                                </li>
+                              ))}
+                            </ol>
+                          ) : <p className="none">{kn ? "ಈ ದಿನ ಯಾವುದೇ FIR ಇಲ್ಲ." : "No FIR was registered here on this day."}</p>}
+                          {dayInDistrict.length > 25 && <p className="none">and {dayInDistrict.length - 25} more</p>}
+                        </div>
+                      )}
                       <div className="mx-dc-row"><span className="k">{kn ? "ಹಿಂದಿನ 30 ದಿನ" : "The 30 days before"}</span><span className="v">{d.prior_30 == null ? "…" : <>{n(d.prior_30)}{versus && <small>{versus}</small>}</>}</span></div>
                       {share != null && <div className="mx-dc-row"><span className="k">{kn ? "ರಾಜ್ಯದ ಪಾಲು (30 ದಿನ)" : "Share of the state, last 30 days"}</span><span className="v">{share > 0 && share < 1 ? "under 1%" : `${Math.round(share)}%`}</span></div>}
                       <div className="mx-dc-row"><span className="k">{kn ? "ಚಟುವಟಿಕೆಯ ಮಟ್ಟ" : "Activity level"}</span>{level(d.risk_level)}{d.risk_level && levelWhy[d.risk_level] && <em>{levelWhy[d.risk_level]}</em>}</div>

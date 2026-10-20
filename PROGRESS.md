@@ -2200,3 +2200,9 @@ Every question officers had asked (98 distinct, audit log) was run through the r
 * **Repeat locations** (`GET /api/map/repeat_locations`, `app/services/repeat_locations.py`): places with 3+ FIRs on 2+ different days within about 110 m, in the 90 days to the selected date, following the crime filter and the open district. Amber rings on the map, top 8 listed with a fly-to. Left out because they are not places: online crime (CEN / Cyber / CID), missing persons and CrPC cases, a station's own default point, and typed-in placeholder coordinates. 2023 tops: Anjanadri Layout (Sampigehalli PS), S.S. Circle Tumakuru, Ganganagar (R.T. Nagar PS).
 * Needs a backend restart for the new route and the posting field. Demo accounts carry no posting, so they use the chooser.
 * Tests: `tests/test_repeat_locations.py` (read-only).
+
+## Map Day view: the day's FIRs - 2026-10-21
+
+* **Day view shows what was reported:** one dot per FIR registered on the selected day (`GET /api/map/day_cases`), set in a small ring where several share a spot. The district card lists that district's cases in short (crime, station, area, stage); a click flies to it. 7 and 28 days keep the forecast. No person is named.
+* **Day used to read two days:** the map asked gi_star for `days=win`, and its window is `[end - days, end]`, so "Day" counted 16 and 17 Oct together (108 instead of 56), 7 days counted 8 and "last 30 days" 31. Now `win - 1` and 29, as the district card already did.
+* Needs a backend restart for the new route.
