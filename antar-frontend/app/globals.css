@@ -1080,8 +1080,8 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-breadcrumb { position: absolute; top: 120px; left: 264px; z-index: 910; font-family: 'Chakra Petch'; font-size: 11px; color: var(--muted); background: rgba(6,11,20,.55); backdrop-filter: blur(10px); border-radius: 999px; padding: 6px 13px; cursor: pointer; border: 1px solid var(--glass-border); }
 [data-theme="light"] .mx-breadcrumb { background: rgba(255,255,255,.85); }
 /* My district and the repeat-locations layer, on the map's top-left */
-/* below the district breadcrumb (top 12px in the map frame) */
-.mx-mybar { position: absolute; top: 50px; left: 12px; z-index: 900; display: flex; gap: 6px; align-items: center; }
+/* top of the map frame; the district breadcrumb sits under it */
+.mx-mybar, .mx-mapwrap > .mx-mybar { position: absolute; top: 12px; left: 12px; bottom: auto; right: auto; height: auto; z-index: 900; display: flex; gap: 6px; align-items: center; }
 .mx-mydist { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 999px;
   background: rgba(6,11,20,.82); border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
   font: 600 10.5px 'Chakra Petch'; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
@@ -3824,7 +3824,7 @@ html[data-chatnav="1"] .xw { top: 60px !important; height: calc(100vh - 60px) !i
 .mx-mapwrap { position: relative; inset: auto; grid-area: map; min-height: 0; min-width: 0; z-index: 1;
   border: 1px solid var(--glass-border); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.35); }
 .mx-mapwrap > div { height: 100%; }
-.mx-mapwrap .mx-breadcrumb { position: absolute; top: 12px; left: 12px; z-index: 500; }
+.mx-mapwrap .mx-breadcrumb { position: absolute; top: 52px; left: 12px; z-index: 500; }
 .mx-leftrail, .mx-rightrail { width: auto; padding: 0 0 4px; }
 .mx-pills-gap { flex: 1; }
 
