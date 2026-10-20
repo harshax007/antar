@@ -214,6 +214,28 @@ const POLICE_DISTRICTS = [
 // Height of the forecast key under the map (the map gives up this much while it shows).
 const FCKEY_H = 46;
 
+// How wide the map key may be and stay in the empty space (the sea) at the bottom-left,
+// clear of the state: the first point inside Karnataka along the bottom rows of the frame.
+const KEY_LEFT = 16, KEY_ROWS = 96;
+function KeyRoom({ contains, onChange }) {
+  const map = useMap();
+  const measure = useCallback(() => {
+    if (!contains) return;
+    const { x: w, y: h } = map.getSize();
+    let edge = w;
+    for (let y = h - 8; y >= h - KEY_ROWS; y -= 8) {
+      for (let x = KEY_LEFT; x < edge; x += 6) {
+        const ll = map.containerPointToLatLng([x, y]);
+        if (contains(ll.lat, ll.lng)) { edge = x; break; }
+      }
+    }
+    onChange(Math.max(150, Math.min(edge - KEY_LEFT - 14, w - 90)));
+  }, [map, contains, onChange]);
+  useEffect(() => { measure(); }, [measure]);
+  useMapEvents({ moveend: measure, zoomend: measure, resize: measure });
+  return null;
+}
+
 function FlyTo({ bounds }) {
   const map = useMap();
   useEffect(() => { if (bounds) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.5 }); }, [bounds, map]);
@@ -642,6 +664,7 @@ export default function MapScreen() {
   }
 
   const [resetMapTrigger, setResetMapTrigger] = useState(0);
+  const [keyRoom, setKeyRoom] = useState(260);   // px of empty space left of the state, for the key
   // Opens on my district: the first fit goes straight to it (FitToKarnataka), no second flight.
   const startBounds = useMemo(() => (geo && myGadm && !deepLinked && !openedMine.current ? gadmBounds(myGadm) : null),
     [geo]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1201,13 +1224,14 @@ export default function MapScreen() {
           <AgentDropLayer geo={geo} dragging={dragAgent} onHover={setDropOver} onDrop={(id, name) => { setDragAgent(null); runMapAgent(id, name); }} />
           <FitToKarnataka geo={geo} selectedDistrict={selectedDistrict} resetTrigger={resetMapTrigger} startBounds={startBounds} />
           <ZoomButtons geo={geo} onReset={closeDistrict} />
+          <KeyRoom contains={karnatakaContains} onChange={setKeyRoom} />
         
           
 
         </MapContainer></div>
         {/* What the forecast dots are: a strip under the map, never over it */}
         {dayView && (
-          <div className="mx-fckey" role="note" style={{ height: FCKEY_H }}>
+          <div className="mx-fckey" role="note" style={{ width: keyRoom }}>
             <span className="mx-fckey-dots day" aria-hidden="true"><i /></span>
             <p>{dayCases?.error ? <>{kn ? "ಈ ದಿನದ ಪ್ರಕರಣಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "The cases for this day could not be read just now."}</> : kn ? <>
                 <b>ಪ್ರತಿ ಚುಕ್ಕೆ {prettyDate(endDate, true)} ರಂದು ದಾಖಲಾದ ಒಂದು FIR.</b> ಕರ್ನಾಟಕದಲ್ಲಿ {dayDots.length}{selectedDistrict ? `, ಈ ಜಿಲ್ಲೆಯಲ್ಲಿ ${dayInDistrict.length}` : ""}. {selectedDistrict ? "ಜಿಲ್ಲೆ ಕಾರ್ಡ್‌ನಲ್ಲಿ ಪಟ್ಟಿ ಇದೆ." : "ಪ್ರಕರಣಗಳನ್ನು ಓದಲು ಜಿಲ್ಲೆ ತೆರೆಯಿರಿ."}
@@ -1224,7 +1248,7 @@ export default function MapScreen() {
           const busiest = ci >= 0 ? units.filter((u) => u[ci] >= 4).length : 0;
           const beat = fc.layer?.unit_type === "beat";
           return (
-            <div className="mx-fckey" role="note" style={{ height: FCKEY_H }}>
+            <div className="mx-fckey" role="note" style={{ width: keyRoom }}>
               <span className="mx-fckey-dots" aria-hidden="true"><i /><i /><i /></span>
               <p>{kn ? <>
                   <b>ಪ್ರತಿ ಚುಕ್ಕೆ ಒಂದು {beat ? "ಬೀಟ್" : "ಪೊಲೀಸ್ ಠಾಣೆ"}.</b> ದೊಡ್ಡ ಮತ್ತು ಕೆಂಪು ಚುಕ್ಕೆ = ಮುಂದಿನ {fc.horizon} ದಿನಗಳಲ್ಲಿ ಹೆಚ್ಚು FIR ನಿರೀಕ್ಷೆ. ಇದು ಮುನ್ಸೂಚನೆ, ದಾಖಲಾದ ಪ್ರಕರಣಗಳಲ್ಲ.

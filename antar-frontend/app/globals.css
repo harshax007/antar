@@ -1084,7 +1084,7 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
   display: flex; align-items: center; gap: 12px; padding: 0 16px; overflow: hidden;
   background: rgba(6,11,20,.96); border-top: 1px solid var(--glass-border); }
 .mx-fckey p { margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--muted);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 .mx-fckey p b { color: var(--text); font-weight: 600; }
 .mx-fckey-dots { flex: none; display: flex; align-items: center; gap: 4px; }
 .mx-fckey-dots i { display: block; border-radius: 50%; background: #E14038; }
@@ -1093,7 +1093,7 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .mx-fckey-dots i:nth-child(3) { width: 12px; height: 12px; opacity: .9; }
 /* Just the text, no box: faint over the map's foot, lit when the pointer is on it */
 .mx-mapwrap > .mx-fckey { background: none; border: 0; box-shadow: none; height: auto !important;
-  bottom: 8px; padding: 0 70px 0 16px; opacity: .3; transition: opacity .25s ease, text-shadow .25s ease; }
+  bottom: 8px; left: 16px; right: auto; padding: 0; align-items: flex-end; opacity: .3; transition: opacity .25s ease, text-shadow .25s ease; }
 .mx-mapwrap > .mx-fckey p { text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .mx-mapwrap > .mx-fckey:hover { opacity: 1; }
 .mx-mapwrap > .mx-fckey:hover p { text-shadow: 0 0 10px rgba(34,230,240,.45), 0 1px 3px rgba(0,0,0,.9); }
