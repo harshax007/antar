@@ -137,6 +137,15 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Kannada, second pass · 2026-10-22
+
+- OSINT answers in Kannada: `/api/osint/investigate?lang=kn` (`app/services/osint_kn.py`). The label,
+  brief, live checks and official portals are rewritten in Kannada. Identifiers, counts, URLs and
+  the BNSS notice text are left exactly as they are. Covered by 2 tests (`tests/test_osint_checks.py`).
+- Shift plan, case leads and the Map's district-links window now follow the EN|KN switch.
+- Docs brought up to current figures (26 templates, 10 lakh FIRs, 1,155 stations, 113 crime types).
+- Release check: READY, 0 fail, 1 warn (no Brave key).
+
 ## One orchestration contract for both paths · 2026-09-26
 
 Item #4 was "two orchestration paths, 727 lines duplicated". Measuring it first found
