@@ -2,8 +2,8 @@
 Antar/Antar — Evidence Ledger (P0, build03_improveX)
 =========================================================
 The engineered synthetic FIR set (`fir_synthetic.csv`, copied to app/seeds/data/) exposed
-as a backend-queryable *evidence layer*. This is ADDITIVE — the 51k official `FIRs` table
-stays untouched and continues to power Map/Predict/trends. This layer is the ONLY source
+as a backend-queryable *evidence layer*. This is ADDITIVE — the official `FIRs` register
+(1,000,000 rows in main.db) stays untouched and continues to power Map/Predict/trends. This layer is the ONLY source
 carrying per-accused / vehicle / UPI / IP linkage, so it backs Brain's evidence graph,
 corridors, dossiers, and the movement/linkage agents.
 

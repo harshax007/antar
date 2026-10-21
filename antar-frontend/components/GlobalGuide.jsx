@@ -128,7 +128,7 @@ const GUIDES = {
   search: {
     title: L("Search Guide", "ಹುಡುಕಾಟ ಮಾರ್ಗದರ್ಶಿ"),
     lead: L("Find a person, alias, phone number or vehicle across 10,00,000+ FIRs, even with spelling mistakes.",
-            "ಹೆಸರು, ಉಪನಾಮ, ಫೋನ್ ಸಂಖ್ಯೆ ಅಥವಾ ವಾಹನವನ್ನು 4.25 ಲಕ್ಷಕ್ಕೂ ಹೆಚ್ಚು FIR ಗಳಲ್ಲಿ ಹುಡುಕಿ. ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ ಸಿಗುತ್ತದೆ."),
+            "ಹೆಸರು, ಉಪನಾಮ, ಫೋನ್ ಸಂಖ್ಯೆ ಅಥವಾ ವಾಹನವನ್ನು 10 ಲಕ್ಷಕ್ಕೂ ಹೆಚ್ಚು FIR ಗಳಲ್ಲಿ ಹುಡುಕಿ. ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ ಸಿಗುತ್ತದೆ."),
     blocks: [
       { h: L("How matching works", "ಹೊಂದಾಣಿಕೆ ಹೇಗೆ"), items: [
         [L("Fuzzy match", "ಸಮೀಪ ಹೊಂದಾಣಿಕೆ"), L("Similar spellings still match.", "ಹೋಲುವ ಕಾಗುಣಿತವೂ ಹೊಂದುತ್ತದೆ.")],

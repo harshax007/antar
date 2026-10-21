@@ -1,6 +1,9 @@
 """
 Antar — QuickML LLM Serving Client
-OAuth-authenticated REST calls to Qwen 2.5 14B Instruct on Catalyst QuickML.
+OAuth-authenticated REST calls to the models hosted on Catalyst QuickML. Which model is
+set in settings: QUICKML_DEFAULT_MODEL (analysis, Qwen 3.6), QUICKML_CHAT_MODEL (chat,
+GLM-4.7-Flash), QUICKML_VISION_MODEL (scanned evidence, VL-Qwen 3.6). Another provider can
+be used instead (app/services/llm.py).
 Includes retry logic and JSON-repair parser.
 """
 

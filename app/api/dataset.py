@@ -231,7 +231,7 @@ async def dataset_overview(year: int | None = None, district: str | None = None,
 
     accused = kpi["accused"] or 0
     payload = {
-        "source": "crime_data.db · FIRs",
+        "source": "main.db · FIRs",
         "basis": count_basis(kpi["total"], gated=True),
         "total": kpi["total"],
         "districts": kpi["districts"],
@@ -318,7 +318,7 @@ async def dataset_summary(year: int | None = None, district: str | None = None,
 
     accused = kpi["accused"] or 0
     payload = {
-        "source": "crime_data.db · FIRs (real only)",
+        "source": "main.db · FIRs (real only)",
         "basis": count_basis(kpi["total"], gated=False),
         "total_real": kpi["total"],
         "total": kpi["total"],

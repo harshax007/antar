@@ -2,7 +2,7 @@
 Antar — Officer Long-Term Memory & Identity Store (SQLite)
 ============================================================
 Persists officer profiles, preferences, bookmarked evidence/suspects, and
-compressed prior session conclusions in `officer_memory` inside `crime_data.db`.
+compressed prior session conclusions in `officer_memory` inside `main.db`.
 Provides demo login identity out of the box for officers across ranks.
 """
 
