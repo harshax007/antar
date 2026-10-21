@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Orb from "@/components/Orb";
+import LangToggle from "@/components/LangToggle";
 import { motion, AnimatePresence } from "framer-motion";
 import { Paperclip, Globe, ArrowUp, X, Mic, MicOff, Brain, Network, Share2, Compass, CheckCircle2, Sparkles, RefreshCw, Copy, Download, ThumbsUp, ThumbsDown, Map as MapIcon, Search as SearchIcon, Languages, Square, Volume2, Loader2, Activity } from "lucide-react";
 import NetworkGraph from "@/components/NetworkGraph";
@@ -2409,6 +2410,8 @@ export default function ChatPage() {
       {empty ? (
         <>
         <style>{`@media (min-width: 821px) { .cx-pillnav { display: none !important; } }`}</style>
+        {/* the nav (and the switch in it) is hidden here on desktop, so the switch floats top right */}
+        <LangToggle float />
         <div style={{
           position: "fixed",
           top: 0,
