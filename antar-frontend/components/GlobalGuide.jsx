@@ -37,7 +37,7 @@ const GUIDES = {
         [L("Export to PDF", "PDF ಗೆ ರಫ್ತು ಮಾಡಿ"), L("Download the entire session as a tamper-evident, audit-ready PDF report for case files.", "ಪ್ರಕರಣದ ಫೈಲ್‌ಗಳಿಗಾಗಿ ಸಂಪೂರ್ಣ ಸೆಶನ್ ಅನ್ನು ಟ್ಯಾಂಪರ್-ಎವಿಡೆಂಟ್, ಆಡಿಟ್-ರೆಡಿ PDF ವರದಿಯಾಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.")],
       ] },
       { h: L("Trust & Verification", "ನಂಬಿಕೆ ಮತ್ತು ಪರಿಶೀಲನೆ"), items: [
-        [L("Zero Hallucination Guard", "ಶೂನ್ಯ ಭ್ರಮೆ ಕಾವಲು"), L("If no relevant FIR exists, Antar will explicitly state 'Nothing found' rather than guessing.", "ಯಾವುದೇ ಸಂಬಂಧಿತ FIR ಇಲ್ಲದಿದ್ದರೆ, ಊಹಿಸುವ ಬದಲು ಅಂತರ ಸ್ಪಷ್ಟವಾಗಿ 'ಏನೂ ಕಂಡುಬಂದಿಲ್ಲ' ಎಂದು ಹೇಳುತ್ತದೆ.")],
+        [L("No guessing", "ಊಹೆ ಇಲ್ಲ"), L("If no relevant FIR exists, Antar will explicitly state 'Nothing found' rather than guessing.", "ಯಾವುದೇ ಸಂಬಂಧಿತ FIR ಇಲ್ಲದಿದ್ದರೆ, ಊಹಿಸುವ ಬದಲು ಅಂತರ ಸ್ಪಷ್ಟವಾಗಿ 'ಏನೂ ಕಂಡುಬಂದಿಲ್ಲ' ಎಂದು ಹೇಳುತ್ತದೆ.")],
         [L("Reasoning Trace", "ತಾರ್ಕಿಕ ಜಾಡು"), L("Click the 'Thought for X seconds' pill to audit the exact steps the AI took to gather your answer.", "ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಸಂಗ್ರಹಿಸಲು AI ತೆಗೆದುಕೊಂಡ ನಿಖರವಾದ ಹಂತಗಳನ್ನು ಆಡಿಟ್ ಮಾಡಲು 'X ಸೆಕೆಂಡುಗಳ ಕಾಲ ಯೋಚಿಸಿದೆ' ಪಿಲ್ ಅನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ.")],
       ] },
     ],

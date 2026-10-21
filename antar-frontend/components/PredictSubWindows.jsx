@@ -449,7 +449,7 @@ function AgenticArchitectureContent() {
     {
       title: "1. Linear Workflow (Deterministic Core)",
       desc: "Strict bilingual ZCQL database execution, zero-fabrication assertion check, and SHA-256 derivation chain logging.",
-      badge: "Zero Hallucination",
+      badge: "Numbers checked against rows",
       color: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
     },
     {
