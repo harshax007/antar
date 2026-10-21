@@ -144,7 +144,12 @@ so re-planting on E: alone changes nothing an officer would see.
   the BNSS notice text are left exactly as they are. Covered by 2 tests (`tests/test_osint_checks.py`).
 - Shift plan, case leads and the Map's district-links window now follow the EN|KN switch.
 - Docs brought up to current figures (26 templates, 10 lakh FIRs, 1,155 stations, 113 crime types).
-- Release check: READY, 0 fail, 1 warn (no Brave key).
+- Alerts survive a restart: write-through SQLite at `obs/alerts.db` (`ANTAR_ALERTS=memory` turns it
+  off; tests use memory). `tests/test_alerts_durable.py`.
+- Release check has an eval gate: the 35 golden questions (23 EN, 12 KN) must score at least
+  the baseline in `scripts/eval_baseline.json` (now 23/23 and 12/12). Checked it fails when the
+  score drops. `--save-baseline` records new scores after a deliberate change.
+- Release check: READY, 0 fail, 1 warn (no Brave key); 266 core tests pass.
 
 ## One orchestration contract for both paths · 2026-09-26
 

@@ -225,7 +225,7 @@ OCR accuracy on handwritten Kannada FIRs; a Kannada police glossary.
 
 | Part | Method | Where |
 |---|---|---|
-| Alerts | Anomaly signals stored and grouped | `alerts_store.py`, `/api/alerts` |
+| Alerts | Anomaly signals stored and grouped; kept across restarts in `obs/alerts.db` | `alerts_store.py`, `/api/alerts` |
 | Sentinel watchlists | Entity, pattern or corridor tripwires; adding a watch is a proposal (HITL) screened by Vigil | `sentinel_agent.py`, `/api/sentinel` |
 | Products | Pre-compiled outputs refreshed by the autonomous loop, served with their original timestamp | `product_store.py`, `app/core/worker.py`, `/api/products` |
 | Push | Notifications on Catalyst | `push.py` |
@@ -300,19 +300,18 @@ Done on 2026-10-22: the Docs stats bar now shows measured figures; FIR coordinat
 at the source (`scripts/clean_fir_coordinates.py`, reversible); outdated descriptions fixed;
 the newer screens are in Kannada and the language choice is remembered; chat sessions survive
 a restart; the test suite runs on a copy of main.db; `scripts/release_check.py` gates a build.
+OSINT answers come back in Kannada (`lang=kn`); alerts survive a restart (`obs/alerts.db`); the
+release check fails if the golden question set (EN + KN) scores below `scripts/eval_baseline.json`.
 
 Still open:
 
 1. **Open-web search reliability.** Keyless engines throttle; set `BRAVE_SEARCH_API_KEY`
    (the release check warns until it is set).
 2. **Demonstration data.** 2024-2026 rows are seeded; lead the demo with 2016-2023 facts.
-3. **Server-written OSINT text in Kannada.** The OSINT summary sentences and official-check
-   descriptions come from the backend in English; the screen around them is bilingual.
-4. **Catalyst deployment.** `main.db` is 1.5 GB: decide what ships to Catalyst Data Store and
+3. **Catalyst deployment.** `main.db` is 1.5 GB: decide what ships to Catalyst Data Store and
    what stays local; check cold-start time with the embedder loaded.
-5. **Eval gate.** Add the eval suite score to `scripts/release_check.py` once the eval set is
-   grown from real officer questions.
-6. **Alerts store** is still in memory (a scan repopulates it after a restart).
+4. **Eval set size.** The gate checks 35 golden questions on the offline router; grow the set
+   from real officer questions and add an LLM-path run (`USE_LLM=1`).
 
 Related documents: `AGENTS.md` (agent contract), `docs/MAP_FORECASTING_PLAN.md`,
 `docs/FORECAST_BACKTEST.md`, `docs/FORECAST_FAIRNESS.md`, `docs/SECURITY.md`,
