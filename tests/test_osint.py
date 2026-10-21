@@ -77,7 +77,7 @@ def test_standalone_recon_indian_mobile_number():
     fd = report["forensic_decoder"]
     assert fd["target_type"] == "phone"
     assert fd["normalized"] == "+91-9845067890"
-    assert "Karnataka" in fd["circle"] and "ported" in fd["circle"]
+    assert "Karnataka" in fd["circle"] and "may have moved" in fd["circle"]   # the porting caveat stays
     assert report["phone_infoga"]["format_valid"] is True
     assert "CDR" in report["statutory_requisition"]["subject"]
 
