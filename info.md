@@ -71,7 +71,7 @@ police officer's use case and how well the solution fits the current problem.
 ## 2. Which USPs must land?
 
 1. **An answer to every question (agent approach)** — self-healing retrieval, no dead ends,
-   **0% hallucination rate**, and a RAG pipeline ready for large FIR volumes.
+   every number checked against the FIR rows before it is shown, and a RAG pipeline ready for large FIR volumes.
 2. **Forecasting and hotspot prediction on the map** — with the best, most relevant
    information for geospatial intelligence.
 3. **HITL approval flow and a tamper-evident audit chain**, agentic AI observability, and the

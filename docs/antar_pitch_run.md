@@ -334,4 +334,4 @@ Answer in two sentences. Then offer: **"I can show you in ten seconds."**
 
 ---
 
-**Heads-up:** The Direction lines and the forecast change with the date. The night before, re-run the demo questions and update any number that moved. The home screen says 15 agents while the code has 19 modules — pick one number and use it everywhere.
+**Heads-up:** The Direction lines and the forecast change with the date. The night before, re-run the demo questions and update any number that moved. Agents: say 16 specialist agents (20 including the system nodes), the figure on the Docs stats bar and in AGENTS.md.

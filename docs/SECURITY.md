@@ -96,7 +96,7 @@ system prompt), template selection (earlier turns), the judge (question, row ids
 the map view summary and the Predict briefing (their facts). See §3.6.
 
 **Architectural advantage:** Antar never lets the model write SQL. Questions map to
-whitelisted templates (T1–T23) with validated parameters, so an injected instruction
+whitelisted templates (26, T1–T30) with validated parameters, so an injected instruction
 cannot become a database query. The deterministic answer writer means that when an LLM
 output is blocked, the officer still gets a correct, record-backed answer.
 
@@ -152,7 +152,7 @@ what can someone outside the codebase put in front of the model or the officer h
 | Search page link | `href` taken from the claim as-is (`javascript:` would run on click). | Rendered only for an http(s) address. |
 | Chat / voice requests | `text` had no ceiling below the 10 MB body limit. | 4,000 characters for a question, 6,000 for speech and translation; `session_id` and `lang` bounded. |
 
-Checked and left as they are: the model never writes SQL (templates T1-T23 with validated
+Checked and left as they are: the model never writes SQL (templates T1-T30 with validated
 parameters); no model output is rendered as HTML (the frontend has no
 `dangerouslySetInnerHTML` on data, no markdown images, so no beacon can fire); the model
 has no tools, so an injected instruction has nothing to call; feedback examples replayed

@@ -71,7 +71,7 @@ topology:
 
 ### query
 
-The deterministic spine. Whitelisted templates (T1-T23) over the FIR registry; never free SQL.
+The deterministic spine. Whitelisted templates (26 public, T1-T30) over the FIR registry; never free SQL.
 Escalates through `self_heal` (template reroute, SQL miner relaxation, dense recall, hybrid
 BM25, honest dead-end) rather than returning an empty answer.
 

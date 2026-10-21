@@ -1433,7 +1433,7 @@ function DocsFull() {
                   <span className="gln" style={{top:0,bottom:0,left:"34%",width:"1px"}}></span><span className="gln" style={{top:0,bottom:0,left:"68%",width:"1px"}}></span>
                   <span className="pin2"></span><span className="ring"></span><span className="ring d"></span><span className="hot"></span>
                 </div>
-                <p className="tools-tdesc">Karnataka crime, spatially. Choropleth and hotspots with statistical significance, plus a time scrubber to watch patterns move.</p>
+                <p className="tools-tdesc">Karnataka crime by place. Day, 7-day and 28-day views; each FIR of a day on the map; hotspots tested for significance; places where crime keeps coming back; and the station forecast.</p>
               </div>
 
               {/* 4 predict */}
@@ -1470,7 +1470,7 @@ function DocsFull() {
                   <span className="shield" style={{color: "#EAB308"}}><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path className="chk" style={{stroke:"#EAB308"}} d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
                   <span className="log l1"><span className="dot" style={{background: "#EAB308"}}></span></span><span className="log l2"></span><span className="log l3"></span>
                 </div>
-                <p className="tools-tdesc">Real-time anomaly and threshold alerts. Configure custom geo-fences and suspect movement triggers for instant notifications.</p>
+                <p className="tools-tdesc">Alerts when an area breaks its usual pattern, and watchlists for a person, a pattern or a corridor. Adding a watch is a proposal a supervising officer approves.</p>
               </div>
             </div>
 

@@ -15,7 +15,7 @@
 
 > [!NOTE]
 > **Facts updated from the draft** — say these, not the old ones:
-> 425,000+ FIRs · **41 districts · 1,138 police stations · 2,365 suspects** · 117 crime types · **13** whitelisted question templates · answers in **1–5 seconds** · "Yellappa" is the alias of **Raju K. (S0001)**: 6 priors, 8 linked cases, 2 districts.
+> 10,00,000 FIRs · **41 districts · 1,155 police stations · 2,365 suspects** · 113 crime types · **26** whitelisted question templates · typical answer **2.8 seconds** (median) · "Yellappa" is the alias of **Raju K. (S0001)**: 6 priors, 8 linked cases, 2 districts.
 > Removed because they are not in the build: Section 65B / BSA compliance, DPDP toggles, "98.4% clean rate", map time slider.
 
 ---
@@ -57,7 +57,7 @@
 **[1:36 — Hand-off]** *"Here's how it works."*
 
 ### Key Talking Points (WHY)
-- **425,000+ FIRs**, 41 districts, 1,138 stations — real scale
+- **10,00,000 FIRs**, 41 districts, 1,155 stations — real scale
 - The problem is **fragmentation**, not visualisation
 - Reframe: from "show charts" → **"assemble intelligence and prove it"**
 - Real example: **Raju K. alias Yellappa (S0001)** — 8 cases, 2 districts, shared phone
