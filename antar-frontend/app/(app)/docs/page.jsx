@@ -7,6 +7,7 @@ import { useLang } from "@/components/Providers";
 import { newAssistantMsg, applyEvent, streamChat } from "@/lib/chatStream";
 import { asset } from "@/lib/assets";
 import AgentDoc from "@/components/AgentDoc";
+import OsintDocs from "@/components/OsintDocs";
 import { Mascot } from "page-mascot";
 import { ChevronDown } from "lucide-react";
 
@@ -1448,7 +1449,7 @@ function DocsFull() {
                   <span className="scan"></span>
                   <span className="mag"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3" strokeLinecap="round"/></svg></span>
                 </div>
-                <p className="tools-tdesc">Find anyone, fast, even with spelling mistakes, by name, alias, phone or vehicle number, with optional leads from the public internet.</p>
+                <p className="tools-tdesc">Find anyone, fast, even with spelling mistakes, by name, alias, phone or vehicle number. Open-source checks take any phone, UPI ID, vehicle, bank account, IMEI or website to the open web and public registries, and say what to do next.</p>
               </div>
 
               {/* 6 alerts */}
@@ -1462,6 +1463,8 @@ function DocsFull() {
                 <p className="tools-tdesc">Real-time anomaly and threshold alerts. Configure custom geo-fences and suspect movement triggers for instant notifications.</p>
               </div>
             </div>
+
+            <OsintDocs kn={lang === "kn"} onTry={() => handleNavigate("/search")} />
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.48, delay: 0.4 }} style={{ textAlign: "center", marginTop: "12px" }}>
               <button onClick={explorePrototype}
                 style={{ background: "#22E6F0", color: "#03050C", border: "none", padding: "14px 40px", borderRadius: "999px", fontSize: "14.5px", fontWeight: 800, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", letterSpacing: "0.07em", boxShadow: "0 0 28px rgba(34,230,240,0.25), 0 8px 24px rgba(0,0,0,0.45)", transition: "transform 0.2s, box-shadow 0.2s" }}
