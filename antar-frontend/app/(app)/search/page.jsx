@@ -153,13 +153,7 @@ function SearchContent() {
   const [osintLoading, setOsintLoading] = useState(false);
   const [reconData, setReconData] = useState(null);
   const [reconTab, setReconTab] = useState("decoder"); // "decoder" | "maltego" | "telecom" | "sherlock" | "bbot" | "bnss94"
-  const [osintSources, setOsintSources] = useState([
-    "public_records",
-    "social_media",
-    "court_records",
-    "news_archives",
-    "marketplace",
-  ]);
+  const [osintSources, setOsintSources] = useState([]);   // [] = every kind of page; a chip narrows it
   const [osintDepth, setOsintDepth] = useState("standard");
   const [osintAuditLog, setOsintAuditLog] = useState([]);
   const [osintRecording, setOsintRecording] = useState(false);
@@ -184,9 +178,7 @@ function SearchContent() {
 
   const toggleOsintSource = useCallback((srcKey) => {
     setOsintSources((prev) => {
-      if (prev.includes(srcKey)) {
-        return prev.length > 1 ? prev.filter((k) => k !== srcKey) : prev;
-      }
+      if (prev.includes(srcKey)) return prev.filter((k) => k !== srcKey);
       return [...prev, srcKey];
     });
   }, []);
@@ -448,7 +440,7 @@ function SearchContent() {
                     }
                     setProfileTab("osint");
                   }}
-                  title={kn ? "ಸ್ವತಂತ್ರ ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ ಘಟಕ (FIR ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕವಿಲ್ಲ)" : "Standalone OSINT & Forensic Recon Module (Zero FIR database interaction)"}
+                  title={kn ? "ಸ್ವತಂತ್ರ ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ ಘಟಕ (FIR ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕವಿಲ್ಲ)" : "Open-source checks: only the identifier leaves; the FIR record is never read"}
                   style={{ marginLeft: "auto" }}>
                   {profileTab === "osint"
                     ? (kn ? "OSINT ಮುಚ್ಚಿ" : "Close OSINT")
@@ -588,7 +580,7 @@ function SearchContent() {
                     onClick={() => setProfileTab("osint")}
                   >
                     <Sparkles size={13} />
-                    <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Standalone OSINT & Forensic Recon"}</span>
+                    <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Open-source checks (OSINT)"}</span>
                   </button>
                 </div>
                 <div className="sx-ptabs-actions">
@@ -604,7 +596,7 @@ function SearchContent() {
                       letterSpacing: "0.04em",
                     }}
                   >
-                    {kn ? "ಪ್ರತ್ಯೇಕ ಘಟಕ · FIR ಸಂಪರ್ಕವಿಲ್ಲ" : "ISOLATED MODULE · ZERO FIR ACCESS"}
+                    {kn ? "FIR ಸಂಪರ್ಕವಿಲ್ಲ" : "No FIR access"}
                   </span>
                 </div>
               </div>
@@ -621,7 +613,7 @@ function SearchContent() {
               {osintAllowed && osintConsentOpen && (
                 <div className="sx-osint-consent-wrap">
                   <div className="sx-osint-consent">
-                    <div className="sx-osint-consent-ttl">OPEN-SOURCE CHECKS (OSINT)</div>
+                    <div className="sx-osint-consent-ttl">Open-source checks (OSINT)</div>
                     <p>
                       Check a phone number, UPI ID, vehicle, bank account or IFSC, IMEI, website, email or name against the open web and public registries.
                       Only the identifier you type leaves the building: this <b>never reads or changes the FIR record</b>.
@@ -713,45 +705,75 @@ function SearchContent() {
                         ))}
                       </div>
 
-                      <div className="sx-ql">{kn ? "ಗುಪ್ತಚರ ಮೂಲಗಳು" : "Intelligence sources"}</div>
-                      <div className="sx-src-grid">
-                        {[
-                          { key: "public_records", label: kn ? "ಸಾರ್ವಜನಿಕ ದಾಖಲೆ" : "Public Records" },
-                          { key: "social_media", label: kn ? "ಸಾಮಾಜಿಕ ಜಾಲತಾಣ" : "Social Media" },
-                          { key: "court_records", label: kn ? "ನ್ಯಾಯಾಲಯ ದಾಖಲೆ" : "Court Records" },
-                          { key: "news_archives", label: kn ? "ಸುದ್ದಿ ಪತ್ರಾಗಾರ" : "News Archives" },
-                          { key: "marketplace", label: kn ? "ಮಾರುಕಟ್ಟೆ" : "Marketplace" },
-                          { key: "geo_tagged", label: kn ? "ಭೌಗೋಳಿಕ" : "Geo-tagged" },
-                        ].map((src) => {
-                          const active = osintSources.includes(src.key);
-                          return (
-                            <button
-                              type="button"
-                              key={src.key}
-                              onClick={() => toggleOsintSource(src.key)}
-                              className={`sx-src ${active ? "on" : ""}`}
-                              style={{ cursor: "pointer", textAlign: "left" }}
-                            >
-                              <span className="dot" />
-                              <span className="nm">{src.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <div className="sx-ql">{kn ? "ಮೂಲಗಳು" : "Sources"}</div>
+                      {(() => {
+                        const liveUsed = (reconData?.live_checks || []).map((c) => c.name).join(" ");
+                        const offUsed = (reconData?.official_checks || []).map((c) => c.name).join(" ");
+                        const REG = [
+                          ["RBI IFSC list", "IFSC, bank account", /IFSC registry/],
+                          ["Domain registry (WHOIS)", "Website, email", /WHOIS/],
+                          ["Certificate log", "Website", /certificates/i],
+                          ["IMEI check digit", "IMEI", /IMEI check/],
+                        ];
+                        const OFF = [
+                          ["I4C Suspect Registry", "Phone, UPI, account, website", /I4C/],
+                          ["Sanchar Saathi", "Phone, IMEI", /Sanchar Saathi/],
+                          ["eChallan and Vahan", "Vehicle", /eChallan|Vahan/],
+                          ["eCourts and Indian Kanoon", "Name", /eCourts|Kanoon/],
+                          ["MCA company search", "Name", /MCA/],
+                          ["NCRP 1930", "UPI, bank account", /NCRP/],
+                          ["URLhaus and Wayback", "Website", /URLhaus|Wayback/],
+                        ];
+                        const row = ([nm, forWhat, re], used) => (
+                          <li key={nm} className={reconData && re.test(used) ? "on" : ""}>
+                            <i aria-hidden="true" /><span>{nm}</span><em>{forWhat}</em>
+                          </li>
+                        );
+                        return (
+                          <div className="osq">
+                            <div className="osq-g">
+                              <div className="osq-h"><b>{kn ? "ಮುಕ್ತ ವೆಬ್" : "Open web"}</b>
+                                <span>{osintSources.length ? (kn ? "ಈ ಪುಟಗಳು ಮಾತ್ರ" : "only these kinds of page") : (kn ? "ಎಲ್ಲ ಪುಟಗಳು" : "every kind of page")}</span></div>
+                              <div className="osq-chips">
+                                {[
+                                  ["news_archives", kn ? "ಸುದ್ದಿ" : "News"],
+                                  ["court_records", kn ? "ನ್ಯಾಯಾಲಯ" : "Court and legal"],
+                                  ["public_records", kn ? "ಸರ್ಕಾರಿ" : "Government"],
+                                  ["social_media", kn ? "ಸಾಮಾಜಿಕ" : "Social media"],
+                                  ["marketplace", kn ? "ಮಾರುಕಟ್ಟೆ" : "Marketplace"],
+                                ].map(([key, label]) => (
+                                  <button type="button" key={key} aria-pressed={osintSources.includes(key)}
+                                          className={osintSources.includes(key) ? "on" : ""} onClick={() => toggleOsintSource(key)}>{label}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="osq-g">
+                              <div className="osq-h"><b>{kn ? "ನೇರ ದಾಖಲೆ ಪರಿಶೀಲನೆ" : "Registries, checked live"}</b><span>{kn ? "ಅನ್ವಯಿಸಿದಾಗ" : "when they apply"}</span></div>
+                              <ul className="osq-list">{REG.map((r) => row(r, liveUsed))}</ul>
+                            </div>
+                            <div className="osq-g">
+                              <div className="osq-h"><b>{kn ? "ಅಧಿಕೃತ ಪೋರ್ಟಲ್‌ಗಳು" : "Official portals"}</b><span>{kn ? "ಫಲಿತಾಂಶದಲ್ಲಿ" : "listed in the results"}</span></div>
+                              <ul className="osq-list">{OFF.map((r) => row(r, offUsed))}</ul>
+                            </div>
+                            {reconData && <p className="osq-note">{kn ? "ಬೆಳಗಿದವು ಈ ಹುಡುಕಾಟಕ್ಕೆ ಬಳಸಲಾಗಿದೆ." : "Lit: used for this search."}</p>}
+                          </div>
+                        );
+                      })()}
 
-                      <div className="sx-ql">{kn ? "ಹುಡುಕಾಟ ಆಳ" : "Search depth"}</div>
+                      <div className="sx-ql">{kn ? "ಎಷ್ಟು ಪುಟಗಳನ್ನು ಓದಬೇಕು" : "How many pages to keep"}</div>
                       <div className="sx-depth">
                         {[
-                          { key: "surface", label: "Surface" },
-                          { key: "standard", label: "Standard" },
-                          { key: "deep", label: "Deep" },
-                          { key: "full", label: "Full" },
+                          { key: "surface", label: "3" },
+                          { key: "standard", label: "5" },
+                          { key: "deep", label: "8" },
+                          { key: "full", label: "12" },
                         ].map((d) => (
                           <button
                             type="button"
                             key={d.key}
                             onClick={() => setOsintDepth(d.key)}
                             className={osintDepth === d.key ? "on" : ""}
+                            title={`Keep up to ${d.label} pages that mention it`}
                           >
                             {d.label}
                           </button>
@@ -866,7 +888,7 @@ function SearchContent() {
                     onClick={() => setProfileTab("osint")}
                   >
                     <Sparkles size={13} />
-                    <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Standalone OSINT & Forensic Recon"}</span>
+                    <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Open-source checks (OSINT)"}</span>
                   </button>
                 </div>
                 <div className="sx-ptabs-actions">

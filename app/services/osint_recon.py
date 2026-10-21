@@ -176,7 +176,7 @@ def _decode_extra(q: str, q_hash: str) -> dict[str, Any] | None:
         ifsc = m_ifsc.group(1).upper()
         acc = rest_digits
         return {
-            "target_type": "bank_account", "target_label": "Bank Account (with IFSC)",
+            "target_type": "bank_account", "target_label": "Bank account",
             "normalized": f"{acc} / {ifsc}", "account_number": acc, "ifsc": ifsc, "bank_code": ifsc[:4],
             "sha256_fingerprint": f"HASH-{q_hash}",
             "decoded_fields": [
@@ -190,7 +190,7 @@ def _decode_extra(q: str, q_hash: str) -> dict[str, Any] | None:
     if m_ifsc and len(compact) == 11:
         ifsc = m_ifsc.group(1).upper()
         return {
-            "target_type": "ifsc", "target_label": "Bank Branch Code (IFSC)",
+            "target_type": "ifsc", "target_label": "Bank branch code (IFSC)",
             "normalized": ifsc, "ifsc": ifsc, "bank_code": ifsc[:4],
             "sha256_fingerprint": f"HASH-{q_hash}",
             "decoded_fields": [
@@ -203,7 +203,7 @@ def _decode_extra(q: str, q_hash: str) -> dict[str, Any] | None:
     # IMEI: 15 digits (16 for an IMEI-SV, whose last two are a software version)
     if compact.isdigit() and len(compact) == 15:
         return {
-            "target_type": "imei", "target_label": "Mobile Handset IMEI",
+            "target_type": "imei", "target_label": "Handset IMEI",
             "normalized": compact, "sha256_fingerprint": f"HASH-{q_hash}",
             "decoded_fields": [
                 {"label": "IMEI", "value": compact},
@@ -219,7 +219,7 @@ def _decode_extra(q: str, q_hash: str) -> dict[str, Any] | None:
                      or (len(digits) == 11 and digits.startswith("0")))
     if re.fullmatch(r"[\d\s-]+", q.strip()) and 9 <= len(digits) <= 18 and not is_phone_like:
         return {
-            "target_type": "bank_account", "target_label": "Bank Account Number",
+            "target_type": "bank_account", "target_label": "Bank account",
             "normalized": digits, "account_number": digits, "ifsc": None, "bank_code": None,
             "sha256_fingerprint": f"HASH-{q_hash}",
             "decoded_fields": [
@@ -233,7 +233,7 @@ def _decode_extra(q: str, q_hash: str) -> dict[str, Any] | None:
     if m_dom and "@" not in q and m_dom.group(2).lower() in _TLDS:
         dom = m_dom.group(1).lower()
         return {
-            "target_type": "domain", "target_label": "Website / Link",
+            "target_type": "domain", "target_label": "Website",
             "normalized": dom, "domain": dom, "sha256_fingerprint": f"HASH-{q_hash}",
             "decoded_fields": [
                 {"label": "Website", "value": dom},
@@ -265,7 +265,7 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
             normalized = f"{yr}-BH-{num}-{series}"
             return {
                 "target_type": "vehicle_plate",
-                "target_label": "Bharat Series (BH) Vehicle Registration",
+                "target_label": "Vehicle number (Bharat series)",
                 "normalized": normalized,
                 "state": "All-India Bharat Series (MoRTH)",
                 "rto_code": f"{yr}-BH",
@@ -305,7 +305,7 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
         )
         return {
             "target_type": "vehicle_plate",
-            "target_label": "Indian Vehicle Registration / RTO Identifier",
+            "target_label": "Vehicle number",
             "normalized": normalized,
             "state": state_name,
             "rto_code": rto_code,
@@ -350,7 +350,7 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
             )
             return {
                 "target_type": "upi_vpa",
-                "target_label": "UPI Virtual Payment Address (Financial Handle)",
+                "target_label": "UPI ID",
                 "normalized": f"{local_part.lower()}@{dom_low}",
                 "vpa_prefix": local_part,
                 "psp_handle": f"@{dom_low}",
@@ -382,7 +382,7 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
         else:
             return {
                 "target_type": "email",
-                "target_label": "Electronic Mail Identifier",
+                "target_label": "Email address",
                 "normalized": q.lower(),
                 "local_part": local_part,
                 "domain": dom_low,
@@ -424,18 +424,18 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
         }
         prefix4 = nat_num[:4] if len(nat_num) >= 4 else ""
         if prefix4.startswith(("9845", "9900", "9880", "9945", "9740", "9686", "8971")):
-            circle_hint = "First allocated in Karnataka circle (may have been ported since)"
+            circle_hint = "First given out in Karnataka (it may have moved to another operator or circle since)"
         elif prefix4.startswith(("9844", "9901", "9886", "9731", "9611", "9448", "9449", "9480")):
-            circle_hint = "First allocated in Karnataka circle, BSNL block (may have been ported since)"
+            circle_hint = "First given out in Karnataka by BSNL (it may have moved to another operator or circle since)"
         elif len(nat_num) == 10:
-            circle_hint = "Indian mobile number; the circle cannot be told from the number (numbers can be ported)"
+            circle_hint = "The state it was first given out in cannot be told from the number"
         else:
             circle_hint = "Cryptographic Phone Hash Identifier"
 
         ph_hash = hashlib.sha256(nat_num.encode("utf-8")).hexdigest()[:16].upper() if nat_num else q_hash
         return {
             "target_type": "phone",
-            "target_label": "Indian Mobile / Telecom Subscriber Identifier",
+            "target_label": "Mobile number",
             "normalized": e164,
             "national_number": nat_num,
             "trai_series": series_map.get(first_digit, "Cryptographic Telecom Hash"),
@@ -466,7 +466,7 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
     clean_handle = re.sub(r"[^A-Za-z0-9_.-]", "", q.lstrip("@")).lower() or "target"
     return {
         "target_type": "handle" if is_handle else "person_or_entity",
-        "target_label": "Digital Handle / Alias" if is_handle else "Named Subject / Location / Entity",
+        "target_label": "Online username" if is_handle else "Name (person, company or place)",
         "normalized": f"@{clean_handle}" if is_handle else q,
         "clean_handle": clean_handle,
         "sha256_fingerprint": f"HASH-{q_hash}",

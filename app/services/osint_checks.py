@@ -395,7 +395,7 @@ def official_checks(decoded: dict[str, Any]) -> list[dict]:
 # ── 4. the officer's summary ───────────────────────────────────────────────────
 
 _WHAT = {
-    "phone": lambda d: f"An Indian mobile number ({d.get('normalized')}). {d.get('circle', '')}.",
+    "phone": lambda d: f"An Indian mobile number. {d.get('circle', '')}.",
     "upi_vpa": lambda d: f"A UPI ID on {d.get('psp_app')}, settled by {d.get('sponsor_bank')}."
                          + (f" It carries the mobile number {d['linked_mobile']}." if d.get("linked_mobile") else ""),
     "vehicle_plate": lambda d: f"A vehicle registered at {d.get('rto_office')} ({d.get('district')}, {d.get('state')}).",
