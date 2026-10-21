@@ -201,7 +201,7 @@ export default function LoginPage() {
             onMouseEnter={(e) => (e.currentTarget.style.color = "#22E6F0")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
           >
-            [ {kn ? "ಕಾರ್ಯಾಚರಣೆ ಪ್ರವೇಶ" : "OPERATIONS ACCESS"} ]
+            [ {kn ? "ಡೆಮೊ ಪ್ರವೇಶ" : "DEMO ACCESS"} ]
           </button>
         </div>
       </section>

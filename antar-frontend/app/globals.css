@@ -4100,6 +4100,19 @@ html[data-chatnav="1"] .xw { top: 60px !important; height: calc(100vh - 60px) !i
 .cx-chip.cx-sugg.cx-sugg-role:hover { border-color: rgba(134,239,172,.6); }
 .cx-chip.cx-sugg.cx-sugg-role::before { content: "\2605"; color: #86efac; }
 
+/* ── Suggested Questions Grid & Year Questions ── */
+.sq-row { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 760px; }
+.sq-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; flex: 1; min-width: 0; }
+@media (max-width: 640px) { .sq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sq-q { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  white-space: normal; text-align: center; background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 9px 12px; cursor: pointer; min-height: 46px; align-content: center;
+  font: 400 12px/1.4 'Inter', sans-serif; color: rgba(255, 255, 255, 0.65); transition: color 0.15s, border-color 0.15s, background 0.15s; }
+.sq-q:hover { color: #fff; border-color: rgba(34, 230, 240, 0.4); background: rgba(34, 230, 240, 0.05); }
+.sq-more { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.6); cursor: pointer; transition: all 0.15s; }
+.sq-more:hover { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+
 /* ── Expert workspace: sources, insights, background tasks, job results ─────── */
 .c2-srcgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; margin-top: 6px; }
 .c2-srcgrid > div { min-width: 0; }

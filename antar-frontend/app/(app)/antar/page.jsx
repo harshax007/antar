@@ -86,24 +86,28 @@ const ROLE_QUESTIONS = {
 // (PROGRESS.md, open risks).
 const STARTERS = {
   en: [
-    "Which districts had the most theft in 2022?",
-    "Which districts had the most murders in 2022?",
+    "Cognizable FIRs registered in Karnataka in 2022?",
+    "IPC/BNS vs SLL split for 2022?",
     "Which police stations recorded the most cybercrime in 2022?",
-    "Crimes against women by district in 2022",
+    "Which districts had the most murders in 2022?",
+    "Crimes against women 2022 + top districts?",
+    "Fastest-growing crime groups 2021 to 2022?",
+    "Which districts had the most theft in 2022?",
     "Top areas for theft in Mysuru City",
     "Which district had the most road accident cases in 2022?",
-    "IPC/BNS vs SLL split for 2022?",
     "Conviction rate by district in 2022",
     "Top beats for burglary in Bengaluru City",
   ],
   kn: [
-    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
-    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕೊಲೆಗಳು ದಾಖಲಾಗಿವೆ?",
+    "2022 ರಲ್ಲಿ ಕರ್ನಾಟಕದಲ್ಲಿ ದಾಖಲಾದ ಕಾಗ್ನಿಜೇಬಲ್ FIR ಗಳು ಎಷ್ಟು?",
+    "2022 ರ IPC/BNS ಮತ್ತು SLL ಹಂಚಿಕೆ",
     "2022 ರಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧ ಹೆಚ್ಚು ದಾಖಲಾದ ಠಾಣೆಗಳು",
-    "2022 ರಲ್ಲಿ ಜಿಲ್ಲಾವಾರು ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧ",
+    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕೊಲೆಗಳು ದಾಖಲಾಗಿವೆ?",
+    "2022 ರ ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧಗಳು + ಪ್ರಮುಖ ಜಿಲ್ಲೆಗಳು",
+    "2021 ರಿಂದ 2022 ಕ್ಕೆ ವೇಗವಾಗಿ ಬೆಳೆಯುತ್ತಿರುವ ಅಪರಾಧ ಗುಂಪುಗಳು",
+    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
     "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
     "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು",
-    "2022 ರ IPC/BNS ಮತ್ತು SLL ಹಂಚಿಕೆ",
   ],
 };
 
@@ -1583,11 +1587,14 @@ export default function ChatPage() {
         // stream, leaves a message saved mid-answer: that one is marked interrupted, so
         // the Stopped strip offers Regenerate with the original question.
         const saved = JSON.parse(savedMsg);
+        const filtered = Array.isArray(saved)
+          ? saved.filter((m) => !m?.text?.startsWith("Welcome to Antar Crime Intelligence") && !m?.text?.startsWith("ನಮಸ್ಕಾರ. Antar ಅಪರಾಧ"))
+          : [];
         if (LIVE.inflight) setLoading(true);
-        setMessages(Array.isArray(saved) ? saved.map((m, i) => (m && m.streaming && !LIVE.inflight)
+        setMessages(filtered.map((m, i) => (m && m.streaming && !LIVE.inflight)
           ? { ...m, streaming: false, stopped: true,
-              retryText: m.retryText || (saved[i - 1]?.role === "user" ? saved[i - 1].text : undefined) }
-          : m) : []);
+              retryText: m.retryText || (filtered[i - 1]?.role === "user" ? filtered[i - 1].text : undefined) }
+          : m));
       }
       if (savedSess) setSessionId(savedSess);
       if (savedMode) setMode(savedMode);
@@ -1929,6 +1936,7 @@ export default function ChatPage() {
   function newSession() {
     if (LIVE.inflight) stopChat();   // a running answer must not land in the new conversation
     stopTts();                       // a new session should not keep reading the old answer
+    setDocsMode(true);
     setMessages([]);
     setSessionId(null);
     setGraph(null);
@@ -2111,9 +2119,11 @@ export default function ChatPage() {
     .filter((q) => !avoidQs.has(q.trim().toLowerCase()))
     .slice(0, 2);
   const empty = messages.length === 0;
+  const hasUserTurn = messages.some((m) => m.role === "user" && m.text?.trim());
   // Expert Search → Bench workspace (right pane).
   const workspaceOn = deepThink && !empty;
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && !m.streaming && m.text);
+  const hasAnswer = messages.some((m) => m.role === "assistant" && m.text?.trim() && !m.error);
   const lastUserQ = (() => { const i = messages.map((m) => m.role).lastIndexOf("user"); return i >= 0 ? messages[i].text : ""; })();
 
   const starters = suggestedQs.length > 0 
@@ -2445,7 +2455,8 @@ export default function ChatPage() {
               style={{
                 textAlign: "center",
                 marginBottom: "36px",
-                maxWidth: "680px"
+                maxWidth: "860px",
+                width: "100%"
               }}
             >
               <h1 className="cx-hero-h1" style={{
@@ -2460,19 +2471,22 @@ export default function ChatPage() {
                 {kn ? <><span className="hover-brand">Antar</span> ಇಂದು ನಿಮಗೆ <span style={{ color: "rgba(255,255,255,0.45)" }}>ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?</span></>
                     : <>What can <span className="hover-brand">Antar</span> help you with <span style={{ color: "rgba(255,255,255,0.45)" }}>today?</span></>}
               </h1>
-              <p style={{
-                fontSize: "14.5px",
-                color: "rgba(255, 255, 255, 0.72)",
-                lineHeight: 1.55,
-                margin: 0,
-                fontWeight: 400,
-                letterSpacing: "0.01em",
-                fontFamily: kn ? "'Noto Sans Kannada', sans-serif" : "'Inter', sans-serif"
-              }}>
+              <p
+                className="whitespace-normal md:whitespace-nowrap"
+                style={{
+                  fontSize: "clamp(13px, 1.05vw, 14.5px)",
+                  color: "rgba(255, 255, 255, 0.72)",
+                  lineHeight: 1.55,
+                  margin: 0,
+                  fontWeight: 400,
+                  letterSpacing: "0.01em",
+                  fontFamily: kn ? "'Noto Sans Kannada', sans-serif" : "'Inter', sans-serif"
+                }}
+              >
                 {kn ? (
-                  <>ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ ಕೇಳಿ. ಉತ್ತರಗಳು ಹತ್ತು ಲಕ್ಷ ಸಾಲುಗಳ FIR ದಾಖಲೆಯಿಂದ ಬರುತ್ತವೆ, ಪ್ರತಿ ಅಂಕಿಯ ಹಿಂದಿನ ದಾಖಲೆಗಳೊಂದಿಗೆ.</>
+                  <>ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ ಪ್ರಶ್ನಿಸಿ. ಪ್ರತಿಯೊಂದು ಉತ್ತರವೂ ಅಧಿಕೃತ FIR ದಾಖಲೆಗಳಿಂದ ನೇರವಾಗಿ ಪರಿಶೀಲಿಸಲ್ಪಟ್ಟಿದೆ.</>
                 ) : (
-                  <>Ask in English or Kannada. Answers come from a million-row FIR registry, with the records behind every figure.</>
+                  <>Query in English or Kannada. Every response is verified and cited directly from official FIR records.</>
                 )}
               </p>
             </motion.div>
@@ -2845,6 +2859,44 @@ export default function ChatPage() {
               {sessionId && <button className="cx-export" onClick={exportReport} title="Export an intelligence report">{kn ? "ರಫ್ತು" : "Export"}</button>}
             </div>
 
+            {/* Suggested questions: 6 pills grid with refresh and by-year filter, same as requested */}
+            {!hasUserTurn && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "16px",
+                  maxWidth: "760px",
+                  width: "100%"
+                }}
+              >
+                {(() => {
+                  const fallbackList = STARTERS[lang] || STARTERS.en;
+                  const list = askYear ? yearQuestions(askYear, lang) : (rotatorStarters?.length ? rotatorStarters : fallbackList);
+                  const off = list.length ? starterOffset % list.length : 0;
+                  const shown = [...list.slice(off), ...list.slice(0, off)].slice(0, 6);
+                  return (
+                    <div className="sq-row">
+                      <div className="sq-grid">
+                        {shown.map((s) => (
+                          <button key={s} type="button" className="sq-q" title={s} onClick={() => send(s)}>{s}</button>
+                        ))}
+                      </div>
+                      {list.length > 6 && (
+                        <button type="button" className="sq-more" onClick={() => setStarterOffset((o) => o + 6)}
+                                title={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}
+                                aria-label={kn ? "ಇನ್ನಷ್ಟು ಪ್ರಶ್ನೆಗಳನ್ನು ತೋರಿಸಿ" : "Show more questions"}>
+                          <RefreshCw size={11} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+                <YearQuestions lang={lang} year={askYear} onYear={(y) => { setAskYear(y); setStarterOffset(0); }} />
+              </div>
+            )}
             <div className="cx-searchwrap">{searchBar}</div>
             <div className="cx-hint">
               {kn ? "ಕಳುಹಿಸಲು Enter · ಮಾತನಾಡಲು ಮೈಕ್" : "Enter to send · Shift+Enter = new line · tap the mic to speak"}
