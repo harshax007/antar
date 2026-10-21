@@ -106,6 +106,10 @@ class TestImageInput:
 
     def test_the_vision_call_never_forwards_an_address(self, monkeypatch):
         from app.services import quickml as Q
+        from app.services import llm as _llm
+        # the suite blanks the QuickML credentials (offline), which would stop the call at
+        # "no vision model configured" before the address check this test is about
+        monkeypatch.setattr(_llm, "provider", lambda: "quickml")
         monkeypatch.setattr(Q.settings, "QUICKML_VISION_ENDPOINT_URL", "https://vision.invalid/x", raising=False)
 
         async def no_headers():

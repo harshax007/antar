@@ -33,6 +33,36 @@ import sqlite3
 
 import pytest
 
+# The suite runs against a COPY of main.db, taken once per session with SQLite's backup API
+# (consistent even while the backend has the file open; ~7 s for 1.5 GB). Tests used to run
+# on the live demo database: write paths persisted into it, and the clean-up below had to
+# guess which rows were the suite's, so a backend writing at the same moment lost rows and
+# "stop the backend before running pytest" was a rule. Must happen before anything imports
+# app.core.db_path, which reads ANTAR_DB once. ANTAR_TEST_LIVE_DB=1 runs on the live file.
+# Conversations stay in memory under test: the suite must not write the live session file.
+os.environ.setdefault("ANTAR_SESSIONS", "memory")
+
+if os.getenv("ANTAR_TEST_LIVE_DB") != "1":
+    import atexit
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    _root = Path(__file__).resolve().parents[1]
+    _src = Path(os.environ.get("ANTAR_DB") or "main.db")
+    _src = _src if _src.is_absolute() else _root / _src
+    if _src.exists():
+        # On Windows the copy can still be open when the interpreter exits, so the atexit
+        # removal may fail; a copy left by an earlier run is removed here instead.
+        for _old in Path(tempfile.gettempdir()).glob("antar_test_db_*"):
+            shutil.rmtree(_old, ignore_errors=True)
+        _tmp = Path(tempfile.mkdtemp(prefix="antar_test_db_"))
+        _copy = _tmp / "main.db"
+        with sqlite3.connect(f"file:{_src}?mode=ro", uri=True) as _a, sqlite3.connect(_copy) as _b:
+            _a.backup(_b, pages=20000)
+        os.environ["ANTAR_DB"] = str(_copy)
+        atexit.register(shutil.rmtree, _tmp, ignore_errors=True)
+
 from app.core.settings import settings
 
 

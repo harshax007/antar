@@ -296,26 +296,23 @@ Reports and lead sheets (`/api/export`, printable report pages); long-running jo
 
 ## 15. What to finalise before calling the build done
 
-Known gaps, most important first:
+Done on 2026-10-22: the Docs stats bar now shows measured figures; FIR coordinates are cleaned
+at the source (`scripts/clean_fir_coordinates.py`, reversible); outdated descriptions fixed;
+the newer screens are in Kannada and the language choice is remembered; chat sessions survive
+a restart; the test suite runs on a copy of main.db; `scripts/release_check.py` gates a build.
 
-1. **Overclaims on the Docs stats bar.** It still says "0% hallucination rate" and "0 external
-   dependencies". The second is now untrue (OSINT, Bhashini, the event calendar and the LLM all
-   call out), and the first cannot be proven. Replace them with measured figures (eval score,
-   forecast "held in 80% of tested weeks").
-2. **Open-web search reliability.** Keyless engines throttle; set `BRAVE_SEARCH_API_KEY`.
-3. **Demonstration data.** 2024-2026 rows are seeded; every screen should say so where it
-   matters, and the demo script should lead with 2016-2023 facts.
-4. **Coordinates.** Many FIR points are at the station or in the wrong district; the Map now
-   works around it (centre placement, filters) but the data needs cleaning at source.
-5. **Stale descriptions in code.** For example `quickml.py` still says "Qwen 2.5 14B" while
-   settings use Qwen 3.6 / GLM-4.7-Flash. Sweep the module docstrings once.
-6. **Kannada coverage.** Newer screens (OSINT tables, Docs tables, some Map cards) are English
-   only.
-7. **Catalyst deployment.** `main.db` is 1.5 GB: decide what ships to Catalyst Data Store and
+Still open:
+
+1. **Open-web search reliability.** Keyless engines throttle; set `BRAVE_SEARCH_API_KEY`
+   (the release check warns until it is set).
+2. **Demonstration data.** 2024-2026 rows are seeded; lead the demo with 2016-2023 facts.
+3. **Server-written OSINT text in Kannada.** The OSINT summary sentences and official-check
+   descriptions come from the backend in English; the screen around them is bilingual.
+4. **Catalyst deployment.** `main.db` is 1.5 GB: decide what ships to Catalyst Data Store and
    what stays local; check cold-start time with the embedder loaded.
-8. **Tests and the live database.** Some tests write to `main.db`; run them only with the
-   backend stopped, or point them at a copy.
-9. **Eval gate.** Run the eval suite before each demo build and record the score.
+5. **Eval gate.** Add the eval suite score to `scripts/release_check.py` once the eval set is
+   grown from real officer questions.
+6. **Alerts store** is still in memory (a scan repopulates it after a restart).
 
 Related documents: `AGENTS.md` (agent contract), `docs/MAP_FORECASTING_PLAN.md`,
 `docs/FORECAST_BACKTEST.md`, `docs/FORECAST_FAIRNESS.md`, `docs/SECURITY.md`,

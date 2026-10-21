@@ -1,30 +1,95 @@
 """
-Antar — Conversation & Reasoning Store (dev: in-memory)
-===========================================================
+Antar — Conversation & Reasoning Store
+======================================
 Holds per-session conversation turns (for context-aware follow-ups, M1) and the
 per-turn reasoning trail (for the "why?" Explain capability, M9).
 
-Phase 3 status: IN-MEMORY (a dict). This is the dev stand-in for Catalyst NoSQL
-collections `chat_sessions` + `agent_reasoning_logs`. The interface below is what
-the NoSQL version will implement — swap the body, keep the signatures, and nothing
-upstream changes. In-memory means history resets when the server restarts (fine for dev).
+Durable: an in-memory dict is the hot copy, and every change is written through to a small
+SQLite file of its own (`obs/chat_sessions.db`, or ANTAR_SESSIONS_DB), so a restart in the
+middle of a conversation keeps its follow-ups ("and last year?") and its "why?". A session
+not in memory is read back from the file on first use. It is kept apart from main.db on
+purpose: conversations are not FIR records. ANTAR_SESSIONS=memory restores the old
+in-process behaviour (the test suite uses it). Sessions untouched for 30 days are pruned.
+The interface is unchanged, so a Catalyst NoSQL version can still replace the body.
 """
 
 from __future__ import annotations
 
+import json
+import os
+import sqlite3
+import threading
 import time
 
 # session_id -> {"turns": [...], "entities": {...}, "topic_thread": {...}}
 _SESSIONS: dict[str, dict] = {}
 _MAX_TURNS = 50  # cap memory per session
+_KEEP_DAYS = 30
+
+_db_lock = threading.Lock()
+_db: sqlite3.Connection | None = None
+_db_failed = False
+
+
+def _store() -> sqlite3.Connection | None:
+    """The session file, opened once. None when persistence is off or the file cannot be used
+    (the conversation then simply lives in memory, as it always did)."""
+    global _db, _db_failed
+    if _db is not None or _db_failed or (os.getenv("ANTAR_SESSIONS") or "").lower() == "memory":
+        return _db
+    try:
+        path = os.getenv("ANTAR_SESSIONS_DB")
+        if not path:
+            from app.obs.config import OBS_DIR
+            os.makedirs(OBS_DIR, exist_ok=True)
+            path = str(OBS_DIR / "chat_sessions.db")
+        con = sqlite3.connect(path, check_same_thread=False, timeout=5)
+        con.execute("PRAGMA journal_mode=WAL")
+        con.execute("CREATE TABLE IF NOT EXISTS chat_sessions (session_id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at REAL NOT NULL)")
+        con.execute("DELETE FROM chat_sessions WHERE updated_at < ?", (time.time() - _KEEP_DAYS * 86400,))
+        con.commit()
+        _db = con
+    except Exception:
+        _db_failed = True
+    return _db
+
+
+def _load(session_id: str) -> dict | None:
+    con = _store()
+    if con is None or not session_id:
+        return None
+    try:
+        with _db_lock:
+            row = con.execute("SELECT data FROM chat_sessions WHERE session_id = ?", (session_id,)).fetchone()
+        return json.loads(row[0]) if row else None
+    except Exception:
+        return None
+
+
+def _save(session_id: str) -> None:
+    con = _store()
+    if con is None or not session_id or session_id not in _SESSIONS:
+        return
+    try:
+        data = json.dumps(_SESSIONS[session_id], default=str, ensure_ascii=False)
+        with _db_lock:
+            con.execute("INSERT INTO chat_sessions (session_id, data, updated_at) VALUES (?, ?, ?) "
+                        "ON CONFLICT(session_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at",
+                        (session_id, data, time.time()))
+            con.commit()
+    except Exception:
+        pass          # a failed write must never break the answer; memory still has it
 
 
 def _session(session_id: str) -> dict:
-    s = _SESSIONS.setdefault(session_id, {
-        "turns": [],
-        "entities": {"suspects": [], "zones": [], "crime_types": []},
-        "topic_thread": {"current_topic": "general", "turns_on_topic": 0}
-    })
+    s = _SESSIONS.get(session_id)
+    if s is None:
+        s = _load(session_id) or {
+            "turns": [],
+            "entities": {"suspects": [], "zones": [], "crime_types": []},
+            "topic_thread": {"current_topic": "general", "turns_on_topic": 0}
+        }
+        _SESSIONS[session_id] = s
     return s
 
 
@@ -43,6 +108,7 @@ def update_session_entities(session_id: str, entities: dict) -> None:
             # deduplicate while preserving order (newest first or appended)
             merged = list(dict.fromkeys(list(new_items) + list(cur.get(k, []))))[:15]
             cur[k] = merged
+    _save(session_id)
 
 
 def append_user_turn(session_id: str, text: str, lang: str) -> None:
@@ -68,6 +134,7 @@ def append_user_turn(session_id: str, text: str, lang: str) -> None:
     else:
         thread["current_topic"] = new_topic
         thread["turns_on_topic"] = 1
+    _save(session_id)
 
 
 def append_assistant_turn(session_id: str, text: str, lang: str, template_id: str,
@@ -84,6 +151,7 @@ def append_assistant_turn(session_id: str, text: str, lang: str, template_id: st
         turn["meta"] = meta
     s["turns"].append(turn)
     s["turns"] = s["turns"][-_MAX_TURNS:]
+    _save(session_id)
 
 
 def all_turns(session_id: str) -> list[dict]:
@@ -112,11 +180,14 @@ def has_assistant_turn(session_id: str) -> bool:
 def clear(session_id: str) -> None:
     _SESSIONS.pop(session_id, None)
     _KUL_SESSIONS.pop(session_id, None)
-    try:
-        pass
-        # NoSQL clear if possible
-    except Exception:
-        pass
+    con = _store()
+    if con is not None:
+        try:
+            with _db_lock:
+                con.execute("DELETE FROM chat_sessions WHERE session_id = ?", (session_id,))
+                con.commit()
+        except Exception:
+            pass
 
 
 # ── Layer 1 KUL Conversational Intelligence Store ─────────────────────────────
