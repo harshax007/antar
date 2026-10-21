@@ -365,7 +365,9 @@ function SearchContent() {
         setReconData(r);
         const decodedLabel = r?.forensic_decoder?.target_label || "Identifier";
         appendOsintAudit(
-          `${decodedLabel}: ${claimList.length} of ${d?.pages_checked ?? "?"} pages mention it · ${r?.live_checks?.length || 0} live checks · ${r?.official_checks?.length || 0} official checks`
+          (kn
+            ? `${decodedLabel}: ${d?.pages_checked ?? "?"} ರಲ್ಲಿ ${claimList.length} ಪುಟಗಳು ಉಲ್ಲೇಖಿಸುತ್ತವೆ · ${r?.live_checks?.length || 0} ನೇರ ಪರಿಶೀಲನೆ · ${r?.official_checks?.length || 0} ಅಧಿಕೃತ ಪರಿಶೀಲನೆ`
+            : `${decodedLabel}: ${claimList.length} of ${d?.pages_checked ?? "?"} pages mention it · ${r?.live_checks?.length || 0} live checks · ${r?.official_checks?.length || 0} official checks`)
         );
       })
       .finally(() => setOsintLoading(false));

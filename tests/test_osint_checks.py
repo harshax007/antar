@@ -238,3 +238,9 @@ def test_kannada_live_check_is_rebuilt_from_its_facts():
     k = _live(c)
     assert k["key"] == "IMEI check digit" and k["flag"] == "IMEI ಪರಿಶೀಲನಾ ಅಂಕಿ ತಪ್ಪಾಗಿದೆ"
     assert k["facts"][0]["label"] == "ಪರಿಶೀಲನಾ ಅಂಕಿ" and k["facts"][0]["value"] == "9 - wrong"
+
+
+def test_kannada_says_what_a_page_matched_on():
+    from app.services.osint_kn import to_kannada
+    r = to_kannada({"web": {"claims": [{"matched_on": "the IMEI"}, {"matched_on": "the number 98450 67890"}]}})
+    assert [c["matched_on"] for c in r["web"]["claims"]] == ["IMEI", "ಸಂಖ್ಯೆ 98450 67890"]

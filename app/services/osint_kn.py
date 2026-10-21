@@ -203,6 +203,23 @@ def _what(d: dict, live: list[dict]) -> str:
             "ತಂದೆಯ ಹೆಸರು, ವಿಳಾಸ ಅಥವಾ ವಯಸ್ಸಿನಿಂದ ಹೊಂದಿಸಿ.")
 
 
+_ON = [("the number ", "ಸಂಖ್ಯೆ "), ("the registration ", "ನೋಂದಣಿ "), ("the name ", "ಹೆಸರು ")]
+_ON_FIXED = {"the IMEI": "IMEI", "the IFSC": "IFSC", "the account number": "ಖಾತೆ ಸಂಖ್ಯೆ",
+             "every part of the name, not together": "ಹೆಸರಿನ ಎಲ್ಲ ಭಾಗಗಳು, ಒಟ್ಟಿಗೆ ಅಲ್ಲ"}
+
+
+def _on(v):
+    """What a page matched on (osint_checks.match), in Kannada; the identifier itself is kept."""
+    if not isinstance(v, str):
+        return v
+    if v in _ON_FIXED:
+        return _ON_FIXED[v]
+    for en, kn in _ON:
+        if v.startswith(en):
+            return kn + v[len(en):]
+    return v
+
+
 def to_kannada(report: dict) -> dict:
     """The /investigate answer, with everything an officer reads put into Kannada."""
     r = copy.deepcopy(report)
@@ -219,6 +236,10 @@ def to_kannada(report: dict) -> dict:
         k = _OFFICIAL.get(o.get("name"))
         official.append({**o, "key": o.get("name"), "name": k[0], "what": k[1], "how": k[2], "step": k[3]} if k else o)
     r["official_checks"] = official
+
+    web = r.get("web") or {}
+    if web.get("claims"):
+        r["web"] = {**web, "claims": [{**c, "matched_on": _on(c.get("matched_on"))} for c in web["claims"]]}
 
     web = r.get("web") or {}
     claims = web.get("claims") or []
