@@ -41,6 +41,7 @@ import pytest
 # app.core.db_path, which reads ANTAR_DB once. ANTAR_TEST_LIVE_DB=1 runs on the live file.
 # Conversations stay in memory under test: the suite must not write the live session file.
 os.environ.setdefault("ANTAR_SESSIONS", "memory")
+os.environ.setdefault("ANTAR_ALERTS", "memory")
 
 if os.getenv("ANTAR_TEST_LIVE_DB") != "1":
     import atexit
