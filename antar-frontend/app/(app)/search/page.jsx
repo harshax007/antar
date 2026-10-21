@@ -615,14 +615,22 @@ function SearchContent() {
               {osintAllowed && osintConsentOpen && (
                 <div className="sx-osint-consent-wrap">
                   <div className="sx-osint-consent">
-                    <div className="sx-osint-consent-ttl">Open-source checks (OSINT)</div>
-                    <p>
-                      Check a phone number, UPI ID, vehicle, bank account or IFSC, IMEI, website, email or name against the open web and public registries.
-                      Only the identifier you type leaves the building: this <b>never reads or changes the FIR record</b>.
-                      Everything found is an unverified lead until you confirm it, and every search is logged against your name.
-                    </p>
+                    <div className="sx-osint-consent-ttl">{kn ? "ಮುಕ್ತ-ಮೂಲ ಪರಿಶೀಲನೆ (OSINT)" : "Open-source checks (OSINT)"}</div>
+                    {kn ? (
+                      <p>
+                        ಫೋನ್, UPI ಐಡಿ, ವಾಹನ, ಬ್ಯಾಂಕ್ ಖಾತೆ ಅಥವಾ IFSC, IMEI, ವೆಬ್‌ಸೈಟ್, ಇಮೇಲ್ ಅಥವಾ ಹೆಸರನ್ನು ಮುಕ್ತ ವೆಬ್ ಮತ್ತು ಸಾರ್ವಜನಿಕ ದಾಖಲೆಗಳಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.
+                        ನೀವು ಟೈಪ್ ಮಾಡುವ ಗುರುತು ಮಾತ್ರ ಹೊರಗೆ ಹೋಗುತ್ತದೆ: ಇದು <b>FIR ದಾಖಲೆಯನ್ನು ಎಂದಿಗೂ ಓದುವುದಿಲ್ಲ, ಬದಲಿಸುವುದಿಲ್ಲ</b>.
+                        ನೀವು ದೃಢೀಕರಿಸುವವರೆಗೆ ಸಿಕ್ಕಿದ್ದೆಲ್ಲವೂ ಪರಿಶೀಲಿಸದ ಸುಳಿವು; ಪ್ರತಿ ಹುಡುಕಾಟ ನಿಮ್ಮ ಹೆಸರಿನಲ್ಲಿ ದಾಖಲಾಗುತ್ತದೆ.
+                      </p>
+                    ) : (
+                      <p>
+                        Check a phone number, UPI ID, vehicle, bank account or IFSC, IMEI, website, email or name against the open web and public registries.
+                        Only the identifier you type leaves the building: this <b>never reads or changes the FIR record</b>.
+                        Everything found is an unverified lead until you confirm it, and every search is logged against your name.
+                      </p>
+                    )}
                     <div className="sx-osint-consent-btns">
-                      <button onClick={() => setProfileTab("details")} className="sx-act">Cancel</button>
+                      <button onClick={() => setProfileTab("details")} className="sx-act">{kn ? "ರದ್ದುಮಾಡಿ" : "Cancel"}</button>
                       <button onClick={() => setOsintAbout((v) => !v)} className="sx-act" aria-expanded={osintAbout}>
                         {osintAbout ? (kn ? "ಮರೆಮಾಡಿ" : "Hide details") : (kn ? "ಇನ್ನಷ್ಟು ತಿಳಿಯಿರಿ" : "Know more")}
                       </button>
@@ -635,7 +643,7 @@ function SearchContent() {
                         }}
                         className="sx-act primary"
                       >
-                        I understand · Start
+                        {kn ? "ಅರ್ಥವಾಯಿತು · ಪ್ರಾರಂಭಿಸಿ" : "I understand · Start"}
                       </button>
                     </div>
                   </div>
@@ -723,13 +731,26 @@ function SearchContent() {
                       {(() => {
                         const liveUsed = (reconData?.live_checks || []).map((c) => c.name).join(" ");
                         const offUsed = (reconData?.official_checks || []).map((c) => c.name).join(" ");
-                        const REG = [
+                        const REG = kn ? [
+                          ["RBI IFSC ಪಟ್ಟಿ", "IFSC, ಬ್ಯಾಂಕ್ ಖಾತೆ", /IFSC registry/],
+                          ["ಡೊಮೇನ್ ನೋಂದಣಿ (WHOIS)", "ವೆಬ್‌ಸೈಟ್, ಇಮೇಲ್", /WHOIS/],
+                          ["ಪ್ರಮಾಣಪತ್ರ ದಾಖಲೆ", "ವೆಬ್‌ಸೈಟ್", /certificates/i],
+                          ["IMEI ಪರಿಶೀಲನಾ ಅಂಕಿ", "IMEI", /IMEI check/],
+                        ] : [
                           ["RBI IFSC list", "IFSC, bank account", /IFSC registry/],
                           ["Domain registry (WHOIS)", "Website, email", /WHOIS/],
                           ["Certificate log", "Website", /certificates/i],
                           ["IMEI check digit", "IMEI", /IMEI check/],
                         ];
-                        const OFF = [
+                        const OFF = kn ? [
+                          ["I4C ಶಂಕಿತರ ದಾಖಲೆ", "ಫೋನ್, UPI, ಖಾತೆ, ವೆಬ್‌ಸೈಟ್", /I4C/],
+                          ["ಸಂಚಾರ ಸಾಥಿ", "ಫೋನ್, IMEI", /Sanchar Saathi/],
+                          ["ಇ-ಚಲನ್ ಮತ್ತು ವಾಹನ್", "ವಾಹನ", /eChallan|Vahan/],
+                          ["ಇ-ಕೋರ್ಟ್ಸ್, ಇಂಡಿಯನ್ ಕಾನೂನ್", "ಹೆಸರು", /eCourts|Kanoon/],
+                          ["MCA ಕಂಪನಿ ಹುಡುಕಾಟ", "ಹೆಸರು", /MCA/],
+                          ["NCRP 1930", "UPI, ಬ್ಯಾಂಕ್ ಖಾತೆ", /NCRP/],
+                          ["URLhaus, ವೇಬ್ಯಾಕ್", "ವೆಬ್‌ಸೈಟ್", /URLhaus|Wayback/],
+                        ] : [
                           ["I4C Suspect Registry", "Phone, UPI, account, website", /I4C/],
                           ["Sanchar Saathi", "Phone, IMEI", /Sanchar Saathi/],
                           ["eChallan and Vahan", "Vehicle", /eChallan|Vahan/],
@@ -787,7 +808,7 @@ function SearchContent() {
                             key={d.key}
                             onClick={() => setOsintDepth(d.key)}
                             className={osintDepth === d.key ? "on" : ""}
-                            title={`Keep up to ${d.label} pages that mention it`}
+                            title={kn ? `ಇದನ್ನು ಉಲ್ಲೇಖಿಸುವ ${d.label} ಪುಟಗಳವರೆಗೆ` : `Keep up to ${d.label} pages that mention it`}
                           >
                             {d.label}
                           </button>

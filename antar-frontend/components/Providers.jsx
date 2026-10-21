@@ -29,8 +29,20 @@ const LangContext = createContext();
 export function LangProvider({ children }) {
   const [lang, setLang] = useState("en");
 
+  // The choice is kept in this browser, so a reload or a link opened in a new tab stays in the
+  // officer's language. Read after mount: the server renders English, and reading storage
+  // during the first render would not match it.
+  useEffect(() => {
+    try { if (localStorage.getItem("antar_lang") === "kn") setLang("kn"); } catch {}
+  }, []);
+  useEffect(() => {
+    try { document.documentElement.lang = lang === "kn" ? "kn" : "en"; } catch {}
+  }, [lang]);
+
   const toggleLang = () => {
-    setLang(lang === "en" ? "kn" : "en");
+    const next = lang === "en" ? "kn" : "en";
+    setLang(next);
+    try { localStorage.setItem("antar_lang", next); } catch {}
   };
 
   return (

@@ -301,8 +301,9 @@ function RepeatPopup({ r, kn, from }) {
       </div>
       <div className={`mx-rpt-state ${r.active ? "on" : ""}`}>
         {r.active
-          ? (kn ? "ಸಕ್ರಿಯ" : `Active: last case ${r.days_since_last === 0 ? "today" : r.days_since_last === 1 ? "yesterday" : `${r.days_since_last} days ago`}`)
-          : (kn ? "ಹಿಂದಿನದು" : `Quiet for ${r.days_since_last} days`)}
+          ? (kn ? `ಸಕ್ರಿಯ: ಕೊನೆಯ ಪ್ರಕರಣ ${r.days_since_last === 0 ? "ಇಂದು" : r.days_since_last === 1 ? "ನಿನ್ನೆ" : `${r.days_since_last} ದಿನಗಳ ಹಿಂದೆ`}`
+                : `Active: last case ${r.days_since_last === 0 ? "today" : r.days_since_last === 1 ? "yesterday" : `${r.days_since_last} days ago`}`)
+          : (kn ? `${r.days_since_last} ದಿನಗಳಿಂದ ಶಾಂತ` : `Quiet for ${r.days_since_last} days`)}
       </div>
       <div className="mx-case-n">
         <div><b>{r.firs}</b><span>{kn ? "FIR" : "FIRs"}</span></div>
@@ -316,7 +317,7 @@ function RepeatPopup({ r, kn, from }) {
         {r.district && <div><dt>{kn ? "ಜಿಲ್ಲೆ" : "District"}</dt><dd>{r.district}</dd></div>}
       </dl>
       <p className="mx-case-note">{kn
-        ? "ಸುಮಾರು 110 ಮೀ ಒಳಗೆ ಒಂದೇ ಸ್ಥಳ."
+        ? `${shortDate(from)} ರಿಂದ ಇದೇ ಸ್ಥಳದಲ್ಲಿ (ಸುಮಾರು 110 ಮೀ ಒಳಗೆ) ${r.days} ಬೇರೆ ದಿನಗಳಲ್ಲಿ ${r.firs} FIR ಗಳು. ಬೀಟ್ ಭೇಟಿ ಮತ್ತು ದೀಪ, CCTV ಪರಿಶೀಲನೆಗೆ ಯೋಗ್ಯ.`
         : `${r.firs} FIRs at this same spot (within about 110 m) on ${r.days} different days since ${shortDate(from)}. Worth a beat visit and a look at lighting and CCTV.`}</p>
     </div>
   );
@@ -1304,7 +1305,7 @@ export default function MapScreen() {
                 <RepeatPopup r={r} kn={kn} from={repeats.from} />
               </Popup>
               <Tooltip className="mx-hs" sticky>
-                <b>{placeName(r)}</b> · {r.firs} FIRs on {r.days} different days{r.active ? " · active" : ""}
+                <b>{placeName(r)}</b> · {kn ? `${r.days} ಬೇರೆ ದಿನಗಳಲ್ಲಿ ${r.firs} FIR` : `${r.firs} FIRs on ${r.days} different days`}{r.active ? (kn ? " · ಸಕ್ರಿಯ" : " · active") : ""}
                 <br /><small>{kn ? "ವಿವರಗಳಿಗೆ ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click for the details"}</small>
               </Tooltip>
             </CircleMarker>
@@ -1582,8 +1583,8 @@ export default function MapScreen() {
                     setTimeout(() => rptRefs.current[i]?.openPopup(), 650);
                   }}>
                     <b>{placeName(r)}{r.active && <em>{kn ? "ಸಕ್ರಿಯ" : "active"}</em>}</b>
-                    <span>{r.firs} FIRs on {r.days} days · {crimeMix(r)}</span>
-                    <span>{r.stations[0]} · last {shortDate(r.last)}</span>
+                    <span>{kn ? `${r.days} ದಿನಗಳಲ್ಲಿ ${r.firs} FIR` : `${r.firs} FIRs on ${r.days} days`} · {crimeMix(r)}</span>
+                    <span>{r.stations[0]} · {kn ? "ಕೊನೆಯದು" : "last"} {shortDate(r.last)}</span>
                   </button>
                 </li>
               ))}
@@ -1594,15 +1595,21 @@ export default function MapScreen() {
                 ? "ಸುಮಾರು 110 ಮೀ ಒಳಗೆ, 90 ದಿನಗಳಲ್ಲಿ 2 ಅಥವಾ ಹೆಚ್ಚು ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3 ಅಥವಾ ಹೆಚ್ಚು FIR."
                 : "The same spot, within about 110 m, with 3 or more FIRs on 2 or more different days in the 90 days up to the selected date. It follows the crime filter and the open district."}</p>
               <p>{kn ? "ಹೊರಗಿಡಲಾಗಿದೆ: " : "Left out, because they are not places a patrol can go to: "}
-                {[
+                {(kn ? [
+                  ["online_station", "ಆನ್‌ಲೈನ್ ಅಪರಾಧ (ಠಾಣೆಯ ಸ್ವಂತ ಸ್ಥಳದಲ್ಲಿ ದಾಖಲಾದವು)"],
+                  ["station_default", "ಸ್ಥಳ ನಮೂದಿಸದಾಗ ಬಳಸುವ ಠಾಣೆಯ ಡೀಫಾಲ್ಟ್ ಸ್ಥಳ"],
+                  ["unit_position", "ಪ್ರದರ್ಶನ ದಾಖಲೆಗಳಲ್ಲಿ ಘಟಕದ ಸ್ವಂತ ಸ್ಥಳ"],
+                  ["placeholder", "13.000, 77.000 ನಂತಹ ಕೃತಕ ನಿರ್ದೇಶಾಂಕಗಳು"],
+                  ["outside", "ರಾಜ್ಯದ ಭೂ ಗಡಿಯ ಹೊರಗಿನ ಬಿಂದುಗಳು (ಉದಾ: ಸಮುದ್ರದಲ್ಲಿ)"],
+                ] : [
                   ["online_station", "online crime (filed at the station's own position)"],
                   ["station_default", "a station's default point, used when no location was typed in"],
                   ["unit_position", "a unit's own position on demonstration records"],
                   ["placeholder", "made-up coordinates such as 13.000, 77.000"],
                   ["outside", "points outside the state's land boundary, such as out at sea"],
-                ].filter(([k]) => ({ ...repeats?.left_out, outside: rptOutside })[k])
-                  .map(([k, t]) => `${t} (${({ ...repeats.left_out, outside: rptOutside })[k]})`).join("; ") || "nothing in this period"}
-                {". Missing-person reports and CrPC cases are not counted."}</p>
+                ]).filter(([k]) => ({ ...repeats?.left_out, outside: rptOutside })[k])
+                  .map(([k, t]) => `${t} (${({ ...repeats.left_out, outside: rptOutside })[k]})`).join("; ") || (kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಯಾವುದೂ ಇಲ್ಲ" : "nothing in this period")}
+                {kn ? ". ಕಾಣೆಯಾದವರ ವರದಿಗಳು ಮತ್ತು CrPC ಪ್ರಕರಣಗಳನ್ನು ಎಣಿಸಲಾಗಿಲ್ಲ." : ". Missing-person reports and CrPC cases are not counted."}</p>
             </details>
           </div>
         )}

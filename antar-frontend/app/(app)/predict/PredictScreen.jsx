@@ -402,15 +402,17 @@ function EventCard({ ev, kn, areas, onOpen, onAsk }) {
   const day = (d) => { const t = new Date(); t.setDate(t.getDate() + d); return t.toLocaleDateString("en-IN", { day: "numeric", month: "short" }); };
   const starts = ev.starts_in_days, ends = ev.ends_in_days;
   const now = ev.phase === "under way";
-  const dates = starts == null ? null : now ? `On now, until ${day(Math.max(0, ends ?? 0))}`
-    : `${day(starts)}${ends != null && ends !== starts ? ` to ${day(ends)}` : ""}`;
+  const dates = starts == null ? null : now ? (kn ? `ಈಗ ನಡೆಯುತ್ತಿದೆ, ${day(Math.max(0, ends ?? 0))} ವರೆಗೆ` : `On now, until ${day(Math.max(0, ends ?? 0))}`)
+    : `${day(starts)}${ends != null && ends !== starts ? (kn ? ` ರಿಂದ ${day(ends)}` : ` to ${day(ends)}`) : ""}`;
   const brief = [...(ev.rises || []).map((x) => ({ ...x, sure: true })), ...(ev.watch || []).map((x) => ({ ...x, sure: false }))];
   const quieter = (ev.falls || []).slice(0, 3);
-  const times = (x) => (x.ratio >= 1.5 ? `${x.ratio.toFixed(1)}× usual` : `${Math.abs(x.percent)}% more`);
+  const times = (x) => (x.ratio >= 1.5 ? (kn ? `ಸಾಮಾನ್ಯದ ${x.ratio.toFixed(1)}×` : `${x.ratio.toFixed(1)}× usual`)
+                                         : (kn ? `${Math.abs(x.percent)}% ಹೆಚ್ಚು` : `${Math.abs(x.percent)}% more`));
   const where = ev.statewide ? (kn ? "ರಾಜ್ಯಾದ್ಯಂತ" : "Statewide") : (ev.places || []).join(", ") || ev.measured_in;
   const overallLine = !o ? (kn ? "ಅಳೆಯಲು ಸಾಕಷ್ಟು ಹಿಂದಿನ ವರ್ಷಗಳಿಲ್ಲ." : "Too few past years on record to measure this event.")
-    : o.clear ? `${Math.abs(o.percent)}% ${o.percent < 0 ? "fewer" : "more"} cases registered overall while it is on.`
-    : "Registered cases overall do not move clearly with it.";
+    : o.clear ? (kn ? `ಇದು ನಡೆಯುವಾಗ ಒಟ್ಟು ${Math.abs(o.percent)}% ${o.percent < 0 ? "ಕಡಿಮೆ" : "ಹೆಚ್ಚು"} ಪ್ರಕರಣಗಳು ದಾಖಲಾಗುತ್ತವೆ.`
+                    : `${Math.abs(o.percent)}% ${o.percent < 0 ? "fewer" : "more"} cases registered overall while it is on.`)
+    : (kn ? "ಒಟ್ಟು ದಾಖಲಾದ ಪ್ರಕರಣಗಳು ಇದರೊಂದಿಗೆ ಸ್ಪಷ್ಟವಾಗಿ ಬದಲಾಗುವುದಿಲ್ಲ." : "Registered cases overall do not move clearly with it.");
   const note = () => [
     `${ev.name} (${where}), ${dates || ev.when}.`,
     brief.length ? `Brief on: ${brief.map((x) => `${cap(x.crime)} (${times(x)}, higher in ${x.years_higher} of ${x.years} years)`).join("; ")}.` : null,
@@ -422,14 +424,14 @@ function EventCard({ ev, kn, areas, onOpen, onAsk }) {
     <article className={`px-ev${now ? " now" : ""}`}>
       <header>
         <div className="px-ev-count" aria-hidden="true">
-          {now ? <b>{kn ? "ಈಗ" : "Now"}</b> : <><b>{starts}</b><span>{starts === 1 ? "day" : "days"}</span></>}
+          {now ? <b>{kn ? "ಈಗ" : "Now"}</b> : <><b>{starts}</b><span>{kn ? "ದಿನ" : starts === 1 ? "day" : "days"}</span></>}
         </div>
         <div className="px-ev-ttl">
           <h4>{ev.name}</h4>
           <p>{ev.what}</p>
           <div className="px-ev-meta">
             {dates && <span>{dates}</span>}
-            {ev.window_days ? <span>{ev.window_days} {ev.window_days === 1 ? "day" : "days"}</span> : null}
+            {ev.window_days ? <span>{ev.window_days} {kn ? "ದಿನ" : ev.window_days === 1 ? "day" : "days"}</span> : null}
             <span>{where}</span>
             {ev.in_forecast_window && <span className="in">{kn ? "ಈ ವಾರದ ಮುನ್ಸೂಚನೆಯಲ್ಲಿ" : "In this week's forecast"}</span>}
           </div>
@@ -445,7 +447,7 @@ function EventCard({ ev, kn, areas, onOpen, onAsk }) {
                 <li key={x.crime} className={x.sure ? "" : "soft"}>
                   <b>{cap(x.crime)}</b>
                   {plainCrime(x.crime) && <small>{plainCrime(x.crime)}</small>}
-                  <span>{times(x)} · higher in {x.years_higher} of {x.years} years{x.sure ? "" : " · less certain"}</span>
+                  <span>{times(x)} · {kn ? `${x.years} ರಲ್ಲಿ ${x.years_higher} ವರ್ಷ ಹೆಚ್ಚು` : `higher in ${x.years_higher} of ${x.years} years`}{x.sure ? "" : (kn ? " · ಕಡಿಮೆ ಖಚಿತ" : " · less certain")}</span>
                 </li>
               ))}
             </ul>
@@ -453,7 +455,7 @@ function EventCard({ ev, kn, areas, onOpen, onAsk }) {
         </div>
         <div className="px-ev-col">
           <h5>{kn ? "ಒಟ್ಟಾರೆ" : "Overall"}</h5>
-          <p className="px-ev-all">{overallLine}{o ? <em> {num(o.seen)} cases against {num(Math.round(o.expected))} expected, {o.years} years.</em> : null}</p>
+          <p className="px-ev-all">{overallLine}{o ? <em> {kn ? `ನಿರೀಕ್ಷಿತ ${num(Math.round(o.expected))} ಕ್ಕೆ ಎದುರಾಗಿ ${num(o.seen)} ಪ್ರಕರಣಗಳು, ${o.years} ವರ್ಷಗಳು.` : `${num(o.seen)} cases against ${num(Math.round(o.expected))} expected, ${o.years} years.`}</em> : null}</p>
           {quieter.length > 0 && (
             <p className="px-ev-dn">{kn ? "ಸಾಮಾನ್ಯವಾಗಿ ಕಡಿಮೆ: " : "Usually fewer registered: "}{quieter.map((x) => cap(x.crime)).join(", ")}.
               <em> {kn ? "" : "Fewer FIRs can mean slower reporting during an event, not less crime."}</em></p>
@@ -1618,17 +1620,17 @@ const avgConf = predictions?.length
       {predictions?.length > 0 && (() => {
         const nextEv = evsAhead[0];
         const tiles = [
-          { k: "hi", n: highs.length, l: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High-risk areas", hint: "Rated high risk for the next 7 days", go: () => { setFlt(highs.length ? "high" : "all"); toForecast(); } },
-          { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", hint: "Recent cases well above the area's usual level", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
-          { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", hint: "Far fewer reports than usual: check registration", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
-          { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", hint: "Recent cases that broke an area's pattern", go: toAlerts },
-          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", hint: nextEv ? `${nextEv.name}, ${nextEv.when.toLowerCase()}` : "No festival or event coming up", go: toEvents },
+          { k: "hi", n: highs.length, l: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High-risk areas", hint: kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಗೆ ಹೆಚ್ಚು ಅಪಾಯ ಎಂದು ಅಂದಾಜು" : "Rated high risk for the next 7 days", go: () => { setFlt(highs.length ? "high" : "all"); toForecast(); } },
+          { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", hint: kn ? "ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ತುಂಬಾ ಹೆಚ್ಚು" : "Recent cases well above the area's usual level", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
+          { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", hint: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ತುಂಬಾ ಕಡಿಮೆ ವರದಿ: ದಾಖಲಾತಿ ಪರಿಶೀಲಿಸಿ" : "Far fewer reports than usual: check registration", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
+          { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", hint: kn ? "ವಲಯದ ಸಾಮಾನ್ಯ ಮಾದರಿ ಮುರಿದ ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು" : "Recent cases that broke an area's pattern", go: toAlerts },
+          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", hint: nextEv ? `${nextEv.name}, ${nextEv.when.toLowerCase()}` : (kn ? "ಮುಂಬರುವ ಉತ್ಸವ ಇಲ್ಲ" : "No festival or event coming up"), go: toEvents },
         ];
         return (
           <div className="px-kpis" role="list" aria-label="The week at a glance">
             {tiles.map((t) => (
               <button type="button" role="listitem" key={t.k} className={`px-kpi k-${t.k}${t.n ? "" : " zero"}`} onClick={t.go}>
-                <b>{t.n}</b><span>{t.l}</span>{!kn && t.hint && <em>{t.hint}</em>}
+                <b>{t.n}</b><span>{t.l}</span>{t.hint && <em>{t.hint}</em>}
               </button>
             ))}
           </div>
@@ -1643,7 +1645,8 @@ const avgConf = predictions?.length
             <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast for the next 7 days"}</span>
             <span className="pxd-sub">{shown.length === A.length ? A.length : `${shown.length} of ${A.length}`} {kn ? "ವಲಯ" : "areas"}</span>
           </div>
-          {!kn && <p className="px-sec-note">Each card is an area: the crime type most likely to move there, how far it is from normal, and the cases expected in the next 7 days. Pick one for its reasons.</p>}
+          <p className="px-sec-note">{kn ? "ಪ್ರತಿ ಕಾರ್ಡ್ ಒಂದು ವಲಯ: ಅಲ್ಲಿ ಹೆಚ್ಚು ಬದಲಾಗಬಹುದಾದ ಅಪರಾಧ, ಸಾಮಾನ್ಯದಿಂದ ಎಷ್ಟು ದೂರ, ಮತ್ತು ಮುಂದಿನ 7 ದಿನಗಳ ನಿರೀಕ್ಷಿತ ಪ್ರಕರಣಗಳು. ಕಾರಣಕ್ಕಾಗಿ ಒಂದನ್ನು ಆರಿಸಿ."
+            : "Each card is an area: the crime type most likely to move there, how far it is from normal, and the cases expected in the next 7 days. Pick one for its reasons."}</p>
           <div className="px-flt" role="toolbar" aria-label="Narrow the forecast list">
             {FILTERS.map(([key, label, test]) => {
               const count = A.filter(test).length;
@@ -2008,7 +2011,8 @@ const avgConf = predictions?.length
           <h2>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}{plan.length > 0 && <small>{Math.min(plan.length, 4)} {Math.min(plan.length, 4) === 1 ? "action" : "actions"}</small>}</h2>
           <button type="button" className="px-linkbtn" onClick={copyBrief} disabled={!brief.length}>{copied ? "Copied" : "Copy for the briefing note"}</button>
         </div>
-        {!kn && <p className="px-sec-note">What to do this week, strongest first: where to patrol, which station to check, which event to plan for. Open a line for the reason and the stations.</p>}
+        <p className="px-sec-note">{kn ? "ಈ ವಾರ ಮಾಡಬೇಕಾದದ್ದು, ಮುಖ್ಯವಾದದ್ದು ಮೊದಲು: ಎಲ್ಲಿ ಗಸ್ತು, ಯಾವ ಠಾಣೆ ಪರಿಶೀಲಿಸಬೇಕು, ಯಾವ ಉತ್ಸವಕ್ಕೆ ಯೋಜನೆ. ಕಾರಣ ಮತ್ತು ಠಾಣೆಗಳಿಗೆ ಸಾಲನ್ನು ತೆರೆಯಿರಿ."
+          : "What to do this week, strongest first: where to patrol, which station to check, which event to plan for. Open a line for the reason and the stations."}</p>
         {predictions === null && <p className="px-brief-wait">{kn ? "ದಾಖಲೆಗಳನ್ನು ಓದುತ್ತಿದೆ…" : "Reading the records…"}</p>}
         {predictions?.length === 0 && <p className="px-brief-wait">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "There is nothing to forecast yet."}</p>}
         {plan.length > 0 && (
