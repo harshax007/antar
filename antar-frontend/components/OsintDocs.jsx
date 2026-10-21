@@ -1,7 +1,8 @@
 "use client";
 
-// Docs: the open-source checks (OSINT) on the Search screen - what an officer can check, what
-// comes back, where it comes from, and what never leaves the building.
+// What the open-source checks (OSINT) do: what an officer can check, what comes back, where it
+// comes from, and what never leaves the building. Opened from "Know more" on the Search screen's
+// OSINT consent card; its button starts the checks.
 
 const TYPES = [
   ["Phone number", "+91 98450 67890"], ["UPI ID", "9845012345@ybl"], ["Vehicle", "KA-02-MJ-4821"],
@@ -45,7 +46,7 @@ const SAFE = [
 ];
 
 const S = {
-  wrap: { margin: "56px auto 8px", maxWidth: 1100, display: "grid", gap: 26 },
+  wrap: { margin: "20px auto 8px", maxWidth: 1100, display: "grid", gap: 22 },
   kicker: { fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.14em", color: "#22E6F0", textTransform: "uppercase" },
   h2: { fontFamily: "'Chakra Petch', sans-serif", fontSize: "clamp(22px, 3.4vw, 30px)", fontWeight: 700, color: "#F8FAFC", margin: "6px 0 10px" },
   lead: { fontSize: 14, lineHeight: 1.65, color: "#94A3B8", maxWidth: 760, margin: 0 },
@@ -68,7 +69,7 @@ function Table({ head, rows }) {
   );
 }
 
-export default function OsintDocs({ kn = false, onTry }) {
+export default function OsintDocs({ kn = false, onTry, tryLabel }) {
   return (
     <section id="osint" style={S.wrap} aria-labelledby="osint-h">
       <div style={{ textAlign: "center", display: "grid", justifyItems: "center" }}>
@@ -138,7 +139,7 @@ export default function OsintDocs({ kn = false, onTry }) {
       <div style={{ textAlign: "center" }}>
         <button type="button" onClick={onTry}
           style={{ background: "transparent", color: "#22E6F0", border: "1px solid rgba(34,230,240,0.45)", padding: "10px 26px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", letterSpacing: "0.06em" }}>
-          {kn ? "ಹುಡುಕಾಟದಲ್ಲಿ ಪ್ರಯತ್ನಿಸಿ →" : "Try it on Search →"}
+          {tryLabel || (kn ? "ಅರ್ಥವಾಯಿತು · ಪ್ರಾರಂಭಿಸಿ" : "I understand · Start")}
         </button>
       </div>
     </section>

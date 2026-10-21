@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import OsintReport, { reportText as osintReportText } from "@/components/OsintReport";
+import OsintDocs from "@/components/OsintDocs";
 import { fetchAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
@@ -71,7 +72,8 @@ function SearchContent() {
   const [trueAdmin, setTrueAdmin] = useState(false);
   const [showOsintInfo, setShowOsintInfo] = useState(false);
   const [profileTab, setProfileTab] = useState("details");
-  const [osintConsentOpen, setOsintConsentOpen] = useState(true); // consent gate before OSINT is ever enabled
+  const [osintConsentOpen, setOsintConsentOpen] = useState(true);
+  const [osintAbout, setOsintAbout] = useState(false);   // "Know more": what OSINT checks, opened from the consent card // consent gate before OSINT is ever enabled
   useEffect(() => {
             function checkRole() {
       try {
@@ -621,9 +623,14 @@ function SearchContent() {
                     </p>
                     <div className="sx-osint-consent-btns">
                       <button onClick={() => setProfileTab("details")} className="sx-act">Cancel</button>
+                      <button onClick={() => setOsintAbout((v) => !v)} className="sx-act" aria-expanded={osintAbout}>
+                        {osintAbout ? (kn ? "ಮರೆಮಾಡಿ" : "Hide details") : (kn ? "ಇನ್ನಷ್ಟು ತಿಳಿಯಿರಿ" : "Know more")}
+                      </button>
                       <button
+                        style={{ marginLeft: "auto" }}
                         onClick={() => {
                           setOsintConsentOpen(false);
+                          setOsintAbout(false);
                           appendOsintAudit(`OSINT session authorized by ${getSessionOfficer()}`);
                         }}
                         className="sx-act primary"
@@ -632,6 +639,13 @@ function SearchContent() {
                       </button>
                     </div>
                   </div>
+                  {osintAbout && (
+                    <OsintDocs kn={kn} onTry={() => {
+                      setOsintConsentOpen(false);
+                      setOsintAbout(false);
+                      appendOsintAudit(`OSINT session authorized by ${getSessionOfficer()}`);
+                    }} />
+                  )}
                 </div>
               )}
 
