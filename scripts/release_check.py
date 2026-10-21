@@ -4,13 +4,17 @@ Is this build ready to demo or deploy?
 One command that answers it, before a demo day or a Catalyst deploy:
 
     python scripts/release_check.py            # everything below
-    python scripts/release_check.py --quick    # skip the test suite
+    python scripts/release_check.py --quick    # skip the test suite and the eval
+    python scripts/release_check.py --save-baseline   # record today's eval scores
 
 Checks, each PASS / WARN / FAIL:
   data        the FIR register is there and sane: row count, real vs demonstration rows,
               usable coordinates, the coordinate clean-up recorded
   agents      AGENTS.md and the compiled graph agree; the agent lock is in step
   tests       the core suites pass (on a copy of main.db: tests/conftest.py)
+  eval        the golden question set (tests/golden_queries.py, EN + KN) answers at least as
+              well as the saved baseline (scripts/eval_baseline.json); --save-baseline
+              records the current scores after a deliberate change
   config      the language model is configured; open-web search has a reliable key; the
               outbound-call mode; demo mode
   claims      no unprovable claim ("0% hallucination", "0 external dependencies") on screen
@@ -21,6 +25,8 @@ Exit code 1 if anything FAILs, so it can gate a deploy script.
 from __future__ import annotations
 
 import argparse
+import json
+import tempfile
 import os
 import re
 import sqlite3
@@ -37,8 +43,9 @@ CORE_TESTS = [
     "tests/test_llm_security.py", "tests/test_hitl.py", "tests/test_policy_context.py",
     "tests/test_query_agent.py", "tests/test_heuristics_kannada.py", "tests/test_forecast_model.py",
     "tests/test_osint.py", "tests/test_osint_checks.py", "tests/test_repeat_locations.py",
-    "tests/test_sessions_durable.py", "tests/test_zz_uses_db_copy.py",
+    "tests/test_sessions_durable.py", "tests/test_alerts_durable.py", "tests/test_zz_uses_db_copy.py",
 ]
+BASELINE = ROOT / "scripts" / "eval_baseline.json"
 CLAIMS = [r"0%\s*hallucination", r"zero[- ]hallucination", r"0\s+external\s+dependenc", r"HALLUCINATION RATE"]
 
 results: list[tuple[str, str, str]] = []
@@ -87,6 +94,35 @@ def check_tests() -> None:
     mark("tests", "PASS" if r.returncode == 0 else "FAIL", (tail[-1] if tail else "no result") + f" ({len(files)} core files)")
 
 
+def check_eval(save: bool = False) -> None:
+    """Deterministic (offline router), so a lower score is a real regression, not noise."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "golden.json"
+        env = {**os.environ, "OBS_ENABLED": "0", "ANTAR_GOLDEN_OUT": str(out)}
+        subprocess.run([PY, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/golden_queries.py"],
+                       cwd=ROOT, capture_output=True, text=True, env=env)
+        if not out.exists():
+            mark("eval", "FAIL", "golden question set did not run")
+            return
+        summary = json.loads(out.read_text(encoding="utf-8"))
+    now = {}
+    for lng in ("en", "kn"):
+        rows = [r for r in summary["results"] if r["lang"] == lng]
+        now[lng] = {"passed": sum(1 for r in rows if r["pass"]), "total": len(rows)}
+    if save:
+        BASELINE.write_text(json.dumps(now, indent=2) + "\n", encoding="utf-8")
+    base = json.loads(BASELINE.read_text(encoding="utf-8")) if BASELINE.exists() else None
+    for lng, v in now.items():
+        say = f"{lng.upper()} golden questions: {v['passed']}/{v['total']} answered by the right template"
+        if not base or lng not in base:
+            mark("eval", "WARN", say + "; no baseline yet (run with --save-baseline)")
+        elif v["passed"] < base[lng]["passed"]:
+            failing = [r["q"] for r in summary["results"] if r["lang"] == lng and not r["pass"]][:3]
+            mark("eval", "FAIL", say + f", baseline {base[lng]['passed']}; now failing: {failing}")
+        else:
+            mark("eval", "PASS", say + f" (baseline {base[lng]['passed']})")
+
+
 def check_config() -> None:
     from app.core.settings import settings
     from app.core import egress
@@ -116,9 +152,13 @@ def check_claims() -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--quick", action="store_true", help="skip the test suite")
+    ap.add_argument("--quick", action="store_true", help="skip the test suite and the eval")
+    ap.add_argument("--save-baseline", action="store_true", help="record the current eval scores as the baseline")
     a = ap.parse_args()
-    for fn in (check_data, check_agents, None if a.quick else check_tests, check_config, check_claims):
+    run_eval = None if a.quick and not a.save_baseline else (lambda: check_eval(a.save_baseline))
+    if run_eval:
+        run_eval.__name__ = "check_eval"
+    for fn in (check_data, check_agents, None if a.quick else check_tests, run_eval, check_config, check_claims):
         if fn is None:
             continue
         try:

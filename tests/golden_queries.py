@@ -121,6 +121,9 @@ def test_offline_sanity_gate():
     deterministic path the live LLM degrades to on a 500, so both languages must hold."""
     summary = asyncio.run(run_suite(use_llm=False))
     write_report(summary)
+    if os.getenv("ANTAR_GOLDEN_OUT"):          # scripts/release_check.py compares this to its baseline
+        import json
+        Path(os.environ["ANTAR_GOLDEN_OUT"]).write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
     for lng, threshold in (("en", 0.9), ("kn", 0.9)):
         rows = [r for r in summary["results"] if r["lang"] == lng]
         passed = sum(1 for r in rows if r["pass"])
