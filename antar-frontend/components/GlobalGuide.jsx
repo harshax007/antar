@@ -139,6 +139,12 @@ const GUIDES = {
         [L("Risk index", "ಅಪಾಯ ಸೂಚ್ಯಂಕ"), L("Above 70 is high risk, based on how often and how seriously someone appears in cases.", "70 ಕ್ಕಿಂತ ಹೆಚ್ಚು ಎಂದರೆ ಹೆಚ್ಚಿನ ಅಪಾಯ. ಪ್ರಕರಣಗಳಲ್ಲಿ ಎಷ್ಟು ಬಾರಿ, ಎಷ್ಟು ಗಂಭೀರವಾಗಿ ಕಾಣಿಸಿಕೊಂಡಿದ್ದಾರೆ ಎಂಬುದರ ಆಧಾರ.")],
         [L("Internet search (preview)", "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ (ಪೂರ್ವನೋಟ)"), L("Leads from the public internet, for admins. Not verified: always confirm by hand.", "ನಿರ್ವಾಹಕರಿಗೆ ಸಾರ್ವಜನಿಕ ಇಂಟರ್ನೆಟ್ ಸುಳಿವುಗಳು. ಪರಿಶೀಲಿಸಿಲ್ಲ: ಯಾವಾಗಲೂ ಕೈಯಾರೆ ದೃಢೀಕರಿಸಿ.")],
       ] },
+      { h: L("Open-source checks (OSINT)", "ಮುಕ್ತ ಮೂಲ ಪರಿಶೀಲನೆ (OSINT)"), items: [
+        [L("What you can check", "ಏನನ್ನು ಪರಿಶೀಲಿಸಬಹುದು"), L("A phone number, UPI ID, vehicle number, bank account or IFSC, IMEI, website, email, username or name.", "ಫೋನ್, UPI, ವಾಹನ ಸಂಖ್ಯೆ, ಬ್ಯಾಂಕ್ ಖಾತೆ ಅಥವಾ IFSC, IMEI, ವೆಬ್‌ಸೈಟ್, ಇಮೇಲ್, ಬಳಕೆದಾರ ಹೆಸರು ಅಥವಾ ಹೆಸರು.")],
+        [L("Only real mentions", "ನೈಜ ಉಲ್ಲೇಖಗಳು ಮಾತ್ರ"), L("A web page is shown only if it actually contains what you searched, with what it matched on. Pages that don't are counted and left out.", "ನೀವು ಹುಡುಕಿದ್ದನ್ನು ನಿಜವಾಗಿ ಹೊಂದಿರುವ ಪುಟ ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತದೆ.")],
+        [L("Checked live", "ನೇರ ಪರಿಶೀಲನೆ"), L("An IFSC gives the bank branch and address; a website gives when it was registered and by whom; an IMEI's check digit is tested.", "IFSC ನಿಂದ ಬ್ಯಾಂಕ್ ಶಾಖೆ, ವೆಬ್‌ಸೈಟ್ ನೋಂದಣಿ ದಿನಾಂಕ, IMEI ಪರೀಕ್ಷೆ.")],
+        [L("Official checks", "ಅಧಿಕೃತ ಪರಿಶೀಲನೆ"), L("The portal to check next (I4C Suspect Registry, Sanchar Saathi, eChallan, eCourts) and how, plus a drafted notice to whoever holds the records.", "ಮುಂದೆ ಪರಿಶೀಲಿಸಬೇಕಾದ ಪೋರ್ಟಲ್ ಮತ್ತು ದಾಖಲೆ ಹೊಂದಿರುವವರಿಗೆ ಕರಡು ನೋಟಿಸ್.")],
+      ] },
     ],
     examples: { en: ["Yelappa"], kn: ["Yelappa"] },
   },

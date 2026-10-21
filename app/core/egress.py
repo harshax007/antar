@@ -45,6 +45,7 @@ KNOWN = {
     "model_token": "The model service's client credentials, to obtain an access token.",
     "vision_model": "An uploaded scan and the investigator's notes.",
     "open_web_search": "A named subject, as a web search query.",
+    "registry_lookup": "An identifier on its own (an IFSC code, a domain name) to a public registry: no case text.",
     "speech": "The text of an answer, to be read aloud.",
     "translation": "A piece of text to translate between Kannada and English.",
     "event_calendar": "Nothing about a case: a request for a public holiday calendar.",
@@ -73,7 +74,18 @@ def _configured_hosts() -> set[str]:
 
 # fixed services a feature names in code
 _FEATURE_HOSTS = {"html.duckduckgo.com", "translate.google.com", "dhruva-api.bhashini.gov.in",
-                  "meity-auth.ulcacontrib.org"}
+                  "meity-auth.ulcacontrib.org",
+                  "www.bing.com",                  # open-web search fallback when DuckDuckGo throttles
+                  "api.search.brave.com",          # open-web search, when a Brave key is configured
+                  # OSINT registry lookups: the RBI IFSC list, domain registration (RDAP), certificate log
+                  "ifsc.razorpay.com", "rdap.org", "crt.sh"}
+
+
+def _registry_host(host: str) -> bool:
+    """rdap.org hands a domain lookup on to the registry that holds it (rdap.verisign.com,
+    rdap.nixiregistry.in ...). Those are allowed for a registry lookup only."""
+    first = host.split(".", 1)[0]
+    return first == "rdap" or first.startswith("rdap-") or ".rdap." in host
 
 
 def mode() -> str:
@@ -81,7 +93,7 @@ def mode() -> str:
     return "none" if s in ("none", "off", "block", "deny") else ("list" if s else "default")
 
 
-def allowed(url: str) -> bool:
+def allowed(url: str, purpose: str | None = None) -> bool:
     host = _host(url)
     if not host:
         return False
@@ -91,12 +103,13 @@ def allowed(url: str) -> bool:
     if m == "list":
         names = {x.strip().lower() for x in _setting().split(",") if x.strip()}
         return any(host == n or host.endswith("." + n) for n in names)
-    return host in _configured_hosts() or host in _FEATURE_HOSTS or any(host.endswith("." + h) for h in _FEATURE_HOSTS)
+    return (host in _configured_hosts() or host in _FEATURE_HOSTS or any(host.endswith("." + h) for h in _FEATURE_HOSTS)
+            or (purpose == "registry_lookup" and _registry_host(host)))
 
 
 def check(url: str, purpose: str) -> None:
     """Call before any outbound request. Raises EgressBlocked when the host is not allowed."""
-    host, ok = _host(url), allowed(url)
+    host, ok = _host(url), allowed(url, purpose)
     with _lock:
         key = (host or "(no host)", purpose, ok)
         _counts[key] = _counts.get(key, 0) + 1

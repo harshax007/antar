@@ -2217,3 +2217,22 @@ Top to bottom, in the order a station or district officer uses it on a Monday:
 * **Why this forecast** opens only once a forecast or an alert is picked, and has a Close. Nothing is explained, and nothing is fetched for it, until then.
 * **This week's plan:** one line per action (verb, area and crime, a short reason), each opened on click for the detail and the link to its stations.
 * **Events ahead:** a countdown and the dates, how many days it lasts, and where (statewide or the places). "Brief the force on" lists the crime types that rose in past years, how much and in how many of those years. "Overall" gives seen-against-expected, plus what is usually registered less (with the caveat that fewer FIRs can mean slower reporting). The year-by-year measurement is folded. "Copy a bandobast note" copies a plain summary; "Ask Antar about past years" sends the question to the chat (T30).
+
+## OSINT rebuilt around what an officer can act on - 2026-10-21
+
+**The core fix.** The open-web search used to add "crime OR arrest OR suspect" to an unquoted query with no region, and keep every result at a flat 60%. For "+91 98450 67890" and "Ramesh Gowda" it returned 10 pages (US sheriff sites, arrests.org, YouTube songs called "Suspect"), and none of them mentioned the subject. Now:
+* the identifier is searched in quotes in each way it is written (9845067890, 98450 67890, +919845067890; KA02MJ4821, KA-02-MJ-4821, KA 02 MJ 4821), region India;
+* a page is kept only if its title, snippet or address actually contains it (a name: the full name), and it says what it matched on; the rest are counted as checked and dropped;
+* weight comes from the evidence (exact match, court / government / news source, Indian context), not a flat figure;
+* nothing found says so: "No public page mentions it: 10 pages checked, none contains it."
+* engines: Brave Search API first when `BRAVE_SEARCH_API_KEY` is set (free tier; recommended for demo day), else DuckDuckGo, and Bing when DuckDuckGo throttles (it answers bursts with a 202 bot check). The same search within 30 minutes is answered from memory.
+
+**New identifier types:** IFSC, bank account (with or without IFSC), IMEI, website / link (alongside phone, UPI, vehicle, email, username, name). Each gets a notice drafted to the right record holder (bank nodal officer; the four operators for IMEI-based records; registrar and host; email provider).
+
+**Live registry checks** (only the identifier is sent; `registry_lookup` on the egress list): IFSC -> bank, branch, address, branch phone, UPI/IMPS (RBI IFSC list via ifsc.razorpay.com); website -> registration date, age, registrar, name servers (RDAP; a site under 180 days is flagged) and certificates ever issued (crt.sh; often slow, then "not reached"); IMEI -> check digit (computed, nothing sent). Each says found / not found / not reached, never a filled-in guess.
+
+**Official checks to run next**, each with what it tells and how: I4C Suspect Registry (phone, UPI, account, email, website), NCRP 1930, Sanchar Saathi Chakshu / CEIR / Know Your Mobile, WhatsApp profile by hand, eChallan and Vahan, eCourts party search, Indian Kanoon, MCA, URLhaus, Wayback Machine, news search.
+
+**The screen.** `GET /api/osint/investigate` returns it all in one answer, and the Search page (components/OsintReport) shows the officer's summary first: what it is, what the open web shows, what was checked live, points to note, and what to do next. Then tabs: open-web pages, checked live, official checks, what it decodes to, notice to send, profile links (only for things that have profiles), step log. "Copy lead sheet" copies the whole thing. Internal tool names (Maltego, Sherlock, BBOT) are gone from the screen.
+
+Tests: tests/test_osint_checks.py (41, offline). The older search tests now state the new rule. Needs a backend restart for /investigate; until then the page falls back to the old two calls.

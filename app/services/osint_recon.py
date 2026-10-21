@@ -152,6 +152,97 @@ _BH_PLATE_RE = re.compile(
     r"^\s*(\d{2})\s*BH\s*(\d{4})\s*([A-Z]{1,2})\s*$",
     re.IGNORECASE,
 )
+_IFSC_RE = re.compile(r"\b([A-Z]{4}0[A-Z0-9]{6})\b", re.IGNORECASE)
+# A website: a host name ending in a real top-level domain (so "r.k.sharma" stays a name).
+_TLDS = {"com", "net", "org", "in", "info", "biz", "io", "co", "xyz", "online", "site", "shop", "top", "app", "live",
+         "club", "store", "tech", "me", "cc", "ws", "ru", "cn", "pk", "bd", "lk", "np", "ae", "us", "uk", "gov", "edu",
+         "website", "space", "fun", "icu", "vip", "pro", "link", "click", "today", "cloud", "page", "dev", "ai", "tk",
+         "ml", "ga", "cf", "gq", "buzz", "work", "loan", "win", "bet", "money", "finance", "trade", "market", "asia"}
+_DOMAIN_RE = re.compile(
+    r"^(?:https?://)?(?:www\.)?((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+([a-z]{2,24}))(?::\d+)?(?:[/?#]\S*)?$",
+    re.IGNORECASE,
+)
+
+
+def _decode_extra(q: str, q_hash: str) -> dict[str, Any] | None:
+    """Identifier types beyond plate / UPI / phone / name: an IFSC, a bank account (with or
+    without its IFSC), an IMEI, and a website. None when it is none of these."""
+    compact = re.sub(r"[\s-]", "", q)
+    m_ifsc = _IFSC_RE.search(q.upper())
+    rest_digits = re.sub(r"\D", "", _IFSC_RE.sub(" ", q.upper())) if m_ifsc else ""
+
+    # a bank account number given with its IFSC ("30881234567 SBIN0040071")
+    if m_ifsc and 9 <= len(rest_digits) <= 18:
+        ifsc = m_ifsc.group(1).upper()
+        acc = rest_digits
+        return {
+            "target_type": "bank_account", "target_label": "Bank Account (with IFSC)",
+            "normalized": f"{acc} / {ifsc}", "account_number": acc, "ifsc": ifsc, "bank_code": ifsc[:4],
+            "sha256_fingerprint": f"HASH-{q_hash}",
+            "decoded_fields": [
+                {"label": "Account number", "value": acc},
+                {"label": "IFSC", "value": ifsc},
+                {"label": "Bank code", "value": ifsc[:4]},
+                {"label": "Escalation", "value": "The bank's nodal officer; NCRP 1930 for a hold on proceeds"},
+            ],
+            "pivots": [],
+        }
+    if m_ifsc and len(compact) == 11:
+        ifsc = m_ifsc.group(1).upper()
+        return {
+            "target_type": "ifsc", "target_label": "Bank Branch Code (IFSC)",
+            "normalized": ifsc, "ifsc": ifsc, "bank_code": ifsc[:4],
+            "sha256_fingerprint": f"HASH-{q_hash}",
+            "decoded_fields": [
+                {"label": "IFSC", "value": ifsc},
+                {"label": "Bank code", "value": ifsc[:4]},
+                {"label": "Branch code", "value": ifsc[5:]},
+            ],
+            "pivots": [],
+        }
+    # IMEI: 15 digits (16 for an IMEI-SV, whose last two are a software version)
+    if compact.isdigit() and len(compact) == 15:
+        return {
+            "target_type": "imei", "target_label": "Mobile Handset IMEI",
+            "normalized": compact, "sha256_fingerprint": f"HASH-{q_hash}",
+            "decoded_fields": [
+                {"label": "IMEI", "value": compact},
+                {"label": "Type allocation code (make and model)", "value": compact[:8]},
+                {"label": "Serial", "value": compact[8:14]},
+                {"label": "Check digit", "value": compact[14]},
+            ],
+            "pivots": [],
+        }
+    # a bank account number alone: 9 to 18 digits that are not a phone number
+    digits = re.sub(r"\D", "", q)
+    is_phone_like = ((len(digits) == 10 and digits[0] in "6789") or (len(digits) == 12 and digits.startswith("91"))
+                     or (len(digits) == 11 and digits.startswith("0")))
+    if re.fullmatch(r"[\d\s-]+", q.strip()) and 9 <= len(digits) <= 18 and not is_phone_like:
+        return {
+            "target_type": "bank_account", "target_label": "Bank Account Number",
+            "normalized": digits, "account_number": digits, "ifsc": None, "bank_code": None,
+            "sha256_fingerprint": f"HASH-{q_hash}",
+            "decoded_fields": [
+                {"label": "Account number", "value": digits},
+                {"label": "Bank", "value": "Not known without the IFSC; add it after the number (e.g. 30881234567 SBIN0040071)"},
+            ],
+            "pivots": [],
+        }
+    # a website or link
+    m_dom = _DOMAIN_RE.match(q.strip())
+    if m_dom and "@" not in q and m_dom.group(2).lower() in _TLDS:
+        dom = m_dom.group(1).lower()
+        return {
+            "target_type": "domain", "target_label": "Website / Link",
+            "normalized": dom, "domain": dom, "sha256_fingerprint": f"HASH-{q_hash}",
+            "decoded_fields": [
+                {"label": "Website", "value": dom},
+                {"label": "Top-level domain", "value": "." + m_dom.group(2).lower()},
+                {"label": "Holder of records", "value": "The domain registrar and the hosting provider"},
+            ],
+            "pivots": [],
+        }
+    return None
 
 
 def _classify_and_decode_target(query: str) -> dict[str, Any]:
@@ -159,6 +250,11 @@ def _classify_and_decode_target(query: str) -> dict[str, Any]:
     q = query.strip()
     digits = re.sub(r"\D", "", q)
     q_hash = hashlib.sha256(q.lower().encode("utf-8")).hexdigest()[:16].upper()
+
+    # 0. IFSC, bank account, IMEI, website
+    extra = _decode_extra(q, q_hash)
+    if extra:
+        return extra
 
     # 1. Check Indian Vehicle Registration Plate (Standard or BH-Series)
     m_plate = _PLATE_RE.match(q)
@@ -478,6 +574,95 @@ def _build_statutory_requisition(query: str, decoded: dict[str, Any]) -> dict[st
             ),
         }
 
+    if ttype in ("bank_account", "ifsc"):
+        acc = decoded.get("account_number") or "[account number]"
+        ifsc = decoded.get("ifsc") or "the branch"
+        return {
+            "available": True,
+            "statute": "Sections 94 & 106, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023",
+            "recipient": f"Nodal Officer (Law Enforcement) — bank holding IFSC {ifsc}",
+            "subject": f"REQUISITION: ACCOUNT KYC, STATEMENT AND DEBIT FREEZE — A/C {acc}",
+            "records_requested": [
+                f"1. Account-opening form and KYC (PAN, address proof, photograph) for account {acc}.",
+                "2. Registered mobile number and email; net-banking and UPI login IP logs.",
+                "3. Statement of account for the last 6 months with counterparty details.",
+                "4. A debit freeze on disputed proceeds under Section 106 BNSS.",
+            ],
+            "template_text": (
+                f"NOTICE UNDER SECTIONS 94 & 106 OF THE BHARATIYA NAGARIK SURAKSHA SANHITA (BNSS), 2023\n"
+                f"To: The Nodal Officer, branch with IFSC {ifsc}\n"
+                f"Timestamp: {ts_str}\n"
+                f"Account: {acc}\n\n"
+                f"In an investigation by Karnataka State Police, you are requested to furnish:\n"
+                f"  (a) account-opening form and KYC documents for account {acc};\n"
+                f"  (b) registered mobile number, email, and login IP logs;\n"
+                f"  (c) statement of account for the last 6 months with counterparty details;\n"
+                f"and to freeze debits of the disputed amount under Section 106 BNSS.\n"
+                f"Supported by a certificate under Section 63 of the Bharatiya Sakshya Adhiniyam (BSA), 2023."
+            ),
+        }
+    if ttype == "imei":
+        return {
+            "available": True,
+            "statute": "Section 94, Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023",
+            "recipient": "Nodal Officers (Law Enforcement) — Airtel, Jio, Vi and BSNL, Karnataka LSA",
+            "subject": f"REQUISITION: IMEI-BASED CALL RECORDS FOR HANDSET {norm}",
+            "records_requested": [
+                f"1. Every SIM (MSISDN) used in handset IMEI {norm}, with dates of use.",
+                "2. Call detail records with cell-tower location for those SIMs while in this handset.",
+                "3. The subscriber details (CAF) of each SIM.",
+            ],
+            "template_text": (
+                f"NOTICE UNDER SECTION 94 OF THE BHARATIYA NAGARIK SURAKSHA SANHITA (BNSS), 2023\n"
+                f"To: The Nodal Officer (Law Enforcement), Telecom Circle Karnataka\n"
+                f"Timestamp: {ts_str}\n"
+                f"Handset IMEI: {norm}\n\n"
+                f"Please furnish, for the last 90 days: every SIM used in this handset with dates, the call detail "
+                f"records with cell-tower location while in it, and the subscriber details of each SIM, with a "
+                f"certificate under Section 63 of the Bharatiya Sakshya Adhiniyam (BSA), 2023."
+            ),
+        }
+    if ttype == "domain":
+        return {
+            "available": True,
+            "statute": "Section 94, BNSS 2023 & Section 79(3)(b) Information Technology Act, 2000",
+            "recipient": "Abuse / Law Enforcement desk — domain registrar and hosting provider",
+            "subject": f"PRESERVATION, REGISTRANT DETAILS AND TAKEDOWN: {norm}",
+            "records_requested": [
+                f"1. Registrant name, email, phone and payment details for {norm}.",
+                "2. Hosting account details and server access (login) IP logs.",
+                "3. Preservation of the site's content and logs for 90 days.",
+                "4. Takedown of the site under Section 79(3)(b) IT Act where it is used for fraud.",
+            ],
+            "template_text": (
+                f"NOTICE UNDER SECTION 94 BNSS, 2023 AND SECTION 79(3)(b) IT ACT, 2000\n"
+                f"To: The Abuse / Law Enforcement Desk (registrar and hosting provider)\n"
+                f"Timestamp: {ts_str}\n"
+                f"Website: {norm}\n\n"
+                f"Please preserve and furnish the registrant's details, payment details, hosting account details "
+                f"and access IP logs for {norm}, and disable access to the site, which is being used to commit an offence."
+            ),
+        }
+    if ttype == "email":
+        return {
+            "available": True,
+            "statute": "Section 94, BNSS 2023 & Section 79(3)(b) Information Technology Act, 2000",
+            "recipient": f"Law Enforcement Response team — email provider ({decoded.get('domain')})",
+            "subject": f"PRESERVATION AND BASIC SUBSCRIBER INFORMATION: {norm}",
+            "records_requested": [
+                f"1. Basic subscriber information for {norm}: name given, recovery phone and email, creation date.",
+                "2. Login IP addresses with timestamps for the last 60 days.",
+                "3. Preservation of the account for 90 days pending formal process.",
+            ],
+            "template_text": (
+                f"PRESERVATION AND PRODUCTION NOTICE (SECTION 94 BNSS, 2023)\n"
+                f"To: Law Enforcement Response, {decoded.get('domain')}\n"
+                f"Timestamp: {ts_str}\n"
+                f"Account: {norm}\n\n"
+                f"Please preserve the account and furnish its basic subscriber information (recovery phone and email, "
+                f"creation date) and login IP logs for the last 60 days."
+            ),
+        }
     if ttype != "handle":
         # A personal name or a place has no holder to send a notice to: a §94 notice goes to
         # whoever holds the record (an operator, a bank, an RTO, a platform). Drafting one
@@ -834,7 +1019,14 @@ def _run_sherlock_module(
 ) -> list[dict]:
     """Links an officer can open by hand to check whether a profile exists. None is opened here.
     All discovered handles are strictly quarantined (`unverified=True`, `status="quarantined"`).
+    Only for something a profile can be named after (a username, a name, an email, a phone):
+    an IFSC, an IMEI, an account number, a website or a vehicle number has no profile.
     """
+    if decoded.get("target_type") in ("ifsc", "imei", "bank_account", "domain", "vehicle_plate", "upi_vpa"):
+        scan_tree.append({"id": "EVT-05", "event_type": "HANDLE_LINKS", "source": "HandleCheckLinks",
+                          "detail": "No profile links: this kind of identifier does not name a social-media profile",
+                          "timestamp": datetime.now(timezone.utc).isoformat()})
+        return []
     clean_handle = re.sub(r"[^A-Za-z0-9_.-]", "", query.lstrip("@")).lower() or "target"
     url_q = urllib.parse.quote(query.strip())
 

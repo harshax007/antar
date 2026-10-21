@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     # the fixed feature services; "none" = nothing; or a comma-separated list of hosts.
     ANTAR_EGRESS_ALLOW: str = ""
 
+    # OSINT open-web search. With a Brave Search API key (free tier ~2,000 searches a month)
+    # searches go there first: a keyed API does not throttle a burst the way the keyless
+    # engines do. Empty = DuckDuckGo, then Bing, with no key.
+    BRAVE_SEARCH_API_KEY: str = ""
+
     # QuickML LLM
     QUICKML_CLIENT_ID: str = ""
     QUICKML_CLIENT_SECRET: str = ""

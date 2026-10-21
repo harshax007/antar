@@ -15,7 +15,9 @@ from app.services.osint_recon import run_multi_module_recon
 class _Resp:
     status_code = 200
     text = ('<div class="result__body"><a class="result__url" href="https://news.example.org/a">n</a>'
-            '<a class="result__snippet">Man arrested in connection with a theft.</a></div>')
+            '<a class="result__snippet">John Doe arrested in connection with a theft in Bengaluru.</a></div>'
+            '<div class="result__body"><a class="result__url" href="https://arrests.example.com/b">n</a>'
+            '<a class="result__snippet">Search arrest records, mugshots and warrants.</a></div>')
 
 
 class _Client:
@@ -27,17 +29,20 @@ class _Client:
 
 def test_search_osint(monkeypatch):
     monkeypatch.setattr(osint.httpx, "AsyncClient", _Client)
+    osint._CACHE.clear()
     res = asyncio.new_event_loop().run_until_complete(
         osint.search_osint("John Doe", sources=["news_archives", "court_records"], depth="deep")
     )
 
     assert "claims" in res and "risk_flags" in res and "summary" in res
     assert res["isolation_mode"] == "STANDALONE_NO_FIR_ACCESS"
-    assert len(res["claims"]) == 1
+    # the generic arrest-records page does not name John Doe, so it is checked and dropped
+    assert len(res["claims"]) == 1 and res["pages_checked"] == 2 and res["dropped_unrelated"] == 1
     claim = res["claims"][0]
     assert claim["source_url"] == "https://news.example.org/a"
     assert claim["status"] == "unverified"
-    assert claim["confidence"] <= 0.6
+    assert claim["match_strength"] == "name" and "John Doe" in claim["matched_on"]
+    assert 0.2 <= claim["confidence"] <= 0.95
     assert claim["evidence_sha256"]
     assert res["risk_flags"] == ["High-risk keywords found in OSINT"]
 
