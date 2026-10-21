@@ -344,7 +344,7 @@ function SearchContent() {
     const depthParam = `&depth=${encodeURIComponent(osintDepth)}`;
     setOsintLoading(true);
     appendOsintAudit(`Submitted standalone OSINT query "${q}" [depth=${osintDepth.toUpperCase()}]`);
-    fetchAPI(`/api/osint/investigate?entity=${encodeURIComponent(q)}${srcParam}${depthParam}`)
+    fetchAPI(`/api/osint/investigate?entity=${encodeURIComponent(q)}${srcParam}${depthParam}&lang=${kn ? "kn" : "en"}`)
       .then((r) => [r?.web || { claims: [], reached: false }, r])
       .catch(() => Promise.all([
         fetchAPI(`/api/osint/?entity=${encodeURIComponent(q)}${srcParam}${depthParam}`).catch(() => ({ claims: [], reached: false })),
@@ -729,8 +729,9 @@ function SearchContent() {
 
                       <div className="sx-ql">{kn ? "ಮೂಲಗಳು" : "Sources"}</div>
                       {(() => {
-                        const liveUsed = (reconData?.live_checks || []).map((c) => c.name).join(" ");
-                        const offUsed = (reconData?.official_checks || []).map((c) => c.name).join(" ");
+                        // matched on the English name (`key` when the answer came back in Kannada)
+                        const liveUsed = (reconData?.live_checks || []).map((c) => c.key || c.name).join(" ");
+                        const offUsed = (reconData?.official_checks || []).map((c) => c.key || c.name).join(" ");
                         const REG = kn ? [
                           ["RBI IFSC ಪಟ್ಟಿ", "IFSC, ಬ್ಯಾಂಕ್ ಖಾತೆ", /IFSC registry/],
                           ["ಡೊಮೇನ್ ನೋಂದಣಿ (WHOIS)", "ವೆಬ್‌ಸೈಟ್, ಇಮೇಲ್", /WHOIS/],

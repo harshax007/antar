@@ -210,3 +210,31 @@ def test_investigate_puts_it_together(monkeypatch):
     assert r["official_checks"] and r["statutory_requisition"]["available"]
     assert any(e["event_type"] == "OPEN_WEB" and "7 pages" in e["detail"] for e in r["bbot_scan_tree"])
     json.dumps(r)                                                  # the API can serialise it
+
+
+def test_investigate_in_kannada_keeps_the_facts(monkeypatch):
+    """lang=kn rewrites what an officer reads; identifiers, counts and the notice stay as they are."""
+    from app.api import osint_api
+
+    async def web(*a, **k):
+        return {"claims": [], "reached": True, "pages_checked": 9, "searched_forms": ["9845067890"]}
+
+    async def live(d):
+        return []
+    monkeypatch.setattr(osint_api, "search_osint", web)
+    monkeypatch.setattr(oc, "live_checks", live)
+    en = run(osint_api.investigate("+91 98450 67890", None, "standard", "en"))
+    kn = run(osint_api.investigate("+91 98450 67890", None, "standard", "kn"))
+    assert kn["lang"] == "kn" and kn["forensic_decoder"]["target_label"] == "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ"
+    assert "9 ಪುಟಗಳನ್ನು" in kn["brief"]["web"]
+    assert all(o["key"] for o in kn["official_checks"]) and kn["official_checks"][0]["name"] != en["official_checks"][0]["name"]
+    assert [o["url"] for o in kn["official_checks"]] == [o["url"] for o in en["official_checks"]]
+    assert kn["statutory_requisition"]["template_text"] == en["statutory_requisition"]["template_text"]
+
+
+def test_kannada_live_check_is_rebuilt_from_its_facts():
+    from app.services.osint_kn import _live
+    c = {"name": "IMEI check digit", "status": "none", "facts": [{"label": "Check digit", "value": "9 - wrong"}], "say": "x"}
+    k = _live(c)
+    assert k["key"] == "IMEI check digit" and k["flag"] == "IMEI ಪರಿಶೀಲನಾ ಅಂಕಿ ತಪ್ಪಾಗಿದೆ"
+    assert k["facts"][0]["label"] == "ಪರಿಶೀಲನಾ ಅಂಕಿ" and k["facts"][0]["value"] == "9 - wrong"

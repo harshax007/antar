@@ -37,8 +37,9 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, propose]);
 
+  const L = (en, kan) => (kn ? kan : en);
   const flash = (t) => { setNote(t); setTimeout(() => setNote(""), 2400); };
-  const copy = async () => { try { await navigator.clipboard.writeText(p.text); flash("Copied"); } catch { flash("Copy is not available here."); } };
+  const copy = async () => { try { await navigator.clipboard.writeText(p.text); flash(L("Copied", "ನಕಲಿಸಲಾಗಿದೆ")); } catch { flash(L("Copy is not available here.", "ಇಲ್ಲಿ ನಕಲಿಸಲು ಆಗುವುದಿಲ್ಲ.")); } };
   const max = p ? Math.max(1, ...p.days.by_day.map((d) => d.firs)) : 1;
 
   return createPortal(
@@ -47,15 +48,15 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
       <section className="sp">
         <header>
           <div>
-            <span className="sp-eyebrow">Shift plan</span>
+            <span className="sp-eyebrow">{L("Shift plan", "ಪಾಳಿ ಯೋಜನೆ")}</span>
             <h3>{p?.station || station}</h3>
-            {p?.district && <p>{p.district} · next 7 days</p>}
+            {p?.district && <p>{p.district} · {L("next 7 days", "ಮುಂದಿನ 7 ದಿನಗಳು")}</p>}
           </div>
-          <button type="button" className="sp-x" onClick={onClose} aria-label="Close this window" title="Close"><X size={18} /></button>
+          <button type="button" className="sp-x" onClick={onClose} aria-label={L("Close this window", "ಮುಚ್ಚಿ")} title={L("Close", "ಮುಚ್ಚಿ")}><X size={18} /></button>
         </header>
 
-        {err && <p className="sp-empty">{err === "restart" ? "The shift plan needs the server restarted to load it." : "The plan could not be read just now. Try again."}</p>}
-        {!p && !err && <p className="sp-empty">Putting the plan together from the records…</p>}
+        {err && <p className="sp-empty">{err === "restart" ? L("The shift plan needs the server restarted to load it.", "ಪಾಳಿ ಯೋಜನೆಗೆ ಸರ್ವರ್ ಮರುಪ್ರಾರಂಭ ಬೇಕು.") : L("The plan could not be read just now. Try again.", "ಯೋಜನೆಯನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.")}</p>}
+        {!p && !err && <p className="sp-empty">{L("Putting the plan together from the records…", "ದಾಖಲೆಗಳಿಂದ ಯೋಜನೆ ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…")}</p>}
 
         {p && (
           <div className="sp-body">
@@ -63,25 +64,26 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
               <div className="sp-top">
                 <b>{p.forecast.likely}</b>
                 <div>
-                  <span>FIRs likely in the next 7 days</span>
-                  <em>very likely {p.forecast.very_likely}; a usual week here is {Number(p.forecast.usual).toFixed(1)}</em>
+                  <span>{L("FIRs likely in the next 7 days", "ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಸಂಭಾವ್ಯ FIR ಗಳು")}</span>
+                  <em>{L(`very likely ${p.forecast.very_likely}; a usual week here is ${Number(p.forecast.usual).toFixed(1)}`,
+                         `ಬಹಳ ಸಂಭವನೀಯ ${p.forecast.very_likely}; ಇಲ್ಲಿ ಸಾಮಾನ್ಯ ವಾರ ${Number(p.forecast.usual).toFixed(1)}`)}</em>
                 </div>
               </div>
-            ) : <p className="sp-empty">Too little history here for a reliable forecast.</p>}
+            ) : <p className="sp-empty">{L("Too little history here for a reliable forecast.", "ವಿಶ್ವಾಸಾರ್ಹ ಮುನ್ಸೂಚನೆಗೆ ಇಲ್ಲಿ ಸಾಕಷ್ಟು ಇತಿಹಾಸವಿಲ್ಲ.")}</p>}
 
             <dl className="sp-rows">
               <div>
-                <dt>Beats to cover first</dt>
+                <dt>{L("Beats to cover first", "ಮೊದಲು ಗಮನಿಸಬೇಕಾದ ಬೀಟ್‌ಗಳು")}</dt>
                 <dd>{p.beats.length ? (
-                  <ol>{p.beats.map((b) => <li key={b.unit}><b>{b.name}</b> likely {b.likely}{b.reason && <small>{b.reason}</small>}</li>)}</ol>
-                ) : "The forecast does not separate this station's beats."}</dd>
+                  <ol>{p.beats.map((b) => <li key={b.unit}><b>{b.name}</b> {L("likely", "ಸಂಭಾವ್ಯ")} {b.likely}{b.reason && <small>{b.reason}</small>}</li>)}</ol>
+                ) : L("The forecast does not separate this station's beats.", "ಮುನ್ಸೂಚನೆ ಈ ಠಾಣೆಯ ಬೀಟ್‌ಗಳನ್ನು ಪ್ರತ್ಯೇಕಿಸುವುದಿಲ್ಲ.")}</dd>
               </div>
               <div>
-                <dt>Kinds of case expected</dt>
-                <dd>{p.kinds.length ? p.kinds.map((k) => `${k.label} (${k.likely})`).join(", ") : "No kind of case is expected more than now and then."}</dd>
+                <dt>{L("Kinds of case expected", "ನಿರೀಕ್ಷಿತ ಪ್ರಕರಣಗಳ ಬಗೆ")}</dt>
+                <dd>{p.kinds.length ? p.kinds.map((k) => `${k.label} (${k.likely})`).join(", ") : L("No kind of case is expected more than now and then.", "ಯಾವುದೇ ಬಗೆಯ ಪ್ರಕರಣ ಆಗಾಗ ಮೀರಿ ನಿರೀಕ್ಷಿತವಿಲ್ಲ.")}</dd>
               </div>
               <div>
-                <dt>Days of the week</dt>
+                <dt>{L("Days of the week", "ವಾರದ ದಿನಗಳು")}</dt>
                 <dd>{p.days.text}
                   {p.days.firs >= 60 && (
                     <span className="sp-days" aria-hidden="true">
@@ -89,31 +91,31 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
                         <u style={{ height: `${Math.max(2, Math.round((d.firs / max) * 36))}px` }} /><s>{d.day[0]}</s></i>)}
                     </span>
                   )}
-                  <small>By the day an FIR was registered. The register does not hold the hour.</small>
+                  <small>{L("By the day an FIR was registered. The register does not hold the hour.", "FIR ದಾಖಲಾದ ದಿನದಿಂದ. ದಾಖಲೆಯಲ್ಲಿ ಸಮಯ ಇಲ್ಲ.")}</small>
                 </dd>
               </div>
               <div>
-                <dt>Still open here</dt>
+                <dt>{L("Still open here", "ಇಲ್ಲಿ ಇನ್ನೂ ಬಾಕಿ")}</dt>
                 <dd>{p.open_cases.total ? (
                   <>
-                    <b>{p.open_cases.total.toLocaleString("en-IN")}</b> FIRs{p.open_cases.in_listed_beats ? `, ${p.open_cases.in_listed_beats} in the beats above` : ""}
+                    <b>{p.open_cases.total.toLocaleString("en-IN")}</b> FIR{L("s", "")}{p.open_cases.in_listed_beats ? L(`, ${p.open_cases.in_listed_beats} in the beats above`, `, ಮೇಲಿನ ಬೀಟ್‌ಗಳಲ್ಲಿ ${p.open_cases.in_listed_beats}`) : ""}
                     <small>{p.open_cases.definition}</small>
                     <ul className="sp-open">{p.open_cases.newest.map((c, i) => (
-                      <li key={`${c.fir}-${i}`}><code>{c.fir || "no number"}</code><span>{c.crime} · {c.beat}</span><time>{day(c.date)}</time></li>
+                      <li key={`${c.fir}-${i}`}><code>{c.fir || L("no number", "ಸಂಖ್ಯೆ ಇಲ್ಲ")}</code><span>{c.crime} · {c.beat}</span><time>{day(c.date)}</time></li>
                     ))}</ul>
                   </>
-                ) : "No FIR from the past year is under investigation without a charge-sheet."}</dd>
+                ) : L("No FIR from the past year is under investigation without a charge-sheet.", "ಕಳೆದ ವರ್ಷದ ಯಾವುದೇ FIR ಆರೋಪಪಟ್ಟಿ ಇಲ್ಲದೆ ತನಿಖೆಯಲ್ಲಿಲ್ಲ.")}</dd>
               </div>
               {p.events.map((e) => (
                 <div key={e.name}>
                   <dt>{e.name}</dt>
                   <dd>{e.when}.{e.effect ? ` ${e.effect}` : ""}
-                    {e.watch?.length > 0 && <small>Less certain: {e.watch.join(", ")}.</small>}</dd>
+                    {e.watch?.length > 0 && <small>{L("Less certain:", "ಕಡಿಮೆ ಖಚಿತ:")} {e.watch.join(", ")}.</small>}</dd>
                 </div>
               ))}
             </dl>
 
-            {p.accuracy && <p className="sp-acc"><b>How far to trust it.</b> {p.accuracy}</p>}
+            {p.accuracy && <p className="sp-acc"><b>{L("How far to trust it.", "ಎಷ್ಟು ನಂಬಬಹುದು.")}</b> {p.accuracy}</p>}
             <ul className="sp-limits">{p.limits.map((l) => <li key={l}>{l}</li>)}</ul>
             {p.basis && <p className="sp-basis">{p.basis}</p>}
             <UsefulFeedback kind="shift_plan" unit={p.unit} />
@@ -123,9 +125,9 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
         {p && (
           <footer>
             <span className="sp-said" role="status">{note}</span>
-            <button type="button" onClick={copy}>Copy for a briefing note</button>
-            <button type="button" onClick={() => window.print()}>Print</button>
-            <button type="button" className="go" onClick={() => setPropose(true)}>Propose patrol deployment</button>
+            <button type="button" onClick={copy}>{L("Copy for a briefing note", "ಬ್ರೀಫಿಂಗ್ ಟಿಪ್ಪಣಿಗೆ ನಕಲಿಸಿ")}</button>
+            <button type="button" onClick={() => window.print()}>{L("Print", "ಮುದ್ರಿಸಿ")}</button>
+            <button type="button" className="go" onClick={() => setPropose(true)}>{L("Propose patrol deployment", "ಗಸ್ತು ನಿಯೋಜನೆ ಪ್ರಸ್ತಾಪಿಸಿ")}</button>
           </footer>
         )}
       </section>

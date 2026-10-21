@@ -60,9 +60,10 @@ async def investigate(
     entity: str = Query(min_length=2, max_length=120),
     sources: str | None = Query(default=None, max_length=300),
     depth: str = Query(default="standard", max_length=20),
+    lang: str = Query(default="en", max_length=5),
 ):
     """
-    Everything an officer needs about one identifier, in one answer:
+    Everything an officer needs about one identifier, in one answer (lang=kn: in Kannada):
       • what it is (decoded: phone, UPI, vehicle, bank account / IFSC, IMEI, website, email,
         handle or name), and the drafted notice to whoever holds its records;
       • what the open web shows: only pages that actually contain it, each with what it
@@ -103,6 +104,9 @@ async def investigate(
         "official_checks": official,
         "brief": build_brief(decoded, web, live, official, report.get("statutory_requisition") or {}),
     })
+    if isinstance(lang, str) and lang.lower().startswith("kn"):    # called directly, lang is the Query default
+        from app.services.osint_kn import to_kannada
+        return to_kannada(report)
     return report
 
 
