@@ -998,6 +998,13 @@ const CLASS_HELP = {
   U: "Not on record: the information needed is missing",
 };
 
+// " — 62 (1%)": the count is the fact; the share in brackets is secondary, so it is muted.
+function RankTail({ text }) {
+  const m = String(text).match(/^(.*?)(\s*\([^)]*%[^)]*\))(.*)$/);
+  if (!m) return <MdInline text={text} />;
+  return <><MdInline text={m[1]} /><span className="ax-t-share">{m[2]}</span>{m[3] && <MdInline text={m[3]} />}</>;
+}
+
 // "Beat No 3 · Byadarahalli PS — 62 (1%)" -> ["Beat No 3 · Byadarahalli PS", " — 62 (1%)"].
 // Rows without a " — <number>" tail are left whole.
 function splitRankRow(t) {
@@ -1044,7 +1051,7 @@ function TemplateAnswer({ m, kn, send, router }) {
                   <div key={j} className={`ax-t-row ax-t-rank${numMatch[1] === "1." ? " ax-t-top" : ""}`} style={{ display: "flex", gap: "10px", paddingLeft: "4px" }}>
                     <span style={{ color: "var(--cyan)", fontWeight: 600, minWidth: "20px", textAlign: "right", flexShrink: 0, fontFamily: "'Chakra Petch', sans-serif" }}>{numMatch[1]}</span>
                     <span style={{ flex: 1 }}>
-                      {rest != null ? <><b className="ax-t-name"><MdInline text={name} /></b><MdInline text={rest} /></> : <MdInline text={numMatch[2]} />}
+                      {rest != null ? <><span className="ax-t-name"><MdInline text={name} /></span><RankTail text={rest} /></> : <MdInline text={numMatch[2]} />}
                     </span>
                   </div>
                 );
