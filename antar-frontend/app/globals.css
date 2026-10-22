@@ -127,6 +127,51 @@
   src: url('/fonts/noto-sans-kannada-600.woff2') format('woff2');
 }
 
+/* Kannada inside every font on the site. None of the UI fonts (the pixel nav font, Chakra
+   Petch, Inter, JetBrains Mono ...) has Kannada letters, so the browser fell back to a plain
+   system font. These faces add Kannada to each family by unicode range only: Latin text is
+   untouched, and Kannada gets Anek Kannada in display type and Noto Sans Kannada in text. */
+@font-face { font-family: 'DotGothic16'; font-weight: 400; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'DotGothic16'; font-weight: 600; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Silkscreen'; font-weight: 400; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Silkscreen'; font-weight: 600; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Chakra Petch'; font-weight: 400; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Chakra Petch'; font-weight: 600; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Jersey 10'; font-weight: 400; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Jersey 10'; font-weight: 600; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Josefin Sans'; font-weight: 400; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Josefin Sans'; font-weight: 600; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Plus Jakarta Sans'; font-weight: 400; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Plus Jakarta Sans'; font-weight: 600; font-display: swap; size-adjust: 108%;
+  src: url('/fonts/anek-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Inter'; font-weight: 400; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Inter'; font-weight: 600; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 400; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 600; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Roboto'; font-weight: 400; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Roboto'; font-weight: 600; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Instrument Serif'; font-weight: 400; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-400.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+@font-face { font-family: 'Instrument Serif'; font-weight: 600; font-display: swap; size-adjust: 100%;
+  src: url('/fonts/noto-sans-kannada-600.woff2') format('woff2'); unicode-range: U+0C80-0CFF, U+200C-200D, U+25CC; }
+
 :root {
   /* DARK THEME (Default) */
   --void: #060910; /* Deepest layer */
@@ -218,6 +263,9 @@ h1, h2, h3, h4, h5, h6 {
 @media (prefers-reduced-motion: reduce) {
   .signal-pulse, .fade-rise { animation: none !important; }
 }
+/* Kannada mode: letter-spacing pulled the aksharas apart (ಮ ೆ ದ ು ಳ ು); Kannada is never tracked. */
+html[lang="kn"] body *:not(svg):not(svg *) { letter-spacing: normal !important; }
+html[lang="kn"] .cx-pill-link { white-space: nowrap; }
 /* Kannada: clean spacing for chat responses + on-screen info (impx0F Phase 1) */
 .kn { font-family: var(--font-kn); line-height: 1.72; letter-spacing: 0.005em; }
 
