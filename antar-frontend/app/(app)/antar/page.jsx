@@ -2399,7 +2399,7 @@ export default function ChatPage() {
           style={{
             position: "fixed",
             top: "76px",
-            left: "max(16px, calc((100vw - 1040px) / 2 - 120px))",   // clear of the answer column's edge
+            left: "max(16px, calc((100vw - 1040px) / 2 - 240px))",   // well clear of the answer column
             zIndex: 10000,
             display: "inline-flex",
             alignItems: "center",
