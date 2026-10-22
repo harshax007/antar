@@ -318,8 +318,8 @@ function RepeatPopup({ r, kn, from }) {
         {r.district && <div><dt>{kn ? "ಜಿಲ್ಲೆ" : "District"}</dt><dd>{r.district}</dd></div>}
       </dl>
       <p className="mx-case-note">{kn
-        ? `${shortDate(from)} ರಿಂದ ಇದೇ ಸ್ಥಳದಲ್ಲಿ (ಸುಮಾರು 110 ಮೀ ಒಳಗೆ) ${r.days} ಬೇರೆ ದಿನಗಳಲ್ಲಿ ${r.firs} FIR ಗಳು. ಬೀಟ್ ಭೇಟಿ ಮತ್ತು ದೀಪ, CCTV ಪರಿಶೀಲನೆಗೆ ಯೋಗ್ಯ.`
-        : `${r.firs} FIRs at this same spot (within about 110 m) on ${r.days} different days since ${shortDate(from)}. Worth a beat visit and a look at lighting and CCTV.`}</p>
+        ? `${shortDate(from)} ರಿಂದ ಇದೇ ಸ್ಥಳದಲ್ಲಿ (ಸುಮಾರು 100 ಮೀ ಒಳಗೆ) ${r.days} ಬೇರೆ ದಿನಗಳಲ್ಲಿ ${r.firs} FIR ಗಳು. ಬೀಟ್ ಭೇಟಿ ಮತ್ತು ದೀಪ, CCTV ಪರಿಶೀಲನೆಗೆ ಯೋಗ್ಯ.`
+        : `${r.firs} FIRs at this same spot (within about 100 m) on ${r.days} different days since ${shortDate(from)}. Worth a beat visit and a look at lighting and CCTV.`}</p>
     </div>
   );
 }
@@ -1595,8 +1595,8 @@ export default function MapScreen() {
             <details className="mx-rpt-how">
               <summary>{kn ? "ಇದನ್ನು ಹೇಗೆ ಲೆಕ್ಕಿಸಲಾಗಿದೆ" : "How this is worked out"}</summary>
               <p>{kn
-                ? "ಸುಮಾರು 110 ಮೀ ಒಳಗೆ, 90 ದಿನಗಳಲ್ಲಿ 2 ಅಥವಾ ಹೆಚ್ಚು ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3 ಅಥವಾ ಹೆಚ್ಚು FIR."
-                : "The same spot, within about 110 m, with 3 or more FIRs on 2 or more different days in the 90 days up to the selected date. It follows the crime filter and the open district."}</p>
+                ? "ಸುಮಾರು 100 ಮೀ ಒಳಗೆ, 90 ದಿನಗಳಲ್ಲಿ 2 ಅಥವಾ ಹೆಚ್ಚು ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3 ಅಥವಾ ಹೆಚ್ಚು FIR."
+                : "The same spot, within about 100 m, with 3 or more FIRs on 2 or more different days in the 90 days up to the selected date. It follows the crime filter and the open district."}</p>
               <p>{kn ? "ಹೊರಗಿಡಲಾಗಿದೆ: " : "Left out, because they are not places a patrol can go to: "}
                 {(kn ? [
                   ["online_station", "ಆನ್‌ಲೈನ್ ಅಪರಾಧ (ಠಾಣೆಯ ಸ್ವಂತ ಸ್ಥಳದಲ್ಲಿ ದಾಖಲಾದವು)"],

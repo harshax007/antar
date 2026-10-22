@@ -185,8 +185,8 @@ async def gi_star_hotspots(crime_type: Optional[str] = None, days: int = 30, end
 async def repeat_locations_api(crime_type: Optional[str] = None, days: int = 90, end_date: Optional[str] = None,
                                district: Optional[str] = None) -> dict:
     """Places where cases keep being registered: 3+ FIRs on 2+ different days within about
-    110 m, in the `days` ending on `end_date`. Online-crime stations, a station's default
-    point and placeholder coordinates are left out (see app/services/repeat_locations.py)."""
+    100 m (H3 hexagons), in the `days` ending on `end_date`. Online-crime stations, a station's
+    default point and placeholder coordinates are left out (see app/services/repeat_locations.py)."""
     import asyncio
     from datetime import date as _date
     from types import SimpleNamespace

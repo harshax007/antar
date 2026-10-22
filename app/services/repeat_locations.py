@@ -1,10 +1,19 @@
 """
 Antar — Repeat locations
 ========================
-The places where cases keep being registered: the same spot (about 110 m, three decimal
-places of latitude/longitude) with several FIRs on different days in the window. This is
-what a commander's review asks for beside the hotspot picture ("which addresses keep
-coming back?"), and what a beat officer can be sent to.
+The places where cases keep being registered: the same spot (within about 100 m) with
+several FIRs on different days in the window. This is what a commander's review asks for
+beside the hotspot picture ("which addresses keep coming back?"), and what a beat officer
+can be sent to.
+
+How a spot is found. Each FIR is put in its H3 hexagon (resolution 10: ~76 m edge,
+~15,000 m2 - about the size of the old three-decimal cell). The busiest hexagon is taken
+first and claims every FIR within SPOT_M of its centre, including the ones just across its
+edge in a neighbouring hexagon; then the next busiest, and so on. Rounding to three decimal
+places used to split two FIRs five metres apart across a rounding line into two cells, so a
+real repeat could fall under the threshold; claiming across the edge removes that. A
+location's point is the coordinate recorded most often inside it - a real recorded point,
+so placeholder and station-default checks see what the register holds.
 
 A point on the register is not always a place. Three kinds are left out, because sending
 a patrol to them would be sending it to a police station or to a typing default:
@@ -22,18 +31,60 @@ Read-only. Parameterised SQL; no user text reaches a query.
 
 from __future__ import annotations
 
+import math
 import re
 import sqlite3
+from collections import Counter
 from datetime import date, timedelta
 from functools import lru_cache
+
+import h3
 
 from app.core.db_path import DB_PATH
 
 _ONLINE = re.compile(r"\b(CEN|CYBER|CID)\b", re.I)
 _UNIT_CODE = re.compile(r"^[A-Z0-9]+(-[A-Z0-9]+)+$")     # BLR-YPR-02, KLB-01, SCRB-HQ
 ACTIVE_DAYS = 14            # a repeat location is "active" when its last FIR is this recent
-GRID = 3                    # decimal places: ~110 m in latitude
+GRID = 3                    # decimal places: how a station's default point is recognised
+H3_RES = 10                 # ~76 m hexagon edge, ~15,000 m2
+SPOT_M = 100                # a spot: FIRs within this many metres of its hexagon's centre
 MIN_FIRS, MIN_DAYS = 3, 2   # a repeat: at least 3 FIRs, on at least 2 different days
+
+
+def _metres(a: tuple, b: tuple) -> float:
+    """Great-circle distance; at 100 m the flat-earth error is far below a GPS fix."""
+    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    x = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 12_742_000 * math.asin(math.sqrt(x))
+
+
+# columns of a FIR row as fetched for spotting (plain tuples: sqlite3.Row on 50k+ rows was
+# a third of the run)
+ID, LAT, LON, DAY, STATION, DISTRICT, CRIME, BEAT, AREA = range(9)
+
+
+def _spots(rows: list) -> list[list]:
+    """Group FIR rows into spots: busiest hexagon first, each claiming the unclaimed rows
+    within SPOT_M of its centre from itself and its six neighbours."""
+    by_cell: dict[str, list[int]] = {}
+    for i, r in enumerate(rows):
+        by_cell.setdefault(h3.latlng_to_cell(r[LAT], r[LON], H3_RES), []).append(i)
+    order = sorted(by_cell, key=lambda c: (-len({rows[i][ID] for i in by_cell[c]}), c))
+    claimed: set[int] = set()
+    spots = []
+    for cell in order:
+        if all(i in claimed for i in by_cell[cell]):
+            continue
+        centre = h3.cell_to_latlng(cell)
+        members = []
+        for c in h3.grid_disk(cell, 1):
+            for i in by_cell.get(c, ()):
+                if i not in claimed and (c == cell or _metres(centre, (rows[i][LAT], rows[i][LON])) <= SPOT_M):
+                    members.append(i)
+        claimed.update(members)
+        if members:
+            spots.append([rows[i] for i in members])
+    return spots
 
 
 def _connect() -> sqlite3.Connection:
@@ -94,23 +145,41 @@ def repeat_locations(end: date, days: int = 90, crime_filter: tuple[str, list] |
     if districts:
         where.append(f"UPPER(TRIM(district_norm)) IN ({', '.join('?' * len(districts))})")
         args += [d.strip().upper() for d in districts]
-    sql = (f"SELECT ROUND(geo_lat, {GRID}) la, ROUND(geo_lon, {GRID}) lo, COUNT(DISTINCT fir_id) n, "
-           f"COUNT(DISTINCT SUBSTR(date, 1, 10)) days, MAX(SUBSTR(date, 1, 10)) last, MIN(SUBSTR(date, 1, 10)) first, "
-           f"GROUP_CONCAT(DISTINCT station) stations, MIN(district_norm) district, "
-           f"GROUP_CONCAT(crime_type, '|') crimes, GROUP_CONCAT(DISTINCT Beat_Name) beats, "
-           f"GROUP_CONCAT(DISTINCT Village_Area_Name) areas "
-           f"FROM FIRs WHERE {' AND '.join(where)} GROUP BY 1, 2 "
-           f"HAVING COUNT(DISTINCT fir_id) >= ? AND COUNT(DISTINCT SUBSTR(date, 1, 10)) >= ? "
-           f"ORDER BY n DESC, days DESC LIMIT 400")
+    sql = (f"SELECT fir_id, geo_lat, geo_lon, SUBSTR(date, 1, 10) day, station, district_norm, crime_type, "
+           f"Beat_Name, Village_Area_Name FROM FIRs WHERE {' AND '.join(where)}")
     con = _connect()
     try:
-        rows = con.execute(sql, args + [MIN_FIRS, MIN_DAYS]).fetchall()
+        cur = con.cursor()
+        cur.row_factory = None
+        fir_rows = cur.execute(sql, args).fetchall()
         # each station's FIRs in the same window, to spot a point that is its own position
         st_tot = {r["station"]: r["n"] for r in con.execute(
             f"SELECT station, COUNT(DISTINCT fir_id) n FROM FIRs WHERE {' AND '.join(where)} GROUP BY station", args)}
     finally:
         con.close()
     defaults = station_default_points()
+    # Count every spot cheaply; the detail is built only for the ones read out below.
+    cands = []
+    for spot in _spots(fir_rows):
+        firs = {m[ID]: m for m in spot}                           # one row per FIR
+        days_seen = {m[DAY] for m in firs.values()}
+        if len(firs) >= MIN_FIRS and len(days_seen) >= MIN_DAYS:
+            cands.append((len(firs), len(days_seen), firs, days_seen))
+    cands.sort(key=lambda c: (-c[0], -c[1]))
+
+    def detail(n, nd, firs, days_seen):
+        ms = list(firs.values())
+        top = lambda col: ",".join(k for k, _ in Counter(m[col] for m in ms if m[col]).most_common())
+        point = Counter((round(m[LAT], 5), round(m[LON], 5)) for m in ms).most_common(1)[0][0]
+        return {"la": point[0], "lo": point[1], "n": n, "days": nd, "last": max(days_seen), "first": min(days_seen),
+                # most frequent first, so the label is what most of the spot's FIRs say
+                "stations": top(STATION), "beats": top(BEAT), "areas": top(AREA),
+                "district": min((m[DISTRICT] for m in ms if m[DISTRICT]), default=None),
+                "crimes": "|".join(m[CRIME] or "" for m in ms),
+                # every recorded point in the spot, at the precision station defaults are kept in
+                "points": {(round(m[LAT], GRID), round(m[LON], GRID)) for m in ms}}
+
+    rows = (detail(*c) for c in cands)
     out, dropped = [], {"online_station": 0, "station_default": 0, "placeholder": 0, "unit_position": 0}
     for r in rows:
         stations = [s for s in (r["stations"] or "").split(",") if s]
@@ -119,7 +188,7 @@ def repeat_locations(end: date, days: int = 90, crime_filter: tuple[str, list] |
             continue
         # a station's default point: its usual one overall, or one holding a quarter or more
         # of everything the station registered in this window
-        if any((s, r["la"], r["lo"]) in defaults for s in stations) or (
+        if any((s, la, lo) in defaults for s in stations for la, lo in r["points"]) or (
                 r["n"] >= 15 and len(stations) == 1 and r["n"] >= 0.25 * (st_tot.get(stations[0]) or 1)):
             dropped["station_default"] += 1
             continue
@@ -150,6 +219,6 @@ def repeat_locations(end: date, days: int = 90, crime_filter: tuple[str, list] |
         if len(out) >= limit:
             break
     return {"locations": out, "window_days": days, "from": start.isoformat(), "to": end.isoformat(),
-            "rule": f"{MIN_FIRS}+ FIRs on {MIN_DAYS}+ different days within ~110 m",
+            "rule": f"{MIN_FIRS}+ FIRs on {MIN_DAYS}+ different days within ~{SPOT_M} m",
             "active_days": ACTIVE_DAYS,
             "left_out": dropped}

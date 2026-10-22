@@ -132,7 +132,7 @@ thresholds; whether `social` should exist at all for a police product (fairness 
 |---|---|---|
 | District choropleth and hotspots | Getis-Ord Gi* over zones for the chosen window (Day / 7 / 28 days) | `app/services/anomaly.py::gi_star_surface`, `/api/map/gi_star` |
 | Day view: each FIR | One dot per FIR registered that day; case card (law, stage, victims / accused / arrested), no names | `/api/map/day_cases` |
-| Repeat locations | Same ~110 m spot, 3+ FIRs on 2+ days in 90 days; drops online crime, missing persons, CrPC, station default points, unit positions, placeholders, points at sea | `app/services/repeat_locations.py`, `/api/map/repeat_locations` |
+| Repeat locations | Same ~100 m spot (H3 hexagons, claimed across their edges), 3+ FIRs on 2+ days in 90 days; drops online crime, missing persons, CrPC, station default points, unit positions, placeholders, points at sea | `app/services/repeat_locations.py`, `/api/map/repeat_locations` |
 | Station / beat forecast layer | From the forecast engine (section 6) | `/api/forecast/layer`, `/hotspots` |
 | District card | Day / 7 / 30-day counts, share of state, top crimes | `/api/map/district/{zone}`, `district_cache.py` |
 | Corridors, dark zones, anchor areas, KDE | Movement between districts; under-reporting zones; unsolved-case anchors; density | `/api/map/flow`, `/darkzones`, `/anchor_areas`, `geo_density.py` |

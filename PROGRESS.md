@@ -137,6 +137,23 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Repeat locations on H3 hexagons · 2026-10-23
+
+`app/services/repeat_locations.py` no longer rounds to three decimals. Each FIR goes in its H3
+hexagon (resolution 10, ~15,000 m2); the busiest hexagon claims every FIR within 100 m of its
+centre, across its edge too. FIRs a few metres apart across a rounding line now count as one
+place. Measured on the register:
+
+| Window (90 days to) | Before | After |
+|---|---|---|
+| 2023-12-31 | 40 locations, 1,053 FIRs | 40 locations, 1,219 FIRs |
+| 2026-10-20 | 8 locations | 15 locations |
+
+Full-state 90-day run: 1.3 s before, 1.7 s now (the database read dominates); the Map's recent
+window ~80 ms. New dependency `h3==4.5.0` (~1 MB). Tests: `tests/test_repeat_locations.py`
+(10, incl. two FIRs 2 m apart across a rounding line and a spot never exceeding its radius).
+Postgres/PostGIS and DuckDB were assessed and not done: see the conversation of this date.
+
 ## Kannada, second pass · 2026-10-22
 
 - OSINT answers in Kannada: `/api/osint/investigate?lang=kn` (`app/services/osint_kn.py`). The label,

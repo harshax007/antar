@@ -73,3 +73,27 @@ def test_unit_positions_are_not_places():
         assert not (all(code.match(s) for s in loc["stations"]) and not loc["area"])
         assert not all(s.upper().endswith("CENTRAL PS") for s in loc["stations"])
         assert isinstance(loc["active"], bool) and loc["days_since_last"] >= 0
+
+
+def test_firs_metres_apart_across_a_rounding_line_are_one_spot():
+    """Three-decimal rounding put 12.97149 and 12.97151 - two metres apart - in different
+    cells, so a real repeat could fall under the threshold. H3 spots claim across the edge."""
+    from app.services.repeat_locations import _spots, _metres
+    # four FIRs within ~5 m of each other, straddling the 12.9715 rounding line
+    pts = [(12.97149, 77.59461), (12.97151, 77.59462), (12.97148, 77.59463), (12.97152, 77.59460)]
+    assert len({(round(a, 3), round(b, 3)) for a, b in pts}) == 2          # the old way: two cells
+    rows = [(f"F{i}", a, b, f"2023-01-0{i + 1}", "X PS", "D", "THEFT", "B", "A") for i, (a, b) in enumerate(pts)]
+    spots = _spots(rows)
+    assert len(spots) == 1 and len(spots[0]) == 4
+
+
+def test_a_spot_never_reaches_past_its_radius():
+    from app.services.repeat_locations import _spots, _metres, SPOT_M
+    import h3
+    # a line of FIRs every 40 m: no spot may hold two FIRs more than 2 x SPOT_M apart
+    rows = [(f"F{i}", 12.97 + i * 0.00036, 77.59, "2023-01-01", "X PS", "D", "THEFT", "B", "A") for i in range(30)]
+    for spot in _spots(rows):
+        for a in spot:
+            for b in spot:
+                assert _metres((a[1], a[2]), (b[1], b[2])) <= 2 * SPOT_M + 1
+    assert sum(len(s) for s in _spots(rows)) == len(rows)                   # every FIR in exactly one spot

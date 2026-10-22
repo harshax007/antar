@@ -54,4 +54,5 @@ cryptography==42.0.5              # pinned to avoid Rust compiler requirement on
 gTTS==2.5.1
 
 numpy==1.26.4
+h3==4.5.0                # repeat locations: hexagonal spots (app/services/repeat_locations.py)
 sentence-transformers==3.0.1
