@@ -15,7 +15,8 @@ import {
 import "@xyflow/react/dist/style.css";
 import ForecastWhy from "@/components/ForecastWhy";
 import ShiftPlan from "@/components/ShiftPlan";
-import { AnimatePresence as PlanPresence } from "framer-motion";
+import { AnimatePresence, AnimatePresence as PlanPresence, motion } from "framer-motion";
+import { MaterialBackdrop, MaterialPanel, SPRING } from "@/components/ui/MaterialPanel";
 import EngineOverall from "@/components/EngineOverall";
 import CaseLeads from "@/components/CaseLeads";
 
@@ -586,7 +587,7 @@ const PREDICT_MODERN_STYLES = `
 .px-sub { font-size: 13px; color: #B4C2D6; font-weight: 500; font-family: 'JetBrains Mono', monospace; /* text-transform: uppercase; */ letter-spacing: 0.05em; }
 
 /* Buttons */
-.px-howbtn { background: rgba(34,230,240,0.1); border: 1px solid rgba(34,230,240,0.3); color: #22E6F0; border-radius: 6px; font-weight: 600; font-size: 12px; padding: 6px 12px; transition: all 0.2s; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.px-howbtn { background: rgba(34,230,240,0.1); border: 1px solid rgba(34,230,240,0.3); color: #22E6F0; border-radius: 6px; font-weight: 600; font-size: 12px; padding: 6px 12px; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .px-howbtn:hover { background: rgba(34,230,240,0.2); box-shadow: 0 0 10px rgba(34,230,240,0.2); }
 
 /* Grid Layouts */
@@ -615,10 +616,10 @@ const PREDICT_MODERN_STYLES = `
 .pxd-scroll::-webkit-scrollbar-track { background: transparent; }
 
 /* Cards inside columns */
-.px-card { display: flex; flex-direction: column; background: #070B14; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; position: relative; }
+.px-card { display: flex; flex-direction: column; background: #070B14; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s; position: relative; }
 .px-card:hover { border-color: rgba(255,255,255,0.08); background: #070B14; }
 .px-card.on { background: rgba(34,230,240,0.08); border-color: #22E6F0; box-shadow: 0 0 15px rgba(34,230,240,0.15); }
-.px-card.on::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #22E6F0; border-radius: 4px 0 0 4px; }
+.px-card-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #22E6F0; border-radius: 4px 0 0 4px; }
 
 .px-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .px-zone { font-size: 15px; font-weight: 700; color: #EEF3FA; letter-spacing: 0.02em; }
@@ -635,7 +636,7 @@ const PREDICT_MODERN_STYLES = `
 /* Data Rows */
 .px-crime-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .px-crime { font-size: 13px; color: #B4C2D6; font-weight: 600; /* text-transform: uppercase; */ letter-spacing: 0.03em; }
-.px-know { font-size: 11px; font-weight: 600; padding: 6px 12px; background: rgba(24,214,154,0.1); border: 1px solid rgba(24,214,154,0.4); border-radius: 6px; color: #18D69A; transition: all 0.2s; white-space: nowrap; cursor: pointer; }
+.px-know { font-size: 11px; font-weight: 600; padding: 6px 12px; background: rgba(24,214,154,0.1); border: 1px solid rgba(24,214,154,0.4); border-radius: 6px; color: #18D69A; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s; white-space: nowrap; cursor: pointer; }
 .px-know:hover { background: rgba(24,214,154,0.2); box-shadow: 0 0 8px rgba(24,214,154,0.3); }
 
 .px-confpct { color: #22E6F0; font-weight: 700; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
@@ -663,14 +664,14 @@ const PREDICT_MODERN_STYLES = `
 
 /* Grid tiles */
 .px-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
-.px-tile { background: #070B14; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 20px; transition: all 0.2s; }
+.px-tile { background: #070B14; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 20px; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s; }
 .px-tile:hover { border-color: #22E6F0; box-shadow: 0 4px 12px rgba(34,230,240,0.1); }
 .px-tile .tv { font-family: 'Chakra Petch', sans-serif; font-size: 24px; font-weight: 700; color: #EEF3FA; margin-bottom: 6px; }
 .px-tile .tl { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: #B4C2D6; /* text-transform: uppercase; */ letter-spacing: 0.05em; }
 
 /* Actions */
 .px-acts { display: flex; flex-wrap: wrap; gap: 12px; }
-.px-actbtn { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.08); color: #EEF3FA; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; min-width: 140px; }
+.px-actbtn { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.08); color: #EEF3FA; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s; display: inline-flex; align-items: center; justify-content: center; min-width: 140px; }
 .px-actbtn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.08); color: #fff; }
 .px-actbtn.cy { background: rgba(24,214,154,0.1); border-color: rgba(24,214,154,0.4); color: #18D69A; }
 .px-actbtn.cy:hover { background: rgba(24,214,154,0.2); box-shadow: 0 0 12px rgba(24,214,154,0.2); }
@@ -918,7 +919,9 @@ const PREDICT_MODERN_STYLES = `
 .px-flt button { font: 500 12px 'Inter', sans-serif; color: #B4C2D6; background: #070B14; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
 .px-flt button i { font-style: normal; margin-left: 6px; color: #8A99AD; font-variant-numeric: tabular-nums; }
 .px-flt button:hover:not(:disabled) { color: #EEF3FA; border-color: rgba(255,255,255,0.10); }
-.px-flt button.on { color: #EEF3FA; background: rgba(34,230,240,.12); border-color: rgba(34,230,240,.5); }
+.px-flt button { position: relative; isolation: isolate; }
+.px-flt button.on { color: #EEF3FA; background: transparent; border-color: transparent; }
+.px-flt-pill { position: absolute; inset: -1px; z-index: -1; border-radius: 999px; background: rgba(34,230,240,.12); border: 1px solid rgba(34,230,240,.5); }
 .px-flt button.on i { color: #7FF0F7; }
 .px-flt button:disabled { opacity: .4; cursor: default; }
 .px-flt input { flex: 1 1 150px; min-width: 0; font: 500 12.5px 'Inter', sans-serif; color: #EEF3FA; background: #070B14; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 5px 12px; outline: none; }
@@ -1095,7 +1098,7 @@ const PREDICT_MODERN_STYLES = `
 .px-kpi.k-al:hover { border-top-color: #60A5FA; } .px-kpi.k-al:hover b { color: #93C5FD; }
 .px-kpi.k-ev:hover { border-top-color: #A78BFA; } .px-kpi.k-ev:hover b { color: #C4B5FD; }
 
-.px-st.s-hi, .px-st.s-up, .px-st.s-dn, .px-st.s-ev { color: #B4C2D6; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03); transition: all .15s; }
+.px-st.s-hi, .px-st.s-up, .px-st.s-dn, .px-st.s-ev { color: #B4C2D6; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03); transition: color .15s, background-color .15s, border-color .15s, box-shadow .15s, opacity .15s, transform .15s, scale .15s; }
 .px-card:hover .px-st.s-hi, .px-card.on .px-st.s-hi { color: #FCA5A5; border-color: rgba(225,64,56,.45); background: rgba(225,64,56,.1); }
 .px-card:hover .px-st.s-up, .px-card.on .px-st.s-up { color: #FCD34D; border-color: rgba(255,176,32,.4); background: rgba(255,176,32,.08); }
 .px-card:hover .px-st.s-dn, .px-card.on .px-st.s-dn { color: #67E8F9; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.07); }
@@ -1112,7 +1115,7 @@ const PREDICT_MODERN_STYLES = `
 .px-card:hover { border-color: rgba(255,255,255,.16); background: #0A101C; }
 .px-card.on { background: rgba(34,230,240,.05); border-color: rgba(34,230,240,.45); box-shadow: none; }
 
-.pxd-sev.hi, .pxd-sev.md, .pxd-sev.lo { color: #B4C2D6; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.12); transition: all .15s; }
+.pxd-sev.hi, .pxd-sev.md, .pxd-sev.lo { color: #B4C2D6; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.12); transition: color .15s, background-color .15s, border-color .15s, box-shadow .15s, opacity .15s, transform .15s, scale .15s; }
 .pxd-alert:hover .pxd-sev.hi, .pxd-alert.on .pxd-sev.hi { color: #F87171; background: rgba(225,64,56,.12); border-color: rgba(225,64,56,.35); }
 .pxd-alert:hover .pxd-sev.md, .pxd-alert.on .pxd-sev.md { color: #FFB020; background: rgba(255,176,32,.1); border-color: rgba(255,176,32,.3); }
 
@@ -1128,7 +1131,7 @@ const PREDICT_MODERN_STYLES = `
 .px-act-go { color: #B4C2D6; background: none; border-color: rgba(255,255,255,.14); }
 .px-act-go:hover { color: #22E6F0; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.06); }
 
-.px-ev-count, .px-ev.now .px-ev-count { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.12); transition: all .15s; }
+.px-ev-count, .px-ev.now .px-ev-count { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.12); transition: color .15s, background-color .15s, border-color .15s, box-shadow .15s, opacity .15s, transform .15s, scale .15s; }
 .px-ev-count b, .px-ev.now .px-ev-count b { color: #EEF3FA; transition: color .15s; }
 .px-ev:hover .px-ev-count { background: rgba(167,139,250,.08); border-color: rgba(167,139,250,.35); }
 .px-ev:hover .px-ev-count b { color: #C4B5FD; }
@@ -1136,7 +1139,7 @@ const PREDICT_MODERN_STYLES = `
 .px-ev.now { border-color: rgba(255,255,255,.08); }
 .px-ev-meta span.in { color: #B4C2D6; border-color: rgba(255,255,255,.1); }
 .px-ev:hover .px-ev-meta span.in { color: #FFB020; border-color: rgba(255,176,32,.4); }
-.px-ev-up li, .px-ev-up li.soft { border-left-color: rgba(255,255,255,.14); background: rgba(255,255,255,.02); transition: all .15s; }
+.px-ev-up li, .px-ev-up li.soft { border-left-color: rgba(255,255,255,.14); background: rgba(255,255,255,.02); transition: color .15s, background-color .15s, border-color .15s, box-shadow .15s, opacity .15s, transform .15s, scale .15s; }
 .px-ev:hover .px-ev-up li { border-left-color: #FFB020; background: rgba(255,176,32,.05); }
 .px-ev footer button { color: #B4C2D6; background: none; border-color: rgba(255,255,255,.14); }
 .px-ev footer button:hover { color: #22E6F0; border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.06); }
@@ -1654,6 +1657,9 @@ const avgConf = predictions?.length
               return (
                 <button type="button" key={key} className={flt === key ? "on" : ""} aria-pressed={flt === key}
                         disabled={key !== "all" && count === 0} onClick={() => setFlt(key)}>
+                  {/* One highlight that slides between chips (it is the same element), so the
+                      eye follows the choice instead of seeing one chip go out and another light. */}
+                  {flt === key && <motion.span layoutId="px-flt-pill" className="px-flt-pill" transition={SPRING} />}
                   {label}<i>{count}</i>
                 </button>
               );
@@ -1681,6 +1687,9 @@ const avgConf = predictions?.length
                 onClick={() => pick("prediction", i)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick("prediction", i); } }}
               >
+                {explainOpen && focusKind === "prediction" && selected === i && (
+                  <motion.span layoutId="px-card-bar" className="px-card-bar" transition={SPRING} />
+                )}
                 <div className="px-card-top">
                   <span className="px-zone">{p.zone}</span>
                   <span className={`px-st s-${statusOf(p).k}`}>{statusOf(p).t}</span>
@@ -1789,8 +1798,11 @@ const avgConf = predictions?.length
       </div>
 
       {/* Why this forecast: opens when a forecast or an alert is picked, closes on request */}
+      <AnimatePresence>
       {explainOpen && focusItem && (
-      <div className="px-panel px-explain" ref={reasonRef}>
+      <motion.div key="explain" className="px-panel px-explain" ref={reasonRef} style={{ animation: "none" }}
+        initial={{ opacity: 0, y: 14, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: 14, filter: "blur(4px)" }} transition={SPRING}>
         <div className="px-panel-hd">
           <span>{kn ? "ಮುನ್ಸೂಚನೆ ವಿವರಣೆ" : "Why this forecast"}</span>
           <span className="px-hint">
@@ -1800,7 +1812,8 @@ const avgConf = predictions?.length
           </span>
         </div>
 
-        <div className="px-insp">
+        <motion.div className="px-insp" key={`${focusKind}-${selected}`}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.22, ease: "easeOut" }}>
           {!focusItem && (
             <div className="px-insp-empty">
               {kn ? "ಮೇಲಿನಿಂದ ಒಂದು ಮುನ್ಸೂಚನೆ ಅಥವಾ ಎಚ್ಚರಿಕೆ ಆಯ್ಕೆಮಾಡಿ" : "Select a prediction or an alert above to see its full explanation."}
@@ -1957,8 +1970,11 @@ const avgConf = predictions?.length
               </div>
 
               {/* Inline reasoning - DAG + live trace, right where the officer is looking */}
+              <AnimatePresence initial={false}>
               {showReasoning && (
-                <div className="px-reason">
+                <motion.div key="reason" className="px-reason" style={{ overflow: "hidden" }}
+                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }} transition={SPRING}>
                   <div className="px-drawer-hd">
                     <span className="px-dagttl">{kn ? "ತರ್ಕ ಗ್ರಾಫ್" : "How this was worked out"} · <span className="px-dagzone">{focusItem.zone}</span></span>
                     {streaming && <span className="px-live"><span className="d" />{kn ? "ಲೈವ್" : "Live"}</span>}
@@ -1998,13 +2014,15 @@ const avgConf = predictions?.length
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </>
           )}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
       )}
+      </AnimatePresence>
 
       {/* This week's plan: one line per action, opened for the detail */}
       <section className="px-plan" aria-label="This week's plan">
@@ -2188,10 +2206,10 @@ const avgConf = predictions?.length
       </div>
 
       {/* Model card modal - real /model-card */}
+      <AnimatePresence>
       {showCard && modelCard && (
-        <>
-          <div className="px-cardback" onClick={() => setShowCard(false)} />
-          <div className="px-modelcard" role="dialog" aria-label="Model card">
+        <MaterialBackdrop key="model-card" className="px-cardback px-center" onClick={() => setShowCard(false)}>
+          <MaterialPanel className="px-modelcard px-modelcard-m" role="dialog" aria-label="Model card" onClick={(e) => e.stopPropagation()}>
             <button className="x" onClick={() => setShowCard(false)} aria-label="Close"></button>
             <b>{modelCard.model_name}</b>
             <span className="ty">{modelCard.type}</span>
@@ -2211,15 +2229,16 @@ const avgConf = predictions?.length
             )}
             <div className="sec"><h6>{kn ? "ತಪ್ಪು-ಧನಾತ್ಮಕ ರಕ್ಷಣೆ" : "False-positive mitigation"}</h6><p>{modelCard.false_positive_mitigation}</p></div>
             <div className="prov">{modelCard.data_provenance}</div>
-          </div>
-        </>
+          </MaterialPanel>
+        </MaterialBackdrop>
       )}
+      </AnimatePresence>
 
       {/* Derivation & audit modal - real /api/derivation */}
+      <AnimatePresence>
       {derivationModalData && (
-        <>
-          <div className="px-cardback" onClick={() => setDerivationModalData(null)} />
-          <div className="px-modelcard" role="dialog" aria-label="Derivation & Audit Inspector" style={{ maxWidth: "680px", width: "92%" }}>
+        <MaterialBackdrop key="derivation" className="px-cardback px-center" onClick={() => setDerivationModalData(null)}>
+          <MaterialPanel className="px-modelcard px-modelcard-m" role="dialog" aria-label="Derivation & Audit Inspector" style={{ maxWidth: "680px", width: "92%" }} onClick={(e) => e.stopPropagation()}>
             <button className="x" onClick={() => setDerivationModalData(null)} aria-label="Close"></button>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
               <span style={{ fontSize: "10px", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", background: "rgba(34,230,240,0.14)", color: "#22E6F0", padding: "4px 8px", borderRadius: "4px", border: "1px solid rgba(34,230,240,0.45)" }}>[AUDIT-GATE]</span>
@@ -2275,9 +2294,10 @@ const avgConf = predictions?.length
                 </div>
               </div>
             </div>
-          </div>
-        </>
+          </MaterialPanel>
+        </MaterialBackdrop>
       )}
+      </AnimatePresence>
 
       {confirmToast && (
         <div style={{
