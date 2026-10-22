@@ -15,6 +15,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import ForecastWhy from "@/components/ForecastWhy";
 import ShiftPlan from "@/components/ShiftPlan";
+import { AnimatePresence as PlanPresence } from "framer-motion";
 import EngineOverall from "@/components/EngineOverall";
 import CaseLeads from "@/components/CaseLeads";
 
@@ -2179,7 +2180,7 @@ const avgConf = predictions?.length
         </div>
       </details>
 
-      {planFor && <ShiftPlan station={planFor} kn={kn} onClose={() => setPlanFor(null)} />}
+      <PlanPresence>{planFor && <ShiftPlan key={planFor} station={planFor} kn={kn} onClose={() => setPlanFor(null)} />}</PlanPresence>
 
       <div className="px-footer">
         {engine ? `${engine} · ` : ""}

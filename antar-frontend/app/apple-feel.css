@@ -1,0 +1,74 @@
+/* Antar - how the interface responds (Apple design, "feel and polish").
+   Loaded after globals.css. It changes how things respond, not how they look: the fonts,
+   colours and layouts stay as they are.
+
+   1. Response: every control reacts the instant it is pressed, not on release.
+   2. Type: letter-spacing depends on size - large Inter headings tighten, body stays at 0.
+   3. Materials: glass surfaces go solid for people who ask for less transparency, and
+      gain a firm border for people who ask for more contrast.
+   4. Motion: one spring-like curve; reduced motion swaps movement for a short cross-fade. */
+
+:root {
+  /* Critically damped, ~0.35 s response: settles without overshoot (Apple's default). */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --press-scale: 0.97;
+}
+
+/* ── 1. Response ─────────────────────────────────────────────────────────────────────────
+   `scale` (not `transform`) so the press composes with any transform a control already
+   uses to position itself - a centred button keeps its translate(-50%) while it shrinks. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+a.cx-chip, .cx-chip, .cx-sugg {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;          /* no 300 ms double-tap wait on touch screens */
+}
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active,
+summary:active,
+.cx-chip:active, .cx-sugg:active {
+  scale: var(--press-scale);
+  transition: scale 90ms ease-out;
+}
+/* Large surfaces that happen to be buttons (cards, map canvases) would visibly lurch at
+   0.97; they get a gentler press. */
+.ac-export-card:active, .sx-assoc:active, .nx-qchip:active, .lg-btn:active { scale: 0.985; }
+/* Things that must never move under the pointer. */
+input[type="range"]:active, .leaflet-container button:active, canvas:active { scale: none; }
+
+/* Keyboard focus: a clear ring that follows the control's own radius, never on mouse click. */
+:focus-visible {
+  outline: 2px solid var(--cyan, #22E6F0);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── 2. Type: size-specific tracking (Inter headings only; the pixel/mono faces keep theirs) */
+.cx-headline, .ax-t-bottom, .bsx-fr .lead b, section.gi > header h3, section.sp > header h3 {
+  letter-spacing: -0.011em;
+  font-optical-sizing: auto;
+}
+h1:where(:not([class*="wm"]):not([class*="wordmark"])) { letter-spacing: -0.02em; line-height: 1.12; }
+.ax-t-row, .cx-para, .bsx-fr ol > li > p { letter-spacing: 0; }
+html[lang="kn"] .cx-headline, html[lang="kn"] .ax-t-bottom { letter-spacing: normal; }
+
+/* ── 3. Materials ───────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-transparency: reduce) {
+  *, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .cx-pillnav, .bsx-fr, .cx-card, section.gi, section.sp, .cx-guide-modal {
+    background-color: #0B1220 !important;
+  }
+  .bsx-tm-overlay { background-color: rgba(3, 6, 12, 0.92) !important; }
+}
+@media (prefers-contrast: more) {
+  .cx-card, .bsx-fr, .bsx-fr article, .ax-t, section.gi, section.sp, .cx-chip, button {
+    border-color: rgba(255, 255, 255, 0.55) !important;
+  }
+  .bsx-fr .how, .bsx-fr .ft span, .cx-sugg-lab { color: #C8D3E0 !important; }
+}
+
+/* ── 4. Motion ──────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  button:active, [role="button"]:active, .cx-chip:active, .cx-sugg:active { scale: none; }
+}

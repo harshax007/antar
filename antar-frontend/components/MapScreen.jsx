@@ -11,6 +11,7 @@ import { feature as topoFeature, merge as topoMerge } from "topojson-client";
 import { parseCSV, fromRecords, prepare, aliasFor } from "@/lib/crimeGraph";
 import { X } from "lucide-react";
 import GeoIntelDashboard, { crimeName } from "@/components/GeoIntel";
+import { AnimatePresence } from "framer-motion";
 import ProposeAction from "@/components/ProposeAction";
 import { useForecast, ForecastLayer, ForecastPanel, ForecastCard, ModelCardModal, AsOfChip } from "@/components/ForecastPanel";
 import { makeContains } from "@/lib/forecast";
@@ -1168,10 +1169,12 @@ export default function MapScreen() {
         {/* Geospatial Intelligence HUD Header Bar ($100B Company Product Quality) */}
         
 
+        <AnimatePresence>
         {showDossier && (
-          <GeoIntelDashboard corridors={serverCorridors} flows={flows} year={calYear} notes={intel}
+          <GeoIntelDashboard key="geo-intel" corridors={serverCorridors} flows={flows} year={calYear} notes={intel}
                              dateLabel={prettyDate(endDate, false)} onClose={() => setShowDossier(false)} />
         )}
+        </AnimatePresence>
 
           <div inert={reportOpen || showDossier ? "" : undefined} style={{ height: "100%", position: "relative" }}>
             {boot !== "off" && (
@@ -1835,7 +1838,7 @@ export default function MapScreen() {
               fontFamily: "Inter, sans-serif",
               letterSpacing: "0.02em",
               cursor: "pointer",
-              transition: "all 0.2s ease",
+              transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease",
               width: "100%",
               marginBottom: "12px",
               textAlign: "center"

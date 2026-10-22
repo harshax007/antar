@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/components/Providers";
 import { buildCrimeGraph, filterRecords, isFutureRecord, dayGrid, aliasFor, CATEGORIES, LINK_COLORS, soften } from "@/lib/crimeGraph";
 import { fastRun } from "@/lib/fastRun";
+import { AnimatePresence } from "framer-motion";
+import { MaterialBackdrop, MaterialPanel } from "@/components/ui/MaterialPanel";
 import Constellation from "@/components/Constellation";
 import Constellation3D from "@/components/Constellation3D";
 import CrimeGraph from "@/components/CrimeGraph";
@@ -793,6 +795,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
       {/* The results: one line per finding, worst first. The headline and its number are
           all that shows; the records behind it and the next step open on demand. */}
+      <AnimatePresence>
       {think?.phase === "done" && thinkOpen && (() => {
         const rank = { high: 0, med: 1, low: 2 };
         const sevName = kn ? { high: "ಹೆಚ್ಚಿನ ಆದ್ಯತೆ", med: "ಮಧ್ಯಮ ಆದ್ಯತೆ", low: "ಮಾಹಿತಿಗಾಗಿ" } : { high: "High priority", med: "Medium priority", low: "For information" };
@@ -822,8 +825,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           </li>
         );
         return (
-          <div className="bsx-tm-overlay" onClick={() => setThinkOpen(false)}>
-            <section className="bsx-fr" role="dialog" aria-modal="true" aria-labelledby="bsx-fr-title" onClick={(e) => e.stopPropagation()}>
+          <MaterialBackdrop key="fast-run" className="bsx-tm-overlay" onClick={() => setThinkOpen(false)}>
+            <MaterialPanel as="section" className="bsx-fr" role="dialog" aria-modal="true" aria-labelledby="bsx-fr-title" onClick={(e) => e.stopPropagation()}>
               <header>
                 <h2 id="bsx-fr-title">{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"}</h2>
                 <span>{think.n.toLocaleString()} FIRs · {think.scope}</span>
@@ -878,10 +881,11 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                   ? "ಎಲ್ಲವೂ ಈ ವೀಕ್ಷಣೆಯ FIR ಗಳಿಂದ ಎಣಿಸಲಾಗಿದೆ; \"ಈಗ ಅಸಾಮಾನ್ಯವಾದದ್ದು\" ಲೈವ್ ಸ್ಕ್ಯಾನ್‌ನಿಂದ ಬರುತ್ತದೆ. ಇವು ಸುಳಿವುಗಳು: ಕ್ರಮ ಕೈಗೊಳ್ಳುವ ಮೊದಲು FIR ಗಳನ್ನು ಪರಿಶೀಲಿಸಿ."
                   : "Everything is counted from the FIRs in this view; \"Unusual right now\" comes from the live scan. These are leads: check the FIRs before acting on them."}
               </footer>
-            </section>
-          </div>
+            </MaterialPanel>
+          </MaterialBackdrop>
         );
       })()}
+      </AnimatePresence>
 
       {/* ── Focus panel - the crime intelligence of the selected group ── */}
       {view === "net" && focus && (() => {
@@ -1142,7 +1146,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
               background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)",
               color: "#FFFFFF", padding: "4px 12px", borderRadius: "999px",
               cursor: "pointer", fontSize: "11px", fontWeight: 600,
-              fontFamily: "'Inter', sans-serif", transition: "all 0.2s"
+              fontFamily: "'Inter', sans-serif", transition: "color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s"
             }}
             onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
             onMouseOut={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}

@@ -10,6 +10,7 @@ import { X } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import ProposeAction from "@/components/ProposeAction";
 import UsefulFeedback from "@/components/UsefulFeedback";
+import { MaterialBackdrop, MaterialPanel } from "@/components/ui/MaterialPanel";
 
 const day = (iso) => {
   const x = new Date(`${iso}T00:00:00`);
@@ -43,9 +44,9 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
   const max = p ? Math.max(1, ...p.days.by_day.map((d) => d.firs)) : 1;
 
   return createPortal(
-    <div className="sp-back" role="dialog" aria-modal="true" aria-label={`Shift plan for ${station}`}
+    <MaterialBackdrop className="sp-back" role="dialog" aria-modal="true" aria-label={`Shift plan for ${station}`}
          onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <section className="sp">
+      <MaterialPanel as="section" className="sp">
         <header>
           <div>
             <span className="sp-eyebrow">{L("Shift plan", "ಪಾಳಿ ಯೋಜನೆ")}</span>
@@ -130,7 +131,7 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
             <button type="button" className="go" onClick={() => setPropose(true)}>{L("Propose patrol deployment", "ಗಸ್ತು ನಿಯೋಜನೆ ಪ್ರಸ್ತಾಪಿಸಿ")}</button>
           </footer>
         )}
-      </section>
+      </MaterialPanel>
 
       {p && (
         <ProposeAction open={propose} onClose={() => setPropose(false)} type="patrol_redeployment" kn={kn}
@@ -138,7 +139,7 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
                                    justification: p.text.split("\n").slice(0, 4).join(" ") }}
                        evidence={[{ label: "Shift plan", value: p.station }, ...(p.accuracy ? [{ label: "Back-test", value: p.accuracy }] : [])]} />
       )}
-    </div>,
+    </MaterialBackdrop>,
     document.body
   );
 }

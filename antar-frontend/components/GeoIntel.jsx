@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useLang } from "@/components/Providers";
+import { MaterialBackdrop, MaterialPanel } from "@/components/ui/MaterialPanel";
 
 // The register writes crime types in capitals ("KARNATAKA POLICE ACT 1963").
 export function crimeName(t) {
@@ -99,9 +100,9 @@ export default function GeoIntelDashboard({ corridors, flows, year, notes = [], 
   const shown = all ? links : links.slice(0, 6);
 
   return createPortal(
-    <div className="gi-back" role="dialog" aria-modal="true" aria-label={L("Geo intel: links between districts", "ಜಿಲ್ಲೆಗಳ ನಡುವಿನ ಸಂಪರ್ಕಗಳು")}
+    <MaterialBackdrop className="gi-back" role="dialog" aria-modal="true" aria-label={L("Geo intel: links between districts", "ಜಿಲ್ಲೆಗಳ ನಡುವಿನ ಸಂಪರ್ಕಗಳು")}
          onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <section className="gi">
+      <MaterialPanel as="section" className="gi">
         <header>
           <div>
             <span className="gi-eyebrow">{L("Geo intel", "ಭೌಗೋಳಿಕ ಮಾಹಿತಿ")}</span>
@@ -202,8 +203,8 @@ export default function GeoIntelDashboard({ corridors, flows, year, notes = [], 
                 `ಲೋಡ್ ಆಗಿರುವ ${year} ರ FIR ಸಾಲುಗಳಿಂದ ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಎಣಿಸಲಾಗಿದೆ. ಸರ್ವರ್‌ನ ಪೂರ್ಣ ಪಟ್ಟಿ ಲಭ್ಯವಿರಲಿಲ್ಲ.`)}
           {compiled && ` ${L("Compiled", "ಸಂಕಲಿಸಿದ್ದು")} ${new Date(compiled).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.`}
         </footer>
-      </section>
-    </div>,
+      </MaterialPanel>
+    </MaterialBackdrop>,
     document.body
   );
 }
