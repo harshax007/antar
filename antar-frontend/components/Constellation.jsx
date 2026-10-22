@@ -415,7 +415,10 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
         const sliceEnd = performance.now() + 28;
         while (ticks < SETTLE_TICKS && performance.now() < sliceEnd) { sim.tick(); ticks++; }
         if (ticks < SETTLE_TICKS && performance.now() - settleStart < SETTLE_BUDGET_MS) { setTimeout(settle, 0); return; }
-        start();
+        // Hand over on a frame: a frame only comes while the tab is on screen. Started in a
+        // background tab, the arrival ran on timers with no frames to draw it, and the
+        // officer came back to a brain collapsed into flat bubbles, seen from far out.
+        requestAnimationFrame(() => { if (!destroyed) start(); });
       };
       setTimeout(settle, 0);
 
