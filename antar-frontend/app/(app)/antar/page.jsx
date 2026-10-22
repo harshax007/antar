@@ -998,6 +998,13 @@ const CLASS_HELP = {
   U: "Not on record: the information needed is missing",
 };
 
+// "Beat No 3 · Byadarahalli PS — 62 (1%)" -> ["Beat No 3 · Byadarahalli PS", " — 62 (1%)"].
+// Rows without a " — <number>" tail are left whole.
+function splitRankRow(t) {
+  const m = String(t).match(/^(.+?)(\s+[—–-]\s+[\d,]+.*)$/);
+  return m && !/\*\*/.test(m[1]) ? [m[1], m[2]] : [t, null];
+}
+
 function TemplateAnswer({ m, kn, send, router }) {
   const s = m.layout.sections;
   const [open, setOpen] = useState(null);          // "sources" | "limits" | null
@@ -1030,10 +1037,15 @@ function TemplateAnswer({ m, kn, send, router }) {
               const isSub = /:\s*$/.test(e);
               const numMatch = e.match(/^(\d+\.)\s*(.*)$/);
               if (numMatch) {
+                // A ranked row reads "Beat No 3 · Byadarahalli PS — 62 (1%)": the name is what an
+                // officer acts on, so it is set in strong type; the first row is the answer itself.
+                const [name, rest] = splitRankRow(numMatch[2]);
                 return (
-                  <div key={j} className="ax-t-row" style={{ display: "flex", gap: "10px", paddingLeft: "4px" }}>
+                  <div key={j} className={`ax-t-row ax-t-rank${numMatch[1] === "1." ? " ax-t-top" : ""}`} style={{ display: "flex", gap: "10px", paddingLeft: "4px" }}>
                     <span style={{ color: "var(--cyan)", fontWeight: 600, minWidth: "20px", textAlign: "right", flexShrink: 0, fontFamily: "'Chakra Petch', sans-serif" }}>{numMatch[1]}</span>
-                    <span style={{ flex: 1 }}><MdInline text={numMatch[2]} /></span>
+                    <span style={{ flex: 1 }}>
+                      {rest != null ? <><b className="ax-t-name"><MdInline text={name} /></b><MdInline text={rest} /></> : <MdInline text={numMatch[2]} />}
+                    </span>
                   </div>
                 );
               }
