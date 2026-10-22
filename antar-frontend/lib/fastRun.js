@@ -50,9 +50,9 @@ export function fastRun(recs) {
     const card = (m, dir) => ({
       kind: "trend", cls: "D", sev: dir === "up" ? weight(m) : "low",
       title: `${CATEGORIES[m.cat]?.label || m.cat} ${dir} ${Math.abs(m.p)}% on last year`,
-      detail: `${many(m.n, "FIR")} in ${span}${maxYear}, ${num(m.b)} in ${span}${maxYear - 1}.`
-        + (m.b < 15 ? " Small numbers: go by the count." : ""),
-      source: "like-for-like year comparison",
+      detail: `${many(m.n, "FIR")} in ${span}${maxYear}, against ${num(m.b)} in the same months of ${maxYear - 1}.`
+        + (m.b < 15 ? " Only a few cases, so read the count, not the percentage." : ""),
+      source: "same months, this year and last",
     });
     if (moves[0]?.p > 0) out.pattern.push(card(moves[0], "up"));
     const fall = moves[moves.length - 1];
@@ -65,8 +65,8 @@ export function fastRun(recs) {
     out.pattern.push({
       kind: "festival", cls: "D", sev: "low",
       title: `${fest.name} is in ${MONTHS[fest.month - 1]}`,
-      detail: `${MONTHS[fest.month - 1]} holds ${pct(load, total)}% of the FIRs in view (${num(load)}). An even month would be 8%.`,
-      source: "festival calendar · FIR dates",
+      detail: `${MONTHS[fest.month - 1]} has ${pct(load, total)}% of the FIRs in view (${num(load)}); an average month has 8%. Plan festival bandobast with this in mind.`,
+      source: "festival calendar and FIR dates",
     });
   }
 
@@ -78,19 +78,19 @@ export function fastRun(recs) {
     const [id, rows] = repeat[0];
     out.network.push({
       kind: "network", cls: "K", sev: rows.length >= 5 ? "high" : "med",
-      title: `${id} is on ${num(rows.length)} FIRs`,
-      detail: `${many(repeat.length, "accused id")} repeat in this view.`,
+      title: `${id} is named in ${num(rows.length)} FIRs`,
+      detail: `The most repeated accused in this view. ${many(repeat.length, "accused", "accused")} in all are named in more than one FIR.`,
       evidence: repeat.slice(0, 3).map(([a, rs]) => { const d = districts(rs); return `${a} · ${many(rs.length, "FIR")} · ${d.slice(0, 3).join(", ")}${d.length > 3 ? ` +${d.length - 3}` : ""}`; }),
       next: [{ label: `Run Linkage on ${id}`, cmd: `run linkage ${id}` }],
-      source: "accused ids on FIRs",
+      source: "accused named on FIRs",
     });
     const wide = repeat.map(([a, rs]) => ({ a, d: districts(rs) })).sort((x, y) => y.d.length - x.d.length || x.a.localeCompare(y.a))[0];
     if (wide && wide.d.length >= 2 && wide.a !== id) out.network.push({
       kind: "network", cls: "K", sev: wide.d.length >= 3 ? "high" : "med",
-      title: `${wide.a} appears in ${wide.d.length} districts`,
-      detail: `${wide.d.slice(0, 5).join(", ")}${wide.d.length > 5 ? ` and ${wide.d.length - 5} more` : ""}.`,
+      title: `${wide.a} is named in FIRs in ${wide.d.length} districts`,
+      detail: `${wide.d.slice(0, 5).join(", ")}${wide.d.length > 5 ? ` and ${wide.d.length - 5} more` : ""}. Those stations may each hold part of the picture.`,
       next: [{ label: `Run Linkage on ${wide.a}`, cmd: `run linkage ${wide.a}` }],
-      source: "accused ids across districts",
+      source: "accused named across districts",
     });
   }
 
@@ -104,11 +104,11 @@ export function fastRun(recs) {
       .sort((x, y) => y.rs.length - x.rs.length);
     out.linkage.push({
       kind: "network", cls: "K", sev: hard + repeat.length > 8 ? "med" : "low",
-      title: `${many(hard + repeat.length, "group")} of FIRs share a key`,
-      detail: `${num(repeat.length)} by accused · ${keys.map((k) => `${num(k.groups.length)} by ${k.name}`).join(" · ")}.`,
+      title: `${many(hard + repeat.length, "group")} of FIRs share the same clue`,
+      detail: `Same accused: ${num(repeat.length)} · ${keys.map((k) => `same ${k.name}: ${num(k.groups.length)}`).join(" · ")}.`,
       evidence: biggest.slice(0, 3).map((b) => `${b.name} ${b.v} · ${many(b.rs.length, "FIR")}`),
       next: biggest[0] ? [{ label: `Run Linkage on the ${biggest[0].name} group`, cmd: `run linkage ${biggest[0].as}:${biggest[0].v}` }] : [],
-      source: "shared accused / vehicle / UPI / IP",
+      source: "accused, vehicle, UPI id and IP on FIRs",
     });
   }
 
@@ -120,8 +120,8 @@ export function fastRun(recs) {
     const share = pct(rows.length, total);
     out.geo.push({
       kind: "geo", cls: "D", sev: share > 25 ? "med" : "low",
-      title: `${d} has ${share}% of the FIRs in view`,
-      detail: `${num(rows.length)} of ${num(total)}.` + (byDist.length > 1 ? ` Next: ${byDist.slice(1, 3).map(([x, rs]) => `${x} (${num(rs.length)})`).join(", ")}.` : ""),
+      title: `${d} has the most FIRs: ${share}% of this view`,
+      detail: `${num(rows.length)} of ${num(total)} FIRs.` + (byDist.length > 1 ? ` Next busiest: ${byDist.slice(1, 3).map(([x, rs]) => `${x} (${num(rs.length)})`).join(", ")}.` : "") + " Busiest stations there:",
       evidence: stations.map(([s, rs]) => `${s} · ${many(rs.length, "FIR")}`),
       next: [{ label: `Run Geo on ${d}`, cmd: `run geo ${d}` },
              ...(stations[0] ? [{ label: `Run Forecast on ${stations[0][0]}`, cmd: `run forecast ${stations[0][0]}` }] : [])],
@@ -143,10 +143,10 @@ export function fastRun(recs) {
     const [pair, k] = topPairs[0];
     out.corridor.push({
       kind: "network", cls: "D", sev: k > 2 ? "med" : "low",
-      title: `${many(k, "accused id")} ${k === 1 ? "appears" : "appear"} in both ${pair.replace(" ↔ ", " and ")}`,
-      detail: `The busiest of ${many(pairs.size, "district pair")} that share an accused id.`,
-      evidence: topPairs.map(([p, c]) => `${p} · ${many(c, "accused id")}`),
-      source: "accused ids across district pairs",
+      title: `${many(k, "accused", "accused")} named in both ${pair.replace(" ↔ ", " and ")}`,
+      detail: `The two districts that share the most accused, of ${many(pairs.size, "district pair")} that share any.`,
+      evidence: topPairs.map(([p, c]) => `${p.replace(" ↔ ", " and ")} · ${many(c, "accused", "accused")}`),
+      source: "accused named across districts",
     });
   }
 
@@ -156,7 +156,7 @@ export function fastRun(recs) {
   out.vigil.push({
     kind: "alert", cls: "U", sev: "low",
     title: `${pct(noAcc, total)}% of FIRs name no accused`,
-    detail: `${num(noAcc)} of ${num(total)}. ${num(noKey)} have nothing to link on, so they show as unlinked - not proven unconnected.`,
+    detail: `${num(noAcc)} of ${num(total)}. ${num(noKey)} have no accused, vehicle, UPI id or IP to link on, so they show as unlinked. That does not mean they are unconnected.`,
     source: "missing fields on FIRs",
   });
 

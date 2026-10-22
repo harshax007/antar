@@ -86,6 +86,11 @@ function Donut({ cats, total }) {
 
 // Severity as a word, not a colour alone - readable at a glance and for colour-blind users.
 const EVIDENCE_CLASS = { K: "Known", D: "Derived", I: "Inferred", U: "Unknown" };
+// Fast Run says what each line is in words an officer uses, not the K/D/I/U letters.
+const EVIDENCE_PLAIN = {
+  en: { K: "From the record", D: "Calculated", I: "Inferred", U: "Not in the record" },
+  kn: { K: "ದಾಖಲೆಯಿಂದ", D: "ಲೆಕ್ಕ ಹಾಕಿದ್ದು", I: "ಊಹಿಸಿದ್ದು", U: "ದಾಖಲೆಯಲ್ಲಿಲ್ಲ" },
+};
 
 function SevPill({ sev = "low", kn }) {
   const label = sev === "high" ? (kn ? "ಹೆಚ್ಚು" : "High")
@@ -358,20 +363,22 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   // One accent for all four - the agent identity is carried by its NAME, not a hue
   // (four decorative colours added nothing but noise).
   const AGENTS = [
-    { id: "pattern", name: kn ? "ಪ್ಯಾಟರ್ನ್" : "Pattern",
-      how: kn ? "ವರ್ಗವಾರು ಗುಂಪು · ವರ್ಷ-ವರ್ಷ ಹೋಲಿಕೆ · ಹಬ್ಬದ ಕ್ಯಾಲೆಂಡರ್" : "groups FIRs by category, compares year-over-year, checks the festival calendar" },
-    { id: "network", name: kn ? "ನೆಟ್‌ವರ್ಕ್" : "Network",
-      how: kn ? "ಹಂಚಿದ ಆರೋಪಿ/ವಾಹನ/UPI ಕೀಗಳ ಮೇಲೆ ಗುಂಪು ಪತ್ತೆ · ಹಬ್ ಶ್ರೇಣೀಕರಣ" : "union-find over shared accused / vehicle / UPI keys, then ranks the hubs" },
-    { id: "geo", name: kn ? "ಜಿಯೋ" : "Geography",
-      how: kn ? "ಜಿಲ್ಲಾವಾರು ಒಟ್ಟುಗೂಡಿಸುವಿಕೆ · ಸಾಂದ್ರತೆ ಅಳತೆ" : "aggregates by district to find where the load concentrates" },
-    { id: "forecast", name: kn ? "ಮುನ್ಸೂಚನೆ" : "Forecast",
-      how: kn ? "ಲೈವ್ z-score ವೈಪರೀತ್ಯ ಸ್ಕ್ಯಾನ್ (ಬ್ಯಾಕೆಂಡ್)" : "queries the live backend anomaly service (z-score scan)" },
-    { id: "linkage", name: kn ? "ಲಿಂಕೇಜ್" : "Linkage",
-      how: kn ? "ಹಂಚಿದ ಆರೋಪಿ/ವಾಹನ/UPI/IP ಕೀಗಳ ಮೇಲೆ ≥2 FIR ಸಮೂಹಗಳ ಎಣಿಕೆ" : "counts clusters where ≥2 FIRs share an accused / vehicle / UPI / IP key" },
-    { id: "corridor", name: kn ? "ಕಾರಿಡಾರ್" : "Corridors",
-      how: kn ? "ಜಿಲ್ಲೆಗಳ ನಡುವೆ ಒಂದೇ ಆರೋಪಿಯ ಚಲನೆ ಪತ್ತೆ" : "traces the same accused across districts to surface movement corridors" },
-    { id: "vigil", name: kn ? "ಕೊರತೆಗಳು" : "Gaps",
-      how: kn ? "ಲಿಂಕ್ ಮಾಡಲು ಏನೂ ಇಲ್ಲದ FIR ಗಳ ಎಣಿಕೆ" : "counts the FIRs that carry nothing to link on - what this view cannot show" },
+    // `name` is the agent (the run strip and the terminal use it); `ask` is the question its
+    // section answers, which is what the results show an officer.
+    { id: "pattern", name: kn ? "ಪ್ಯಾಟರ್ನ್" : "Pattern", ask: kn ? "ಏನು ಬದಲಾಗುತ್ತಿದೆ" : "What is changing",
+      how: kn ? "ಕಳೆದ ವರ್ಷದ ಅದೇ ತಿಂಗಳುಗಳಿಗೆ ಹೋಲಿಸಿ ಏರುತ್ತಿರುವ ಅಥವಾ ಇಳಿಯುತ್ತಿರುವ ಅಪರಾಧ ಪ್ರಕಾರಗಳು, ಮತ್ತು ಮುಂದಿನ ಹಬ್ಬ" : "Crime types rising or falling against the same months last year, and the next festival" },
+    { id: "network", name: kn ? "ನೆಟ್‌ವರ್ಕ್" : "Network", ask: kn ? "ಹಲವು ಪ್ರಕರಣಗಳಲ್ಲಿರುವ ಆರೋಪಿಗಳು" : "Accused on many cases",
+      how: kn ? "ಒಂದಕ್ಕಿಂತ ಹೆಚ್ಚು FIR ನಲ್ಲಿ ಹೆಸರಿಸಲಾದ ಆರೋಪಿಗಳು" : "Accused named in more than one FIR" },
+    { id: "geo", name: kn ? "ಜಿಯೋ" : "Geography", ask: kn ? "ಪ್ರಕರಣಗಳು ಎಲ್ಲಿ ಹೆಚ್ಚು" : "Where the cases are",
+      how: kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಹೆಚ್ಚು FIR ಇರುವ ಜಿಲ್ಲೆ ಮತ್ತು ಠಾಣೆಗಳು" : "The district and stations with the most FIRs in this view" },
+    { id: "forecast", name: kn ? "ಮುನ್ಸೂಚನೆ" : "Forecast", ask: kn ? "ಈಗ ಅಸಾಮಾನ್ಯವಾದದ್ದು" : "Unusual right now",
+      how: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ತುಂಬಾ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳು ದಾಖಲಾಗುತ್ತಿರುವ ಸ್ಥಳಗಳು (ಲೈವ್ ಸ್ಕ್ಯಾನ್)" : "Places recording far more cases than usual (live scan)" },
+    { id: "linkage", name: kn ? "ಲಿಂಕೇಜ್" : "Linkage", ask: kn ? "ಒಂದೇ ಸುಳಿವಿನಿಂದ ಸಂಪರ್ಕಿತ ಪ್ರಕರಣಗಳು" : "Cases linked by the same clue",
+      how: kn ? "ಒಂದೇ ಆರೋಪಿ, ವಾಹನ, UPI ಐಡಿ ಅಥವಾ IP ಹಂಚಿಕೊಂಡ FIR ಗಳು" : "FIRs that share an accused, vehicle, UPI id or IP address" },
+    { id: "corridor", name: kn ? "ಕಾರಿಡಾರ್" : "Corridors", ask: kn ? "ಆರೋಪಿಗಳನ್ನು ಹಂಚಿಕೊಂಡ ಜಿಲ್ಲೆಗಳು" : "Districts sharing accused",
+      how: kn ? "ಒಂದೇ ಆರೋಪಿ ಎರಡೂ ಕಡೆ FIR ನಲ್ಲಿರುವ ಜಿಲ್ಲಾ ಜೋಡಿಗಳು" : "District pairs where the same accused is named in FIRs in both" },
+    { id: "vigil", name: kn ? "ಕೊರತೆಗಳು" : "Gaps", ask: kn ? "ಈ ವೀಕ್ಷಣೆ ತೋರಿಸಲಾಗದ್ದು" : "What this view cannot show",
+      how: kn ? "ಲಿಂಕ್ ಮಾಡಲು ಏನೂ ಇಲ್ಲದ FIR ಗಳು" : "FIRs with nothing to link them on" },
   ];
 
   async function runThink() {
@@ -393,8 +400,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       if (a) findings.forecast.push({
         kind: "alert", cls: "D", sev: "high",
         title: `${a.zone}: ${(a.crime_type || "").replace(/_/g, " ").toLowerCase().replace(/\b[a-z]/g, (ch) => ch.toUpperCase())} above usual`,
-        detail: `${a.observed} FIRs recorded${a.z_score?.toFixed ? `, ${a.z_score.toFixed(1)} standard deviations above the usual level` : ""}.`,
-        source: "anomaly scan",
+        detail: `${a.observed} FIRs recorded, well above the usual level for this place${a.z_score?.toFixed ? ` (spike score ${a.z_score.toFixed(1)}; 3 or more is unusual)` : ""}. Worth checking with the station.`,
+        source: "live scan for unusual activity",
       });
     }).catch(() => {});
 
@@ -433,21 +440,21 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
   async function copyThink() {
     if (!think?.findings) return;
-    const word = { high: "HIGH", med: "MEDIUM", low: "LOW" };
+    const word = { high: "HIGH PRIORITY", med: "MEDIUM PRIORITY", low: "FOR INFORMATION" };
     const lines = [
-      `Antar · agent analysis - ${think.n.toLocaleString()} FIRs · ${think.scope}`,
+      `Antar Fast Run - ${think.n.toLocaleString()} FIRs · ${think.scope}`,
       "",
-      `Key takeaway: ${think.lead ? `${think.lead.title}${think.lead.detail ? ` - ${think.lead.detail}` : ""}` : think.summary}`,
+      `Look at this first: ${think.lead ? `${think.lead.title}${think.lead.detail ? ` - ${think.lead.detail}` : ""}` : think.summary}`,
       "",
     ];
     AGENTS.forEach((a) => {
       const f = think.findings[a.id] || [];
-      lines.push(a.name);
+      lines.push(a.ask);
       if (!f.length) lines.push("  Nothing stands out in this view.");
       f.forEach((c) => {
-        lines.push(`  [${word[c.sev || "low"]}]${c.cls ? ` [${c.cls}]` : ""} ${c.title}${c.detail ? ` - ${c.detail}` : ""}`);
+        lines.push(`  [${word[c.sev || "low"]}]${c.cls ? ` [${EVIDENCE_PLAIN.en[c.cls] || c.cls}]` : ""} ${c.title}${c.detail ? ` - ${c.detail}` : ""}`);
         (c.evidence || []).forEach((e) => lines.push(`      ${e}`));
-        if (c.source) lines.push(`      Source: ${c.source}`);
+        if (c.source) lines.push(`      Based on: ${c.source}`);
       });
       lines.push("");
     });
@@ -788,9 +795,10 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           all that shows; the records behind it and the next step open on demand. */}
       {think?.phase === "done" && thinkOpen && (() => {
         const rank = { high: 0, med: 1, low: 2 };
-        const sevName = kn ? { high: "ಹೆಚ್ಚು", med: "ಮಧ್ಯಮ", low: "ಕಡಿಮೆ" } : { high: "High", med: "Medium", low: "Low" };
+        const sevName = kn ? { high: "ಹೆಚ್ಚಿನ ಆದ್ಯತೆ", med: "ಮಧ್ಯಮ ಆದ್ಯತೆ", low: "ಮಾಹಿತಿಗಾಗಿ" } : { high: "High priority", med: "Medium priority", low: "For information" };
+        const plain = EVIDENCE_PLAIN[kn ? "kn" : "en"];
         const groups = AGENTS.map((a) => ({ ...a, items: think.findings[a.id] || [] }));
-        const rows = groups.flatMap((g) => g.items.map((c) => ({ ...c, agent: g.name })))
+        const rows = groups.flatMap((g) => g.items.map((c) => ({ ...c, agent: g.ask })))
           .sort((x, y) => (rank[x.sev] ?? 3) - (rank[y.sev] ?? 3));
         const reported = groups.filter((g) => g.items.length).length;
         const none = kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಗಮನಾರ್ಹ ಸಂಕೇತವಿಲ್ಲ." : "Nothing stands out in this view.";
@@ -800,12 +808,12 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
             <div className="hd">
               <i className="dot" title={sevName[c.sev || "low"]} />
               <b>{c.title}</b>
-              {c.cls && <em>{c.cls} · {EVIDENCE_CLASS[c.cls]}</em>}
+              {c.cls && <em title={EVIDENCE_CLASS[c.cls]}>{plain[c.cls] || EVIDENCE_CLASS[c.cls]}</em>}
             </div>
             {c.detail && <p>{c.detail}</p>}
             {c.evidence?.length > 0 && <ul>{c.evidence.map((e, k) => <li key={k}>{e}</li>)}</ul>}
             <div className="ft">
-              <span>{sevName[c.sev || "low"]}{withAgent ? ` · ${c.agent}` : ""}{c.source ? ` · ${kn ? "ಮೂಲ" : "Source"}: ${c.source}` : ""}</span>
+              <span><b className="pri">{sevName[c.sev || "low"]}</b>{withAgent ? ` · ${c.agent}` : ""}{c.source ? ` · ${kn ? "ಆಧಾರ" : "Based on"}: ${c.source}` : ""}</span>
               {/* Hands the record to a console agent: the finding says what is there, the agent works it. */}
               {(c.next || []).map((x) => (
                 <button key={x.cmd} onClick={() => { setThinkOpen(false); consoleRef.current?.run(x.cmd); }}>{x.label}</button>
@@ -830,18 +838,24 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
               {think.lead && (
                 <div className={`lead sev-${think.lead.sev || "low"}`}>
-                  <small><i className="dot" />{kn ? "ಪ್ರಮುಖ ಅಂಶ" : "Key takeaway"}</small>
+                  <small><i className="dot" />{kn ? "ಮೊದಲು ನೋಡಬೇಕಾದದ್ದು" : "Look at this first"}</small>
                   <b>{think.lead.title}</b>
                   {think.lead.detail && <p>{think.lead.detail}</p>}
+                  {think.lead.next?.[0] && (
+                    <div className="lead-next">
+                      <span>{kn ? "ಮುಂದಿನ ಹೆಜ್ಜೆ:" : "Next step:"}</span>
+                      <button onClick={() => { setThinkOpen(false); consoleRef.current?.run(think.lead.next[0].cmd); }}>{think.lead.next[0].label}</button>
+                    </div>
+                  )}
                 </div>
               )}
 
               <div className="sum">
-                <span><b>{think.total}</b>{kn ? "ಸಂಕೇತಗಳು" : think.total === 1 ? "signal" : "signals"}</span>
+                <span><b>{think.total}</b>{kn ? "ಅಂಶಗಳು" : think.total === 1 ? "finding" : "findings"}</span>
                 {["high", "med", "low"].map((k) => (
                   <span key={k} className={`sev-${k}`}><i className="dot" /><b>{think.counts?.[k] || 0}</b>{sevName[k]}</span>
                 ))}
-                <span><b>{reported}/{AGENTS.length}</b>{kn ? "ಏಜೆಂಟ್‌ಗಳು ವರದಿ ಮಾಡಿವೆ" : "agents reported"}</span>
+                <span>{kn ? `${AGENTS.length} ರಲ್ಲಿ ${reported} ಪರಿಶೀಲನೆಗಳಲ್ಲಿ ಅಂಶಗಳಿವೆ` : `${reported} of ${AGENTS.length} checks found something`}</span>
               </div>
 
               {!rows.length && <p className="none">{none}</p>}
@@ -849,7 +863,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                 <div className="grid">
                   {groups.map((g) => (
                     <article key={g.id} className={g.items.length ? "" : "quiet"}>
-                      <h3>{g.name}<em>{g.items.length}</em></h3>
+                      <h3 title={g.name}>{g.ask}<em>{g.items.length}</em></h3>
                       <p className="how">{g.how}</p>
                       {g.items.length ? <ol>{g.items.map((c, i) => finding(c, i, false))}</ol> : <p className="none">{none}</p>}
                     </article>
@@ -861,8 +875,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
               <footer>
                 {kn
-                  ? "K ತಿಳಿದಿರುವುದು: ದಾಖಲೆಗಳಿಂದ ಓದಿದ್ದು · D ಪಡೆದದ್ದು: ಅವುಗಳಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ್ದು · U ತಿಳಿಯದ್ದು: ಈ ವೀಕ್ಷಣೆ ತೋರಿಸಲಾಗದ್ದು. ಎಲ್ಲವೂ ಈ ವೀಕ್ಷಣೆಯ FIR ಗಳಿಂದ ಎಣಿಸಲಾಗಿದೆ."
-                  : "K Known: read from the records · D Derived: calculated from them · U Unknown: what this view cannot show. Everything is counted from the FIRs in this view; the Forecast line comes from the live anomaly scan."}
+                  ? "ಎಲ್ಲವೂ ಈ ವೀಕ್ಷಣೆಯ FIR ಗಳಿಂದ ಎಣಿಸಲಾಗಿದೆ; \"ಈಗ ಅಸಾಮಾನ್ಯವಾದದ್ದು\" ಲೈವ್ ಸ್ಕ್ಯಾನ್‌ನಿಂದ ಬರುತ್ತದೆ. ಇವು ಸುಳಿವುಗಳು: ಕ್ರಮ ಕೈಗೊಳ್ಳುವ ಮೊದಲು FIR ಗಳನ್ನು ಪರಿಶೀಲಿಸಿ."
+                  : "Everything is counted from the FIRs in this view; \"Unusual right now\" comes from the live scan. These are leads: check the FIRs before acting on them."}
               </footer>
             </section>
           </div>
