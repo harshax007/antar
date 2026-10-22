@@ -72,3 +72,46 @@ html[lang="kn"] .cx-headline, html[lang="kn"] .ax-t-bottom { letter-spacing: nor
 @media (prefers-reduced-motion: reduce) {
   button:active, [role="button"]:active, .cx-chip:active, .cx-sugg:active { scale: none; }
 }
+
+/* ── 5. Scroll edge under the floating nav ──────────────────────────────────────────────
+   Content fades out over --nav-edge (set by PillNav from where the nav ends) instead of
+   meeting the nav at a hard line. Applied only while an area under the nav is scrolled. */
+.is-under-nav {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.35) calc(var(--nav-edge, 76px) * .55), #000 var(--nav-edge, 76px));
+          mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.35) calc(var(--nav-edge, 76px) * .55), #000 var(--nav-edge, 76px));
+}
+
+/* ── 6. Chat answers arrive gently ──────────────────────────────────────────────────────
+   The card rises a little and comes into focus (opacity, a short rise and a 3 px blur that
+   clears) on the house spring; then its rows settle in one after another, 35 ms apart, so
+   the eye is led down the answer rather than hit by all of it at once. */
+@keyframes answerArrive {
+  from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes rowSettle {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+.cx-card { animation: answerArrive .52s var(--ease-spring) both; }
+.ax-t-head, .ax-t-context, .ax-t-evidence > *, .ax-t-more, .ax-t-folds {
+  animation: rowSettle .4s var(--ease-spring) both;
+}
+.ax-t-head { animation-delay: .06s; }
+.ax-t-context { animation-delay: .1s; }
+.ax-t-evidence > :nth-child(1) { animation-delay: .14s; }
+.ax-t-evidence > :nth-child(2) { animation-delay: .175s; }
+.ax-t-evidence > :nth-child(3) { animation-delay: .21s; }
+.ax-t-evidence > :nth-child(4) { animation-delay: .245s; }
+.ax-t-evidence > :nth-child(5) { animation-delay: .28s; }
+.ax-t-evidence > :nth-child(6) { animation-delay: .315s; }
+.ax-t-evidence > :nth-child(7) { animation-delay: .35s; }
+.ax-t-evidence > :nth-child(8) { animation-delay: .385s; }
+.ax-t-evidence > :nth-child(9) { animation-delay: .42s; }
+.ax-t-evidence > :nth-child(n+10), .ax-t-more, .ax-t-folds { animation-delay: .45s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-card { animation: fadeOnly .2s ease both; }
+  .ax-t-head, .ax-t-context, .ax-t-evidence > *, .ax-t-more, .ax-t-folds { animation: none; }
+}
+@keyframes fadeOnly { from { opacity: 0; } to { opacity: 1; } }

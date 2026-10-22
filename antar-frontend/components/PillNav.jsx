@@ -19,6 +19,24 @@ export default function PillNav() {
   // Pending human-in-the-loop decisions, for the APPROVALS badge. Polled lightly, and
   // refreshed instantly when the Approvals screen reports a change.
   const [hitlPending, setHitlPending] = useState(0);
+  // Scroll edge: once an area that sits under this floating nav is scrolled, its content
+  // fades out as it passes beneath the nav instead of being cut by a hard line. Only areas
+  // whose top is under the nav and that are actually scrolled get it (see .is-under-nav in
+  // apple-feel.css); the map, the Brain canvas and an unscrolled page are left alone.
+  useEffect(() => {
+    const onScroll = (e) => {
+      const el = e.target === document ? document.scrollingElement : e.target;
+      if (!(el instanceof Element)) return;
+      const navBottom = document.querySelector(".cx-pillnav")?.getBoundingClientRect().bottom || 60;
+      const top = el.getBoundingClientRect().top;
+      const under = el.scrollTop > 2 && top < navBottom;
+      el.classList.toggle("is-under-nav", under);
+      if (under) el.style.setProperty("--nav-edge", `${Math.max(24, Math.round(navBottom - top + 28))}px`);
+    };
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true });
+  }, []);
+
   // This nav is mounted on every screen, so the poll ran on all of them, forever, even
   // with the tab in the background - 240 requests an hour for a badge that changes a
   // handful of times a day. It now sleeps while the tab is hidden and catches up on the
