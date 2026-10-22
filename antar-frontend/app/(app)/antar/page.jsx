@@ -2828,7 +2828,9 @@ export default function ChatPage() {
             {messages.map((m, i) => (
               <MessageRow key={i} m={m} i={i} prevMessage={messages[i - 1]} kn={kn} lang={lang} deepThink={deepThink} sessionId={sessionId} router={router} send={actions.send} setMessages={setMessages} showNetwork={actions.showNetwork} exportReport={actions.exportReport} translateAnswer={actions.translateAnswer} rateAnswer={actions.rateAnswer} toggleWhy={actions.toggleWhy} />
             ))}
-            {!loading && (showSuggestions?.length > 0 || roleSuggestions.length > 0) && (
+            {/* Never while an answer is on its way ("Thinking..." or still streaming): a
+                suggestion offered mid-answer invites a second question before the first lands. */}
+            {!loading && !(last && (last.role === "user" || last.streaming)) && (showSuggestions?.length > 0 || roleSuggestions.length > 0) && (
               <div className="cx-suggwrap">
                 {showSuggestions?.length > 0 && (
                   <div className="cx-chips" style={{ justifyContent: "flex-start" }}>
