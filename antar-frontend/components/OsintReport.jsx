@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { SPRING } from "@/components/ui/MaterialPanel";
 
 // What one OSINT run found, laid out the way an officer reads it: the summary first (what this
 // is, what the open web shows, what was checked live, what to do next), then the detail behind
@@ -171,12 +173,13 @@ export default function OsintReport({ r, web, loading, kn, onCopy, onAudit }) {
       <div className="osr-tabs" role="tablist">
         {tabs.map(([k, label, n]) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
+            {tab === k && <motion.span layoutId="osr-tab-line" className="osr-tab-line" transition={SPRING} />}
             {label}{n ? <i>{n}</i> : null}
           </button>
         ))}
       </div>
 
-      <div className="osr-body">
+      <motion.div className="osr-body" key={tab} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: "easeOut" }}>
         {tab === "pages" && (
           <>
             <p className="osr-note">
@@ -292,7 +295,7 @@ export default function OsintReport({ r, web, loading, kn, onCopy, onAudit }) {
             {(r.bbot_scan_tree || []).map((e, i) => <li key={e.id || i}><span>{when(e.timestamp)}</span>{e.detail}</li>)}
           </ol>
         )}
-      </div>
+      </motion.div>
       {loading && <div className="osr-busy">{t("checking")}</div>}
     </div>
   );

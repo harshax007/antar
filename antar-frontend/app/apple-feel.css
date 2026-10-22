@@ -115,3 +115,22 @@ html[lang="kn"] .cx-headline, html[lang="kn"] .ax-t-bottom { letter-spacing: nor
   .ax-t-head, .ax-t-context, .ax-t-evidence > *, .ax-t-more, .ax-t-folds { animation: none; }
 }
 @keyframes fadeOnly { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Search: Apple-style motion (2026-10-22) ──────────────────────────────────────────────
+   Filter chip, record selection and both tab bars each have ONE highlight element that
+   slides to the new choice (framer-motion layoutId), so the eye follows the change. */
+.sx-fchips button { position: relative; isolation: isolate; }
+.sx-fchips button.on:has(> .sx-fchip-pill) { background: transparent; border-color: transparent; }
+.sx-fchip-pill { position: absolute; inset: -1px; z-index: -1; border-radius: inherit; background: #F1F5F9; }
+.sx-rrow { position: relative; isolation: isolate; }
+.sx-rrow.active { background: transparent !important; border-left-color: transparent !important; }
+.sx-row-sel { position: absolute; inset: 0; z-index: -1; border-radius: 8px; background: rgba(34,230,240,0.05); border-left: 2px solid #22E6F0; pointer-events: none; }
+.sx-ptab { position: relative; }
+.sx-ptab.on, .sx-ptab.osint.on { border-bottom-color: transparent; }
+.sx-ptab-line { position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; border-radius: 1px; background: #F8FAFC; }
+.osr-tabs button { position: relative; }
+.osr-tabs button.on { border-bottom-color: transparent; }
+.osr-tab-line { position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; border-radius: 1px; background: #F8FAFC; }
+/* A dossier comes into focus on the house spring when another record is picked. */
+.sx-dp-inner.fade-rise { animation: answerArrive .45s var(--ease-spring) both; }
+@media (prefers-reduced-motion: reduce) { .sx-dp-inner.fade-rise { animation: fadeOnly .2s ease both; } }

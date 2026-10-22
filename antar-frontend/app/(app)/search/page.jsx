@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
 import { Mic, MicOff, X, ShieldCheck, Search, ArrowRight, Brain, MapPin, Sparkles, FolderGit2, Calendar, Users, Hash, Activity } from "lucide-react";
 import ProposeAction from "@/components/ProposeAction";
+import { AnimatePresence, motion } from "framer-motion";
+import { SPRING } from "@/components/ui/MaterialPanel";
 import BrainLoader, { OSINT_STEPS, OSINT_ORBS } from "@/components/BrainLoader";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -434,7 +436,12 @@ function SearchContent() {
               )}
             </div>
             <div className="sx-fchips">
-              {FILTERS.map((f) => <button key={f.key} className={filterType === f.key ? "on" : ""} onClick={() => setFilterType(f.key)}>{kn ? f.kn : f.en}</button>)}
+              {FILTERS.map((f) => (
+                <button key={f.key} className={filterType === f.key ? "on" : ""} onClick={() => setFilterType(f.key)}>
+                  {filterType === f.key && <motion.span layoutId="sx-fchip-pill" className="sx-fchip-pill" transition={SPRING} />}
+                  {kn ? f.kn : f.en}
+                </button>
+              ))}
               {osintAllowed && (
                 <button type="button"
                   className={profileTab === "osint" ? "on" : ""}
@@ -549,6 +556,7 @@ function SearchContent() {
                   className={`sx-rrow ${selectedId === r.suspect_id ? "active" : ""}`}
                   onClick={() => setSelectedId(r.suspect_id)}
                 >
+                  {selectedId === r.suspect_id && <motion.span layoutId="sx-row-sel" className="sx-row-sel" transition={SPRING} />}
                   <span className={`sx-rav r-${t}`}>{initials(r.full_name)}</span>
                   <span className="sx-rbody">
                     <span className="nm"><HighlightName name={r.full_name} query={debounced} /></span>
@@ -577,6 +585,7 @@ function SearchContent() {
                     onClick={() => setProfileTab("details")}
                   >
                     <Activity size={13} />
+                    {profileTab === "details" && <motion.span layoutId="sx-ptab-line" className="sx-ptab-line" transition={SPRING} />}
                     <span>{kn ? "ವಿವರಗಳು ಮತ್ತು ಕೇಸ್‌ಫೈಲ್" : "Details & Casefile"}</span>
                   </button>
                   <button
@@ -585,6 +594,7 @@ function SearchContent() {
                     onClick={() => setProfileTab("osint")}
                   >
                     <Sparkles size={13} />
+                    {profileTab === "osint" && <motion.span layoutId="sx-ptab-line" className="sx-ptab-line" transition={SPRING} />}
                     <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Open-source checks (OSINT)"}</span>
                   </button>
                 </div>
@@ -650,13 +660,19 @@ function SearchContent() {
                       </button>
                     </div>
                   </div>
+                  <AnimatePresence initial={false}>
                   {osintAbout && (
+                    <motion.div key="osint-about" style={{ overflow: "hidden" }}
+                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }} transition={SPRING}>
                     <OsintDocs kn={kn} onTry={() => {
                       setOsintConsentOpen(false);
                       setOsintAbout(false);
                       appendOsintAudit(`OSINT session authorized by ${getSessionOfficer()}`);
                     }} />
+                    </motion.div>
                   )}
+                  </AnimatePresence>
                 </div>
               )}
 
@@ -881,7 +897,7 @@ function SearchContent() {
           {profileTab !== "osint" && !selectedId && <div className="sx-detail-empty">{kn ? "ವಿವರಗಳಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ" : "Select a record from the list to view full dossier"}</div>}
           {profileTab !== "osint" && selectedId && loadingProfile && !p && <div className="sx-detail-empty"><div className="signal-pulse" style={{ width: 180 }} /></div>}
           {profileTab !== "osint" && selectedId && p && (
-            <div className="sx-dp-inner fade-rise">
+            <div className="sx-dp-inner fade-rise" key={selectedId}>
               {/* HERO */}
               <div className={`sx-hero r-${tierCls(p.risk_score || 0)}`}>
                 <div className="sx-hero-av">{initials(p.full_name)}</div>
@@ -919,6 +935,7 @@ function SearchContent() {
                     onClick={() => setProfileTab("details")}
                   >
                     <Activity size={13} />
+                    {profileTab === "details" && <motion.span layoutId="sx-ptab-line" className="sx-ptab-line" transition={SPRING} />}
                     <span>{kn ? "ವಿವರಗಳು ಮತ್ತು ಕೇಸ್‌ಫೈಲ್" : "Details & Casefile"}</span>
                   </button>
                   <button
@@ -927,6 +944,7 @@ function SearchContent() {
                     onClick={() => setProfileTab("osint")}
                   >
                     <Sparkles size={13} />
+                    {profileTab === "osint" && <motion.span layoutId="sx-ptab-line" className="sx-ptab-line" transition={SPRING} />}
                     <span>{kn ? "ಸ್ವತಂತ್ರ OSINT ಮತ್ತು ಫಾರೆನ್ಸಿಕ್ಸ್" : "Open-source checks (OSINT)"}</span>
                   </button>
                 </div>
