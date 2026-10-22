@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
 import { Mic, MicOff, X, ShieldCheck, Search, ArrowRight, Brain, MapPin, Sparkles, FolderGit2, Calendar, Users, Hash, Activity } from "lucide-react";
 import ProposeAction from "@/components/ProposeAction";
+import BrainLoader, { OSINT_STEPS, OSINT_ORBS } from "@/components/BrainLoader";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -843,10 +844,10 @@ function SearchContent() {
 
                     {/* RIGHT: what the run found - the officer's summary first, then the detail */}
                     <div className="sx-osint-results">
-                      {osintLoading && !reconData && (
-                        <div className="sx-osint-empty"><p>{kn ? "ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…" : "Decoding, searching the open web and checking the registries…"}</p></div>
+                      {osintLoading && (
+                        <div className="sx-osint-empty sx-osint-loading"><BrainLoader kn={kn} steps={OSINT_STEPS} orbs={OSINT_ORBS} /></div>
                       )}
-                      {reconData && (
+                      {reconData && !osintLoading && (
                         <OsintReport
                           r={reconData}
                           web={osint}

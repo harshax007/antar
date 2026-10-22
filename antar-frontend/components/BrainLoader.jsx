@@ -27,6 +27,13 @@ export const MAP_STEPS = {
 };
 export const MAP_ORBS = ["shaping", "searching", "solving", "working"];
 
+// Search's open-source checks: the steps the /api/osint/investigate run goes through.
+export const OSINT_STEPS = {
+  en: ["Reading the identifier", "Searching the open web", "Checking the registries", "Writing the summary"],
+  kn: ["ಗುರುತನ್ನು ಓದಲಾಗುತ್ತಿದೆ", "ಮುಕ್ತ ವೆಬ್‌ನಲ್ಲಿ ಹುಡುಕಲಾಗುತ್ತಿದೆ", "ನೋಂದಣಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ", "ಸಾರಾಂಶ ಬರೆಯಲಾಗುತ್ತಿದೆ"],
+};
+export const OSINT_ORBS = ["shaping", "searching", "connecting", "working"];
+
 export default function BrainLoader({ kn = false, fullscreen = false, steps: own, orbs = STEP_ORB, className = "" }) {
   const steps = (own || STEPS)[kn ? "kn" : "en"];
   // The steps run once and hold on the last: looping back to "Loading FIR records" while

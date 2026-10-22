@@ -5463,3 +5463,6 @@ body:has(.bsx-tm-overlay) #cx-guide-trigger { display: none; }
    old translate(-50%,-50%) centring. */
 .px-cardback.px-center { display: flex; align-items: center; justify-content: center; padding: 24px; }
 .px-modelcard.px-modelcard-m { position: relative; left: auto; top: auto; transform: none; }
+
+/* OSINT run: the Brain's loader, centred in the results column while the checks run. */
+.sx-osint-loading { position: relative; min-height: 360px; justify-content: center; }
