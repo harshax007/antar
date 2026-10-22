@@ -94,7 +94,7 @@ export default function ShiftBriefingCard({ zone = "all", window = "12h" }) {
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            transition: "all 0.2s ease"
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease"
           }}
         >
           <span>{kn ? "ಆದ್ಯತೆಯ ಕ್ರಮಗಳು" : "Priority Actions"} ({data.priority_actions?.length || 0})</span>

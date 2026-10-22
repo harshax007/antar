@@ -1069,7 +1069,7 @@ function DocsFull() {
                               cursor: "pointer",
                               display: "flex", alignItems: "center", gap: "6px",
                               boxShadow: expandedDetail === btn.id ? `0 0 16px rgba(34,230,240,0.1)` : "0 0 8px rgba(0,0,0,0.2)",
-                              transition: "all 0.3s ease"
+                              transition: "color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.3s ease, scale 0.3s ease"
                             }}
                           >
                             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: expandedDetail === btn.id ? "#22E6F0" : "#EEF3FA", fontWeight: 500, letterSpacing: "0.02em" }}>
@@ -1255,7 +1255,7 @@ function DocsFull() {
                     const verbColor = q.verb === "think" ? "#22E6F0" : q.verb === "connect" ? "#10B981" : "#A855F7";
                     return (
                       <button key={i} onClick={() => startWithQuestion(qText)}
-                        style={{ background: "rgba(3,6,14,0.96)", border: `1px solid ${verbColor}24`, borderRadius: "999px", padding: "5px 12px 5px 8px", color: "#94A3B8", fontSize: "10.5px", cursor: "pointer", fontFamily: "'Inter', sans-serif", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.25s ease" }}
+                        style={{ background: "rgba(3,6,14,0.96)", border: `1px solid ${verbColor}24`, borderRadius: "999px", padding: "5px 12px 5px 8px", color: "#94A3B8", fontSize: "10.5px", cursor: "pointer", fontFamily: "'Inter', sans-serif", display: "flex", alignItems: "center", gap: "6px", transition: "color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, transform 0.25s ease, scale 0.25s ease" }}
                         onMouseOver={e => { e.currentTarget.style.borderColor = verbColor + "60"; e.currentTarget.style.color = "#F8FAFC"; e.currentTarget.style.boxShadow = `0 0 12px ${verbColor}15`; }}
                         onMouseOut={e => { e.currentTarget.style.borderColor = verbColor + "24"; e.currentTarget.style.color = "#94A3B8"; e.currentTarget.style.boxShadow = "none"; }}>
                         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "8px", fontWeight: 700, color: verbColor, letterSpacing: "0.08em", padding: "1px 5px", borderRadius: "3px", background: verbColor + "12", flexShrink: 0 }}>
@@ -1526,7 +1526,7 @@ function DocsFull() {
             justifyContent: "center",
             backdropFilter: "blur(12px)",
             boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-            transition: "all 0.2s ease"
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease"
           }}
           title={lang === "kn" ? "ಮೇಲಕ್ಕೆ ಸಾಗಿ" : "Scroll to top"}
         >
@@ -1552,7 +1552,7 @@ function DocsFull() {
             justifyContent: "center",
             backdropFilter: "blur(12px)",
             boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-            transition: "all 0.2s ease",
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease",
             animation: "cueBob 2.5s ease-in-out infinite"
           }}
           title={lang === "kn" ? "ಪರಿಕರಗಳ ನೋಟಕ್ಕೆ ಸಾಗಿ" : "Scroll to tools overview"}

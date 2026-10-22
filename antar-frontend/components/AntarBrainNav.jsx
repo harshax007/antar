@@ -67,7 +67,7 @@ export default function AntarBrainNav() {
             border: "1px solid #22E6F0",
             color: "#22E6F0",
             boxShadow: "0 0 14px rgba(34, 230, 240, 0.35)",
-            transition: "all 0.2s ease"
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease"
           }}
         >
           <span>{kn ? "ಜ್ಞಾನ ಜಾಲ & ಅವಲೋಕನ" : "Knowledge Graph & Overview"}</span>

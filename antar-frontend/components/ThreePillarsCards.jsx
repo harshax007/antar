@@ -135,7 +135,7 @@ export default function ThreePillarsCards({ lang = "en", onSelectPillar }) {
                 boxShadow: isHovered
                   ? `0 16px 40px rgba(0,0,0,0.65), 0 0 28px ${pillar.glow}`
                   : "0 10px 30px rgba(0,0,0,0.45)",
-                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "color 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), scale 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",

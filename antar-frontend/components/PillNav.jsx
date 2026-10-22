@@ -83,7 +83,7 @@ export default function PillNav() {
             justifyContent: "center",
             cursor: "pointer",
             boxShadow: "0 4px 20px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1)",
-            transition: "all 0.2s ease"
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease"
           }}
           onMouseOver={(e) => {
             e.currentTarget.style.transform = "scale(1.05)";
@@ -162,7 +162,7 @@ export default function PillNav() {
           gap: "2px",
           padding: "2px 6px",
           borderRadius: "8px",
-          transition: "all 0.2s ease",
+          transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease",
         }}
         title="Launch Live Antar Intelligence App (/antar)"
       >
@@ -237,7 +237,7 @@ export default function PillNav() {
                 letterSpacing: "0.16em",
                 padding: "4px 2px",
                 cursor: "pointer",
-                transition: "all 0.2s ease",
+                transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease",
               }}
             >
               {kn ? item.kn : item.en}
@@ -265,7 +265,7 @@ export default function PillNav() {
             
             padding: "4px 8px",
             cursor: "pointer",
-            transition: "all 0.2s ease",
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease",
           }}
           onMouseOver={(e) => e.currentTarget.style.color = "#FFFFFF"}
           onMouseOut={(e) => e.currentTarget.style.color = "rgba(255, 255, 255, 0.55)"}
@@ -289,7 +289,7 @@ export default function PillNav() {
             
             padding: "4px 8px",
             cursor: "pointer",
-            transition: "all 0.2s ease",
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease",
           }}
           onMouseOver={(e) => e.currentTarget.style.color = "#FFFFFF"}
           onMouseOut={(e) => e.currentTarget.style.color = "rgba(255, 255, 255, 0.55)"}

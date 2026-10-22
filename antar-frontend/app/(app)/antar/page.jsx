@@ -2317,7 +2317,7 @@ export default function ChatPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                transition: "all 0.2s"
+                transition: "color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s"
               }}
               title={kn ? "ನಿಲ್ಲಿಸಿ" : "Abort"}
             >
@@ -2338,7 +2338,7 @@ export default function ChatPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                transition: "all 0.2s"
+                transition: "color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s"
               }}
               title={kn ? "ಕಳುಹಿಸಿ" : "Send"}
             >
@@ -2418,7 +2418,7 @@ export default function ChatPage() {
             boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
-            transition: "all 0.2s ease"
+            transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease"
           }}
           onMouseOver={(e) => {
             e.currentTarget.style.background = "rgba(30, 41, 59, 0.85)";
@@ -2543,7 +2543,7 @@ export default function ChatPage() {
                 flexDirection: recording ? "row" : "column",
                 alignItems: recording ? "center" : "stretch",
                 gap: "12px",
-                transition: "all 0.3s ease"
+                transition: "color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.3s ease, scale 0.3s ease, padding 0.3s ease"
               }}
             >
               {recording ? (
@@ -2575,7 +2575,7 @@ export default function ChatPage() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        transition: "all 0.2s"
+                        transition: "color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s"
                       }}
                     >
                       <ArrowUp size={16} strokeWidth={2.5} />
@@ -2726,7 +2726,7 @@ export default function ChatPage() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      transition: "all 0.2s"
+                      transition: "color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s"
                     }}
                   >
                     <ArrowUp size={17} strokeWidth={2.5} />
@@ -2806,7 +2806,7 @@ export default function ChatPage() {
                 borderRadius: "9999px",
                 background: docsMode ? "rgba(59, 130, 246, 0.1)" : "transparent",
                 border: docsMode ? "1px solid rgba(59, 130, 246, 0.2)" : "1px solid transparent",
-                transition: "all 0.2s"
+                transition: "color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.2s, scale 0.2s"
               }}
               onClick={() => setDocsMode(!docsMode)}
             >

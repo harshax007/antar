@@ -196,7 +196,7 @@ export default function LoginPage() {
               fontFamily: "'JetBrains Mono', monospace",
               cursor: "pointer",
               letterSpacing: "0.06em",
-              transition: "all 0.2s ease"
+              transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease"
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#22E6F0")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}

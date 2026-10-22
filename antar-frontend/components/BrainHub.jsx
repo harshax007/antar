@@ -143,7 +143,7 @@ export default function BrainHub() {
             <button
               onClick={() => scrollToSection("top")}
               title="Scroll to Top"
-              style={{ background: "transparent", border: "none", color: "#FFFFFF", textShadow: "0 0 10px rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "all 0.25s ease", fontFamily: "'Chakra Petch', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}
+              style={{ background: "transparent", border: "none", color: "#FFFFFF", textShadow: "0 0 10px rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, transform 0.25s ease, scale 0.25s ease", fontFamily: "'Chakra Petch', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}
               onMouseOver={(e) => { e.currentTarget.style.textShadow = "0 0 16px rgba(255,255,255,0.8)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseOut={(e) => { e.currentTarget.style.textShadow = "0 0 10px rgba(255,255,255,0.4)"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
@@ -153,7 +153,7 @@ export default function BrainHub() {
             <button
               onClick={() => scrollToSection("bottom")}
               title="Scroll to Data Overview"
-              style={{ background: "transparent", border: "none", color: "#FFFFFF", textShadow: "0 0 10px rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "all 0.25s ease", fontFamily: "'Chakra Petch', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}
+              style={{ background: "transparent", border: "none", color: "#FFFFFF", textShadow: "0 0 10px rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, transform 0.25s ease, scale 0.25s ease", fontFamily: "'Chakra Petch', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}
               onMouseOver={(e) => { e.currentTarget.style.textShadow = "0 0 16px rgba(255,255,255,0.8)"; e.currentTarget.style.transform = "translateY(2px)"; }}
               onMouseOut={(e) => { e.currentTarget.style.textShadow = "0 0 10px rgba(255,255,255,0.4)"; e.currentTarget.style.transform = "translateY(0)"; }}
             >

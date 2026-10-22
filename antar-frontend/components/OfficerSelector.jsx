@@ -55,7 +55,7 @@ export default function OfficerSelector({ pending = 0 }) {
           textTransform: "uppercase",
           padding: "4px 8px",
           cursor: "pointer",
-          transition: "all 0.2s ease",
+          transition: "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease, scale 0.2s ease",
           display: "flex",
           alignItems: "center",
           gap: "6px",
