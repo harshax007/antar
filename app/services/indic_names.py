@@ -73,8 +73,10 @@ def name_key(token: str) -> str:
 def same_name(a: str, b: str) -> bool:
     """True when two name tokens are plausibly one name spelt two ways."""
     from app.services.entity_resolver import jaro_winkler
+    if any(ch.isdigit() for ch in a + b):      # an id or a number is not a name
+        return False
     ka, kb = name_key(a), name_key(b)
-    if not ka or not kb:
+    if len(ka) < 3 or len(kb) < 3:             # an initial ("S.") is not a name either
         return False
     if ka == kb:
         return True

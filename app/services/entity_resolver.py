@@ -189,6 +189,11 @@ def fuzzy_match_suspects(
             _update_best(best, sid, s, 1.0, "phone_hash", "phone_exact")
             continue
 
+        # ── the record's own id ("S1063"): links into Search use it ────────────
+        if q_up == str(sid).upper():
+            _update_best(best, sid, s, 1.0, "suspect_id", "id_exact")
+            continue
+
         # ── text field scoring ────────────────────────────────────────────────
         for field in text_fields:
             val = (s.get(field) or "").strip()
@@ -202,20 +207,21 @@ def fuzzy_match_suspects(
                 _update_best(best, sid, s, 1.0, field, "exact")
                 continue
 
-            # 2. Jaro-Winkler — compare query vs each token and the full value
-            jw_candidates = [jaro_winkler(q_up, val_up)]
+            # 2 + 3. Jaro-Winkler and Indian-name spelling, per query word. Every word of the
+            # query is scored against its best word in the field and the scores averaged, so
+            # "Lokesh Desai" ranks Lokesh Desai above Lokesh Murthy; a single word that only
+            # matches one of several used to score 1.0 and tie with the full name. A word that
+            # is the same name spelt another way (indic_names: Coomar / Kumar) counts 0.95.
+            per_word, spelt = [], False
             for q_tok in q_tokens:
-                for v_tok in val_tokens:
-                    jw_candidates.append(jaro_winkler(q_tok, v_tok))
-            jw_best = max(jw_candidates)
-
-            # 3. Indian-name spelling: ranks with a strong Jaro-Winkler hit, above Soundex
-            if field != "phone_hash" and any(same_name(qt, vt) for qt in q_tokens for vt in val_tokens):
-                _update_best(best, sid, s, max(jw_best, 0.9), field, "indic_phonetic")
-                continue
+                w = max(jaro_winkler(q_tok, v_tok) for v_tok in val_tokens)
+                if w < 0.95 and any(same_name(q_tok, v_tok) for v_tok in val_tokens):
+                    w, spelt = 0.95, True
+                per_word.append(w)
+            jw_best = max(jaro_winkler(q_up, val_up), sum(per_word) / len(per_word))
 
             if jw_best >= threshold:
-                _update_best(best, sid, s, jw_best, field, "jaro_winkler")
+                _update_best(best, sid, s, jw_best, field, "indic_phonetic" if spelt else "jaro_winkler")
                 continue
 
             # 4. Soundex — any query-token Soundex matches any field-token Soundex
@@ -238,7 +244,12 @@ def _update_best(
     field: str,
     method: str,
 ) -> None:
-    """Replace the stored hit only if this score is higher."""
+    """Replace the stored hit only if this score is higher.
+
+    A match on the person's own name or alias outranks the same match on their father's
+    name: "Lokesh Desai" is first the people called that, then the people whose father is."""
+    if field == "father_name":
+        score *= 0.97
     existing = best.get(sid)
     if existing is None or score > existing["match_score"]:
         best[sid] = {

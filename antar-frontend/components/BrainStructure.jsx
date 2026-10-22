@@ -117,6 +117,9 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   const [active, setActive] = useState(null);          // visible categories (null = all)
   const [kinds, setKinds] = useState(new Set(["repeat", "ring", "cyber", "inferred", "unsub"]));
   const [tab, setTab] = useState("type");
+  // "Near serious cases": people not named in a serious crime but closest to those who are
+  // (Personalized PageRank in app/services/graph_cache.py). Loaded when the tab is opened.
+  const [nearSerious, setNearSerious] = useState(null);       // null = not loaded, [] = none
   const [minLayers, setMinLayers] = useState(true);
   const [minActivity, setMinActivity] = useState(false);
   const [search, setSearch] = useState("");
@@ -199,6 +202,13 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     },
     [recs, sel, scopeMode, yearFrom, yearTo, firFrom, firTo, calMode]
   );
+
+  useEffect(() => {
+    if (tab !== "serious" || nearSerious !== null) return;
+    fetchJson(`${API}/api/graph/stats`, 5000)
+      .then((st) => setNearSerious(Array.isArray(st?.hidden_near_serious) ? st.hidden_near_serious : []))
+      .catch(() => setNearSerious([]));
+  }, [tab, nearSerious]);
 
   useEffect(() => {
     Promise.allSettled([
@@ -699,7 +709,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           {!minLayers && (
             <div style={{ marginTop: "16px" }}>
               <div className="bsx-cby">
-                {[["type", kn ? "ಪ್ರಕಾರ" : "Type"], ["links", kn ? "ಕೊಂಡಿ" : "Links"], ["more", kn ? "ಇನ್ನಷ್ಟು" : "More"]].map(([k, l]) => (
+                {[["type", kn ? "ಪ್ರಕಾರ" : "Type"], ["links", kn ? "ಕೊಂಡಿ" : "Links"], ["serious", kn ? "ಗಂಭೀರ" : "Serious"], ["more", kn ? "ಇನ್ನಷ್ಟು" : "More"]].map(([k, l]) => (
                   <span key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</span>
                 ))}
               </div>
@@ -740,6 +750,36 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                       <button className={`bsx-sw ${kinds.has(k) ? "on" : ""}`} aria-pressed={kinds.has(k)} onClick={() => toggleKind(k)}><b /></button>
                     </div>
                   ))}
+                </div>
+              )}
+              {tab === "serious" && (
+                <div className="bsx-lrows bsx-ns">
+                  <p className="bsx-ns-lede">{kn
+                    ? "ಗಂಭೀರ ಪ್ರಕರಣದಲ್ಲಿ ಹೆಸರಿಲ್ಲದ, ಆದರೆ ಅಂಥ ಪ್ರಕರಣದ ಆರೋಪಿಗಳಿಗೆ ಅತಿ ಹತ್ತಿರವಿರುವವರು."
+                    : "Not named in a serious case themselves, but closest to people who are."}</p>
+                  {nearSerious === null && <p className="bsx-ns-wait">{kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Loading…"}</p>}
+                  {nearSerious?.length === 0 && <p className="bsx-ns-wait">{kn ? "ಯಾರೂ ಇಲ್ಲ." : "No one stands out."}</p>}
+                  {(nearSerious || []).map((h) => {
+                    // "MURDER" -> "Murder", but acts stay as written: POCSO, NDPS
+                    const crime = String(h.nearest_serious_crime || "").replace(/_/g, " ").split(/\s+/)
+                      .map((w) => /^(POCSO|NDPS|IPC|BNS)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                      .join(" ");
+                    const how = h.steps === 1
+                      ? (kn ? `${h.nearest_serious_name} ಅವರೊಂದಿಗೆ ನೇರ ಸಂಪರ್ಕ` : `Directly linked to ${h.nearest_serious_name}`)
+                      : (kn ? `${h.nearest_serious_name} ಅವರಿಂದ ${h.steps} ಹಂತ${h.via?.length ? `, ${h.via.join(", ")} ಮೂಲಕ` : ""}`
+                            : `${h.steps} links from ${h.nearest_serious_name}${h.via?.length ? `, via ${h.via.join(", ")}` : ""}`);
+                    return (
+                      <button key={h.id} type="button" className="bsx-ns-row" onClick={() => router.push(`/search?q=${encodeURIComponent(h.id)}`)}
+                              title={kn ? "ಹುಡುಕಾಟದಲ್ಲಿ ತೆರೆಯಿರಿ" : "Open in Search"}>
+                        <span className="nm">{h.name} <em>{h.id}</em></span>
+                        <span className="how">{how}</span>
+                        {crime && <span className="crime">{crime}</span>}
+                      </button>
+                    );
+                  })}
+                  <p className="bsx-ns-note">{kn
+                    ? "ಪರಿಶೀಲಿಸಬೇಕಾದ ಸುಳಿವು, ತೀರ್ಮಾನವಲ್ಲ. ದಾಖಲಾದ ಸಂಬಂಧಗಳು, ಹಂಚಿದ ಫೋನ್‌ಗಳು ಮತ್ತು ಖಾತೆಗಳಿಂದ."
+                    : "A lead to check, not a finding. Built from recorded relationships, shared phones and shared accounts."}</p>
                 </div>
               )}
               {tab === "more" && (

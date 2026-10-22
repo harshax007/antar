@@ -55,3 +55,19 @@ def test_name_search_takes_kannada_and_spelling_variants():
 ])
 def test_a_kannada_question_reaches_the_english_record(kn, en):
     assert to_english(kn) == en
+
+
+def test_full_name_outranks_one_word_and_father_and_ids_are_found():
+    from app.services.entity_resolver import fuzzy_match_suspects
+    world = {"suspects": [
+        {"suspect_id": "S1", "full_name": "Lokesh Murthy", "alias": "", "father_name": ""},
+        {"suspect_id": "S2", "full_name": "Shivu Nayak", "alias": "", "father_name": "Lokesh Desai"},
+        {"suspect_id": "S3", "full_name": "Lokesh Desai", "alias": "", "father_name": ""},
+        {"suspect_id": "S4", "full_name": "Ravi S.", "alias": "", "father_name": ""},
+    ]}
+    hits = fuzzy_match_suspects("Lokesh Desai", world, threshold=0.55)
+    assert [h["suspect_id"] for h in hits[:2]] == ["S3", "S2"]          # own name, then father's
+    assert hits[-1]["suspect_id"] == "S1"                               # one word of two, last
+    ids = fuzzy_match_suspects("S4", world, threshold=0.82)
+    assert ids and ids[0]["suspect_id"] == "S4" and ids[0]["match_method"] == "id_exact"
+    assert "S4" not in [h["suspect_id"] for h in fuzzy_match_suspects("S1063", world, threshold=0.82)]
