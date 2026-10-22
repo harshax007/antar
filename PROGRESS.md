@@ -137,6 +137,27 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Kannada questions in the Brain, and Indian-name spelling · 2026-10-23
+
+**Brain.** The embedder and the FIR corpus are English (0 of 10 lakh FIRs carry Kannada text),
+so a Kannada question missed: "ಬಸ್ ನಿಲ್ದಾಣದ ಬಳಿ ಸರಗಳ್ಳತನ" scored 0.27 against unrelated FIRs
+while the English question scored 0.72. `app/second_brain/kn_query.py` now rewrites a Kannada
+question into English words before both Brain searches (crime, place, time and MO words from a
+vocabulary plus the app's existing tables; case endings tolerated; anything else spelt in
+Latin letters). Measured after: 0.73 (bus-stand chain snatching), 0.67 (night house theft,
+English 0.68), temple gold-chain theft 0.70. No new model, no re-index.
+
+**Names.** `app/services/indic_names.py` folds Indian spellings into one key (Kumar/Coomar,
+Mohd/Mohammed, Yellappa/Elappa, Laxmi/Lakshmi, Jayaram/Jairam, Ramaiah/Ramayya...) and
+`app/core/kn_translit.py` turns Kannada script into Latin letters, so ಯಲ್ಲಪ್ಪ finds Yellappa.
+Added to `fuzzy_match_suspects` as a signal between Jaro-Winkler and Soundex. 18 same-name
+pairs match and 10 different-name pairs (Manju/Manoj, Rajesh/Rakesh...) stay apart:
+`tests/test_kannada_names_and_recall.py` (40 tests, in the release check's core set).
+
+Assessed and not done: multilingual-e5 embedder swap (4x larger model, full re-embed, risk
+to English recall - the gap was the question, not the corpus) and Splink (needs DuckDB and
+labelled match pairs).
+
 ## Repeat locations on H3 hexagons · 2026-10-23
 
 `app/services/repeat_locations.py` no longer rounds to three decimals. Each FIR goes in its H3

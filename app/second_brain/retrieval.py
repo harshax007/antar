@@ -174,6 +174,8 @@ def semantic_recall(
     Stage 3 — MMR: greedily select k results balancing relevance vs diversity
                (λ=mmr_lambda). No-op when candidates ≤ k.
     """
+    from app.second_brain.kn_query import to_english
+    query_text = to_english(query_text)     # the index is English: ask it in English
     try:
         from app.second_brain.index import brain_index
         from app.second_brain.embedder import embed_query, embed_query_with_terms
@@ -277,7 +279,9 @@ def corpus_recall(query_text: str, k: int = 10, *, min_score: float = 0.25,
     so the answer can cite the case rather than assert a resemblance.
     """
     from app.second_brain import embedder, vec_store
+    from app.second_brain.kn_query import to_english
 
+    query_text = to_english(query_text)     # the corpus is English: ask it in English
     if not (query_text or "").strip():
         return []
     try:

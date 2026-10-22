@@ -145,7 +145,10 @@ def fuzzy_match_suspects(
 
     1. **Exact substring** — query appears verbatim in any search field (score 1.0)
     2. **Jaro-Winkler** ≥ threshold — token-level + whole-field comparison
-    3. **Soundex phonetic** — any query token's Soundex code matches any field token,
+    3. **Indian-name spelling** — any query token and field token are one name spelt two
+       ways (app/services/indic_names.py: Kumar / Coomar, Mohd / Mohammed, Yellappa /
+       Elappa); a query typed in Kannada script is converted to Latin letters first
+    4. **Soundex phonetic** — any query token's Soundex code matches any field token,
        provided Jaro-Winkler is also ≥ _SOUNDEX_MIN_JW (prevents false phonetic positives)
 
     Each suspect is returned once (best signal wins). Results sorted by match_score desc.
@@ -162,7 +165,10 @@ def fuzzy_match_suspects(
     Returns list of hit dicts, each with: suspect_id, full_name, alias, age, gender,
     address_zone, prior_count, arrest_status, match_score, match_field, match_method.
     """
-    q = query.strip()
+    from app.core.kn_translit import kn_to_latin
+    from app.services.indic_names import same_name
+
+    q = kn_to_latin(query.strip())          # ಸುರೇಶ್ -> suresh; Latin text is unchanged
     if not q:
         return []
 
@@ -203,11 +209,16 @@ def fuzzy_match_suspects(
                     jw_candidates.append(jaro_winkler(q_tok, v_tok))
             jw_best = max(jw_candidates)
 
+            # 3. Indian-name spelling: ranks with a strong Jaro-Winkler hit, above Soundex
+            if field != "phone_hash" and any(same_name(qt, vt) for qt in q_tokens for vt in val_tokens):
+                _update_best(best, sid, s, max(jw_best, 0.9), field, "indic_phonetic")
+                continue
+
             if jw_best >= threshold:
                 _update_best(best, sid, s, jw_best, field, "jaro_winkler")
                 continue
 
-            # 3. Soundex — any query-token Soundex matches any field-token Soundex
+            # 4. Soundex — any query-token Soundex matches any field-token Soundex
             val_sdx = [soundex(t) for t in val_tokens]
             sdx_hit = any(qs == vs for qs in q_sdx for vs in val_sdx)
             if sdx_hit and jw_best >= _SOUNDEX_MIN_JW:

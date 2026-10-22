@@ -42,7 +42,7 @@ CORE_TESTS = [
     "tests/test_agents_manifest.py", "tests/test_answer_guardrails.py", "tests/test_egress.py",
     "tests/test_llm_security.py", "tests/test_hitl.py", "tests/test_policy_context.py",
     "tests/test_query_agent.py", "tests/test_heuristics_kannada.py", "tests/test_forecast_model.py",
-    "tests/test_osint.py", "tests/test_osint_checks.py", "tests/test_repeat_locations.py",
+    "tests/test_osint.py", "tests/test_osint_checks.py", "tests/test_kannada_names_and_recall.py", "tests/test_repeat_locations.py",
     "tests/test_sessions_durable.py", "tests/test_alerts_durable.py", "tests/test_zz_uses_db_copy.py",
 ]
 BASELINE = ROOT / "scripts" / "eval_baseline.json"
