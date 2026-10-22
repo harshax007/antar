@@ -134,3 +134,15 @@ html[lang="kn"] .cx-headline, html[lang="kn"] .ax-t-bottom { letter-spacing: nor
 /* A dossier comes into focus on the house spring when another record is picked. */
 .sx-dp-inner.fade-rise { animation: answerArrive .45s var(--ease-spring) both; }
 @media (prefers-reduced-motion: reduce) { .sx-dp-inner.fade-rise { animation: fadeOnly .2s ease both; } }
+
+/* ── Chat: the first question on stage (LaunchStage in app/(app)/antar/page.jsx) ─────────── */
+.cx-launch { position: fixed; inset: 0; z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 22px; padding: 0 24px; background: radial-gradient(ellipse at 50% 46%, rgba(34,230,240,.07), transparent 62%), #060910; }
+.cx-launch-orb { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) translateY(-28px) scale(4.2); opacity: .28; pointer-events: none; }
+.cx-launch-q { position: relative; max-width: 820px; margin: 0; text-align: center; font: 600 clamp(24px, 2.6vw, 36px)/1.22 'Inter', sans-serif;
+  letter-spacing: -0.018em; color: #F1F5F9; text-wrap: balance; }
+html[lang="kn"] .cx-launch-q { letter-spacing: normal; line-height: 1.45; }
+.cx-launch-step { position: relative; min-height: 20px; font: 500 13px 'JetBrains Mono', monospace; color: #7FE9F1; letter-spacing: .02em; text-align: center; }
+.cx-launch-stop { position: relative; margin-top: 6px; padding: 6px 16px; border-radius: 999px; font: 500 12px 'Inter', sans-serif; color: #94A3B8;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); cursor: pointer; }
+.cx-launch-stop:hover { color: #F1F5F9; border-color: rgba(255,255,255,.28); }

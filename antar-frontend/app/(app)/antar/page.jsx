@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Orb from "@/components/Orb";
 import LangToggle from "@/components/LangToggle";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Paperclip, Globe, ArrowUp, X, Mic, MicOff, Brain, Network, Share2, Compass, CheckCircle2, Sparkles, RefreshCw, Copy, Download, ThumbsUp, ThumbsDown, Map as MapIcon, Search as SearchIcon, Languages, Square, Volume2, Loader2, Activity } from "lucide-react";
 import NetworkGraph from "@/components/NetworkGraph";
 import ExpertWorkspace from "@/components/ExpertWorkspace";
@@ -1012,6 +1012,35 @@ function splitRankRow(t) {
   return m && !/\*\*/.test(m[1]) ? [m[1], m[2]] : [t, null];
 }
 
+// The first question from the landing screen: it rises from the chat box to the middle of
+// the screen in large type, over the thinking orb, with the step the agents are on under it.
+// It stays until the answer has something to show, then drifts up and away as the answer
+// arrives. Reduced motion: a cross-fade only.
+function LaunchStage({ q, msg, kn, onStop }) {
+  const reduce = useReducedMotion();
+  const running = [...(msg?.steps || [])].reverse().find((st) => st.status === "running");
+  const label = running ? (running.label || running.step || running.agent) : (kn ? "ಯೋಚಿಸುತ್ತಿದೆ…" : "Thinking…");
+  const qIn = reduce ? { opacity: 0 } : { opacity: 0, y: 170, scale: 0.92, filter: "blur(6px)" };
+  const qOut = reduce ? { opacity: 0 } : { opacity: 0, y: -40, filter: "blur(4px)" };
+  return (
+    <motion.div className="cx-launch" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.35, ease: "easeOut" } }} transition={{ duration: 0.25 }}>
+      <div className="cx-launch-orb" aria-hidden="true"><Orb agent={running?.agent} size={64} /></div>{/* the orb comes in 64/32/20 only; CSS enlarges it */}
+      <motion.h2 className="cx-launch-q" initial={qIn} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={qOut}
+        transition={reduce ? { duration: 0.2 } : { type: "spring", bounce: 0, duration: 0.7 }}>
+        {q}
+      </motion.h2>
+      <div className="cx-launch-step" role="status" aria-live="polite">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span key={label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}>{label}</motion.span>
+        </AnimatePresence>
+      </div>
+      <button type="button" className="cx-launch-stop" onClick={onStop}>{kn ? "ನಿಲ್ಲಿಸಿ" : "Stop"}</button>
+    </motion.div>
+  );
+}
+
 function TemplateAnswer({ m, kn, send, router }) {
   const s = m.layout.sections;
   const [open, setOpen] = useState(null);          // "sources" | "limits" | null
@@ -1412,6 +1441,7 @@ export default function ChatPage() {
   const [isFocus, setIsFocus] = useState(false);
   const [atBottom, setAtBottom] = useState(true);   // scroll discipline (see effect below)
   const [loading, setLoading] = useState(false);
+  const [launch, setLaunch] = useState(null);   // the first question, on stage while it is answered (at least 1.4 s, so it can be read)
   const [sessionId, setSessionId] = useState(null);
   const [askYear, setAskYear] = useState(null);      // year picked under the suggested questions
   const [mode, setMode] = useState(null);
@@ -1838,6 +1868,7 @@ export default function ChatPage() {
       }
     } catch {}
 
+    if (messages.length === 0) setLaunch({ q, t: Date.now() });
     setMessages((m) => [...m, { role: "user", text: q, lang, ts: Date.now() }]);
     setMessages((m) => [...m, newAssistantMsg(lang)]);
     setLoading(true);
@@ -2138,6 +2169,14 @@ export default function ChatPage() {
     .filter((q) => !avoidQs.has(q.trim().toLowerCase()))
     .slice(0, 2);
   const empty = messages.length === 0;
+  const launchReady = !!launch && last?.role === "assistant"
+    && (!last.streaming || !!(last.text || "").trim() || !!last.layout || !!last.error);
+  useEffect(() => {
+    if (!launchReady) return;
+    const t = setTimeout(() => setLaunch(null), Math.max(0, 1400 - (Date.now() - launch.t)));
+    return () => clearTimeout(t);
+  }, [launchReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (empty) setLaunch(null); }, [empty]);
   const hasUserTurn = messages.some((m) => m.role === "user" && m.text?.trim());
   // Expert Search → Bench workspace (right pane).
   const workspaceOn = deepThink && !empty;
@@ -2823,6 +2862,9 @@ export default function ChatPage() {
         </>
       ) : (
         <>
+          <AnimatePresence>
+            {launch && <LaunchStage key="launch" q={launch.q} msg={last} kn={kn} onStop={() => { stopChat(); setLaunch(null); }} />}
+          </AnimatePresence>
           <div className="cx-thread cx-enter" ref={scrollRef} aria-live="polite" style={{ paddingTop: "68px" }}>
             <div className="cx-threadcol">
             {messages.map((m, i) => (
