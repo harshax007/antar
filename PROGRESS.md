@@ -137,6 +137,20 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Gangs on shared keys, always connected; closeness to serious cases · 2026-10-23
+
+`app/services/graph_cache.py`. Gangs (Louvain) are now found on recorded relationships plus
+shared keys - suspects on one phone number or paying one flagged counterparty account (7
+shared-phone links on the current data) - and every community is split into its connected
+parts, the guarantee Leiden adds, without igraph/leidenalg (0 splits needed today). New:
+Personalized PageRank seeded on the 203 suspects named in serious crimes (murder, robbery,
+dacoity, kidnapping, narcotics, POCSO, rape, arms, extortion). The five people closest to
+serious cases who are not themselves named in one are listed with the path that explains it
+(e.g. "1 link from Manju Shetty, POCSO"); each node carries `serious_proximity`. Boss,
+broker and inner-circle readings unchanged (still on recorded relationships). +0.6 s on the
+startup refresh. `tests/test_graph_communities_proximity.py`. LightGBM/MinT not done: the
+forecast already reconciles beats to stations and its ranges are calibrated.
+
 ## Kannada questions in the Brain, and Indian-name spelling · 2026-10-23
 
 **Brain.** The embedder and the FIR corpus are English (0 of 10 lakh FIRs carry Kannada text),

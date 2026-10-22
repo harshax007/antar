@@ -4,6 +4,18 @@ Antar — Full-graph metrics cache (§5: materialization)
 Precomputes PageRank, Louvain communities, and betweenness centrality
 over the entire suspect + relationship graph on startup (< 1 s for 289 nodes).
 
+Two additions (2026-10-23):
+  * Gangs are found on the recorded relationships PLUS shared keys: suspects on the same
+    phone number, or paying the same flagged counterparty account, are linked even when no
+    relationship was recorded - mules on one burner phone form a star or a chain that
+    relationships alone leave in pieces. Louvain can return a "community" whose members
+    are not connected to each other; each one is split into its connected parts (the
+    guarantee Leiden adds over Louvain, without the igraph/leidenalg dependency).
+  * Proximity to serious cases: Personalized PageRank seeded on the suspects named in
+    serious crimes (SERIOUS). Someone NOT named in one, yet close to several through
+    people, phones or accounts, is listed with the path that puts them there - a lead for
+    the officer to check, never a finding.
+
 build_network() reads from this cache instead of running networkx on every
 request — cuts per-request networkx compute from ~30 ms to < 1 ms.
 
@@ -16,10 +28,95 @@ if the graph changes (new arrests → new relationships).
 """
 from __future__ import annotations
 
+import math
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
 _cache: Optional[dict] = None
+
+# Crime types whose accused seed the proximity score (matched case-insensitively).
+SERIOUS = re.compile(r"MURDER|ROBBERY|DACOITY|KIDNAP|ABDUCTION|NARCOTIC|NDPS|POCSO|RAPE|ARMS|EXTORTION", re.I)
+HIDDEN_TOP = 5          # how many "close to serious cases" leads the stats carry
+
+
+def _key_links(world: dict) -> list[tuple[str, str, float, str]]:
+    """(a, b, weight, why) links between suspects that share a phone number or a flagged
+    counterparty account. Each shared key joins its holders in a chain, not a clique, so
+    one busy key cannot dominate the graph."""
+    out: list[tuple[str, str, float, str]] = []
+    by_phone: dict[str, list[str]] = {}
+    for s in world.get("suspects", []):
+        ph = str(s.get("phone_hash") or "").strip()
+        if ph:
+            by_phone.setdefault(ph, []).append(s["suspect_id"])
+    by_acct: dict[str, list[str]] = {}
+    for f in world.get("financial_links", []):
+        cp = str(f.get("counterparty") or "").strip()
+        if cp and f.get("suspect_id"):
+            by_acct.setdefault(cp, []).append(f["suspect_id"])
+    for key, holders, w, why in ([(k, v, 2.5, "same phone") for k, v in by_phone.items()]
+                                  + [(k, v, 2.0, "same account") for k, v in by_acct.items()]):
+        hs = sorted(set(holders))
+        for a, b in zip(hs, hs[1:]):
+            out.append((a, b, w, f"{why} {key}"))
+    return out
+
+
+def _connected_communities(G, sets) -> list[set]:
+    """Split every community into its connected parts: a gang whose members do not reach
+    each other inside it is not one gang."""
+    import networkx as nx
+    parts: list[set] = []
+    for comm in sets:
+        parts.extend(set(c) for c in nx.connected_components(G.subgraph(comm)))
+    return sorted(parts, key=lambda c: (-len(c), min(c)))
+
+
+def _serious_proximity(G, world: dict, name_map: dict) -> tuple[dict, list[dict], int]:
+    """Personalized PageRank seeded on suspects named in serious crimes.
+
+    Returns ({suspect: proximity 0..1 as a percentile among suspects}, the HIDDEN_TOP
+    non-seed suspects closest to serious cases with the path that explains each, seeds)."""
+    import networkx as nx
+    serious_crimes = {c["crime_id"]: c.get("crime_type", "") for c in world.get("crimes", [])
+                      if SERIOUS.search(str(c.get("crime_type", "")))}
+    seeds: dict[str, int] = {}
+    seed_crime: dict[str, str] = {}
+    for cs in world.get("crime_suspects", []):
+        ct = serious_crimes.get(cs.get("crime_id"))
+        if ct:
+            seeds[cs["suspect_id"]] = seeds.get(cs["suspect_id"], 0) + 1
+            seed_crime.setdefault(cs["suspect_id"], ct.strip().upper())
+    seeds = {k: v for k, v in seeds.items() if k in G}
+    if not seeds or G.number_of_edges() == 0:
+        return {}, [], len(seeds)
+    # Accounts take part as nodes too, so money moving through one account connects payers.
+    H = G.copy()
+    for f in world.get("financial_links", []):
+        cp, sid = str(f.get("counterparty") or "").strip(), f.get("suspect_id")
+        if cp and sid in H:
+            H.add_edge(sid, f"acct:{cp}", weight=1.0 + math.log1p(float(f.get("txn_count") or 0)))
+    ppr = nx.pagerank(H, alpha=0.85, personalization=seeds, weight="weight")
+    suspects = [n for n in G.nodes]
+    order = sorted(suspects, key=lambda n: ppr.get(n, 0.0))
+    pct = {n: round(i / max(1, len(order) - 1), 3) for i, n in enumerate(order)}
+    # Leads: not seeds themselves, connected to something, highest score first.
+    cands = sorted((n for n in suspects if n not in seeds and G.degree(n) > 0),
+                   key=lambda n: -ppr.get(n, 0.0))[:HIDDEN_TOP]
+    lengths, paths = nx.multi_source_dijkstra(H, set(seeds), weight=None)
+    hidden = []
+    for n in cands:
+        path = paths.get(n) or []
+        seed = path[0] if path else None
+        hidden.append({
+            "id": n, "name": name_map.get(n, n), "proximity": pct.get(n, 0.0),
+            "nearest_serious": seed, "nearest_serious_name": name_map.get(seed, seed) if seed else None,
+            "nearest_serious_crime": seed_crime.get(seed) if seed else None,
+            "steps": int(lengths.get(n)) if n in lengths else None,
+            "via": [name_map.get(p, p) if not str(p).startswith("acct:") else p[5:] for p in path[1:-1]],
+        })
+    return pct, hidden, len(seeds)
 
 
 def refresh() -> dict:
@@ -56,10 +153,26 @@ def refresh() -> dict:
         n = max(1, G.number_of_nodes())
         pagerank = {nid: 1.0 / n for nid in G.nodes()}
 
-    # Louvain communities — gang/cell grouping (color-coded in globe)
+    # Relationships plus shared phones / accounts: the graph gangs are found on. PageRank,
+    # betweenness and k-core above and below stay on the recorded relationships, so the
+    # boss / broker / inner-circle readings do not move.
+    key_links = _key_links(world)
+    G_keys = G.copy()
+    for a, b, w, why in key_links:
+        if a in G_keys and b in G_keys:
+            if G_keys.has_edge(a, b):
+                G_keys[a][b]["weight"] = max(G_keys[a][b]["weight"], w)
+            else:
+                G_keys.add_edge(a, b, weight=w, via=why)
+
+    # Louvain communities — gang/cell grouping (color-coded in globe), each split into its
+    # connected parts
+    communities_split = 0
     try:
         from networkx.algorithms.community import louvain_communities
-        communities_sets = louvain_communities(G, weight="weight", seed=42)
+        raw_sets = louvain_communities(G_keys, weight="weight", seed=42)
+        communities_sets = _connected_communities(G_keys, raw_sets)
+        communities_split = len(communities_sets) - len(raw_sets)
         community_map: dict[str, int] = {}
         for idx, comm in enumerate(communities_sets):
             for sid in comm:
@@ -89,6 +202,11 @@ def refresh() -> dict:
         inner_circle = []
 
     name_map = {s["suspect_id"]: s.get("full_name", s["suspect_id"]) for s in suspects}
+
+    try:
+        serious_proximity, hidden_near_serious, serious_seeds = _serious_proximity(G_keys, world, name_map)
+    except Exception:
+        serious_proximity, hidden_near_serious, serious_seeds = {}, [], 0
 
     top_boss_id   = max(pagerank,    key=pagerank.get)    if pagerank    else None
     top_broker_id = max(betweenness, key=betweenness.get) if betweenness else None
@@ -165,12 +283,18 @@ def refresh() -> dict:
         "unsubs":          unsubs,
         "knowledge_boundaries": knowledge_boundaries,
         "predicted_edges": predicted_edges,
+        "serious_proximity": serious_proximity,
+        "hidden_near_serious": hidden_near_serious,
         "stats": {
             "node_count":         G.number_of_nodes(),
             "edge_count":         G.number_of_edges(),
             "unsub_count":        len(unsubs),
             "predicted_edge_count": len(predicted_edges),
             "community_count":    community_count,
+            "communities_split":  communities_split,       # Louvain groups that were not connected
+            "key_links":          len(key_links),          # shared-phone / shared-account links added
+            "serious_seeds":      serious_seeds,           # suspects named in serious crimes
+            "hidden_near_serious": hidden_near_serious,
             "inner_circle_count": len(inner_circle),
             "max_k_core":         max_k,
             "top_boss": {
@@ -211,4 +335,7 @@ def get_node_metrics(suspect_id: str) -> dict:
         "knowledge_boundary": c.get("knowledge_boundaries", {}).get(suspect_id, 0.5),
         "is_boss":   top_boss.get("id")   == suspect_id,
         "is_broker": top_broker.get("id") == suspect_id,
+        # 0..1 percentile of closeness to serious cases (Personalized PageRank); a lead only
+        "serious_proximity": c.get("serious_proximity", {}).get(suspect_id, 0.0),
+        "near_serious": any(h["id"] == suspect_id for h in c.get("hidden_near_serious", [])),
     }

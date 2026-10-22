@@ -30,7 +30,7 @@
     },
     "network": {
       "path": "app/agents/network_agent.py",
-      "sha256": "4478fba52448ab11d596882281a8ef64561776c529cd68c3132e89b18b0a7305"
+      "sha256": "7e2c5d006f62e69be0e38cc5ddcdc63f01ac3212a8e527de1010b170b83dccdd"
     },
     "osint": {
       "path": "app/agents/graph.py",

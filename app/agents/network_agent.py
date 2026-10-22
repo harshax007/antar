@@ -250,6 +250,9 @@ def build_network(seed_id: str, depth: int = DEPTH, cap: int = NODE_CAP) -> dict
             "inner_circle": k_core_map.get(sid, 0) == local_max_k and local_max_k >= 2,
             "is_broker": sid == top_broker_id,
             "knowledge_boundary": kb_map.get(sid, 0.5),
+            # closeness to suspects named in serious crimes (Personalized PageRank, 0..1
+            # percentile, graph_cache): a lead to check, never a finding
+            "serious_proximity": metrics.get("serious_proximity", {}).get(sid, 0.0),
         })
     node_ids_filtered = {n["id"] for n in nodes}
 
