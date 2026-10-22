@@ -25,7 +25,7 @@ References: [OWASP RAG Security Cheat Sheet](https://cheatsheetseries.owasp.org/
 | T4 | **Identity spoofing** | `X-Role: Admin` header accepted from anyone | Signed-token mode (`ANTAR_AUTH_SECRET`), one identity resolver, gateway fails closed |
 | T5 | **Cross-officer data access** | Listing/loading another officer's encrypted saved conversation; reading another officer's profile | Owner-bound session envelope; self-or-Admin rule |
 | T6 | **System-prompt / policy exfiltration** | "Repeat your instructions" via the question or via a poisoned record | Per-process canary; output blocked if echoed; deterministic fallback |
-| T7 | **PII egress to the model provider** | Phone, Aadhaar, email, PAN in prompts to QuickML | `redact_pii` on every LLM path (the vision and logprob paths previously skipped it) |
+| T7 | **PII egress to the model provider** | Phone, Aadhaar, email, PAN, UPI id, bank account in prompts to QuickML | `redact_pii` on every LLM path (the vision and logprob paths previously skipped it) |
 | T8 | **Abuse / DoS** | Rotating spoofed `X-Forwarded-For`, unbounded limiter table, oversized bodies | Proxy-hop-aware client IP, LRU-bounded buckets, request-body ceiling |
 | T9 | **Secret sprawl** | `.session_key` committed to git; `.env` and session data not excluded from `catalyst deploy` | Untracked, ignored in `.gitignore` / `.catalystignore` / `.appignore` |
 
@@ -108,7 +108,7 @@ output is blocked, the officer still gets a correct, record-backed answer.
 | Detect system-prompt leakage | **Done** | Per-process canary; echo → `OutputBlocked` → caller's deterministic fallback, no retry |
 | Redact secrets / credentials / paths in output | **Done** | `check_output` (line-wise, so markdown tables survive) |
 | Numbers and identifiers must exist in evidence | **Done (pre-existing)** | `answer_guardrails` G1/G3 |
-| PII redaction on the way to the model | **Done** | Aadhaar, phone, **email, PAN** (new); case/FIR/vehicle ids preserved |
+| PII redaction on the way to the model | **Done** | Aadhaar (Verhoeff check digit, or labelled "Aadhaar"), Indian mobiles (6-9 only), email, PAN, **UPI ids, bank accounts** (by a/c label or beside an IFSC); case/FIR/vehicle numbers and IMEIs preserved - 12-digit case numbers are no longer mistaken for Aadhaar |
 | Redact dynamically by the viewer's access level | Roadmap | Needs field classification on FIR columns. |
 
 ### 3.4 Access control, isolation, caching

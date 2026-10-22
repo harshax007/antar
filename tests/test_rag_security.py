@@ -176,6 +176,10 @@ class TestLLMChokePoint:
             return {}
         monkeypatch.setattr(quickml, "_auth_headers", _h)
         monkeypatch.setattr(quickml.settings, "QUICKML_LLM_ENDPOINT_URL", "https://llm.test/chat")
+        # the provider is read from settings (app/services/llm.py); without a configured
+        # one the call stops before the fake client is ever reached
+        from app.services import llm as _llm
+        monkeypatch.setattr(_llm, "provider", lambda: "quickml")
         return quickml, sent
 
     def test_policy_in_system_and_pii_redacted(self, monkeypatch):

@@ -1,9 +1,35 @@
 import re
 
-# Aadhaar: 12 digits, optional spaces or dashes
-AADHAAR_PATTERN = re.compile(r'\b(?:\d[ -]*?){8}(\d[ -]*?\d[ -]*?\d[ -]*?\d)\b')
-# Phone: +91 or 0 followed by 10 digits, or just 10 digits
-PHONE_PATTERN = re.compile(r'\b(?:\+?91|0)?\s*[ -]*?(?:\d\s*[ -]*?){6}(\d\s*[ -]*?\d\s*[ -]*?\d\s*[ -]*?\d)\b')
+# Aadhaar: 12 digits, optional spaces or dashes. A 12-digit run is only an Aadhaar number
+# when its Verhoeff check digit is valid and it starts 2-9 (UIDAI never issues 0/1), or when
+# the text calls it one just before it ("Aadhaar ...", "UID ...", "ಆಧಾರ್ ...") - an officer's
+# label wins over a typo. Before this, every 12-digit case or crime number was redacted.
+AADHAAR_PATTERN = re.compile(r'(?<!\d)(?:\d[ -]?){11}\d(?!\d)')
+AADHAAR_LABEL = re.compile(r'(aadhaa?r|\buid\b|ಆಧಾರ್)', re.I)
+# Phone: an Indian mobile number - optional +91 / 91 / 0, then 10 digits starting 6-9.
+# A 10-digit amount or reference that starts 1-5 is not a phone number.
+PHONE_PATTERN = re.compile(
+    r'(?<![\d@])(?:\+?91[ -]?|0)?([6-9](?:[ -]?\d){5}[ -]?(\d[ -]?\d[ -]?\d[ -]?\d))(?![\d@])')
+# UPI VPA (name@bank, no dot after the @ - an email has one): the whole id is personal.
+UPI_PATTERN = re.compile(r'\b[A-Za-z0-9._-]{2,}@([A-Za-z][A-Za-z0-9]{1,})\b(?![.\w])')
+# Bank account: 9-18 digits named as one ("a/c", "account no") or written beside an IFSC.
+ACCOUNT_PATTERN = re.compile(
+    r'(?i)(\b(?:a/c|ac|acc(?:ount)?)(?:\s*(?:no|number|num))?\.?\s*[:#-]?\s*)(\d{9,18})\b'
+    r'|\b(\d{9,18})(?=\s*,?\s*(?:ifsc\s*[:#-]?\s*)?[A-Z]{4}0[A-Z0-9]{6}\b)')
+
+_VERHOEFF_D = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],
+               [4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],
+               [8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]]
+_VERHOEFF_P = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],
+               [9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]]
+
+
+def verhoeff_ok(digits: str) -> bool:
+    """The Verhoeff checksum UIDAI uses for the last digit of an Aadhaar number."""
+    c = 0
+    for i, ch in enumerate(reversed(digits)):
+        c = _VERHOEFF_D[c][_VERHOEFF_P[i % 8][int(ch)]]
+    return c == 0
 
 EMAIL_PATTERN = re.compile(r'\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})\b')
 # PAN: 5 letters, 4 digits, 1 letter; the 4th letter is the holder type (P, C, H, F, …)
@@ -56,23 +82,31 @@ def redact_pii(text: str) -> str:
 
     text, held = _mask_case_ids(text)
 
-    # Redact Aadhaar (XXXX-XXXX-1234)
-    # The regex captures the last 4 digits in group 1
-    def _aadhaar_repl(match):
-        last_4 = match.group(1).replace(' ', '').replace('-', '')
-        return f"[AADHAAR:XXXX-XXXX-{last_4}]"
+    # Email first (it has a dot after the @; keep the domain - "a gmail account" - drop the
+    # person), then UPI ids, so neither is half-masked as a phone number.
+    text = EMAIL_PATTERN.sub(lambda m: f"[EMAIL:***@{m.group(2)}]", text)
+    text = UPI_PATTERN.sub(lambda m: f"[UPI:***@{m.group(1)}]", text)
+
+    # Bank account named as one, or beside an IFSC ([ACCOUNT:XXXX4567]); the IFSC itself is a
+    # branch code, not personal, and stays.
+    def _account_repl(m):
+        num = m.group(2) or m.group(3)
+        return f"{m.group(1) or ''}[ACCOUNT:XXXX{num[-4:]}]"
+
+    text = ACCOUNT_PATTERN.sub(_account_repl, text)
+
+    # Aadhaar (XXXX-XXXX-1234): checksum-valid, or labelled as Aadhaar just before it
+    def _aadhaar_repl(m):
+        digits = re.sub(r'\D', '', m.group(0))
+        labelled = bool(AADHAAR_LABEL.search(text[max(0, m.start() - 60):m.start()]))
+        if labelled or (digits[0] in "23456789" and verhoeff_ok(digits)):
+            return f"[AADHAAR:XXXX-XXXX-{digits[-4:]}]"
+        return m.group(0)
 
     text = AADHAAR_PATTERN.sub(_aadhaar_repl, text)
 
-    # Redact Phone ([PHONE:XXXXXX1234])
-    def _phone_repl(match):
-        last_4 = match.group(1).replace(' ', '').replace('-', '')
-        return f"[PHONE:XXXXXX{last_4}]"
-
-    text = PHONE_PATTERN.sub(_phone_repl, text)
-
-    # Email: keep the domain (useful for an analyst — "a gmail account"), drop the person.
-    text = EMAIL_PATTERN.sub(lambda m: f"[EMAIL:***@{m.group(2)}]", text)
+    # Indian mobile number ([PHONE:XXXXXX1234])
+    text = PHONE_PATTERN.sub(lambda m: f"[PHONE:XXXXXX{re.sub(r'[^0-9]', '', m.group(2))}]", text)
     # PAN (Income Tax): AAAAA9999A -> keep the last 4, like Aadhaar and phone.
     text = PAN_PATTERN.sub(lambda m: f"[PAN:XXXXXX{m.group(0)[-4:]}]", text)
 
