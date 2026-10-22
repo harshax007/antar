@@ -448,6 +448,14 @@ class FellegiSunterLinker:
 
 _fs_linker = FellegiSunterLinker()
 
+# The hypotheses depend only on the records, not on what was searched: /api/profile/search
+# used to rescore the same 19,900 pairs (~1.5 s) on every search. The world is loaded once
+# and kept (zcql_local._world), so the result is kept with it and recomputed only when a new
+# world object arrives or the threshold changes. Holding the world itself (not its id)
+# means a freed-and-reused id can never return another world's hypotheses.
+_LINKS_CACHE: dict = {"world": None, "threshold": None, "result": None}
+
+
 def suggest_identity_links(rows: list[dict] | dict, threshold: float = 0.75) -> list[dict]:
     """
     Layer 5 Cross-Source Identity Hypothesis Generator.
@@ -456,6 +464,17 @@ def suggest_identity_links(rows: list[dict] | dict, threshold: float = 0.75) -> 
     Returns actionable hypotheses ready for officer review via Layer 4 RBAC endpoints.
     NEVER auto-merges records.
     """
+    if isinstance(rows, dict):
+        c = _LINKS_CACHE
+        if c["world"] is rows and c["threshold"] == threshold:
+            return [dict(h) for h in c["result"]]
+        result = _suggest_identity_links(rows, threshold)
+        c.update(world=rows, threshold=threshold, result=result)
+        return [dict(h) for h in result]
+    return _suggest_identity_links(rows, threshold)
+
+
+def _suggest_identity_links(rows: list[dict] | dict, threshold: float) -> list[dict]:
     records: list[dict] = []
     if isinstance(rows, list):
         records = [r for r in rows if isinstance(r, dict)]

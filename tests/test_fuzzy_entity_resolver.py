@@ -361,3 +361,23 @@ class TestBipartiteGraphLinkage:
         assert len(hyps) >= 1
         assert "bipartite_meta" in hyps[0]
         assert hyps[0]["bipartite_meta"]["bipartite_cosine_sim"] > 0.0
+
+
+def test_identity_links_are_kept_with_the_world_they_were_computed_from():
+    """Scored once per world, not on every search; a new world is scored afresh."""
+    from app.services import entity_resolver as er
+    w1 = {"suspects": [{"suspect_id": "A", "full_name": "Ravi Kumar", "phone_hash": "p1"},
+                       {"suspect_id": "B", "full_name": "Ravi Kumaar", "phone_hash": "p1"}]}
+    first = er.suggest_identity_links(w1, threshold=0.75)
+    calls = []
+    real = er._suggest_identity_links
+    er._suggest_identity_links = lambda *a, **k: calls.append(1) or real(*a, **k)
+    try:
+        assert er.suggest_identity_links(w1, threshold=0.75) == first and not calls     # kept
+        w2 = {"suspects": [dict(s) for s in w1["suspects"]]}
+        er.suggest_identity_links(w2, threshold=0.75)
+        assert calls == [1]                                                                   # new world
+        er.suggest_identity_links(w2, threshold=0.9)
+        assert calls == [1, 1]                                                                # new threshold
+    finally:
+        er._suggest_identity_links = real

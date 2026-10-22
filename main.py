@@ -208,6 +208,16 @@ async def background_warmup():
     except Exception as e:
         print(f"  officer view warm skipped: {e}")
 
+    # Identity-link hypotheses shown beside every suspect search (~1.5 s of pairwise scoring,
+    # kept with the world once computed): done here so the first search does not pay it.
+    try:
+        from app.services.entity_resolver import suggest_identity_links
+        from app.services.zcql_local import _world
+        _hyp = await asyncio.to_thread(suggest_identity_links, _world(), 0.75)
+        print(f"  Identity links cached — {len(_hyp)} hypotheses")
+    except Exception as e:
+        print(f"  identity links warm skipped: {e}")
+
     # Pre-warm the full-dataset Crime Graph cycles (unfiltered). This populates the
     # product_store cache so the Brain screen's Crime Graph loads instantly.
     try:
