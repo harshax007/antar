@@ -5424,3 +5424,37 @@ body:has(.bsx-focus) .bt-toasts { right: 440px; }
 .uf input { flex: 1; min-width: 0; padding: 6px 9px; border-radius: 7px; border: 1px solid rgba(148,163,184,.28); background: rgba(0,0,0,.25); color: #fff; font: 400 13px 'Inter', sans-serif; outline: 0; }
 .uf input:focus { border-color: rgba(34,230,240,.5); }
 .uf em { flex-basis: 100%; font-style: normal; color: #FBBF24; }
+
+/* Fast Run, larger and calmer (2026-10-22). The window uses most of the screen; text is
+   a size up; the "based on" line sits on its own row with the next-step buttons under it,
+   instead of wrapping beside them; the floating page-guide button is hidden while the
+   window is open, so nothing sits on top of it. */
+.bsx-tm-overlay { padding: 70px 24px 20px; }
+.bsx-fr { width: min(1320px, calc(100vw - 48px)); max-height: calc(100vh - 90px); padding: 20px 26px 16px; }
+body:has(.bsx-tm-overlay) #cx-guide-trigger { display: none; }
+.bsx-fr h2 { font-size: 19px; }
+.bsx-fr > header > span { font-size: 13px; }
+.bsx-fr > header button { font-size: 13px; }
+.bsx-fr .lead { padding: 14px 18px; }
+.bsx-fr .lead small { font-size: 10.5px; }
+.bsx-fr .lead b { font-size: 19px; }
+.bsx-fr .lead p { font-size: 14px; }
+.bsx-fr .lead-next { font-size: 13px; }
+.bsx-fr .lead-next button { font-size: 13px; padding: 6px 14px; }
+.bsx-fr .sum { font-size: 13px; margin: 14px 2px; }
+.bsx-fr .sum b { font-size: 15px; }
+.bsx-fr .grid { gap: 14px; }
+.bsx-fr article { padding: 14px 18px 8px; }
+.bsx-fr h3 { font-size: 12px; }
+.bsx-fr .how { font-size: 12.5px; margin: 5px 0 4px; }
+.bsx-fr ol > li { padding: 12px 0; }
+.bsx-fr .hd { gap: 10px; }
+.bsx-fr .hd b { font-size: 15px; line-height: 1.4; }
+.bsx-fr .hd em { font-size: 10px; }
+.bsx-fr ol > li > p { margin-left: 18px; font-size: 13.5px; line-height: 1.55; }
+.bsx-fr ol > li > ul { margin-left: 18px; font-size: 13px; line-height: 1.65; color: #B0BFD0; }
+.bsx-fr .ft { margin: 8px 0 0 18px; gap: 8px; }
+.bsx-fr .ft span { flex: 1 1 100%; min-width: 0; font-size: 12px; }
+.bsx-fr .ft button { font: 500 12px 'Inter'; padding: 5px 12px; }
+.bsx-fr > footer { font-size: 12px; }
+@media (max-width: 1100px) { .bsx-fr .grid { grid-template-columns: 1fr; } }
