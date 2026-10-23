@@ -3449,6 +3449,12 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 
 /* Chat - thought process ("Thinking…" live steps → "Thought for Ns") */
 .cx-think { margin: 2px 0 10px; font-family: 'Inter', sans-serif; font-size: 13px; }
+/* the answer sits close under its question: "Thought for Ns" and "N agents worked on this"
+   share one line, and the gaps above and below them are trimmed */
+.cx-row-user + .cx-row-assistant { margin-top: -6px; }
+.cx-row-assistant > div[style] { margin-top: 0 !important; }
+.cx-think { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0 0 8px; }
+.cx-think > :not(.cx-think-head):not(.cx-think-check) { flex-basis: 100%; }
 .cx-think-head { display: inline-flex; align-items: center; gap: 7px; background: none; border: 0; padding: 2px 0;
   color: #7FA6E8; font: inherit; font-weight: 500; cursor: pointer; user-select: none; }
 .cx-think-head:hover { color: #A9C4F5; }
