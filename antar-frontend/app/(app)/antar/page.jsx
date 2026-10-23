@@ -1760,6 +1760,23 @@ export default function ChatPage() {
     };
     window.addEventListener("antar-demo-trigger", handler);
 
+    // A question handed over in the address (/antar?q=..., used by Search, the Brain's focus
+    // card and /ask) is asked straight away, like the live=1 hand-off below. It used to be
+    // ignored, so "Ask Antar" opened an empty chat.
+    if (typeof window !== "undefined" && !liveTriggeredRef.current) {
+      try {
+        const u = new URL(window.location.href);
+        const q = (u.searchParams.get("q") || "").trim();
+        if (q) {
+          liveTriggeredRef.current = true;
+          setDocsMode(false);
+          u.searchParams.delete("q");
+          window.history.replaceState({}, "", u.pathname + (u.search ? u.search : ""));
+          setTimeout(() => send(q, true), 150);
+        }
+      } catch {}
+    }
+
     if (typeof window !== "undefined" && !liveTriggeredRef.current && window.location.search.includes("live=1")) {
       liveTriggeredRef.current = true;
       setDocsMode(false);

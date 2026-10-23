@@ -116,3 +116,43 @@ html[lang="kn"] .bsx-wrap .ov-clock-head em { letter-spacing: normal; text-trans
 .bsx-wrap .bsx-calreset:hover:not(:disabled) { color: var(--text-1); border-color: rgba(34,230,240,.45); }
 .bsx-wrap .bsx-calreset:disabled { opacity: .4; cursor: default; }
 .bsx-wrap .bsx-calreset + .bsx-caltoggle { margin-left: var(--sp-2); }
+
+/* ── Crime Graph: readable, and nothing on top of anything ──
+   The legend column (crime list + View summary) used to run into the "Crime cycles based on
+   years" block when the summary opened; it now stops above it and scrolls. The reading note
+   sits clear of the guide button. The crime panel's text was 7.5-10.5px; it is set to the
+   app's scale, and it opens with what to plan. */
+.bsx-wrap .bsx-cg-legend { max-height: calc(100% - 74px - 210px); overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding-right: 8px; }
+.bsx-wrap .bsx-cg-legend .row .nm { font: 500 var(--fs-body-sm) 'Inter', sans-serif; letter-spacing: 0; }
+.bsx-wrap .bsx-cg-legend .row .ct { font-size: var(--fs-caption); color: var(--text-3); }
+.bsx-wrap .bsx-cg-summary .bsx-summary-b { max-height: none; }
+.bsx-wrap .bsx-cg-note { right: 76px !important; width: 320px !important; font-size: var(--fs-label); color: var(--text-3); }
+.bsx-wrap .bsx-cg-title b { font: 600 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .12em; }
+.bsx-wrap .bsx-cg-scope { font-size: var(--fs-label); color: var(--text-3); margin-top: 4px; }
+.bsx-wrap .bsx-cg-years button { border-radius: var(--r-sm); font-size: var(--fs-label); box-shadow: none !important; }
+.bsx-wrap .bsx-cg-years button.on { color: var(--text-1); border-color: var(--accent); background: rgba(34,230,240,.1); }
+
+.bsx-wrap .bsx-cg-detail { width: 320px; padding: var(--sp-5); border-radius: var(--r-lg); box-shadow: none; }
+.bsx-wrap .bsx-cg-detail .eyebrow { font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; }
+.bsx-wrap .bsx-cg-detail > b { font: 700 var(--fs-h3) 'Chakra Petch', sans-serif; margin: 4px 0 12px; }
+.bsx-wrap .bsx-cg-detail .stats .k { font-size: var(--fs-caption); color: var(--text-3); }
+.bsx-wrap .bsx-cg-detail .stats .v { font: 700 var(--fs-h2) 'Chakra Petch', sans-serif; }
+.bsx-wrap .bsx-cg-detail .bars .b em { font-size: 10px; color: var(--text-3); }
+.bsx-wrap .bsx-cg-detail .kv { font-size: var(--fs-body-sm); color: var(--text-2); }
+.bsx-wrap .bsx-cg-detail p { font-size: var(--fs-body-sm); line-height: 1.55; }
+
+.cg-plan { margin: 0 0 var(--sp-4); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md); border: 1px solid rgba(34,230,240,.25); background: rgba(34,230,240,.05); }
+.cg-plan-h { display: block; margin-bottom: var(--sp-2); font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+html[lang="kn"] .cg-plan-h { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
+.cg-plan dl { margin: 0; display: grid; gap: 6px; }
+.cg-plan dl > div { display: grid; grid-template-columns: 52px 1fr; gap: 8px; }
+.cg-plan dt { font: 500 var(--fs-label) 'Inter', sans-serif; color: var(--text-3); }
+.cg-plan dd { margin: 0; font-size: var(--fs-body-sm); line-height: 1.5; color: var(--text-1); }
+.cg-plan dd b { color: var(--accent); }
+.cg-plan dd.dim { color: var(--text-3); }
+.cg-plan-ask { margin-top: var(--sp-3); width: 100%; padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid rgba(34,230,240,.38); background: rgba(34,230,240,.08);
+  font: 600 var(--fs-label) 'Inter', sans-serif; color: var(--accent); cursor: pointer; text-align: left; }
+.cg-plan-ask:hover { background: rgba(34,230,240,.16); }
+/* with a crime open, its panel says what the note says: the note gives way and the panel moves up */
+.bsx-wrap .bsx-cg:has(.bsx-cg-detail) .bsx-cg-note { display: none; }
+.bsx-wrap .bsx-cg-detail { top: 74px !important; max-height: calc(100% - 150px) !important; right: 76px !important; }

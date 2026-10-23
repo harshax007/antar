@@ -54,8 +54,19 @@ function matchWhy(r) {
     case 'phone_exact': return { cls: 'ex', txt: `exact on phone` };
     case 'jaro_winkler': return { cls: 'fz', txt: `typo on ${field}` };
     case 'soundex': return { cls: 'ph', txt: `phonetic on ${field}` };
+    case 'id_exact': return { cls: 'ex', txt: 'exact on ID' };
     default: return null;
   }
+}
+// The profile sends 99999 days when no FIR for the person carries a usable date. That is
+// "not on record", not a number to print ("99999d").
+const recencyDays = (d) => (d == null || !Number.isFinite(Number(d)) || Number(d) >= 9999 ? null : Number(d));
+function sinceText(d, kn, short = false) {
+  if (d == null) return kn ? "ದಾಖಲೆಯಲ್ಲಿಲ್ಲ" : "Not on record";
+  if (d < 1) return kn ? "ಇಂದು" : "Today";
+  if (d < 60) return kn ? `${d} ದಿನ` : (short ? `${d} days` : `${d} days ago`);
+  if (d < 730) { const m = Math.round(d / 30); return kn ? `${m} ತಿಂಗಳು` : (short ? `${m} months` : `${m} months ago`); }
+  const y = Math.round(d / 365); return kn ? `${y} ವರ್ಷ` : (short ? `${y} years` : `${y} years ago`);
 }
 function tier(score) { return score >= 70 ? "HIGH" : score >= 40 ? "MED" : "LOW"; }
 function tierCls(score) { return score >= 70 ? "h" : score >= 40 ? "m" : "l"; }
@@ -393,7 +404,7 @@ function SearchContent() {
     priors: p.prior_count ?? row?.prior_count ?? null,
     firCount: row?.fir_count ?? null,
     linkedCases: Number((p.mo_summary || "").match(/(\d+)\s+linked case/i)?.[1]) || null,
-    lastFirDays: p.raw_factors?.recency_days ?? null,
+    lastFirDays: recencyDays(p.raw_factors?.recency_days),
     status: cap(p.arrest_status) || (p.mo_summary || "").match(/arrest status ([\w_]+)/i)?.[1]?.replace(/_/g, " ") || null,
     moText: (p.mo_summary || "").replace(/\s*Prior count \d+;\s*arrest status [\w_]+\.?/i, "").trim(),
     contrib: [
@@ -401,7 +412,7 @@ function SearchContent() {
       // different case-linkage lookups (e.g. 46 vs 69 for S0041). Showing both numbers on
       // one screen reads as an error, so the key figures carry the MO count only.
       ["frequency", kn ? "ಆಗಾಗ್ಗೆ ಅಪರಾಧ" : "Frequent offending", null],
-      ["recency", kn ? "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ" : "Recent activity", p.raw_factors?.recency_days != null ? (kn ? `${p.raw_factors.recency_days} ದಿನಗಳ ಹಿಂದೆ` : `last FIR ${p.raw_factors.recency_days}d ago`) : null],
+      ["recency", kn ? "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ" : "Recent activity", recencyDays(p.raw_factors?.recency_days) != null ? (kn ? `${sinceText(recencyDays(p.raw_factors.recency_days), kn)} ಹಿಂದೆ` : `last FIR ${sinceText(recencyDays(p.raw_factors.recency_days), kn)}`) : (kn ? "ದಿನಾಂಕವಿರುವ FIR ಇಲ್ಲ" : "no dated FIR on record")],
       ["severity", kn ? "ಗಂಭೀರ ಅಪರಾಧಗಳು" : "Serious offences", null],
       ["centrality", kn ? "ಇತರರೊಂದಿಗೆ ಸಂಪರ್ಕ" : "Links to others", null],
     ].map(([k, label, detail]) => ({ k, label, detail, pts: Math.round(p.risk_attributions?.[k] ?? (p.factors?.[k] || 0) * 25) })),
@@ -415,7 +426,7 @@ function SearchContent() {
           evidence={[
             { label: kn ? "ಅಪಾಯ ಅಂಕ" : "Risk score", value: `${Math.round(p.risk_score || 0)}/100` },
             rec?.linkedCases != null && { label: kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "Linked cases", value: String(rec.linkedCases) },
-            rec?.lastFirDays != null && { label: kn ? "ಕೊನೆಯ FIR" : "Last FIR", value: `${rec.lastFirDays} days ago` },
+            rec?.lastFirDays != null && { label: kn ? "ಕೊನೆಯ FIR" : "Last FIR", value: sinceText(rec.lastFirDays, kn) },
             rec?.status && { label: kn ? "ಸ್ಥಿತಿ" : "Status", value: rec.status },
             (p.associates?.length ?? 0) > 0 && { label: kn ? "ಸಹಚರರು" : "Associates", value: String(p.associates.length) },
           ].filter(Boolean)} />
@@ -987,14 +998,14 @@ function SearchContent() {
                       <span>{kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "Linked cases"}</span>
                       <FolderGit2 size={14} />
                     </div>
-                    <b>{rec.linkedCases ?? "—"}</b>
+                    <b className={rec.linkedCases == null ? "none" : ""}>{rec.linkedCases ?? (kn ? "ದಾಖಲೆಯಲ್ಲಿಲ್ಲ" : "None on record")}</b>
                   </div>
                   <div>
                     <div className="sx-kpi-hd">
                       <span>{kn ? "ಕೊನೆಯ FIR ನಿಂದ" : "Since last FIR"}</span>
                       <Calendar size={14} />
                     </div>
-                    <b>{rec.lastFirDays != null ? `${rec.lastFirDays}d` : "—"}</b>
+                    <b className={rec.lastFirDays == null ? "none" : ""}>{sinceText(rec.lastFirDays, kn, true)}</b>
                   </div>
                   <div>
                     <div className="sx-kpi-hd">
@@ -1021,8 +1032,8 @@ function SearchContent() {
                   <div className="sx-field"><span className="k">{kn ? "ಪ್ರಾಥಮಿಕ ವಲಯ" : "Primary zone"}</span><span className="v">{rec.zone || "—"}</span></div>
                   <div className="sx-field"><span className="k">{kn ? "ಪ್ರಸ್ತುತ ಸ್ಥಿತಿ" : "Current status"}</span><span className="v">{rec.status || (kn ? "ಸಕ್ರಿಯ ದಾಖಲೆ" : "Active record")}</span></div>
                   <div className="sx-field"><span className="k">{kn ? "ಹಿಂದಿನ ಪ್ರಕರಣಗಳು" : "Prior FIR count"}</span><span className="v">{rec.priors != null ? `${rec.priors} (${rec.priors === 1 ? "case" : "cases"})` : "0"}</span></div>
-                  <div className="sx-field"><span className="k">{kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "Linked case files"}</span><span className="v">{rec.linkedCases != null ? `${rec.linkedCases} linked` : "—"}</span></div>
-                  <div className="sx-field"><span className="k">{kn ? "ಕೊನೆಯ ಚಟುವಟಿಕೆ" : "Last FIR activity"}</span><span className="v">{rec.lastFirDays != null ? `${rec.lastFirDays} days ago` : "—"}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು" : "Linked case files"}</span><span className="v">{rec.linkedCases != null ? `${rec.linkedCases} linked` : (kn ? "ದಾಖಲೆಯಲ್ಲಿಲ್ಲ" : "None on record")}</span></div>
+                  <div className="sx-field"><span className="k">{kn ? "ಕೊನೆಯ ಚಟುವಟಿಕೆ" : "Last FIR activity"}</span><span className="v">{sinceText(rec.lastFirDays, kn)}</span></div>
                   {(p.age || p.gender) && <div className="sx-field"><span className="k">{kn ? "ಲಿಂಗ · ವಯಸ್ಸು" : "Demographics"}</span><span className="v">{[cap(p.gender), p.age && `${p.age} yrs`].filter(Boolean).join(" · ")}</span></div>}
                   {isSearch && row?.match_method && <div className="sx-field"><span className="k">{kn ? "ಹುಡುಕಾಟ ಹೊಂದಾಣಿಕೆ" : "Search match"}</span><span className="v mono">{matchWhy(row)?.txt || row.match_method}</span></div>}
                 </div>

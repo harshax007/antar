@@ -70,3 +70,4 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-page .sx-sec-t .cnt { font: 400 var(--fs-label) 'Inter', sans-serif; color: var(--text-3); }
 .sx-page .sx-sec-t { display: flex; align-items: baseline; justify-content: flex-start; gap: 0; }
 .sx-page .sx-sec-t .cnt { margin-left: auto; padding: 0; border: 0; border-radius: 0; background: none; }
+.sx-page .sx-kpis b.none { font: 600 var(--fs-lead)/1.3 'Inter', sans-serif; letter-spacing: 0; color: var(--text-3); }   /* "Not on record" reads as a note, not a figure */

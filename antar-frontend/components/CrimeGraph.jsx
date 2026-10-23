@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CATEGORIES, categorize } from "@/lib/crimeGraph";
 import { SummaryToggle } from "@/components/BrainViewSummary";
 
@@ -47,6 +48,44 @@ function sectorPath(cx, cy, r0, r1, a0, a1) {
 // When and where the selected crime concentrates (from /api/dataset/crime_profile).
 // Plain sentences first, numbers underneath - the officer should be able to read the top
 // line aloud at a briefing.
+// What an officer plans from a crime's cycle: which month to get ahead of, which days and
+// part of the month, and where. Every line is read off the counts already on screen; the
+// one action asks Chat for that crime in that district, which the register can answer.
+function CrimePlan({ c, p, kn, y, lastYear, onAsk }) {
+  const prev = (c.peak + 11) % 12;
+  const ready = p && !p.loading && !p.error && p.total;
+  const t = ready ? (p.month_thirds || {}) : {};
+  const third = Object.entries(t).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const thirdWord = { early: kn ? "ತಿಂಗಳ ಆರಂಭ (1–10)" : "early in the month (1st–10th)", mid: kn ? "ತಿಂಗಳ ಮಧ್ಯ (11–20)" : "mid-month (11th–20th)", late: kn ? "ತಿಂಗಳ ಕೊನೆ (21–31)" : "late in the month (21st on)" }[third];
+  const td = ready ? p.top_districts?.[0] : null;
+  const ts = ready ? p.top_stations?.[0] : null;
+  const year = y === "All" ? lastYear : y;
+  const crime = c.label.toLowerCase().replace(/ & /g, " and ");
+  const q = td ? `How many ${crime} cases were registered in ${td.name}${year ? ` in ${year}` : ""}?` : null;
+  return (
+    <div className="cg-plan">
+      <span className="cg-plan-h">{kn ? "ಇದಕ್ಕಾಗಿ ಯೋಜನೆ" : "Plan for it"}</span>
+      <dl>
+        <div><dt>{kn ? "ಯಾವಾಗ" : "When"}</dt><dd>{kn
+          ? <>ಉತ್ತುಂಗ <b>{MONTH_NAMES[c.peak]}</b> - {MONTH_NAMES[prev]} ಕೊನೆಯಿಂದ ಗಸ್ತು ಹೆಚ್ಚಿಸಿ. ಶಾಂತ: {MONTH_NAMES[c.quiet]}.</>
+          : <>Peaks in <b>{MONTH_NAMES[c.peak]}</b>: step up patrols from late {MONTH_NAMES[prev]}. Quietest in {MONTH_NAMES[c.quiet]}.</>}</dd></div>
+        {ready && p.peak_weekday && <div><dt>{kn ? "ದಿನಗಳು" : "Days"}</dt><dd>{kn
+          ? <>ಹೆಚ್ಚಾಗಿ <b>{p.peak_weekday}</b>{thirdWord ? `, ${thirdWord}` : ""}.</>
+          : <>Most often on a <b>{p.peak_weekday}</b>{thirdWord ? `, ${thirdWord}` : ""}.</>}</dd></div>}
+        {td && <div><dt>{kn ? "ಎಲ್ಲಿ" : "Where"}</dt><dd>{kn
+          ? <><b>{td.name}</b> ({td.share}%){ts ? ` · ಹೆಚ್ಚು ದಾಖಲೆ ${ts.name}` : ""}.</>
+          : <><b>{td.name}</b> holds {td.share}%{ts ? `; most are registered at ${ts.name}` : ""}.</>}</dd></div>}
+        {p?.loading && <div><dt /><dd className="dim">{kn ? "ದಿನ ಮತ್ತು ಸ್ಥಳ ಲೆಕ್ಕ ಹಾಕಲಾಗುತ್ತಿದೆ…" : "Working out the days and places…"}</dd></div>}
+      </dl>
+      {q && (
+        <button type="button" className="cg-plan-ask" onClick={() => onAsk(q)} title={q}>
+          {kn ? `${td.name} ನಲ್ಲಿ ${year || ""} ಪ್ರಕರಣಗಳನ್ನು ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ` : `Ask Chat: ${td.name}${year ? `, ${year}` : ""}`} <span aria-hidden="true">→</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 function CrimeProfile({ p, kn, color }) {
   if (!p) return null;
   if (p.loading) return <div className="cg-prof-wait">{kn ? "ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ…" : "Analysing when and where…"}</div>;
@@ -109,6 +148,7 @@ function yearLabel(yInfo) {
 }
 
 export default function CrimeGraph({ recs, kn }) {
+  const router = useRouter();
   // ── API data ──────────────────────────────────────────────────────────
   const [apiData, setApiData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -554,6 +594,8 @@ export default function CrimeGraph({ recs, kn }) {
           <button className="bs-detail-close" onClick={() => setSel(null)}></button>
           <span className="eyebrow" style={{ color: selc.color }}>{kn ? "ಅಪರಾಧ ಚಕ್ರ" : "crime cycle"} · {y}</span>
           <b>{selc.label}</b>
+          <CrimePlan c={selc} p={profile} kn={kn} y={y} lastYear={apiData?.scope_years?.[apiData.scope_years.length - 1]}
+                     onAsk={(q) => router.push(`/antar?q=${encodeURIComponent(q)}`)} />
           <div className="stats">
             <div><span className="k">{kn ? "FIR ಗಳು" : "FIRs"}</span><span className="v">{selc.n.toLocaleString()}</span></div>
             <div><span className="k">{kn ? "ಪಾಲು" : "share"}</span><span className="v">{selc.share}%</span></div>

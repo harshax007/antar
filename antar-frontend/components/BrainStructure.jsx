@@ -944,7 +944,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       {view === "net" && focus && (
         <FocusPanel key={focus.node.id} focus={focus} name={focusName} kn={kn} Donut={Donut} linkColors={LINK_COLORS}
                     onExit={() => controlRef.current?.clear()}
-                    onAsk={() => router.push(`/ask?q=${encodeURIComponent(focus.node.accused ? `who is ${focus.node.accused}` : `${focus.node.crimeHead || ""} in ${focus.node.zone || ""}`)}`)} />
+                    onAskRegister={(q) => router.push(`/antar?q=${encodeURIComponent(q)}`)} />
       )}
 
       {/* ── Bottom-Left · Case activity year calendar (constellation views) ── */}

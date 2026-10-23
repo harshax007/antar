@@ -49,13 +49,15 @@ function Section({ id, title, count, open, onToggle, children }) {
   );
 }
 
-export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, onExit, onAsk }) {
+export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, onExit, onAskRegister }) {
   const c = focus.comp;
   const total = c.size || 1;
   const pct = (n) => Math.round((n / total) * 100);
   const [wide, setWide] = useState(false);
   const [open, setOpen] = useState({ brief: true, mix: true, keys: true, people: true, where: false, time: false, firs: false, why: false });
   const [allFirs, setAllFirs] = useState(false);
+  const [asked, setAsked] = useState([]);       // [{ q, a: { lead, rows } }] - answers about this group
+  const [askText, setAskText] = useState("");
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   const allOpen = Object.values(open).every(Boolean);
   const setAll = (v) => setOpen((o) => Object.fromEntries(Object.keys(o).map((k) => [k, v])));
@@ -103,6 +105,97 @@ export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, on
     if (!steps.length) steps.push({ en: "Read the FIRs together for a common method, place or time.", kn: "ಸಾಮಾನ್ಯ ವಿಧಾನ, ಸ್ಥಳ, ಸಮಯಕ್ಕಾಗಿ FIR ಗಳನ್ನು ಒಟ್ಟಿಗೆ ಓದಿ." });
     return { headline, headlineKn, why, steps };
   }, [focus]); // eslint-disable-line
+
+  // ── Ask about this group ──
+  // Answered here, from the group's own records. Chat reads the 10-lakh register, which does
+  // not hold these curated IDs, so sending "who is ACC-…" there came back with unrelated FIRs.
+  const QUICK = [
+    ["first", { en: "Who should I look at first?", kn: "ಮೊದಲು ಯಾರನ್ನು ನೋಡಬೇಕು?" }],
+    ["links", { en: "What links these cases?", kn: "ಈ ಪ್ರಕರಣಗಳನ್ನು ಏನು ಜೋಡಿಸುತ್ತದೆ?" }],
+    ["where", { en: "Where and when?", kn: "ಎಲ್ಲಿ ಮತ್ತು ಯಾವಾಗ?" }],
+    ["active", { en: "Is it still active?", kn: "ಇನ್ನೂ ಸಕ್ರಿಯವೇ?" }],
+    ["next", { en: "What should I do next?", kn: "ಮುಂದೆ ಏನು ಮಾಡಬೇಕು?" }],
+  ];
+  function intentOf(text) {
+    const t = text.toLowerCase();
+    if (/(who|person|people|accused|suspect|first|key|ಯಾರು|ಆರೋಪಿ)/.test(t)) return "first";
+    if (/(link|connect|why|same|share|common|tie|ಜೋಡ|ಸಂಪರ್ಕ)/.test(t)) return "links";
+    if (/(active|recent|latest|still|last|ongoing|now|ಸಕ್ರಿಯ|ಇತ್ತೀಚ)/.test(t)) return "active";
+    if (/(where|station|district|place|when|year|time|month|ಎಲ್ಲಿ|ಯಾವಾಗ|ಠಾಣೆ|ಜಿಲ್ಲೆ)/.test(t)) return "where";
+    if (/(do|next|action|step|plan|should|ಮುಂದೆ|ಕ್ರಮ)/.test(t)) return "next";
+    return null;
+  }
+  function answer(intent) {
+    const latestYear = c.byYear?.length ? c.byYear[c.byYear.length - 1] : null;
+    const firsWord = (n) => `${n} ${n === 1 ? "FIR" : "FIRs"}`;
+    if (intent === "first") {
+      const ranked = [...people].filter((p) => p.n != null).sort((a, b) => b.n - a.n).slice(0, 3);
+      if (!ranked.length) {
+        const lead = keys[0]
+          ? (kn ? `ಯಾವ FIR ನಲ್ಲೂ ಆರೋಪಿ ಹೆಸರಿಲ್ಲ. ${keys[0].name} (${keys[0].n} FIR) ಇಂದ ಆರಂಭಿಸಿ.` : `No FIR here names an accused. Start from the shared ${KEY_LABEL[keys[0].kind]?.[0] || keys[0].kind} ${keys[0].name}, which is in ${firsWord(keys[0].n)}.`)
+          : (kn ? "ಯಾವ FIR ನಲ್ಲೂ ಆರೋಪಿ ಹೆಸರಿಲ್ಲ. ಹೆಚ್ಚು ಪ್ರಕರಣವಿರುವ ಠಾಣೆಯಿಂದ ಆರಂಭಿಸಿ." : `No FIR here names an accused. Start with ${stations[0]?.name || "the station"} , which holds the most of these cases.`);
+        return { lead, rows: [] };
+      }
+      const top = ranked[0];
+      return {
+        lead: kn ? `${top.name} (${top.id}) - ${top.n} FIR ಗಳಲ್ಲಿ ಹೆಸರಿಸಲಾಗಿದೆ.` : `${top.name} (${top.id}), named in ${firsWord(top.n)} of the ${c.size} in this group${top.n >= 2 ? ", the strongest repeat link here" : ""}.`,
+        rows: ranked.slice(1).map((p) => `${p.name} (${p.id}) · ${firsWord(p.n)}`)
+          .concat(c.noAccused ? [kn ? `${c.noAccused} FIR ಗಳಲ್ಲಿ ಆರೋಪಿ ಹೆಸರಿಲ್ಲ` : `${firsWord(c.noAccused)} name no accused`] : []),
+      };
+    }
+    if (intent === "links") {
+      const rows = keys.map((k) => `${KEY_LABEL[k.kind]?.[kn ? 1 : 0] || k.kind} ${k.name} · ${kn ? `${k.n} FIR` : `in ${firsWord(k.n)}`}`);
+      const why = (focus.whys || []).map((w) => w.text);
+      return {
+        lead: keys.length
+          ? (kn ? `ಹಂಚಿಕೊಂಡ ${keys.length} ಗುರುತು ಈ ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸುತ್ತದೆ - ಇದು ಗಟ್ಟಿ ಸಂಪರ್ಕ.` : `${keys.length === 1 ? "One shared identifier" : `${keys.length} shared identifiers`} tie these cases together. That is a hard link: the same account, device or vehicle appears in more than one FIR.`)
+          : (kn ? "ಈ ಪ್ರಕರಣಗಳು ಹೀಗೆ ಜೋಡಿಸಲ್ಪಟ್ಟಿವೆ:" : "These cases are grouped by:"),
+        rows: rows.concat(why.slice(0, 3)),
+      };
+    }
+    if (intent === "where") {
+      const list = (xs) => xs.slice(0, 3).map((x) => `${x.name} (${x.n})`).join(", ");
+      const topSt = stations[0];
+      return {
+        lead: kn
+          ? `${c.size} FIR, ${c.districts.length} ಜಿಲ್ಲೆ, ${stations.length} ಠಾಣೆ${years ? `, ${years}` : ""}.${topSt ? ` ಹೆಚ್ಚು: ${topSt.name} (${topSt.n}).` : ""}`
+          : `${firsWord(c.size)} across ${c.districts.length} ${c.districts.length === 1 ? "district" : "districts"} and ${stations.length} ${stations.length === 1 ? "station" : "stations"}${years ? `, ${years}` : ""}.${topSt ? ` The most at one station: ${topSt.name}, ${firsWord(topSt.n)}.` : ""}`,
+        rows: [
+          stations.length ? `${kn ? "ಠಾಣೆಗಳು" : "Stations"}: ${list(stations)}${stations.length > 3 ? (kn ? ` ಮತ್ತು ${stations.length - 3} ಇನ್ನಷ್ಟು` : ` and ${stations.length - 3} more`) : ""}` : null,
+          (c.byDistrict || []).length ? `${kn ? "ಜಿಲ್ಲೆಗಳು" : "Districts"}: ${list(c.byDistrict)}` : null,
+          (c.byYear || []).length > 1 ? `${kn ? "ವರ್ಷವಾರು" : "By year"}: ${c.byYear.map((y) => `${y.name} (${y.n})`).join(", ")}` : null,
+        ].filter(Boolean),
+      };
+    }
+    if (intent === "active") {
+      if (!latestYear) return { lead: kn ? "ದಿನಾಂಕ ದಾಖಲಾಗಿಲ್ಲ." : "The FIRs here carry no date to judge it by.", rows: [] };
+      const recent = latestYear.name >= nowYear - 1;
+      return {
+        lead: recent
+          ? (kn ? `ಹೌದು - ಕೊನೆಯ FIR ${latestYear.name} ರಲ್ಲಿ, ಆ ವರ್ಷ ${latestYear.n}.` : `Yes. The latest FIRs are from ${latestYear.name} (${firsWord(latestYear.n)} that year), so this group is recent enough to act on.`)
+          : (kn ? `ಇಲ್ಲ - ${latestYear.name} ನಂತರ ಹೊಸ FIR ಇಲ್ಲ.` : `Quiet since ${latestYear.name}: no FIR in this group after that year. Check whether the accused is in custody or has moved before spending patrol time.`),
+        rows: [],
+      };
+    }
+    if (intent === "next") return { lead: kn ? "ಸಲಹೆಯ ಹೆಜ್ಜೆಗಳು:" : "Suggested next steps, strongest first:", rows: brief.steps.map((x) => (kn ? x.kn : x.en)) };
+    return {
+      lead: kn ? "ಇದಕ್ಕೆ ಈ ಗುಂಪಿನ ದಾಖಲೆಗಳಲ್ಲಿ ಉತ್ತರವಿಲ್ಲ. ಕೆಳಗಿನ ಪ್ರಶ್ನೆಗಳಲ್ಲಿ ಒಂದನ್ನು ಕೇಳಿ, ಅಥವಾ ಪೂರ್ಣ ದಾಖಲೆಯನ್ನು ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ."
+                : "This group's records don't answer that. Try one of the questions below, or ask Chat about the full register.",
+      rows: [],
+    };
+  }
+  function ask(q, intent) {
+    const a = answer(intent ?? intentOf(q));
+    setAsked((prev) => [...prev.slice(-3), { q, a }]);
+    setAskText("");
+  }
+  // what Chat can answer about the wider picture: the group's main crime, where most of it is, latest year
+  const registerQ = (() => {
+    const crime = lines[0] ? nice(lines[0].crime).toLowerCase() : (c.cats?.[0]?.label || "crime").toLowerCase();
+    const where = c.byDistrict?.[0]?.name || c.districts[0];
+    const yr = c.byYear?.length ? c.byYear[c.byYear.length - 1].name : null;
+    return `How many ${crime} cases were registered in ${where}${yr ? ` in ${yr}` : ""}?`;
+  })();
 
   const shownLines = allFirs ? lines : lines.slice(0, wide ? 10 : 5);
   const restFirs = c.size - shownLines.reduce((t, l) => t + (l.n || 1), 0);
@@ -272,8 +365,36 @@ export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, on
       </div>
 
       <footer className="fp-foot">
-        <button type="button" className="fp-ask" onClick={onAsk}>{L("Ask Antar about this group", "ಈ ಗುಂಪಿನ ಬಗ್ಗೆ Antar ಕೇಳಿ")} <span aria-hidden="true">→</span></button>
-        <small>{L("Counted from the records on screen", "ತೆರೆಯ ಮೇಲಿನ ದಾಖಲೆಗಳಿಂದ")}</small>
+        <section className="fp-askbox" aria-label={L("Ask about this group", "ಈ ಗುಂಪಿನ ಬಗ್ಗೆ ಕೇಳಿ")}>
+          <h4>{L("Ask about this group", "ಈ ಗುಂಪಿನ ಬಗ್ಗೆ ಕೇಳಿ")}</h4>
+          {asked.length > 0 && (
+            <ol className="fp-answers" aria-live="polite">
+              {asked.map((x, i) => (
+                <li key={i}>
+                  <p className="q">{x.q}</p>
+                  <p className="a">{x.a.lead}</p>
+                  {x.a.rows.length > 0 && <ul>{x.a.rows.map((r, j) => <li key={j}>{r}</li>)}</ul>}
+                </li>
+              ))}
+            </ol>
+          )}
+          <div className="fp-quick">
+            {QUICK.map(([k, label]) => (
+              <button key={k} type="button" onClick={() => ask(kn ? label.kn : label.en, k)}>{kn ? label.kn : label.en}</button>
+            ))}
+          </div>
+          <form className="fp-askform" onSubmit={(e) => { e.preventDefault(); if (askText.trim()) ask(askText.trim()); }}>
+            <input value={askText} onChange={(e) => setAskText(e.target.value)} placeholder={L("Type a question about this group…", "ಈ ಗುಂಪಿನ ಬಗ್ಗೆ ಪ್ರಶ್ನೆ ಟೈಪ್ ಮಾಡಿ…")}
+                   aria-label={L("Question about this group", "ಈ ಗುಂಪಿನ ಬಗ್ಗೆ ಪ್ರಶ್ನೆ")} />
+            <button type="submit" className="fp-ask" disabled={!askText.trim()}>{L("Ask", "ಕೇಳಿ")}</button>
+          </form>
+        </section>
+        <button type="button" className="fp-register" onClick={() => onAskRegister?.(registerQ)}
+                title={registerQ}>
+          {L("Ask Chat about the wider register", "ಪೂರ್ಣ ದಾಖಲೆಯ ಬಗ್ಗೆ ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ")} <span aria-hidden="true">→</span>
+          <em>{registerQ}</em>
+        </button>
+        <small>{L("Answers come from the records on screen", "ಉತ್ತರಗಳು ತೆರೆಯ ಮೇಲಿನ ದಾಖಲೆಗಳಿಂದ")}</small>
       </footer>
     </motion.aside>
   );
