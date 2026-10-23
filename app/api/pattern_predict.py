@@ -707,10 +707,13 @@ async def predict_briefing() -> dict:
     else:
         _BRIEFING_RETRY_AT["t"] = _time.time() + 600
     out = {"facts": facts, "reading": reading}
-    try:
-        product_store.put_product("predict:briefing", out, ttl=_PREDICT_TTL)
-    except Exception:
-        pass
+    # Only a written reading is kept. Caching a failed one held the page on "no reading"
+    # for the whole product TTL, so the ten-minute retry above never got its turn.
+    if reading:
+        try:
+            product_store.put_product("predict:briefing", out, ttl=_PREDICT_TTL)
+        except Exception:
+            pass
     return out
 
 
