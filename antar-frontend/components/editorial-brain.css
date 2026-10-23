@@ -156,3 +156,6 @@ html[lang="kn"] .cg-plan-h { letter-spacing: normal; text-transform: none; font-
 /* with a crime open, its panel says what the note says: the note gives way and the panel moves up */
 .bsx-wrap .bsx-cg:has(.bsx-cg-detail) .bsx-cg-note { display: none; }
 .bsx-wrap .bsx-cg-detail { top: 74px !important; max-height: calc(100% - 150px) !important; right: 76px !important; }
+/* a wider legend column, so the View summary reads in full lines and its box isn't cut at the edge */
+.bsx-wrap .bsx-cg-legend { width: min(360px, calc(100vw - 32px)); max-width: none; box-sizing: border-box; }
+.bsx-wrap .bsx-cg-legend .bsx-cg-summary, .bsx-wrap .bsx-cg-legend .bsx-summary-b { width: 100%; box-sizing: border-box; }
