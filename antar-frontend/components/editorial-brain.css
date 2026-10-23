@@ -107,3 +107,5 @@ html[lang="kn"] .bsx-wrap .ov-clock-head em { letter-spacing: normal; text-trans
 .bsx-wrap .ov-officer .ov-panel:hover { border-color: rgba(34,230,240,.3) !important; }
 .bsx-wrap .ov-officer .ov-toggle { min-height: 40px; align-items: center; }
 .bsx-wrap .ov-officer .ov-toggle i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-sm); border: 1px solid var(--rule-2); }
+/* the three charts sit without a rule above them (owner's call) */
+.bsx-wrap .ov-charts > .ov-panel { border-top: 0 !important; }
