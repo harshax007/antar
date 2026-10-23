@@ -29,12 +29,12 @@ export default function AboutPage() {
               {kn ? (
                 <>
                   <span className="ab-meaning-word">ಮುನ್ಸೂಚಕ ಭದ್ರತೆ</span>
-                  <b>ವಿಮರ್ಶೆ</b> ಎಂದರೆ ಸೂಕ್ಷ್ಮವಾಗಿ ನೋಡಿ ಮುಂದೆ ಯೋಚಿಸುವುದು; <b>ರಕ್ಷೆ</b> ಎಂದರೆ ಕಾಪಾಡುವುದು. ಎರಡೂ ಸೇರಿ: ಅಪಾಯ ಸಂಭವಿಸುವ ಮೊದಲೇ ಅದನ್ನು ಕಾಣುವಷ್ಟು ಎಚ್ಚರಿಕೆಯಿಂದ ದಾಖಲೆಗಳನ್ನು ಓದುವುದು.
+                  <b>ವಿಮರಕ್ಷ</b> ಎರಡು ಪದಗಳಿಂದ ಬಂದಿದೆ: <b>ವಿಮರ್ಶೆ</b>, ಮುಂದೆ ಯೋಚಿಸುವುದು, ಮತ್ತು <b>ರಕ್ಷೆ</b>, ಕಾಪಾಡುವುದು. ದಾಖಲೆಗಳಲ್ಲಿ ಅಪಾಯವನ್ನು ಮೊದಲೇ ಗುರುತಿಸಿ, ಅದು ಸಂಭವಿಸುವ ಮುನ್ನವೇ ಕ್ರಮ ಕೈಗೊಳ್ಳುವುದು ಇದರ ಅರ್ಥ.
                 </>
               ) : (
                 <>
                   <span className="ab-meaning-word">Predictive Security</span>
-                  <strong>Vimarsha</strong> is to look closely and think ahead; <strong>Raksha</strong> is to protect. Put together: read the records carefully enough to see trouble coming, and act before it does.
+                  <strong>Vimaraksha</strong> comes from two words: <strong>Vimarsha</strong>, to think ahead, and <strong>Raksha</strong>, to protect. It means spotting trouble early in the records and acting before it happens.
                 </>
               )}
             </p>
