@@ -22,6 +22,53 @@ const DEFAULT_NOTIFS = { brain: true, patrol: true, risk: true, system: false };
 
 const METHOD_CLS = { GET: "sx-risk-l", POST: "sx-risk-m", DELETE: "sx-risk-h" };
 
+// The watchdog writes one line per alert: "[ANTAR ALERT] <label> — <summary>", where the
+// summary is a fixed phrase per watch type (app/agents/sentinel_agent.py). Read it back into
+// what an officer needs: what kind of watch, about what, what was seen, and what to do.
+// Anything that does not parse is shown as written, never dropped.
+function readAlert(a) {
+  const msg = String(a.message || "").replace(/^\s*\[ANTAR ALERT\]\s*/i, "");
+  const [label, summary = ""] = msg.split(/\s+—\s+/);
+  const [kindLabel, ...rest] = (label || "").split(/\s+·\s+/);
+  const subject = rest.join(" · ") || kindLabel || "";
+  const cap = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
+  const pl = (n, one, many) => `${n} ${Number(n) === 1 ? one : many}`;
+  let m;
+  if ((m = summary.match(/^Corridor watch:\s*(\d+) linked offender\(s\) moving (.+?) ↔ (.+?)(?:, onward (.+?))?\.$/))) {
+    const [, n, from, to, onward] = m;
+    return { kind: "corridor", tag: ["Corridor watch", "ಮಾರ್ಗ ಕಣ್ಗಾವಲು"], title: cap(subject),
+      detail: `${pl(n, "linked offender", "linked offenders")} moving between ${from} and ${to}${onward ? `, heading on to ${onward}` : ""}.`,
+      step: `Alert the checkposts on this route and tell ${from} and ${to}.`,
+      link: { en: "Open on map", kn: "ನಕ್ಷೆಯಲ್ಲಿ", href: `/map?zone=${encodeURIComponent(from)}` } };
+  }
+  if ((m = summary.match(/^Pattern watch:\s*(\d+) (.+?) case\(s\) on record(?: in (.+?))? \(evidence ledger\)\.$/))) {
+    const [, n, crime, zone] = m;
+    return { kind: "pattern", tag: ["Pattern watch", "ಮಾದರಿ ಕಣ್ಗಾವಲು"], title: cap(subject),
+      detail: `${pl(n, `${crime} case`, `${crime} cases`)} on record${zone ? ` in ${zone}` : ""}.`,
+      step: `Check patrol cover${zone ? ` in ${zone}` : ""} for ${crime}.`,
+      link: { en: "Open on map", kn: "ನಕ್ಷೆಯಲ್ಲಿ", href: `/map?${zone ? `zone=${encodeURIComponent(zone)}&` : ""}crime_type=${encodeURIComponent(crime)}` } };
+  }
+  if ((m = summary.match(/^Entity tripwire:\s*(\d+) ledger signal\(s\) for (.+?)\.$/))) {
+    const [, n, who] = m;
+    const what = (kindLabel || "").replace(/\s*watch$/i, "");
+    return { kind: "person", tag: ["Person watch", "ವ್ಯಕ್ತಿ ಕಣ್ಗಾವಲು"], title: what && what !== subject ? `${cap(what)} · ${subject}` : subject,
+      detail: `${pl(n, "record", "records")} in the evidence ledger ${Number(n) === 1 ? "mentions" : "mention"} ${who}.`,
+      step: `Open ${who}'s record and check what is new.`,
+      link: { en: "Open the record", kn: "ದಾಖಲೆ ತೆರೆಯಿರಿ", href: `/search?q=${encodeURIComponent(who)}` } };
+  }
+  return { kind: "other", tag: ["Watch", "ಕಣ್ಗಾವಲು"], title: cap(subject) || "Alert", detail: summary || msg, step: null, link: null };
+}
+
+const cap1 = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : "");
+
+function alertWhen(ts, kn) {
+  if (!ts) return kn ? "ಈಗ" : "Just now";
+  const d = new Date(ts), now = new Date();
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const same = d.toDateString() === now.toDateString();
+  return same ? `${kn ? "ಇಂದು" : "Today"} ${time}` : `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} ${time}`;
+}
+
 function Icon({ name }) {
   const p = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" };
   switch (name) {
@@ -426,23 +473,49 @@ export default function AccountPage() {
             {alertsList.length === 0 ? (
               <div className="ac-loading" style={{ color: "#94A3B8" }}>{kn ? "ಯಾವುದೇ ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳಿಲ್ಲ." : "No active watchdog alerts."}</div>
             ) : (
-              <ol className="ac-alerts">
-                {alertsList.map((a, i) => (
-                  <li key={i} className={a.severity === "High" ? "hi" : ""}>
-                    <div className="ac-al-top">
-                      <span className="ac-al-type">{a.alert_type}</span>
-                      <span className="ac-al-time">{a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : (kn ? "ಈಗ" : "Just now")}</span>
-                    </div>
-                    <p>{a.message}</p>
-                    <div className="ac-al-foot">
-                      <span className="ac-al-sev">{kn ? "ತೀವ್ರತೆ:" : "Severity:"} {a.severity}</span>
-                      <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" onClick={() => setAlertsList(alertsList.filter((_, idx) => idx !== i))}>
-                        {kn ? "ಸ್ವೀಕರಿಸಿ" : "Acknowledge"}
+              <>
+                {(() => {
+                  const read = alertsList.map(readAlert);
+                  const by = (k) => read.filter((r) => r.kind === k).length;
+                  const parts = [["corridor", "corridor", "ಮಾರ್ಗ"], ["pattern", "pattern", "ಮಾದರಿ"], ["person", "person", "ವ್ಯಕ್ತಿ"]]
+                    .filter(([k]) => by(k)).map(([k, en, knw]) => `${by(k)} ${kn ? knw : en}`);
+                  return (
+                    <div className="ac-al-summary">
+                      <span><b>{alertsList.length}</b> {kn ? "ತೆರೆದ ಎಚ್ಚರಿಕೆ" : alertsList.length === 1 ? "open alert" : "open alerts"}{parts.length ? ` · ${parts.join(" · ")}` : ""}</span>
+                      <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" onClick={() => setAlertsList([])}>
+                        {kn ? "ಎಲ್ಲವನ್ನೂ ಸ್ವೀಕರಿಸಿ" : "Acknowledge all"}
                       </button>
                     </div>
-                  </li>
-                ))}
-              </ol>
+                  );
+                })()}
+                <ol className="ac-alerts">
+                  {alertsList.map((a, i) => {
+                    const r = readAlert(a);
+                    const sev = String(a.severity || "").toLowerCase();
+                    return (
+                      <li key={i} className={`k-${r.kind} s-${sev}`}>
+                        <div className="ac-al-top">
+                          <span className="ac-al-tag"><i aria-hidden="true" />{kn ? r.tag[1] : r.tag[0]}<em>{sev === "high" ? (kn ? "ಹೆಚ್ಚು" : "High") : cap1(sev)}</em></span>
+                          <span className="ac-al-time">{alertWhen(a.timestamp, kn)}</span>
+                        </div>
+                        <h3>{r.title}</h3>
+                        <p>{r.detail}</p>
+                        {r.step && <p className="ac-al-step"><span>{kn ? "ಸಲಹೆ" : "Suggested"}</span>{r.step}</p>}
+                        <div className="ac-al-foot">
+                          {r.link && (
+                            <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={() => router.push(r.link.href)}>
+                              {kn ? r.link.kn : r.link.en} <span aria-hidden="true">→</span>
+                            </button>
+                          )}
+                          <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" onClick={() => setAlertsList(alertsList.filter((_, idx) => idx !== i))}>
+                            {kn ? "ಸ್ವೀಕರಿಸಿ" : "Acknowledge"}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </>
             )}
           </div>
         )}
