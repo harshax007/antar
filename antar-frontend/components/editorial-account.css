@@ -125,3 +125,16 @@ html[lang="kn"] .ac-al-tag { letter-spacing: normal; text-transform: none; font-
 .ac-page .ac-pwho .ac-pid { font: 500 var(--fs-label) 'JetBrains Mono', monospace; color: var(--text-3); }
 .ac-page .ac-av-wrap { position: relative; width: 44px; height: 44px; }
 .ac-page .ac-online { position: absolute; right: -1px; bottom: -1px; margin: 0; border: 2px solid #05080F; }
+
+/* profile: one aligned block - avatar, a small label, the name, the ID */
+.ac-page .ac-sidebar { padding-top: var(--sp-8); }
+.ac-page .ac-prof { gap: var(--sp-4); margin-bottom: var(--sp-5); padding: 0 0 var(--sp-6); border-bottom: 1px solid var(--rule-1); }
+.ac-page .ac-av-wrap, .ac-page .ac-av { width: 48px; height: 48px; }
+.ac-page .ac-av { border-radius: 50%; border: 1px solid rgba(34,230,240,.35); background: rgba(34,230,240,.06); }
+.ac-page .ac-av svg { color: var(--accent) !important; }
+.ac-page .ac-pwho { align-items: flex-start; text-align: left; gap: 0; }
+.ac-page .ac-pwho > * { text-align: left; align-self: flex-start; margin: 0; padding: 0; }
+.ac-pkick { font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+html[lang="kn"] .ac-pkick { letter-spacing: normal; text-transform: none; font-family: inherit; }
+.ac-page .ac-pwho .ac-pname { margin-top: 2px; font-size: 20px; }
+.ac-page .ac-pwho .ac-pid { margin-top: 2px; }

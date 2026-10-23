@@ -362,6 +362,7 @@ export default function AccountPage() {
             <div className="ac-av-ring" />
           </div>
           <div className="ac-pwho">
+            <span className="ac-pkick">{kn ? "ಸೈನ್ ಇನ್ ಆಗಿರುವವರು" : "Signed in as"}</span>
             <div className="ac-pname">{kn ? "ಅಧಿಕಾರಿ" : "Officer"}</div>
             <div className="ac-pid">{officer.id}</div>
           </div>
