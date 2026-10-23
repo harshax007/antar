@@ -137,6 +137,31 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Demo day set up: Thursday 29 Oct 2026 · 2026-10-23
+
+Plan, proof and run sheet: **`docs/DEMO_DAY_29OCT.md`**. Readiness, every morning:
+`python scripts/demo_check.py --date 2026-10-29 --full` (read-only; READY on 23 Oct).
+
+Data (demonstration rows re-dated only; still exactly 10,00,000 FIRs; backup
+`main.db.bak-20261023-before-demo-week`):
+* 29-31 Oct filled to a normal day (15/19/17 -> 51/50/50) - the seed put a third of the usual
+  FIRs on every month-end, which would have read as a two-thirds drop on demo day.
+  `scripts/demo_week.py` (`--revert`).
+* WOW-3 spike planted for the week ending 29 Oct (8 cases, z 4.05):
+  `scripts/replant_p2.py --anchor 2026-10-29`. The script now never borrows from the Jan-2025
+  surge the Brain cites, and merges its revert file instead of overwriting it.
+* Live story cases: C3 UPI mule ring (27 Oct), C4 "digital arrest" (28 Oct), C2 snatching crew (29 Oct).
+
+Fixes found while rehearsing:
+* **A question targeting caste, religion or community was answered anyway** (the community
+  part dropped, the banner beside it). The chat pipeline now refuses it before any data agent
+  runs, with the reason (Article 15, BNSS 173) and a lawful way to ask, and audits the refusal.
+  `tests/test_chat_refuses_targeting.py`.
+* The Predict briefing cached a failed model reading for the whole product TTL, so its
+  10-minute retry never ran; only a written reading is cached now.
+* Stale tests brought up to date: quickml (provider), geo floor after the coordinate clean-up,
+  report export (owner/Admin rule), OKF bundle rebuilt (22 -> 29 templates).
+
 ## Gangs on shared keys, always connected; closeness to serious cases · 2026-10-23
 
 `app/services/graph_cache.py`. Gangs (Louvain) are now found on recorded relationships plus
