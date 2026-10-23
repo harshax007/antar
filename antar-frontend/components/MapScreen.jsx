@@ -1897,7 +1897,11 @@ export default function MapScreen() {
                   <div className="mx-sum-note is-top">
                     <h4>{kn ? "ಸಂಕ್ಷಿಪ್ತವಾಗಿ" : "In short"}</h4>
                     {llmLoading
-                      ? <p className="dim">{kn ? "ಬರೆಯುತ್ತಿದೆ…" : "Writing…"}</p>
+                      ? <p className="mx-writing" role="status">
+                          <span className="mx-writing-word">{kn ? "ಬರೆಯುತ್ತಿದೆ" : "Writing"}</span>
+                          <span className="mx-writing-dots" aria-hidden="true"><i /><i /><i /></span>
+                          <span className="mx-writing-lines" aria-hidden="true"><i /><i /><i /></span>
+                        </p>
                       : <p>{fromModel ? llmSummary.replace(/^[\s\n]*[●*•]?\s*Analyzing(\.\.\.)?\s*\n*/i, "") : (kn ? plainKn : plain)}</p>}
                     {!llmLoading && <small>{fromModel
                       ? (kn ? "ಕೆಳಗಿನ ಅಂಕಿಅಂಶಗಳಿಂದ ಬರೆಯಲಾಗಿದೆ" : "Written by Antar from the figures below.")
