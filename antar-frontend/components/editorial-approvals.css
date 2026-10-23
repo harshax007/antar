@@ -1,0 +1,67 @@
+/* ── Approvals · editorial layer (design-tokens.css) ──
+   The top says who the page is for, why it matters and the next step for this officer
+   (review the first request, or sign in to decide). Figures on a rule, requests as rows
+   with a coloured risk rule and a quiet fact line instead of badge pills, and the decision
+   at the foot: Approve solid (green, it is the go-ahead), Reject outlined. Presentation
+   only; every rule is enforced server-side (app/core/hitl.py). Scoped to .ap-page. */
+
+.ap-page { padding: var(--sp-8) var(--sp-6) var(--sp-10); }
+.ap-page .ap-wrap { gap: var(--sp-6); }
+
+/* hero */
+.ap-page .ap-head { align-items: flex-end; padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule-2); }
+.ap-hero { max-width: 780px; }
+.ap-page .ap-kicker { display: block; font: 500 var(--fs-label)/1.3 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+html[lang="kn"] .ap-page .ap-kicker { letter-spacing: normal; text-transform: none; font-family: inherit; }
+.ap-page .ap-head h1 { margin: var(--sp-3) 0 0; font: 700 clamp(30px, 3.8vw, 48px)/1.06 'Chakra Petch', sans-serif; letter-spacing: -.02em; color: var(--text-1); text-wrap: balance; }
+.ap-page .ap-head h1 em { font-style: normal; color: var(--accent); }
+.ap-page .ap-head p { margin: var(--sp-4) 0 0; max-width: 64ch; font-size: var(--fs-lead); line-height: 1.55; color: var(--text-2); }
+.ap-next { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4); margin-top: var(--sp-5); font-size: var(--fs-body-sm); color: var(--text-3); }
+.ap-page .ap-cta { min-height: 44px; padding: 0 var(--sp-5); font-size: var(--fs-body); background: var(--text-1); color: #050A12; box-shadow: none; }
+.ap-page .ap-cta:hover { background: #fff; }
+.ap-page .ap-role { border-radius: var(--r-sm); background: none !important; }
+
+/* approver sign-in: a plain panel with an amber rule, not a tinted box */
+.ap-page .ap-signin { margin: 0; padding: var(--sp-4) 0 var(--sp-4) var(--sp-5); border: 0; border-left: 3px solid #FBBF24; border-radius: 0; background: none; }
+.ap-page .ap-signin-hd b { font: 600 var(--fs-lead) 'Inter', sans-serif; }
+.ap-page .ap-signin-row input { border-radius: var(--r-sm); }
+
+/* figures on a rule */
+.ap-page .ap-stats { gap: 0; border-top: 1px solid var(--rule-2); border-bottom: 1px solid var(--rule-1); }
+.ap-page .ap-stats > div { padding: var(--sp-4) var(--sp-5); border: 0; border-left: 1px solid var(--rule-1); border-radius: 0; background: none; }
+.ap-page .ap-stats > div:first-child { border-left: 0; padding-left: 0; }
+.ap-page .ap-stats b { font: 700 36px/1 'Chakra Petch', sans-serif; letter-spacing: -.02em; }
+.ap-page .ap-stats span { display: block; margin-top: var(--sp-1); font-size: var(--fs-label); color: var(--text-3); }
+
+/* tabs and the list */
+.ap-page .ap-tabs button { padding: var(--sp-2) 0; margin-right: var(--sp-5); font: 600 var(--fs-body) 'Inter', sans-serif; }
+.ap-page .ap-tabs button.on::after { left: 0; right: 0; }
+.ap-page .ap-empty { border: 0; border-top: 1px solid var(--rule-1); border-radius: 0; padding: var(--sp-10) var(--sp-5); }
+.ap-page .ap-list { gap: 0; border-top: 1px solid var(--rule-1); }
+
+/* a request: risk rule on the left, a fact line, the title, what was asked and why */
+.ap-page .ap-card { margin: 0; padding: var(--sp-5) 0 var(--sp-5) var(--sp-5); border: 0; border-bottom: 1px solid var(--rule-1); border-left: 3px solid var(--rule-2);
+  border-radius: 0; background: none; box-shadow: none; }
+.ap-page .ap-card.risk-high { border-left-color: #F87171; } .ap-page .ap-card.risk-medium { border-left-color: #FBBF24; }
+.ap-page .ap-card.tampered { background: rgba(248,113,113,.04); }
+.ap-page .ap-badges { gap: var(--sp-1) var(--sp-4); }
+.ap-page .ap-risk, .ap-page .ap-chip, .ap-page .ap-type { padding: 0; border: 0 !important; border-radius: 0; background: none !important;
+  font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .08em; }
+.ap-page .ap-badges > * + *:not(.ap-id)::before { content: "·"; margin-right: var(--sp-4); color: var(--text-4); }
+.ap-page .ap-type { color: var(--text-2); }
+.ap-page .ap-card h2 { margin: var(--sp-2) 0 var(--sp-1); font: 600 var(--fs-h3)/1.3 'Inter', sans-serif; color: var(--text-1); }
+.ap-page .ap-meta { font-size: var(--fs-label); color: var(--text-3); }
+.ap-page .ap-grid { gap: var(--sp-6); margin-top: var(--sp-4); }
+.ap-page .ap-grid h4, .ap-page .ap-evidence h4 { font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+.ap-page .ap-grid blockquote { border-radius: 0; background: none; border-left: 2px solid var(--rule-2); padding: 0 0 0 var(--sp-3); font-size: var(--fs-body); line-height: 1.55; color: var(--text-1); }
+.ap-page .ap-evidence li { border: 0; border-top: 1px solid var(--rule-1); border-radius: 0; padding: var(--sp-2) 0; }
+.ap-page .ap-flags { border-radius: 0; border: 0; border-left: 2px solid currentColor; }
+.ap-page .ap-decide { border-top-color: var(--rule-1); }
+.ap-page .ap-decide textarea, .ap-page .ap-inline { border-radius: var(--r-sm); }
+.ap-page .ap-btn { min-height: 36px; border-radius: var(--r-md); font: 600 var(--fs-body-sm) 'Inter', sans-serif; }
+.ap-page .ap-status { border-radius: var(--r-sm); }
+.ap-page .ap-card.compact { padding-top: var(--sp-4); padding-bottom: var(--sp-4); }
+.ap-page .ap-card.compact h3 { font: 600 var(--fs-body) 'Inter', sans-serif; color: var(--text-1); }
+
+@media (max-width: 720px) { .ap-page .ap-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ap-page .ap-stats > div:nth-child(3) { border-left: 0; padding-left: 0; } }
+.ap-page blockquote.small { margin: var(--sp-2) 0 0; padding: 0 0 0 var(--sp-3); border: 0; border-left: 2px solid var(--rule-2); border-radius: 0; background: none; font-size: var(--fs-body-sm); color: var(--text-2); }

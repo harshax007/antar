@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchAPI } from "@/lib/api";
 import { readSession, isApprover, verifyOfficer, readApproverSession, saveApproverSession, clearApproverSession, APPROVER_ID } from "@/lib/auth";
 import { useLang } from "@/components/Providers";
+import "@/components/editorial-approvals.css";
 import {
   ShieldCheck, ShieldAlert, Clock, CheckCircle2, XCircle, Undo2, Siren, Eye, Fingerprint,
   RefreshCw, Inbox,
@@ -131,6 +132,7 @@ export default function ApprovalsPage() {
     }
   }
 
+  const pendingN = stats?.pending ?? 0;
   const headline = useMemo(() => approver
     ? (kn ? "ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕಾಗಿ ಕಾಯುತ್ತಿರುವ ಕ್ರಮಗಳು" : "Actions awaiting your decision")
     : (kn ? "ನಿಮ್ಮ ವಿನಂತಿಗಳ ಸ್ಥಿತಿ" : "Status of requested actions"), [approver, kn]);
@@ -139,14 +141,27 @@ export default function ApprovalsPage() {
     <div className="ap-page">
       <div className="ap-wrap">
         <header className="ap-head">
-          <div>
-            <span className="ap-kicker"><ShieldCheck size={13} aria-hidden="true" /> {kn ? "ಎರಡು-ಅಧಿಕಾರಿ ನಿಯಮ" : "Two-officer rule"}</span>
-            <h1>{kn ? "ಅನುಮೋದನೆಗಳು" : "Approvals"}</h1>
-            <p>{headline}.{" "}
-              {approver
-                ? (kn ? "ನೀವು ಸಲ್ಲಿಸಿದ ಕ್ರಮವನ್ನು ನೀವು ನಿರ್ಧರಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ." : "Each decision needs a recorded reason and is written to the tamper-evident audit chain.")
-                : (kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿ ಅನುಮೋದಿಸುವವರೆಗೆ ಯಾವುದೂ ಜಾರಿಗೆ ಬರುವುದಿಲ್ಲ." : "Nothing takes effect until a supervising officer approves it.")}
-            </p>
+          <div className="ap-hero">
+            <span className="ap-kicker">{kn ? "ಅನುಮೋದನೆಗಳು · ಎರಡು-ಅಧಿಕಾರಿ ನಿಯಮ · ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಗಳಿಗೆ" : "Approvals · two-officer rule · for supervising officers"}</span>
+            <h1>{approver
+              ? (pendingN > 0
+                  ? (kn ? <><em>{pendingN}</em> ಕ್ರಮ ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ.</> : <><em>{pendingN} {pendingN === 1 ? "action" : "actions"}</em> waiting for your decision.</>)
+                  : (kn ? "ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕೆ ಏನೂ ಬಾಕಿ ಇಲ್ಲ." : "Nothing is waiting for your decision."))
+              : (kn ? <>ಎರಡನೇ ಅಧಿಕಾರಿ ಅನುಮೋದಿಸುವವರೆಗೆ <em>ಏನೂ ಜಾರಿಯಾಗುವುದಿಲ್ಲ.</em></> : <>Nothing happens until <em>a second officer approves it.</em></>)}</h1>
+            <p>{kn
+              ? "ಗಸ್ತು ಮರುನಿಯೋಜನೆ ಮತ್ತು ವೀಕ್ಷಣಾ ಪಟ್ಟಿ ಸೇರ್ಪಡೆ ನೆಲದ ಮೇಲೆ ನಡೆಯುವುದನ್ನು ಬದಲಿಸುತ್ತವೆ. ಪ್ರತಿಯೊಂದಕ್ಕೂ ಕೇಳಿದವರಲ್ಲದ ಇನ್ನೊಬ್ಬ ಅಧಿಕಾರಿಯ ಲಿಖಿತ ಕಾರಣ ಬೇಕು, ಮತ್ತು ಅದು ಆಡಿಟ್‌ನಲ್ಲಿ ದಾಖಲಾಗುತ್ತದೆ."
+              : "Patrol redeployments and watchlist additions change what happens on the ground. Each one needs a written reason from an officer other than the one who asked, and the decision is recorded in the audit chain."}</p>
+            <div className="ap-next">
+              {approver && pendingN > 0 && (
+                <button type="button" className="ui-btn ui-btn--primary ap-cta" onClick={() => { setTab("pending"); setTimeout(() => { try { document.querySelector(".ap-list")?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {} }, 60); }}>
+                  {kn ? "ಮೊದಲ ವಿನಂತಿ ನೋಡಿ" : "Review the first request"} <span aria-hidden="true">↓</span>
+                </button>
+              )}
+              <span>{approver
+                ? (pendingN > 0 ? (kn ? "ಕಾರಣ ಬರೆಯಿರಿ, ನಂತರ ಅನುಮೋದಿಸಿ ಅಥವಾ ತಿರಸ್ಕರಿಸಿ. ನೀವು ಸಲ್ಲಿಸಿದುದನ್ನು ನೀವೇ ನಿರ್ಧರಿಸಲಾಗದು." : "Write a reason, then approve or reject. You cannot decide a request you filed yourself.")
+                    : (kn ? "ಹೊಸ ವಿನಂತಿಗಳು ಇಲ್ಲಿ ತಕ್ಷಣ ಕಾಣಿಸುತ್ತವೆ." : "New requests appear here as soon as they are filed."))
+                : (kn ? "ನಿರ್ಧರಿಸಲು ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿ ಕೆಳಗೆ ಸೈನ್ ಇನ್ ಮಾಡುತ್ತಾರೆ." : "To decide, a supervising officer signs in below.")}</span>
+            </div>
           </div>
           <div className="ap-identity">
             <span className={`ap-role ${approver ? "approver" : "ops"}`}>{approver ? (kn ? "ಅನುಮೋದಕ" : "APPROVER") : (kn ? "ಕಾರ್ಯಾಚರಣೆ" : "OPERATIONS")}</span>
