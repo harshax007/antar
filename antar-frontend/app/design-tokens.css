@@ -22,19 +22,18 @@
   --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
 
   /* text emphasis on the dark surface: four levels, nothing dimmer than ink-4 for text */
-  --ink-1: #F1F5F9;   /* titles, figures, the thing to read */
-  --ink-2: #B4C2D6;   /* body */
-  --ink-3: #8A99AD;   /* notes, captions */
-  --ink-4: #5B6B80;   /* zero / disabled */
-  --line-1: rgba(255,255,255,.08);
-  --line-2: rgba(255,255,255,.14);
+  --text-1: #F1F5F9;   /* titles, figures, the thing to read */
+  --text-2: #B4C2D6;   /* body */
+  --text-3: #8A99AD;   /* notes, captions */
+  --text-4: #5B6B80;   /* zero / disabled */
+  --rule-1: rgba(255,255,255,.08);
+  --rule-2: rgba(255,255,255,.14);
   --accent: #22E6F0;
-  --accent-ink: #04121A;   /* text on a filled accent button */
 }
 [data-theme="light"] {
-  --ink-1: #0F172A; --ink-2: #334155; --ink-3: #64748B; --ink-4: #94A3B8;
-  --line-1: rgba(15,23,42,.08); --line-2: rgba(15,23,42,.16);
-  --accent: #0891B2; --accent-ink: #FFFFFF;
+  --text-1: #0F172A; --text-2: #334155; --text-3: #64748B; --text-4: #94A3B8;
+  --rule-1: rgba(15,23,42,.08); --rule-2: rgba(15,23,42,.16);
+  --accent: #0891B2;
 }
 
 /* ── Buttons: three tiers. One primary per view; everything else steps down. ── */
@@ -48,8 +47,8 @@
 .ui-btn--primary:hover:not(:disabled) { background: #5EF0F7; }
 .ui-btn--secondary { background: rgba(34,230,240,.08); border-color: rgba(34,230,240,.38); color: var(--accent); }
 .ui-btn--secondary:hover:not(:disabled) { background: rgba(34,230,240,.16); }
-.ui-btn--ghost { background: transparent; border-color: var(--line-2); color: var(--ink-2); }
-.ui-btn--ghost:hover:not(:disabled) { color: var(--ink-1); border-color: rgba(34,230,240,.4); }
+.ui-btn--ghost { background: transparent; border-color: var(--rule-2); color: var(--text-2); }
+.ui-btn--ghost:hover:not(:disabled) { color: var(--text-1); border-color: rgba(34,230,240,.4); }
 .ui-btn--sm { min-height: 30px; padding: 0 var(--sp-3); font-size: var(--fs-label); }
 [data-theme="light"] .ui-btn--primary:hover:not(:disabled) { background: #0E7490; }
 
