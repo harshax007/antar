@@ -686,20 +686,27 @@ function OfficerPanels({ o, kn }) {
           <i aria-hidden="true">{open.clock ? "–" : "+"}</i>
         </button>
         {open.clock && (<>
+          <p className="ov-lead">{kn
+            ? "ಆರೋಪಿ ಕಸ್ಟಡಿಯಲ್ಲಿದ್ದರೆ, ಅಪರಾಧದ ಪ್ರಕಾರ 60 ಅಥವಾ 90 ದಿನಗಳಲ್ಲಿ ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಸದಿದ್ದರೆ ಜಾಮೀನು ಹಕ್ಕು ಸಿಗುತ್ತದೆ (BNSS §187(3)). ಇವು ಇನ್ನೂ ತನಿಖೆಯಲ್ಲಿರುವ ಪ್ರಕರಣಗಳು, ಎಷ್ಟು ಕಾಲದಿಂದ ತೆರೆದಿವೆ ಎಂಬಂತೆ."
+            : "If an accused is in custody, no chargesheet within 60 or 90 days (by offence) means a right to bail, BNSS s.187(3). These are the cases still under investigation, by how long they have been open."}</p>
           <div className="ov-clock-head">
           <div>
             <b className="ov-clock-big">{nf(d.over_90)}</b>
-            <span>{kn ? "90 ದಿನ ದಾಟಿದವು" : "past the 90-day limit"}</span>
+            <span>{kn ? "90 ದಿನ ದಾಟಿವೆ" : "open past 90 days"}</span>
+            <em className="late">{kn ? "ಈಗಲೇ ಕ್ರಮ" : "Act now"}</em>
           </div>
           <div>
             <b className="ov-clock-due">{nf(d.due_7)}</b>
-            <span>{kn ? "7 ದಿನಗಳಲ್ಲಿ 60/90 ಗಡುವು" : "reach 60 or 90 days within a week"}</span>
+            <span>{kn ? "ಈ ವಾರ 60 ಅಥವಾ 90 ದಿನ ತಲುಪುತ್ತವೆ" : "reach 60 or 90 days this week"}</span>
+            <em className="warn">{kn ? "ಶೀಘ್ರದಲ್ಲೇ ಗಡುವು" : "Due soon"}</em>
           </div>
           <div>
             <b>{nf(total)}</b>
-            <span>{kn ? "ತನಿಖೆಯಲ್ಲಿ (ಇಂದಿನವರೆಗೆ ದಾಖಲಾದವು)" : "under investigation, registered up to today"}</span>
+            <span>{kn ? "ಒಟ್ಟು ತೆರೆದ ತನಿಖೆಗಳು" : "open investigations in all"}</span>
+            <em>{kn ? "ಇಂದಿನವರೆಗೆ ದಾಖಲಾದವು" : "registered up to today"}</em>
           </div>
         </div>
+        <h5 className="ov-sub">{kn ? "ತೆರೆದ ಪ್ರಕರಣಗಳು ಎಷ್ಟು ಕಾಲದಿಂದ ತೆರೆದಿವೆ" : "How long the open cases have been open"}</h5>
         <div className="ov-clock-bar" role="img"
              aria-label={`${nf(d.within_60)} within 60 days, ${nf(d.d61_90)} between 61 and 90, ${nf(d.over_90)} over 90`}>
           <i className="ok" style={{ width: seg(d.within_60) }} />
@@ -713,7 +720,7 @@ function OfficerPanels({ o, kn }) {
         </div>
         {(d.top_stations_over_90 || []).length > 0 && (
           <div className="ov-clock-list">
-            <div className="ov-clock-lh">{kn ? "90 ದಿನ ದಾಟಿದ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳಿರುವ ಠಾಣೆಗಳು" : "Stations holding the most cases past 90 days"}</div>
+            <h5 className="ov-sub">{kn ? "90 ದಿನ ದಾಟಿದ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳಿರುವ ಠಾಣೆಗಳು" : "Stations with the most cases past 90 days"}</h5>
             {d.top_stations_over_90.map((s) => (
               <div key={`${s.name}-${s.district}`} className="ov-clock-row">
                 <span>{s.name}<em>{s.district}</em></span><b>{nf(s.n)}</b>
@@ -724,7 +731,7 @@ function OfficerPanels({ o, kn }) {
         <div className="ov-note">
           {kn
             ? `ನೋಂದಣಿ ದಿನಾಂಕದಿಂದ ಲೆಕ್ಕ. ಅತಿ ಹಳೆಯ ತೆರೆದ ತನಿಖೆ ${nf(d.oldest_days)} ದಿನ${years ? ` (~${years} ವರ್ಷ)` : ""}. ಇಂದಿನ ನಂತರದ ದಿನಾಂಕದ FIR ಗಳನ್ನು ಬಿಡಲಾಗಿದೆ. ಕಸ್ಟಡಿ ಮತ್ತು ಅಪರಾಧದ ತೀವ್ರತೆ FIR ನಲ್ಲಿ ದಾಖಲಾಗಿಲ್ಲ, ಆದ್ದರಿಂದ ಎರಡೂ ಮಿತಿಗಳನ್ನು ತೋರಿಸಲಾಗಿದೆ.`
-            : `Aged from registration date. Oldest open investigation: ${nf(d.oldest_days)} days${years ? ` (~${years} yr)` : ""}. FIRs dated after today are left out (an age cannot be negative), so this can be lower than the stage count above. Custody and offence gravity are not recorded per FIR, so both limits are shown.`}
+            : `How it is counted: days since the FIR was registered. The oldest open case is ${nf(d.oldest_days)} days old${years ? ` (about ${years} years)` : ""}. The register does not say who is in custody or how grave the offence is, so both the 60- and 90-day marks are shown. FIRs dated after today are left out, so the total can be a little lower than the stage count above.`}
         </div>
         </>)}
       </div>
@@ -738,6 +745,10 @@ function OfficerPanels({ o, kn }) {
           <i aria-hidden="true">{open.outcomes ? "–" : "+"}</i>
         </button>
         {open.outcomes && (<>
+        <p className="ov-lead">{kn
+          ? `ಸಾಮಾನ್ಯ 100 FIR ಗಳಿಗೆ ಏನಾಯಿತು - ದಾಖಲೆಯ ${nf(out.firs)} FIR ಗಳಿಂದ ಲೆಕ್ಕ.`
+          : `What happened to a typical 100 FIRs, counted from all ${nf(out.firs)} in the register.`}</p>
+        <h5 className="ov-sub">{kn ? "ಪ್ರತಿ 100 FIR ಗೆ" : "Out of every 100 FIRs"}</h5>
         {[
           ["arrest", kn ? "ಕನಿಷ್ಠ ಒಬ್ಬ ಬಂಧನ" : "saw at least one arrest"],
           ["chargesheet", kn ? "ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಕೆ" : "reached a chargesheet"],
@@ -749,6 +760,7 @@ function OfficerPanels({ o, kn }) {
             <span>{label}</span>
           </div>
         ))}
+        <h5 className="ov-sub">{kn ? "ಪ್ರತಿ ಆರೋಪಿಗೆ" : "Per accused person"}</h5>
         <div className="ov-out-acc">
           <div><b>{acc.arrest_rate ?? 0}%</b><span>{kn ? "ಆರೋಪಿಗಳ ಬಂಧನ" : "of accused arrested"}</span></div>
           <div><b>{acc.chargesheet_rate ?? 0}%</b><span>{kn ? "ಆರೋಪಿಗಳ ದೋಷಾರೋಪ" : "of accused chargesheeted"}</span></div>
@@ -757,7 +769,7 @@ function OfficerPanels({ o, kn }) {
         <div className="ov-note">
           {kn
             ? "ಇವು ಸ್ವತಂತ್ರ ದರಗಳು, ಹಂತ ಹಂತದ ಕೊಳವೆ ಅಲ್ಲ: ಬಂಧಿಸದ (ತಲೆಮರೆಸಿಕೊಂಡ) ಆರೋಪಿಯ ವಿರುದ್ಧವೂ ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಸಬಹುದು."
-            : "Independent rates, not a funnel: a chargesheet can be filed against an accused who was never arrested (absconding)."}
+            : "Read each rate on its own, not as steps in a line: a chargesheet can be filed against an accused who was never arrested (absconding), so a later figure can be higher than an earlier one."}
         </div>
         </>)}
       </div>

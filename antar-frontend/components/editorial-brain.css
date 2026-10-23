@@ -55,3 +55,46 @@
 .bsx-wrap .ov-tablebar { padding-left: 0; padding-right: 0; }
 .bsx-wrap .ov-uses article, .bsx-wrap .ov-use { border-radius: 0; box-shadow: none; }
 .bsx-wrap .bsx-hint button { border-radius: var(--r-sm) !important; box-shadow: none !important; }
+
+/* ── Officer panels: Chargesheet deadline and Case outcomes ──
+   Room to breathe, one lead sentence that says what the numbers are, small headings over
+   each block, figures in the display face, and a short "how it is counted" at the foot. */
+.bsx-wrap .ov-officer { gap: var(--sp-10); margin: var(--sp-8) 0; }
+.bsx-wrap .ov-officer .ov-panel { padding: var(--sp-5) 0 var(--sp-6) !important; }
+.bsx-wrap .ov-toggle { display: flex; align-items: baseline; gap: var(--sp-3); padding: var(--sp-1) 0; border-radius: var(--r-sm); }
+.bsx-wrap .ov-toggle:focus { outline: none; }
+.bsx-wrap .ov-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.bsx-wrap .ov-toggle span { font: 400 var(--fs-body-sm) 'Inter', sans-serif; color: var(--text-3); }
+.bsx-wrap .ov-officer .ov-ptitle { margin-bottom: 0; }
+.bsx-wrap .ov-lead { margin: var(--sp-3) 0 var(--sp-5); max-width: 68ch; font-size: var(--fs-body); line-height: 1.6; color: var(--text-2); }
+.bsx-wrap .ov-sub { margin: var(--sp-6) 0 var(--sp-3); font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+html[lang="kn"] .bsx-wrap .ov-sub { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
+
+/* deadline figures: number, what it is, how urgent */
+.bsx-wrap .ov-clock-head { gap: 0; margin: 0; border-top: 1px solid var(--rule-2); border-bottom: 1px solid var(--rule-1); }
+.bsx-wrap .ov-clock-head > div { padding: var(--sp-4) var(--sp-5) var(--sp-5); border-left: 1px solid var(--rule-1); }
+.bsx-wrap .ov-clock-head > div:first-child { border-left: 0; padding-left: 0; }
+.bsx-wrap .ov-clock-head b { font: 700 36px/1 'Chakra Petch', sans-serif; letter-spacing: -.02em; }
+.bsx-wrap .ov-clock-head span { margin-top: var(--sp-2); font-size: var(--fs-body-sm); line-height: 1.4; color: var(--text-1); }
+.bsx-wrap .ov-clock-head em { display: block; margin-top: var(--sp-1); font: 500 var(--fs-caption) 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.bsx-wrap .ov-clock-head em.late { color: #FB7185; } .bsx-wrap .ov-clock-head em.warn { color: #FBBF24; }
+html[lang="kn"] .bsx-wrap .ov-clock-head em { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
+.bsx-wrap .ov-clock-bar { height: 12px; border-radius: 3px; }
+.bsx-wrap .ov-clock-key { gap: var(--sp-5); margin-top: var(--sp-3); font-size: var(--fs-body-sm); color: var(--text-2); }
+.bsx-wrap .ov-clock-list { margin-top: 0; }
+.bsx-wrap .ov-clock-row { padding: var(--sp-3) 0; border-bottom-color: var(--rule-1); font-size: var(--fs-body); color: var(--text-1); }
+.bsx-wrap .ov-clock-row em { margin-left: var(--sp-3); font-size: var(--fs-label); color: var(--text-3); }
+.bsx-wrap .ov-clock-row b { font: 700 var(--fs-lead) 'Chakra Petch', sans-serif; }
+.bsx-wrap .ov-officer .ov-note { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--rule-1); max-width: 72ch; font-size: var(--fs-label); line-height: 1.6; color: var(--text-3); }
+
+/* outcomes: per 100 FIRs as bars, then the per-accused rates on a rule */
+.bsx-wrap .ov-out-row { grid-template-columns: 64px 1fr; column-gap: var(--sp-4); margin: 0; padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule-1); }
+.bsx-wrap .ov-out-row b { font: 700 36px/1 'Chakra Petch', sans-serif; letter-spacing: -.02em; }
+.bsx-wrap .ov-out-bar { height: 8px; border-radius: 2px; }
+.bsx-wrap .ov-out-row span { margin-top: var(--sp-2); font-size: var(--fs-body); color: var(--text-1); }
+.bsx-wrap .ov-out-acc { gap: 0; margin-top: 0; padding-top: 0; border-top: 1px solid var(--rule-2); border-bottom: 1px solid var(--rule-1); }
+.bsx-wrap .ov-out-acc > div { padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-5); border-left: 1px solid var(--rule-1); }
+.bsx-wrap .ov-out-acc > div:first-child { border-left: 0; padding-left: 0; }
+.bsx-wrap .ov-out-acc b { font: 700 var(--fs-h2) 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); }
+.bsx-wrap .ov-out-acc span { margin-top: var(--sp-1); font-size: var(--fs-body-sm); color: var(--text-2); }
+@media (max-width: 1100px) { .bsx-wrap .ov-officer { grid-template-columns: 1fr; gap: var(--sp-6); } }
