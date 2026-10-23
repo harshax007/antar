@@ -1244,6 +1244,126 @@ html[lang="kn"] .px-panel-hd > span:first-child { letter-spacing: normal; text-t
 .px-saw h4, .px-evin h4 { font: 600 var(--fs-label) 'Inter', sans-serif; color: var(--ink-3); }
 .px-saw li, .px-saw p { font-size: var(--fs-body-sm); color: var(--ink-2); }
 
+/* ── Editorial layer: no AI look ──
+   Rules, numbers and type carry the page; boxes, gradients, glows and pills are taken out.
+   One accent (cyan) for the words that matter, one solid button for the next step. */
+.px-page { gap: var(--sp-8); }
+
+/* hero */
+.px-hero { display: grid; gap: var(--sp-5); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--line-2); }
+.px-hero-main { max-width: 860px; }
+.px-eyebrow { display: block; margin-bottom: var(--sp-3); font: 500 var(--fs-label)/1.3 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+html[lang="kn"] .px-eyebrow { letter-spacing: normal; text-transform: none; font-family: inherit; }
+.px-hero .px-title { margin: 0; font: 700 clamp(32px, 4.2vw, 52px)/1.04 'Chakra Petch', sans-serif; letter-spacing: -.02em; color: var(--ink-1); text-wrap: balance; }
+.px-hero .px-title em { font-style: normal; color: var(--accent); }
+.px-hero .px-sub { margin: var(--sp-4) 0 0; max-width: 62ch; font: 400 var(--fs-lead)/1.55 'Inter', sans-serif; color: var(--ink-2); }
+.px-hero-cta { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+.px-hero-cta .ui-btn { min-height: 44px; padding: 0 var(--sp-5); font-size: var(--fs-body); }
+.px-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-5); margin: 0; font: 500 var(--fs-label)/1.4 'JetBrains Mono', monospace; color: var(--ink-3); }
+.px-meta b { color: var(--ink-1); font-weight: 600; }
+.px-meta-btn { padding: 0; font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px dashed var(--line-2); cursor: pointer; }
+.px-meta-btn:hover { color: var(--ink-1); border-bottom-color: var(--accent); }
+.px-meta .px-offline { color: #FFB020; }
+
+/* solid primary: no glow, an arrow says "go" */
+.px-page .ui-btn--primary { background: var(--ink-1); color: #050A12; box-shadow: none; }
+.px-page .ui-btn--primary:hover:not(:disabled) { background: #FFFFFF; }
+.px-actbtn.ui-btn--primary { background: var(--ink-1); color: #050A12; }
+.px-actbtn.ui-btn--primary:hover { background: #fff; color: #050A12; }
+
+/* the week: figures on a rule, divided by hairlines (no boxes) */
+.px-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-1); }
+.px-stat { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-4) var(--sp-5) var(--sp-5); text-align: left; background: none; border: 0; border-left: 1px solid var(--line-1); color: var(--ink-1); cursor: pointer; transition: background-color .18s ease; }
+.px-stat:first-child { border-left: 0; padding-left: 0; }
+.px-stat:hover { background: rgba(255,255,255,.025); }
+.px-stat:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.px-stat b { font: 700 40px/1 'Chakra Petch', sans-serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.px-stat span { font: 600 var(--fs-body-sm)/1.3 'Inter', sans-serif; color: var(--ink-1); }
+.px-stat em { font-style: normal; font-size: var(--fs-label); line-height: 1.4; color: var(--ink-3); }
+.px-stat.k-hi:not(.zero) b { color: #F87171; } .px-stat.k-up:not(.zero) b { color: #FFB020; } .px-stat.k-dn:not(.zero) b { color: var(--accent); }
+.px-stat.k-al:not(.zero) b { color: #93C5FD; } .px-stat.k-ev:not(.zero) b { color: #C4B5FD; }
+.px-stat.zero b { color: var(--ink-4); } .px-stat.zero span { color: var(--ink-3); font-weight: 500; }
+
+/* numbered sections: a number, a title, a rule */
+.px-secnum { margin-right: var(--sp-3); font: 500 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .06em; color: var(--accent); vertical-align: .2em; }
+.px-plan { padding: var(--sp-6) 0 0; border: 0; border-top: 1px solid var(--line-2); border-radius: 0; background: none; }
+.px-plan .ui-eyebrow { display: none; }
+.px-plan-hd h2, .px-evs-hd h2 { font-size: 24px; letter-spacing: -.01em; }
+.px-act { border-radius: 0; background: none; border: 0; border-bottom: 1px solid var(--line-1); border-left: 0; }
+.px-act:first-child { border-top: 1px solid var(--line-1); }
+.px-act-hd { padding: var(--sp-4) 0; }
+.px-act .px-act-verb { font: 500 var(--fs-label) 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .06em; }
+.px-act-body { padding: 0 0 var(--sp-4); }
+
+/* the two lists: open columns with a top rule, not floating cards */
+.pxd-card { background: none; border: 0; border-top: 1px solid var(--line-2); border-radius: 0; box-shadow: none; padding: var(--sp-5) 0 0; }
+.pxd-hd { border-bottom: 0; padding-bottom: 0; }
+.pxd-ttl { font-size: 24px; letter-spacing: -.01em; }
+.px-top { gap: var(--sp-10); }
+.px-card { border-radius: 0; border: 0; border-bottom: 1px solid var(--line-1); background: none; box-shadow: none; }
+.px-card:hover { background: rgba(255,255,255,.025); }
+.px-card.on { background: rgba(34,230,240,.05); }
+.pxd-alert { border-radius: 0; border-bottom: 1px solid var(--line-1); }
+
+/* filters: words with an underline, not pills */
+.px-flt { gap: var(--sp-1) var(--sp-4); margin: 0 0 var(--sp-3); border-bottom: 1px solid var(--line-1); }
+.px-flt button { padding: var(--sp-2) 0; border: 0; border-radius: 0; background: none; color: var(--ink-3); }
+.px-flt button:hover:not(:disabled) { color: var(--ink-1); border: 0; }
+.px-flt button.on { color: var(--ink-1); }
+.px-flt-pill { inset: auto 0 -1px 0; height: 2px; border: 0; border-radius: 0; background: var(--accent); }
+.px-flt input { flex: 1 1 180px; margin: var(--sp-1) 0; border-radius: var(--r-sm); background: transparent; }
+
+/* events and fold-outs: the same rule-and-title rhythm */
+.px-evs { padding-top: var(--sp-6); border-top: 1px solid var(--line-2); }
+.px-fold { border: 0; border-top: 1px solid var(--line-1); border-radius: 0; background: none; }
+.px-fold:last-of-type { border-bottom: 1px solid var(--line-1); }
+.px-fold > summary { padding-left: var(--sp-8); }
+.px-fold > summary::before { left: 0; }
+
+/* the picked forecast: a plain panel with one rule on top */
+.px-explain { border-radius: 0; border: 0; border-top: 2px solid var(--accent); background: rgba(255,255,255,.02); box-shadow: none; }
+
+@media (max-width: 860px) {
+  .px-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .px-stat:nth-child(4) { border-left: 0; padding-left: 0; }
+  .px-stat:nth-child(n+4) { border-top: 1px solid var(--line-1); }
+}
+@media (max-width: 560px) {
+  .px-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .px-stat:nth-child(odd) { border-left: 0; padding-left: 0; } .px-stat:nth-child(4) { border-left: 1px solid var(--line-1); padding-left: var(--sp-5); }
+  .px-stat:nth-child(n+3) { border-top: 1px solid var(--line-1); }
+  .px-hero-cta .ui-btn { flex: 1 1 100%; }
+}
+
+/* status reads as a coloured dot and a word, not a pill */
+.px-st, .pxd-sev { display: inline-flex; align-items: center; gap: 6px; padding: 0 !important; border: 0 !important; background: none !important; border-radius: 0;
+  font: 500 var(--fs-label)/1.2 'Inter', sans-serif; letter-spacing: 0; text-transform: none; }
+.px-st::before, .pxd-sev::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.px-know { padding: 0; border: 0; background: none; border-radius: 0; font: 600 var(--fs-label) 'Inter', sans-serif; color: var(--accent); }
+.px-know:hover { text-decoration: underline; background: none; }
+.px-units { gap: var(--sp-1) var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--line-1); }
+.px-units button { padding: 0; border: 0; background: none; border-radius: 0; font: 500 var(--fs-body-sm) 'Inter', sans-serif; color: var(--ink-2); }
+.px-units button:hover, .px-units button.on { color: var(--ink-1); text-decoration: underline; text-underline-offset: 3px; }
+.px-units-k { font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; color: var(--ink-3); }
+.px-tag { border-radius: var(--r-sm); }
+
+/* events: an open row under the section rule, not a card in a card */
+.px-ev { padding: var(--sp-5) 0 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.px-ev.now { border: 0; }
+.px-ev + .px-ev { margin-top: var(--sp-6); border-top: 1px solid var(--line-1); }
+.px-ev-count { width: 72px; border-radius: 0; background: none; border: 0; border-right: 1px solid var(--line-2); padding-right: var(--sp-4); }
+.px-ev-count b { font: 700 40px/1 'Chakra Petch', sans-serif; letter-spacing: -.02em; color: #C4B5FD; }
+.px-ev h4 { font-size: 24px; letter-spacing: -.01em; }
+.px-ev-meta { gap: var(--sp-1) var(--sp-4); }
+.px-ev-meta span, .px-ev-meta span.in { padding: 0; border: 0; border-radius: 0; font: 500 var(--fs-label) 'JetBrains Mono', monospace; color: var(--ink-3); }
+.px-ev-meta span + span::before { content: "·"; margin-right: var(--sp-4); color: var(--ink-4); }
+.px-ev-grid { gap: var(--sp-8); border-top-color: var(--line-1); }
+.px-ev-up li { padding: 0 0 var(--sp-3); border: 0; border-radius: 0; background: none; border-bottom: 1px solid var(--line-1); }
+.px-ev-up li + li { padding-top: var(--sp-3); }
+.px-ev footer { margin-top: var(--sp-5); }
+.px-ev footer .ui-btn--secondary { color: var(--accent); background: rgba(34,230,240,.08); border-color: rgba(34,230,240,.38); }
+.px-ev footer .ui-btn--ghost { color: var(--ink-2); background: none; border-color: var(--line-2); }
+
 `;
 
 // useSearchParams() forces client-side bailout, which breaks `output: export`
@@ -1291,6 +1411,7 @@ function PredictScreen() {
   const [reading, setReading] = useState(null);      // Antar's worded reading of the board
   const [eng, setEng] = useState(null);              // engine status | "missing" (older server) | null while loading
   const eventsRef = useRef(null);
+  const planRef = useRef(null);
   const [engOpen, setEngOpen] = useState(false);     // the reasons behind the confidence level: closed until asked for
   const confRef = useRef(null);
   const [flt, setFlt] = useState("attention");       // which forecasts are listed: what needs attention first
@@ -1627,6 +1748,7 @@ function PredictScreen() {
     setExplainOpen(true);
     setTimeout(() => reasonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
+  const toPlan = () => planRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const toForecast = () => forecastRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const toAlerts = () => alertsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -1668,55 +1790,65 @@ const avgConf = predictions?.length
 
   return (
     <div className="px-page">
-      {/* Header */}
-      <div className="px-head">
-        <div className="px-head-l">
+      {/* Hero: the first five seconds. What this is, who it is for, why it matters, and the
+          one thing to do next, before any detail. */}
+      <header className="px-hero">
+        <div className="px-hero-main">
+          <span className="px-eyebrow">{kn ? "7 ದಿನಗಳ ಅಪರಾಧ ಅಪಾಯ ಮುನ್ಸೂಚನೆ · ಠಾಣೆ ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳಿಗೆ" : "7-Day Crime Risk Forecast · for station and district officers"}</span>
           <h1 className="px-title">
-            {kn ? "7 ದಿನಗಳ ಅಪರಾಧ ಅಪಾಯ ಮುನ್ಸೂಚನೆ" : "7-Day Crime Risk Forecast"}
+            {kn
+              ? <>ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಅಪರಾಧ <em>ಎಲ್ಲಿ ಹೆಚ್ಚಾಗಬಹುದು.</em></>
+              : <>Where crime is likely to <em>rise</em> in the next 7 days.</>}
           </h1>
-          <div className="px-sub">
-            {kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಗೆ ಪ್ರದೇಶವಾರು ಮುನ್ಸೂಚನೆ, ಪ್ರತಿಯೊಂದಕ್ಕೂ ನಿರೀಕ್ಷಿತ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಆಧಾರ ಸಹಿತ - ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ನಿರ್ಧಾರಗಳಿಗೆ ಆದ್ಯತೆಯ ಕ್ರಮದಲ್ಲಿ."
-                : "Area-level forecasts for the next 7 days, each with an expected range and the evidence behind it, ranked by risk to support patrol and bandobast decisions."}
+          <p className="px-sub">
+            {kn ? "ಪ್ರಕರಣಗಳು ಬರುವ ಮೊದಲೇ ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ಯೋಜಿಸಿ. ಪ್ರತಿ ಮುನ್ಸೂಚನೆಗೂ ನಿರೀಕ್ಷಿತ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಅದನ್ನು ಲೆಕ್ಕ ಹಾಕಿದ FIR ಗಳು."
+                : "Plan patrols and bandobast before the cases come in. Every forecast gives an expected range and the FIRs it was worked out from."}
+          </p>
+          <div className="px-hero-cta">
+            <button type="button" className="ui-btn ui-btn--primary" onClick={toPlan}>
+              {kn ? "ಈ ವಾರದ ಯೋಜನೆ ನೋಡಿ" : "See this week's plan"} <span aria-hidden="true">→</span>
+            </button>
+            {modelCard && (
+              <button type="button" className="ui-btn ui-btn--ghost" onClick={() => {
+                const btn = document.getElementById("cx-guide-trigger");
+                if (btn) btn.click();
+              }}>
+                {kn ? "ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ" : "How it works"}
+              </button>
+            )}
           </div>
         </div>
-        <div className="px-head-r">
-          {boardMeta && <span className="px-chip">{kn ? "ಮೌಲ್ಯಮಾಪನ" : "Assessed"} <b>{dayOf(boardMeta.as_of)}</b></span>}
-          {predictions?.length > 0 && <span className="px-chip"><b>{A.length}</b> {kn ? "ವಲಯ" : "areas"}{unitCards.length ? <> · <b>{unitCards.length}</b> {kn ? "ಘಟಕ" : "statewide units"}</> : null}</span>}
+        {/* provenance as one quiet line, not a row of pills */}
+        <p className="px-meta">
+          {boardMeta && <span>{kn ? "ಮೌಲ್ಯಮಾಪನ" : "Assessed"} <b>{dayOf(boardMeta.as_of)}</b></span>}
+          {predictions?.length > 0 && <span><b>{A.length}</b> {kn ? "ವಲಯ" : "areas"}{unitCards.length ? <> · <b>{unitCards.length}</b> {kn ? "ಘಟಕ" : "statewide units"}</> : null}</span>}
           {trackPct && (
-            // The forecast's own track record, up front: how often the real count fell
-            // inside the range it gave, on weeks of the real register. Opens the details.
-            <button type="button" className="px-chip px-chip-btn" onClick={toConfidence}
+            // the forecast's own track record, up front: opens the details
+            <button type="button" className="px-meta-btn" onClick={toConfidence}
                     title="How often the real count fell inside the forecast range, tested on past weeks of the real register">
-              {kn ? "ದಾಖಲೆ" : "Held in"} <b>{trackPct}</b> {kn ? "ವಾರಗಳಲ್ಲಿ" : "of tested weeks"}
+              {kn ? "ದಾಖಲೆ" : "Range held in"} <b>{trackPct}</b> {kn ? "ವಾರಗಳಲ್ಲಿ" : "of tested weeks"}
             </button>
           )}
           {offlineSample && <span className="px-offline">{kn ? "ಆಫ್‌ಲೈನ್ · ಮಾದರಿ" : "Offline: sample data"}</span>}
-          {modelCard && (
-            <button className="px-howbtn ui-btn ui-btn--ghost ui-btn--sm" onClick={() => {
-              const btn = document.getElementById("cx-guide-trigger");
-              if (btn) btn.click();
-            }}>
-              {kn ? "ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ" : "How it works"}
-            </button>
-          )}
-        </div>
-      </div>
+        </p>
+      </header>
 
-      {/* The week at a glance: each figure takes the officer to it */}
+      {/* The week in five figures: numbers on a rule, not five boxes. Each one takes the
+          officer to it; a zero stays quiet. */}
       {predictions?.length > 0 && (() => {
         const nextEv = evsAhead[0];
-        const tiles = [
-          { k: "hi", n: highs.length, l: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High-risk areas", hint: kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಗೆ ಹೆಚ್ಚು ಅಪಾಯ ಎಂದು ಅಂದಾಜು" : "Rated high risk for the next 7 days", go: () => { setFlt(highs.length ? "high" : "all"); toForecast(); } },
-          { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", hint: kn ? "ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ತುಂಬಾ ಹೆಚ್ಚು" : "Recent cases well above the area's usual level", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
-          { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", hint: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ತುಂಬಾ ಕಡಿಮೆ ವರದಿ: ದಾಖಲಾತಿ ಪರಿಶೀಲಿಸಿ" : "Far fewer reports than usual: check registration", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
-          { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", hint: kn ? "ವಲಯದ ಸಾಮಾನ್ಯ ಮಾದರಿ ಮುರಿದ ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು" : "Recent cases that broke an area's pattern", go: toAlerts },
-          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", hint: nextEv ? `${nextEv.name}, ${nextEv.when.toLowerCase()}` : (kn ? "ಮುಂಬರುವ ಉತ್ಸವ ಇಲ್ಲ" : "No festival or event coming up"), go: toEvents },
+        const stats = [
+          { k: "hi", n: highs.length, l: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High-risk areas", hint: kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಗೆ ಹೆಚ್ಚು ಅಪಾಯ" : "Rated high risk for the week", go: () => { setFlt(highs.length ? "high" : "all"); toForecast(); } },
+          { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", hint: kn ? "ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ತುಂಬಾ ಹೆಚ್ಚು" : "Well above the area's usual level", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
+          { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", hint: kn ? "ದಾಖಲಾತಿ ಪರಿಶೀಲಿಸಿ" : "Far fewer reports: check registration", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
+          { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", hint: kn ? "ಸಾಮಾನ್ಯ ಮಾದರಿ ಮುರಿದ ಪ್ರಕರಣಗಳು" : "Cases that broke an area's pattern", go: toAlerts },
+          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", hint: nextEv ? `${nextEv.name}, ${nextEv.when.toLowerCase()}` : (kn ? "ಮುಂಬರುವ ಉತ್ಸವ ಇಲ್ಲ" : "Nothing coming up"), go: toEvents },
         ];
         return (
-          <div className="px-kpis" role="list" aria-label="The week at a glance">
-            {tiles.map((t) => (
-              <button type="button" role="listitem" key={t.k} className={`px-kpi k-${t.k}${t.n ? "" : " zero"}`} onClick={t.go}>
-                <b>{t.n}</b><span>{t.l}</span>{t.hint && <em>{t.hint}</em>}
+          <div className="px-stats" role="list" aria-label={kn ? "ವಾರ ಒಂದು ನೋಟದಲ್ಲಿ" : "The week at a glance"}>
+            {stats.map((t) => (
+              <button type="button" role="listitem" key={t.k} className={`px-stat k-${t.k}${t.n ? "" : " zero"}`} onClick={t.go}>
+                <b>{t.n}</b><span>{t.l}</span><em>{t.hint}</em>
               </button>
             ))}
           </div>
@@ -1724,13 +1856,13 @@ const avgConf = predictions?.length
       })()}
 
       {/* This week's plan: one line per action, opened for the detail */}
-      <section className="px-plan" aria-label="This week's plan">
+      <section className="px-plan" ref={planRef} aria-label="This week's plan">
         <div className="px-plan-hd">
           <div>
             <span className="ui-eyebrow">{kn ? "ಇಲ್ಲಿಂದ ಆರಂಭಿಸಿ" : "Start here"}</span>
-            <h2>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}{plan.length > 0 && <small>{Math.min(plan.length, 4)} {Math.min(plan.length, 4) === 1 ? "action" : "actions"}</small>}</h2>
+            <h2><span className="px-secnum">01</span>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}{plan.length > 0 && <small>{Math.min(plan.length, 4)} {Math.min(plan.length, 4) === 1 ? "action" : "actions"}</small>}</h2>
           </div>
-          <button type="button" className="ui-btn ui-btn--primary" onClick={copyBrief} disabled={!brief.length}>
+          <button type="button" className="ui-btn ui-btn--secondary" onClick={copyBrief} disabled={!brief.length}>
             {copied ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ಬ್ರೀಫಿಂಗ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ" : "Copy for the briefing note")}
           </button>
         </div>
@@ -1779,7 +1911,7 @@ const avgConf = predictions?.length
         {/* 1 · Predict · Next 7 Days (scrollable) */}
         <div className="pxd-card" ref={forecastRef}>
           <div className="pxd-hd">
-            <span className="pxd-ttl">{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast for the next 7 days"}</span>
+            <span className="pxd-ttl"><span className="px-secnum">02</span>{kn ? "ಮುನ್ಸೂಚನೆ · ಮುಂಬರುವ 7 ದಿನಗಳು" : "Forecast for the next 7 days"}</span>
             <span className="pxd-sub">{shown.length === A.length ? A.length : `${shown.length} of ${A.length}`} {kn ? "ವಲಯ" : "areas"}</span>
           </div>
           <p className="px-sec-note">{kn ? "ಪ್ರತಿ ಕಾರ್ಡ್ ಒಂದು ವಲಯ: ಅಲ್ಲಿ ಹೆಚ್ಚು ಬದಲಾಗಬಹುದಾದ ಅಪರಾಧ, ಸಾಮಾನ್ಯದಿಂದ ಎಷ್ಟು ದೂರ, ಮತ್ತು ಮುಂದಿನ 7 ದಿನಗಳ ನಿರೀಕ್ಷಿತ ಪ್ರಕರಣಗಳು. ಕಾರಣಕ್ಕಾಗಿ ಒಂದನ್ನು ಆರಿಸಿ."
@@ -1882,7 +2014,7 @@ const avgConf = predictions?.length
         <div className="pxd-card" ref={alertsRef}>
           <div className="pxd-hd pxd-hd2">
             <div>
-              <span className="pxd-ttl">{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts"} <i>{alertGroups.length}</i></span>
+              <span className="pxd-ttl"><span className="px-secnum">03</span>{kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts"} <i>{alertGroups.length}</i></span>
               <span className="pxd-note">{kn ? "ಸಾಮಾನ್ಯ ಮಾದರಿಯಿಂದ ಭಿನ್ನವಾದ ವಲಯಗಳು" : "Recent cases that broke from an area's usual pattern. Pick one to see why."}</span>
             </div>
           </div>
@@ -2163,7 +2295,7 @@ const avgConf = predictions?.length
       {eng && eng !== "missing" && (
         <section className="px-evs" ref={eventsRef} aria-label="Events ahead">
           <div className="px-evs-hd">
-            <h2>{kn ? "ಮುಂಬರುವ ಉತ್ಸವಗಳು · ಬಂದೋಬಸ್ತ್" : "Events ahead"}</h2>
+            <h2><span className="px-secnum">04</span>{kn ? "ಮುಂಬರುವ ಉತ್ಸವಗಳು · ಬಂದೋಬಸ್ತ್" : "Events ahead"}</h2>
             <span>{kn ? "ಹಿಂದಿನ ವರ್ಷಗಳ FIR ಗಳಿಂದ ಅಳೆದದ್ದು." : "Festivals and events in the next 3 weeks, and what each did to registered cases in past years. Measured from FIRs, for bandobast planning."}</span>
           </div>
           {evsAhead.length === 0 && <p className="px-evs-none">No listed event falls in the next 3 weeks.</p>}

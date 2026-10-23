@@ -2350,3 +2350,8 @@ Tests: tests/test_osint_checks.py (41, offline). The older search tests now stat
 * Every Predict rule (the screen's own sheet and its rules in globals.css: px-, pxd-, cl-) snapped to the scale: text now uses 9 sizes, all on the scale; 10 of 315 spacings are off the grid, and those are 1px hairlines.
 
 Next: the same pass on Chat, Brain, Map, Search and Docs, then the rest.
+
+### Predict: "no AI look" and the first five seconds - 2026-10-24
+* **Hero** answers the 5-second test above the fold: what it is and who it is for (eyebrow "7-Day Crime Risk Forecast · for station and district officers"), the headline "Where crime is likely to *rise* in the next 7 days.", why it matters (plan patrols and bandobast before the cases come in; every forecast has a range and its FIRs), and one solid next step: **See this week's plan →** (How it works beside it, quiet). Provenance is one mono line, not a row of pills.
+* **Removed the generic look:** no gradients, no glow, no stacked boxes, no pills. The week is five figures on a rule divided by hairlines; sections are numbered (01 plan, 02 forecast, 03 alerts, 04 events) with a rule above each; the forecast and alert lists are open columns; filters are words with an underline; status is a coloured dot and a word; statewide units and "Why?" are plain links; the event is an open row with a large day count.
+* One solid (off-white) button on the page; "Copy for the briefing note" stepped down to secondary.
