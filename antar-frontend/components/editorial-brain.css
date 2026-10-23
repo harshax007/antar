@@ -1,0 +1,57 @@
+/* ── Brain · editorial layer (design-tokens.css) ──
+   The graph is the picture; everything around it steps back. Controls become one quiet
+   column with underlined choices, pills become plain rectangles, and the one solid
+   action is Fast Run. Below the graph, the data overview reads as figures on a rule and
+   numbered sections with hairlines, not a wall of glowing cards. Scoped to .bsx-wrap. */
+
+/* left controls: one column, underline choices */
+.bsx-wrap .bs-search { border-radius: var(--r-md); background: rgba(6,10,18,.92); backdrop-filter: none; box-shadow: none; border-color: var(--line-2); }
+.bsx-wrap .bsx-modes, .bsx-wrap .bsx-dimtoggle { padding: 0 var(--sp-1); gap: var(--sp-4); background: rgba(6,10,18,.92); backdrop-filter: none;
+  border: 1px solid var(--line-1); border-radius: var(--r-md); }
+.bsx-wrap .bsx-modes span, .bsx-wrap .bsx-modes > *, .bsx-wrap .bsx-dimtoggle button { flex: 0 1 auto; padding: var(--sp-2) var(--sp-1); border-radius: 0; background: none !important;
+  box-shadow: none !important; font: 500 var(--fs-label) 'Inter', sans-serif; letter-spacing: 0; color: var(--ink-3); border-bottom: 2px solid transparent; }
+.bsx-wrap .bsx-modes .on, .bsx-wrap .bsx-dimtoggle button.on { color: var(--ink-1); font-weight: 600; border-bottom-color: var(--accent); }
+.bsx-wrap .bsx-crimesel, .bsx-wrap .bsx-readbtn, .bsx-wrap .bsx-layers, .bsx-wrap .bsx-cal { border-radius: var(--r-md); background: rgba(6,10,18,.92); backdrop-filter: none; box-shadow: none; border-color: var(--line-1); }
+.bsx-wrap .bsx-readbtn, .bsx-wrap .bsx-layers h4 { font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; }
+.bsx-wrap .bsx-scopeseg { border: 0; border-radius: 0; gap: var(--sp-3); }
+.bsx-wrap .bsx-scopeseg button { padding: var(--sp-1) 0; background: none !important; font: 500 var(--fs-caption) 'Inter', sans-serif; color: var(--ink-3); border-bottom: 2px solid transparent; }
+.bsx-wrap .bsx-scopeseg button.on { color: var(--ink-1); border-bottom-color: var(--accent); }
+
+/* top actions: rectangles, not pills; Fast Run is the one solid button */
+.bsx-wrap .bsx-pill { border-radius: var(--r-sm); backdrop-filter: none; background: rgba(6,10,18,.88); border-color: var(--line-2); color: var(--ink-2);
+  font: 500 var(--fs-label) 'Inter', sans-serif; letter-spacing: 0; box-shadow: none; }
+.bsx-wrap .bsx-pill:hover { color: var(--ink-1); border-color: rgba(34,230,240,.4); }
+.bsx-wrap .bsx-pill.think { background: var(--ink-1); color: #050A12; border-color: transparent; font-weight: 600; }
+.bsx-wrap .bsx-pill.think:hover { background: #fff; color: #050A12; border-color: transparent; }
+.bsx-wrap .bsx-pill.think.busy { background: #FFB020; color: #050A12; }
+.bsx-wrap button[class=""], .bsx-wrap .bsx-reset { border-radius: var(--r-sm); }
+
+/* ── data overview ── */
+.bsx-wrap .ov-eyebrow { font: 500 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.bsx-wrap .ov-title { font: 700 clamp(28px, 3vw, 40px)/1.08 'Chakra Petch', sans-serif; letter-spacing: -.02em; color: var(--ink-1); }
+.bsx-wrap .ov-srcseg { border: 0; border-radius: 0; gap: var(--sp-5); border-bottom: 1px solid var(--line-1); }
+.bsx-wrap .ov-srcseg button { padding: var(--sp-2) 0; background: none !important; font: 500 var(--fs-body-sm) 'Inter', sans-serif; letter-spacing: 0; color: var(--ink-3);
+  border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.bsx-wrap .ov-srcseg button.on { color: var(--ink-1); font-weight: 600; border-bottom-color: var(--accent); }
+.bsx-wrap .ov-chip { border-radius: var(--r-sm); }
+
+/* the figures on a rule, divided by hairlines */
+.bsx-wrap .ov-kpis { gap: 0; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-1); }
+.bsx-wrap .ov-kpi { border: 0 !important; border-left: 1px solid var(--line-1) !important; border-radius: 0 !important; background: none !important; box-shadow: none !important;
+  padding: var(--sp-4) var(--sp-5) var(--sp-5) !important; transform: none !important; }
+.bsx-wrap .ov-kpi:first-child { border-left: 0 !important; padding-left: 0 !important; }
+.bsx-wrap .ov-kpi::before { display: none !important; }
+.bsx-wrap .ov-kpi:hover { background: rgba(255,255,255,.025) !important; }
+.bsx-wrap .ov-kpi b { font: 700 32px/1 'Chakra Petch', sans-serif; letter-spacing: -.02em; text-shadow: none !important; }
+.bsx-wrap .ov-kpi span { font: 500 var(--fs-label) 'Inter', sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+
+/* sections: a rule on top, no box */
+.bsx-wrap .ov-stages, .bsx-wrap .ov-panel, .bsx-wrap .ov-tablewrap { border-radius: 0 !important; background: none !important; box-shadow: none !important;
+  border: 0 !important; border-top: 1px solid var(--line-2) !important; padding-left: 0 !important; padding-right: 0 !important; }
+.bsx-wrap .ov-charts { gap: var(--sp-8); }
+.bsx-wrap .ov-ptitle { font: 600 var(--fs-lead) 'Inter', sans-serif; letter-spacing: 0; color: var(--ink-1); }
+.bsx-wrap .ov-ptitle span { font: 400 var(--fs-label) 'Inter', sans-serif; color: var(--ink-3); }
+.bsx-wrap .ov-stage-fill { background: var(--accent) !important; box-shadow: none !important; }
+.bsx-wrap .ov-tablebar { padding-left: 0; padding-right: 0; }
+.bsx-wrap .ov-uses article, .bsx-wrap .ov-use { border-radius: 0; box-shadow: none; }
+.bsx-wrap .bsx-hint button { border-radius: var(--r-sm) !important; box-shadow: none !important; }

@@ -20,6 +20,7 @@ import BrainLoader, { MAP_STEPS, MAP_ORBS } from "@/components/BrainLoader";
 import { MAP_AGENTS, MapAgentsMenu, AgentDropLayer, MapAgentResult } from "@/components/MapAgents";
 import { FESTIVALS } from "@/lib/festivals";
 import "leaflet/dist/leaflet.css";
+import "./editorial-map.css";
 import { asset } from "@/lib/assets";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -1659,7 +1660,7 @@ export default function MapScreen() {
       {/* ── ONE card: Karnataka Crime Report (click → full window with intelligence) ── */}
       <button inert={reportOpen || showDossier ? "" : undefined} className={`mx-stat mx-panel mx-stat-btn ${giLoading ? "is-loading" : ""}`} onClick={() => setReportOpen(true)} aria-haspopup="dialog" aria-busy={giLoading}>
         <span className="mx-sweep" aria-hidden="true" />
-        <div className="t">{kn ? "ಕರ್ನಾಟಕ ಅಪರಾಧ ವರದಿ" : "Karnataka Crime Report"}<span className="open">{kn ? "ತೆರೆಯಿರಿ ↗" : "open ↗"}</span></div>
+        <div className="t">{kn ? "ಕರ್ನಾಟಕ ಅಪರಾಧ ವರದಿ" : "Karnataka Crime Report"}<span className="open">{kn ? "ವರದಿ ತೆರೆಯಿರಿ →" : "Open report →"}</span></div>
         {/* keyed on the selection so the block re-animates on every date / crime change */}
         <div key={`${endDate}|${crimeType}`} className="mx-swap">
             <div className="mx-day-top">

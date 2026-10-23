@@ -10,6 +10,7 @@ import { useLang } from "@/components/Providers";
 import { asset } from "@/lib/assets";
 import { motion, AnimatePresence } from "framer-motion";
 import BrainLoader from "@/components/BrainLoader";
+import "./editorial-brain.css";
 
 // 3d-force-graph touches `window` → client-only
 const BrainStructure = dynamic(() => import("@/components/BrainStructure"), {

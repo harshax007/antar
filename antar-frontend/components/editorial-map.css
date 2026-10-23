@@ -1,0 +1,56 @@
+/* ── Map · editorial layer (design-tokens.css) ──
+   No AI look: the floating glass cards, glows, gradients and pills give way to one column
+   of numbered sections divided by hairlines, underlined tabs, and a single solid action
+   (open the crime report). Scoped to .mx-page so no other screen changes. */
+
+/* crime types: words with an underline, not pills */
+.mx-page .mx-pills { gap: var(--sp-1) var(--sp-5); padding: 0 var(--sp-1); border-bottom: 1px solid var(--line-1); }
+.mx-page .mx-pill { padding: var(--sp-2) 0; border: 0; border-radius: 0; background: none; backdrop-filter: none; box-shadow: none;
+  font: 500 var(--fs-body-sm)/1.2 'Inter', sans-serif; letter-spacing: 0; color: var(--ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.mx-page .mx-pill:hover { color: var(--ink-1); border-color: transparent; border-bottom-color: var(--line-2); }
+.mx-page .mx-pill.on { background: none; color: var(--ink-1); font-weight: 600; box-shadow: none; border-bottom-color: var(--accent); }
+.mx-page select.mx-pill { padding-right: var(--sp-4); }
+
+/* left column: one surface, numbered sections, hairlines between */
+.mx-page .mx-leftrail { counter-reset: mxsec; gap: 0; }
+.mx-page .mx-leftrail > .mx-panel, .mx-page .mx-leftrail > .mx-cal, .mx-page .mx-leftrail > .mx-stat {
+  margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: rgba(6,10,18,.94) !important; backdrop-filter: none !important;
+  border: 1px solid var(--line-1) !important; border-top: 0 !important; }
+.mx-page .mx-leftrail > :first-child { border-top: 1px solid var(--line-1) !important; border-radius: var(--r-md) var(--r-md) 0 0 !important; }
+.mx-page .mx-leftrail > :last-child { border-radius: 0 0 var(--r-md) var(--r-md) !important; }
+.mx-page .mx-cal-h::before, .mx-page .mx-stat .t::before, .mx-page .mx-bars-h::before, .mx-page .mx-rpt-title::before {
+  counter-increment: mxsec; content: counter(mxsec, decimal-leading-zero); margin-right: var(--sp-2);
+  font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .06em; color: var(--accent); }
+.mx-page .mx-stat .t, .mx-page .mx-bars-h, .mx-page .mx-rpt-title { font: 600 var(--fs-body-sm)/1.3 'Inter', sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink-1); }
+.mx-page .mx-sweep { display: none; }
+
+/* day / 7 days / 28 days: underline, not a pill track */
+.mx-page .mx-win { padding: 0; gap: var(--sp-4); border: 0; border-bottom: 1px solid var(--line-1); border-radius: 0; background: none; }
+.mx-page .mx-win button { flex: 0 0 auto; padding: var(--sp-2) 0; border-radius: 0; background: none; font: 500 var(--fs-label) 'Inter', sans-serif; letter-spacing: 0;
+  color: var(--ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.mx-page .mx-win button.on { background: none; color: var(--ink-1); border-bottom-color: var(--accent); }
+
+/* the crime report: the day's figure set large, and the one solid action on the screen */
+.mx-page .mx-stat { background-image: none !important; }
+.mx-page .mx-stat .open { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 4px 10px; border-radius: var(--r-sm);
+  font: 600 var(--fs-label) 'Inter', sans-serif; letter-spacing: 0; text-transform: none; color: #050A12; background: var(--ink-1); }
+.mx-page .mx-stat:hover .open { background: #fff; }
+.mx-page .mx-day-top b, .mx-page .mx-day-top .n, .mx-page .mx-stat .big { font-family: 'Chakra Petch', sans-serif; letter-spacing: -.02em; }
+
+/* controls on the map: plain rectangles, no pills */
+.mx-page .mx-rpt-btn, .mx-page .mxa-btn { border-radius: var(--r-sm); box-shadow: none; }
+
+/* right column: underlined tabs, flat summary with rules */
+.mx-page .mx-rtabs { padding: 0; gap: var(--sp-5); background: none; border: 0; border-bottom: 1px solid var(--line-1); border-radius: 0; box-shadow: none; backdrop-filter: none; }
+.mx-page .mx-rtabs button { flex: 0 0 auto; padding: var(--sp-2) 0; border: 0; border-radius: 0; background: none !important; box-shadow: none !important;
+  font: 500 var(--fs-body-sm) 'Inter', sans-serif; letter-spacing: 0; color: var(--ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.mx-page .mx-rtabs button.on { color: var(--ink-1); font-weight: 600; border-bottom-color: var(--accent); }
+.mx-page .mx-rtab-n { border-radius: var(--r-sm); }
+.mx-page .mx-sum { border-radius: var(--r-md); box-shadow: none; background: rgba(6,10,18,.94); backdrop-filter: none; border-color: var(--line-1); }
+.mx-page .mx-sum header h3 { font: 700 var(--fs-h3)/1.2 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--ink-1); }
+.mx-page .mx-sum-note.is-top { border: 0; border-left: 2px solid var(--accent); border-radius: 0; background: none; padding: 2px 0 2px var(--sp-4); }
+.mx-page .mx-sum-note.is-top h4 { font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.mx-page .mx-sum-rows { counter-reset: mxrow; }
+.mx-page .mx-sum-rows dt::before { counter-increment: mxrow; content: counter(mxrow, decimal-leading-zero); margin-right: var(--sp-2); font: 500 var(--fs-caption) 'JetBrains Mono', monospace; color: var(--ink-4); }
+.mx-page .mx-dcard, .mx-page .mx-panel:not(.mx-cal):not(.mx-stat) { box-shadow: none; }
+html[lang="kn"] .mx-page .mx-sum-note.is-top h4 { letter-spacing: normal; text-transform: none; font-family: inherit; }
