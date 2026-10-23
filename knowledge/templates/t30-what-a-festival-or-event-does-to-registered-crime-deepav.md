@@ -1,14 +1,14 @@
 ---
 type: Attested Computation
-title: T20 — All FIRs linked to one UPI ID or IP address (identifier lookup)
-description: All FIRs linked to one UPI ID or IP address (identifier lookup)
+title: T30 — What a festival or event does to registered crime (Deepavali, Dasara, Ganesha, Ugadi, Sankranti, Ramzan, New Year), measured from past FIRs
+description: What a festival or event does to registered crime (Deepavali, Dasara, Ganesha, Ugadi, Sankranti, Ramzan, New Year), measured from past FIRs
 runtime: python
 parameters:
-  - name: value
+  - name: event
     type: str
     required: false
-  - name: key_type
-    type: "Literal of 'any', 'upi', 'ip', 'vehicle', 'accused'"
+  - name: zones
+    type: list of str
     required: false
 executor:
   resource: /app/services/zcql_repo.py
@@ -25,22 +25,22 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-07T00:58:49Z"
+  at: "2026-10-23T12:47:17Z"
 status: stable
 ---
 
-# T20 — All FIRs linked to one UPI ID or IP address (identifier lookup)
+# T30 — What a festival or event does to registered crime (Deepavali, Dasara, Ganesha, Ugadi, Sankranti, Ramzan, New Year), measured from past FIRs
 
 A whitelisted, parameterised query over the FIR registry. Antar never executes free-form SQL: an officer's question is resolved to one of these templates, or it is refused.
 
 ## Questions this answers
 
-* FIRs for UPI user1101@bank
-* cases linked to IP 103.87.106.22
+* what spikes before Deepavali, and where
+* crime during Mysuru Dasara
 
 ## Computation
 
-`app/services/zcql_repo.py::TEMPLATES['T20']` builds a `QuerySpec` from the validated `IdentifierLookup` parameter model. The spec is compiled to parameterised SQL — every value is bound, never interpolated.
+`app/services/zcql_repo.py::TEMPLATES['T30']` builds a `QuerySpec` from the validated `EventEffect` parameter model. The spec is compiled to parameterised SQL — every value is bound, never interpolated.
 
 ## Attestation
 

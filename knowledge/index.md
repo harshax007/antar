@@ -17,5 +17,5 @@ okf_version: "0.2"
 
 # Capability
 
-* [Query templates](./templates/index.md) - 22 attested computations
+* [Query templates](./templates/index.md) - 29 attested computations
 * [Agents](./agents/index.md) - 20 declared agents

@@ -31,7 +31,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-07T00:58:49Z"
+  at: "2026-10-23T12:47:17Z"
 status: stable
 ---
 
@@ -41,7 +41,7 @@ A whitelisted, parameterised query over the FIR registry. Antar never executes f
 
 ## Questions this answers
 
-* IPC/BNS vs SLL split for 2023?
+* IPC/BNS vs SLL split for 2022?
 * how many FIRs under special and local laws
 
 ## Computation

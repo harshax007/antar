@@ -25,6 +25,10 @@ def quickml_env(monkeypatch):
     async def _no_sleep(_seconds):   # don't actually wait during retry tests
         return None
     monkeypatch.setattr(quickml, "_sleep", _no_sleep)
+    # the provider is read from settings (app/services/llm.py); unset, the call stops before
+    # the mocked endpoint is reached
+    from app.services import llm as _llm
+    monkeypatch.setattr(_llm, "provider", lambda: "quickml")
 
     quickml._client = None
     yield

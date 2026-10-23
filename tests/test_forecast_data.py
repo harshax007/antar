@@ -181,7 +181,9 @@ def test_live_geo_ok_rejects_everything_outside_karnataka(live):
         "AND geo_lon BETWEEN ? AND ?)",
         (store.LAT_MIN, store.LAT_MAX, store.LON_MIN, store.LON_MAX)).fetchone()[0]
     assert bad == 0
-    assert live.execute("SELECT COUNT(*) FROM FIRs WHERE geo_ok = 1").fetchone()[0] > 400_000
+    # 3,77,582 since scripts/clean_fir_coordinates.py cleared 55,963 points that were not
+    # where the crime happened (2026-10-22); the floor guards against losing the map wholesale.
+    assert live.execute("SELECT COUNT(*) FROM FIRs WHERE geo_ok = 1").fetchone()[0] > 350_000
 
 
 def test_live_crimes_view_serves_clean_points(live):

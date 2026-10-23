@@ -5,12 +5,15 @@ description: "Identifiers (UPI ID, IP address, vehicle, accused ID) shared by FI
 runtime: python
 parameters:
   - name: key_type
-    type: "Literal of 'any', 'upi', 'ip', 'vehicle', 'accused'"
+    type: "Literal of 'any', 'upi', 'ip', 'vehicle', 'accused', 'mo'"
     required: false
   - name: min_districts
     type: int
     required: false
   - name: zones
+    type: list of str
+    required: false
+  - name: between
     type: list of str
     required: false
   - name: crime_types
@@ -34,7 +37,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-07T00:58:49Z"
+  at: "2026-10-23T12:47:17Z"
 status: stable
 ---
 

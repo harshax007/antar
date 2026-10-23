@@ -34,8 +34,12 @@ def test_inspector_default_allows_graph_constable_blocked():
 
 
 def test_export_and_report_render():
-    """F6: export returns a report URL and the report HTML renders."""
-    j = client.get("/api/export/ses-demo")
+    """F6: export returns a report URL and the report HTML renders - for the officers in the
+    conversation or an Admin only (export_api._may_read); anyone else gets 403, whether or not
+    the session exists."""
+    assert client.get("/api/export/ses-demo").status_code == 403
+    admin = {"X-Role": "Admin"}
+    j = client.get("/api/export/ses-demo", headers=admin)
     assert j.status_code == 200 and j.json()["report_url"] == "/report/ses-demo"
-    h = client.get("/report/ses-demo")
+    h = client.get("/report/ses-demo", headers=admin)
     assert h.status_code == 200 and "Intelligence Report" in h.text

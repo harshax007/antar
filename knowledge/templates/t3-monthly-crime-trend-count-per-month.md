@@ -13,8 +13,20 @@ parameters:
   - name: months
     type: int
     required: false
+  - name: date_from
+    type: str
+    required: false
+  - name: date_to
+    type: str
+    required: false
   - name: real_only
     type: bool
+    required: false
+  - name: stations
+    type: list of str
+    required: false
+  - name: heads
+    type: list of str
     required: false
 executor:
   resource: /app/services/zcql_repo.py
@@ -31,7 +43,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-07T00:58:49Z"
+  at: "2026-10-23T12:47:17Z"
 status: stable
 ---
 

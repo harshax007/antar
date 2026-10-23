@@ -7,6 +7,9 @@ parameters:
   - name: crime_types
     type: list of str
     required: false
+  - name: zones
+    type: list of str
+    required: false
   - name: date_from
     type: str
     required: false
@@ -28,6 +31,12 @@ parameters:
   - name: arrest_status
     type: str
     required: false
+  - name: stations
+    type: list of str
+    required: false
+  - name: heads
+    type: list of str
+    required: false
 executor:
   resource: /app/services/zcql_repo.py
   receipt:
@@ -43,7 +52,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-07T00:58:49Z"
+  at: "2026-10-23T12:47:17Z"
 status: stable
 ---
 
