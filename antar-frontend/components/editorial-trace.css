@@ -1,0 +1,48 @@
+/* ── Trace · editorial layer (design-tokens.css) ──
+   The top says what the page is, who it is for, why it matters and what to do next.
+   Figures sit on a rule, flags are rows, sections are numbered, panels are flat with a
+   rule on top; one solid button (review the flags). Scoped to .tlm. */
+
+.tlm .tlm-head { align-items: flex-end; gap: var(--sp-5) var(--sp-8); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule-2); }
+.tlm-hero { max-width: 780px; }
+.tlm-eyebrow { display: block; margin-bottom: var(--sp-3); font: 500 var(--fs-label)/1.3 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+html[lang="kn"] .tlm-eyebrow { letter-spacing: normal; text-transform: none; font-family: inherit; }
+.tlm .tlm-head h1 { font: 700 clamp(32px, 4vw, 52px)/1.04 'Chakra Petch', sans-serif; letter-spacing: -.02em; color: var(--text-1); text-wrap: balance; }
+.tlm .tlm-head h1 em { font-style: normal; color: var(--accent); }
+.tlm .tlm-head p { margin-top: var(--sp-4); max-width: 62ch; font-size: var(--fs-lead); line-height: 1.55; color: var(--text-2); }
+.tlm-next { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4); margin-top: var(--sp-6); font-size: var(--fs-body-sm); color: var(--text-3); }
+.tlm .tlm-cta { min-height: 44px; padding: 0 var(--sp-5); font-size: var(--fs-body); background: var(--text-1); color: #050A12; box-shadow: none; }
+.tlm .tlm-cta:hover { background: #fff; }
+
+/* tools: quiet rectangles */
+.tlm .tlm-btn, .tlm .tlm-toggle { border-radius: var(--r-sm); background: none; }
+.tlm .tlm-toggle.on { background: none; }
+
+/* figures on a rule, divided by hairlines */
+.tlm .tlm-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; border-top: 1px solid var(--rule-2); border-bottom: 1px solid var(--rule-1); }
+.tlm .tlm-kpi { padding: var(--sp-4) var(--sp-5) var(--sp-5); border: 0; border-left: 1px solid var(--rule-1); border-radius: 0; background: none; }
+.tlm .tlm-kpi:first-child { border-left: 0; padding-left: 0; }
+.tlm .tlm-kpi .t { font-size: var(--fs-label); color: var(--text-3); }
+.tlm .tlm-kpi b { font: 700 32px/1.05 'Chakra Petch', sans-serif; letter-spacing: -.02em; color: var(--text-1); }
+.tlm .tlm-kpi.quiet b { font: 600 var(--fs-lead)/1.4 'Inter', sans-serif; color: var(--text-2); letter-spacing: 0; }
+.tlm .tlm-kpi .s { font-size: var(--fs-label); color: var(--text-3); }
+
+/* flags as rows */
+.tlm .tlm-rules { display: grid; gap: 0; border-top: 1px solid var(--rule-1); }
+.tlm .tlm-rules .lbl { padding: var(--sp-3) 0 var(--sp-2); font: 500 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+.tlm .tlm-rule { display: grid; grid-template-columns: 8px 40px 1fr auto; align-items: center; gap: var(--sp-3); padding: var(--sp-3) 0; border: 0;
+  border-bottom: 1px solid var(--rule-1); border-radius: 0; background: none; font-size: var(--fs-body-sm); color: var(--text-2); }
+.tlm .tlm-rule em { font: 700 var(--fs-lead) 'Chakra Petch', sans-serif; color: var(--text-1); }
+html[lang="kn"] .tlm .tlm-rules .lbl { letter-spacing: normal; text-transform: none; font-family: inherit; }
+
+.tlm .tlm-chain { font-size: var(--fs-body-sm); }
+
+/* explainer, search and panels: flat, a rule on top */
+.tlm .tlm-explain, .tlm .tlm-panel { border: 0; border-top: 1px solid var(--rule-2); border-radius: 0; background: none; }
+.tlm .tlm-explain > button { padding-left: 0; padding-right: 0; }
+.tlm .tlm-search { border-radius: var(--r-sm); background: none; }
+.tlm .tlm-panel-h h2 { font: 700 var(--fs-h3) 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); }
+.tlm-num { margin-right: var(--sp-2); font: 500 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .06em; color: var(--accent); vertical-align: .15em; }
+.tlm .tlm-session { border-radius: 0; }
+.tlm .tlm-session em { border-radius: var(--r-sm); }
+.tlm .tlm-cols { scroll-margin-top: 96px; }

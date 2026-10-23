@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw, Search, Layers } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { useLang } from "@/components/Providers";
+import "@/components/editorial-trace.css";
 
 /* ────────────────────────────────────────────────────────────────────────────
    Trace & Telemetry
@@ -181,11 +182,26 @@ export default function TrustDashboard() {
 
         {/* ── Header ───────────────────────────────────────────────── */}
         <header className="tlm-head">
-          <div>
-            <h1>{kn ? "ವೀಕ್ಷಣೆ ಮತ್ತು ಜಾಡು" : "Observability & Trace"}</h1>
+          <div className="tlm-hero">
+            <span className="tlm-eyebrow">{kn ? "ವೀಕ್ಷಣೆ ಮತ್ತು ಜಾಡು · ಮೇಲ್ವಿಚಾರಕರು ಮತ್ತು ಲೆಕ್ಕಪರಿಶೋಧಕರಿಗೆ" : "Observability & Trace · for supervisors and auditors"}</span>
+            <h1>{kn ? <>ಪ್ರತಿ ಉತ್ತರ, ಮತ್ತು <em>ಅದು ಹೇಗೆ ಬಂತು.</em></> : <>Every answer, and <em>how it was made.</em></>}</h1>
             <p>{kn
-              ? "ಪ್ರತಿ ಸೆಷನ್‌ನ ಪ್ರತಿ ಪ್ರಶ್ನೆಯ ಸಂಪೂರ್ಣ ತಾರ್ಕಿಕ ಜಾಡು"
-              : "Every question asked, and how each answer was produced: the query that ran, the FIR rows it read, and the checks it passed."}</p>
+              ? "ಕೇಳಿದ ಪ್ರತಿ ಪ್ರಶ್ನೆ: ಚಾಲನೆಯಾದ ಪ್ರಶ್ನಾವಳಿ, ಓದಿದ FIR ಸಾಲುಗಳು ಮತ್ತು ಪಾಸಾದ ಪರಿಶೀಲನೆಗಳು. ಉತ್ತರವನ್ನು ಪ್ರಕರಣ ಕಡತಕ್ಕೆ ಸೇರಿಸುವ ಮೊದಲು ಇಲ್ಲಿ ಪರಿಶೀಲಿಸಿ."
+              : "Each question asked in Antar: the query that ran, the FIR rows it read and the checks it passed. Check an answer here before it goes into a case file."}</p>
+            <div className="tlm-next">
+              <button type="button" className="ui-btn ui-btn--primary tlm-cta" onClick={() => {
+                if (flagged > 0) setFlaggedOnly(true);
+                setTimeout(() => { try { document.querySelector(".tlm-cols")?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {} }, 60);
+              }}>
+                {serious > 0
+                  ? (kn ? `${fmtNum(serious)} ಗಂಭೀರ ಫ್ಲ್ಯಾಗ್ ಪರಿಶೀಲಿಸಿ` : `Review the ${fmtNum(serious)} serious ${serious === 1 ? "flag" : "flags"}`)
+                  : flagged > 0
+                    ? (kn ? "ಫ್ಲ್ಯಾಗ್ ಆದ ಉತ್ತರಗಳು" : "Review the flagged answers")
+                    : (kn ? "ಇತ್ತೀಚಿನ ಪ್ರಶ್ನೆಗಳು" : "Open the recent questions")}
+                <span aria-hidden="true"> ↓</span>
+              </button>
+              <span>{kn ? "ಫ್ಲ್ಯಾಗ್ ಆದ ಉತ್ತರಗಳಿಂದ ಆರಂಭಿಸಿ." : "Start with the flagged answers; a clean one needs no review."}</span>
+            </div>
           </div>
           <div className="tlm-tools">
             <Toggle on={flaggedOnly} onClick={() => setFlaggedOnly((v) => !v)} label={kn ? "ಫ್ಲ್ಯಾಗ್ ಮಾತ್ರ" : "Flagged only"} />
@@ -286,7 +302,7 @@ export default function TrustDashboard() {
           {/* Session rail */}
           <section className="tlm-panel">
             <div className="tlm-panel-h">
-              <h2>{kn ? "ಸೆಷನ್‌ಗಳು" : "Sessions"}</h2>
+              <h2><span className="tlm-num">01</span>{kn ? "ಸೆಷನ್‌ಗಳು" : "Sessions"}</h2>
               <span>{fmtNum(sessions.length)}</span>
             </div>
             <div className="tlm-scroll tlm-sessions">
@@ -317,7 +333,7 @@ export default function TrustDashboard() {
           {/* Turn stream */}
           <section className="tlm-panel">
             <div className="tlm-panel-h">
-              <h2>{activeSession
+              <h2><span className="tlm-num">02</span>{activeSession
                 ? (kn ? "ಸೆಷನ್ ಮರುಪ್ಲೇ" : "Session, in order")
                 : (kn ? "ಇತ್ತೀಚಿನ ತಿರುವುಗಳು" : "Recent questions")}</h2>
               {activeSession ? <code>{activeSession}</code> : <span>{fmtNum(shown.length)}</span>}
