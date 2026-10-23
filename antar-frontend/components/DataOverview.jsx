@@ -32,6 +32,40 @@ const monLabel = (ym) => { const [y, m] = String(ym).split("-"); return `${MON[N
 // loaded FIR records (no hardcoded totals). Same records + shared selection as the
 // globe above: click a chart element and the globe morphs; the globe's timeline
 // filters drive these charts and the table.
+// Linked records: what joins them. An identifier on two or more FIRs is a link an officer can
+// follow - the same accused, vehicle, UPI ID or IP address - and one that spans districts is
+// where one station's case is another station's lead.
+const LINK_KEYS = [
+  ["Accused_ID", "accused"], ["UPI_ID", "upi"], ["Vehicle_Reg_No", "vehicle"], ["IP_Address", "ip"],
+];
+
+function linkStats(rows) {
+  const out = { linkedFirs: 0, crossDistrict: 0, top: {} };
+  const linkedIdx = new Set();
+  for (const [field, kind] of LINK_KEYS) {
+    const groups = new Map();
+    rows.forEach((r, i) => {
+      const v = String(r[field] || "").trim();
+      if (v) (groups.get(v) || groups.set(v, []).get(v)).push(i);
+    });
+    let shared = 0, best = null;
+    for (const [v, idx] of groups) {
+      if (idx.length < 2) continue;
+      shared += 1;
+      idx.forEach((i) => linkedIdx.add(i));
+      const districts = new Set(idx.map((i) => rows[i].District_Name).filter(Boolean));
+      if (districts.size > 1) out.crossDistrict += 1;
+      const cand = { value: v, firs: idx.length, districts: districts.size, names: [...districts].sort() };
+      if (!best || cand.firs > best.firs || (cand.firs === best.firs && cand.districts > best.districts)) best = cand;
+    }
+    out[kind] = shared;
+    out.top[kind] = best;
+  }
+  out.linkedFirs = linkedIdx.size;
+  out.demo = rows.filter((r) => r.has_synthetic_link === 1 || r.has_synthetic_link === "1").length;
+  return out;
+}
+
 export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
   const { lang } = useLang();
   const kn = lang === "kn";
@@ -144,11 +178,23 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
     return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, n]) => ({ label, n }));
   }, [filtered]);
 
+  const links = useMemo(() => linkStats(filtered), [filtered]);
+
+  // A use case's action: the FIRs behind it, in the records table below. Not Chat or Search:
+  // those read the 10-lakh register, where some of these identifiers do not exist, so a
+  // button there could answer "no FIRs" for a link this page just showed.
+  function showFirs(key) {
+    setQ(key);
+    setPage(0);
+    requestAnimationFrame(() => document.querySelector(".ov-tablewrap")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
   const sampleRows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return filtered;
     return filtered.filter((r) =>
-      [r.District_Name, r.UnitName, r.CrimeGroup_Name, r.CrimeHead_Name, r.Accused_ID, r.Place_of_Offence]
+      [r.District_Name, r.UnitName, r.CrimeGroup_Name, r.CrimeHead_Name, r.Accused_ID, r.Place_of_Offence,
+       r.Vehicle_Reg_No, r.UPI_ID, r.IP_Address]
         .some((v) => v && String(v).toLowerCase().includes(needle)));
   }, [filtered, q]);
 
@@ -205,7 +251,18 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
   // database. Loading renders as a placeholder instead; a real zero stays a zero.
   const loadingFull = isFull && !full && !fullErr;
 
-  const kpis = [
+  const pctOf = (a, b) => (b ? Math.round((100 * a) / b) : 0);
+  const kpis = !isFull ? [
+    { v: nf(view.total), l: kn ? "ಈ ನೋಟದ FIR ಗಳು" : "FIRs in view", accent: true },
+    { v: `${pctOf(links.linkedFirs, view.total)}%`, l: kn ? "ಇನ್ನೊಂದು ಪ್ರಕರಣಕ್ಕೆ ಸಂಪರ್ಕಿತ" : "Linked to another case",
+      h: kn ? `${nf(links.linkedFirs)} FIR ಗಳು` : `${nf(links.linkedFirs)} FIRs share a key` },
+    { v: nf(links.accused), l: kn ? "ಪುನರಾವರ್ತಿತ ಆರೋಪಿಗಳು" : "Repeat accused", h: kn ? "2+ FIR ಗಳಲ್ಲಿ" : "named in 2+ FIRs" },
+    { v: nf(links.upi), l: kn ? "ಹಂಚಿದ UPI ಐಡಿಗಳು" : "Shared UPI IDs", h: kn ? "ಮ್ಯೂಲ್ ಖಾತೆಗಳಾಗಿರಬಹುದು" : "possible mule accounts" },
+    { v: nf(links.vehicle), l: kn ? "ಹಂಚಿದ ವಾಹನಗಳು" : "Shared vehicles", h: kn ? "ಹಲವು ಪ್ರಕರಣಗಳಲ್ಲಿ" : "used in several cases" },
+    { v: nf(links.ip), l: kn ? "ಹಂಚಿದ IP ವಿಳಾಸಗಳು" : "Shared IP addresses", h: kn ? "ಸೈಬರ್ ಪ್ರಕರಣಗಳು" : "behind cyber cases" },
+    { v: nf(links.crossDistrict), l: kn ? "ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಸಂಪರ್ಕಗಳು" : "Links across districts", accent: true,
+      h: kn ? "ಇನ್ನೊಂದು ಠಾಣೆಯ ಸುಳಿವು" : "another station's lead" },
+  ] : [
     { v: nf(view.total), l: isFull ? (kn ? "ಒಟ್ಟು FIR" : "Total FIRs") : (kn ? "FIR ಗಳು" : "FIRs in view"), accent: true },
     { v: nf(view.victims), l: kn ? "ಸಂತ್ರಸ್ತರು" : "Victims" },
     { v: nf(view.accused), l: kn ? "ಆರೋಪಿಗಳು" : "Accused" },
@@ -279,7 +336,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
           <h2 className="ov-title">
             {isFull 
               ? (kn ? "ಸಂಪೂರ್ಣ ದತ್ತಾಂಶದ ಒಳನೋಟ" : "The full dataset, in focus")
-              : (kn ? "ಸ್ಮಾರ್ಟ್ ದತ್ತಾಂಶ, ಬ್ರೈನ್ ರೆಂಡರಿಂಗ್" : "Intelligent Dataset, rendered in Brain")
+              : (kn ? "ಸಂಪರ್ಕಿತ ದಾಖಲೆಗಳು: ಒಂದಕ್ಕೊಂದು ಜೋಡಿಸುವ ಪ್ರಕರಣಗಳು" : "Linked records: the cases that connect")
             }
           </h2>
 
@@ -312,10 +369,12 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
                 : (
                   <span>
                     <b>
-                      {kn ? "ಸ್ಮಾರ್ಟ್ ನೋಡ್ ಎಕ್ಸ್‌ಟ್ರಾಕ್ಷನ್ ಮತ್ತು ಡೇಟಾ ಪಾರ್ಸಿಂಗ್ ಮೂಲಕ ರಚಿಸಲಾಗಿದೆ" : "Intelligent nodes extracted through structural parsing."}
+                      {kn ? "ಬುದ್ಧಿವಂತ ದತ್ತಾಂಶ: ಇತರ ಪ್ರಕರಣಗಳಿಗೆ ಜೋಡಿಸುವ FIR ಗಳು." : "Intelligent data: FIRs that connect to other FIRs."}
                     </b>
                     <small>
-                      {kn ? "ಬ್ಯಾಕೆಂಡ್ ಸೇವೆಗಳು ಕಚ್ಚಾ ದಾಖಲೆಗಳನ್ನು ಓದಿ, ಸಂಬಂಧಗಳನ್ನು ಗುರುತಿಸಿ, ರಚನಾತ್ಮಕ ಜ್ಞಾನದ ಗ್ರಾಫ್‌ಗಳನ್ನು ನಿರ್ಮಿಸುತ್ತವೆ." : "Extraction services parse the raw records, identify entity relationships, and construct a structured knowledge graph."}
+                      {kn
+                        ? `10 ಲಕ್ಷ FIR ರಿಜಿಸ್ಟರ್‌ನ ಅದೇ KSP ಸ್ವರೂಪದಲ್ಲಿರುವ ${nf(view.total)} FIR ಗಳ ಆಯ್ದ ಸಂಗ್ರಹ, ಪ್ರಕರಣಗಳು ಹೇಗೆ ಜೋಡಿಸುತ್ತವೆ ಎಂದು ತೋರಿಸಲು: ಇವುಗಳಲ್ಲಿ ${nf(links.linkedFirs)} ಒಂದೇ ಆರೋಪಿ, ವಾಹನ, UPI ಐಡಿ ಅಥವಾ IP ವಿಳಾಸವನ್ನು ಇಲ್ಲಿನ ಇನ್ನೊಂದು FIR ಜೊತೆ ಹಂಚಿಕೊಳ್ಳುತ್ತವೆ. ಬ್ರೈನ್ ಇವುಗಳನ್ನೇ ಮೇಲೆ ಚಿತ್ರಿಸುತ್ತದೆ.${links.demo ? ` ${pctOf(links.demo, view.total)}% ದಾಖಲೆಗಳಲ್ಲಿ ಪ್ರದರ್ಶನ ಸಂಪರ್ಕವಿದೆ.` : ""}`
+                        : `A curated set of ${nf(view.total)} FIRs in the same KSP format as the 10-lakh FIR register, built to show how cases connect: ${nf(links.linkedFirs)} of them share an accused, vehicle, UPI ID or IP address with another FIR here - the links an investigation can follow across stations. The Brain above draws exactly these.${links.demo ? ` ${pctOf(links.demo, view.total)}% of records carry a demonstration link, marked as such.` : ""}`}
                     </small>
                   </span>
                 )}
@@ -369,14 +428,66 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
               ? <b className="ov-skel" aria-label={kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ" : "loading"}>&nbsp;</b>
               : <b className={k.accent ? "on" : ""}>{k.v}</b>}
             <span>{k.l}</span>
+            {k.h && <small className="ov-kpi-h">{k.h}</small>}
           </div>
         ))}
       </div>
 
+      {/* ── Linked records: what an officer can do with the links, from the records in view ── */}
+      {!isFull && (() => {
+        const t = links.top;
+        const where = (x) => (x.districts > 1 ? (kn ? `${x.districts} ಜಿಲ್ಲೆಗಳಲ್ಲಿ` : `across ${x.districts} districts`) : (kn ? `${x.names[0] || ""} ನಲ್ಲಿ` : `in ${x.names[0] || "one district"}`));
+        const cases = [
+          t.accused && {
+            k: "accused", tag: kn ? "ಪುನರಾವರ್ತಿತ ಆರೋಪಿ" : "Follow a repeat offender",
+            fact: kn ? `${t.accused.value} ${t.accused.firs} FIR ಗಳಲ್ಲಿ, ${where(t.accused)}.` : `${t.accused.value} is named in ${t.accused.firs} FIRs ${where(t.accused)}.`,
+            why: kn ? "ಎಲ್ಲಾ ಠಾಣೆಗಳ ಪ್ರಕರಣಗಳನ್ನು ಒಂದೇ ಕಡತದಲ್ಲಿ ನೋಡಿ." : "See every station's cases on one person, in one file.",
+            act: kn ? `${t.accused.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.accused.firs} FIRs`, go: () => showFirs(t.accused.value),
+          },
+          t.upi && {
+            k: "upi", tag: kn ? "ಮ್ಯೂಲ್ ಖಾತೆ ಪತ್ತೆ" : "Trace a money-mule account",
+            fact: kn ? `UPI ${t.upi.value} ${t.upi.firs} FIR ಗಳಲ್ಲಿ, ${where(t.upi)}.` : `UPI ID ${t.upi.value} appears in ${t.upi.firs} FIRs ${where(t.upi)}.`,
+            why: kn ? "ಒಂದೇ ಖಾತೆಗೆ ಹಣ ಕಳುಹಿಸಿದ ಸಂತ್ರಸ್ತರು - ಬ್ಯಾಂಕ್‌ಗೆ ಒಂದೇ ನೋಟಿಸ್." : "Victims who paid one account - one notice to the bank covers them all.",
+            act: kn ? `${t.upi.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.upi.firs} FIRs`, go: () => showFirs(t.upi.value),
+          },
+          t.vehicle && {
+            k: "vehicle", tag: kn ? "ವಾಹನ ಹಿಂಬಾಲಿಸಿ" : "Track a vehicle",
+            fact: kn ? `${t.vehicle.value} ${t.vehicle.firs} FIR ಗಳಲ್ಲಿ, ${where(t.vehicle)}.` : `Vehicle ${t.vehicle.value} is in ${t.vehicle.firs} FIRs ${where(t.vehicle)}.`,
+            why: kn ? "ಒಂದೇ ವಾಹನ, ಹಲವು ಘಟನೆಗಳು - ಚೆಕ್‌ಪೋಸ್ಟ್ ಎಚ್ಚರಿಕೆಗೆ ಯೋಗ್ಯ." : "One vehicle, several incidents - worth a checkpost alert.",
+            act: kn ? `${t.vehicle.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.vehicle.firs} FIRs`, go: () => showFirs(t.vehicle.value),
+          },
+          t.ip && {
+            k: "ip", tag: kn ? "ಸೈಬರ್ ಜಾಲ" : "Join up cyber cases",
+            fact: kn ? `IP ${t.ip.value} ${t.ip.firs} FIR ಗಳಲ್ಲಿ, ${where(t.ip)}.` : `IP address ${t.ip.value} is behind ${t.ip.firs} FIRs ${where(t.ip)}.`,
+            why: kn ? "ಬೇರೆ ಬೇರೆ ದೂರುಗಳು, ಒಂದೇ ಮೂಲ - ಒಂದೇ ತನಿಖೆ." : "Separate complaints, one source - one investigation instead of many.",
+            act: kn ? `${t.ip.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.ip.firs} FIRs`, go: () => showFirs(t.ip.value),
+          },
+        ].filter(Boolean);
+        if (!cases.length) return null;
+        return (
+          <div className="ov-uses">
+            <div className="ov-ptitle" style={{ margin: 0 }}>
+              {kn ? "ಇದರಿಂದ ಏನು ಮಾಡಬಹುದು" : "What you can do with this"}
+              <span>{kn ? "ಈ ನೋಟದ ದಾಖಲೆಗಳಿಂದ, ಪ್ರತಿಯೊಂದೂ ಪರಿಶೀಲಿಸಬೇಕಾದ ಸುಳಿವು - ಬಟನ್ ಅದರ FIR ಗಳನ್ನು ಕೆಳಗಿನ ಪಟ್ಟಿಯಲ್ಲಿ ತೋರಿಸುತ್ತದೆ" : "from the records in view - each one a lead to check; the button lists its FIRs in the table below"}</span>
+            </div>
+            <div className="ov-uses-grid">
+              {cases.map((c) => (
+                <div key={c.k} className="ov-use">
+                  <span className="ov-use-tag">{c.tag}</span>
+                  <b>{c.fact}</b>
+                  <p>{c.why}</p>
+                  <button type="button" onClick={c.go}>{c.act} →</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {stages.length > 0 && (
         <div className="ov-stages">
           <div className="ov-ptitle" style={{ margin: 0 }}>
-            {kn ? "ತನಿಖಾ ಹಂತ" : "Investigation stage"} <span>{kn ? "ನೈಜ ದಾಖಲೆಗಳಿಂದ" : "from records in view"}</span>
+            {isFull ? (kn ? "ತನಿಖಾ ಹಂತ" : "Investigation stage") : (kn ? "ಈ ಸಂಪರ್ಕಿತ ಪ್ರಕರಣಗಳು ಎಲ್ಲಿವೆ" : "Where these linked cases stand")} <span>{kn ? "ಈ ನೋಟದ ದಾಖಲೆಗಳಿಂದ" : "from records in view"}</span>
           </div>
           <div className="ov-stagerow">
             {stages.map((s) => (

@@ -623,7 +623,9 @@ async def dataset_graph(limit: int = 3000) -> dict:
                 "SELECT id, District_Name, UnitName, FIR_YEAR, FIR_MONTH, FIR_Day, FIR_Stage,"
                 " CrimeGroup_Name, CrimeHead_Name, Place_of_Offence, VICTIM_COUNT, Accused_Count,"
                 " Arrested_Count_No_, Accused_ChargeSheeted_Count, Conviction_Count,"
-                " Vehicle_Reg_No, UPI_ID, IP_Address, MO_Details, Accused_ID FROM FIRs"
+                # has_synthetic_link travels with the row so the screen can say how much of the
+                # linked view is demonstration links (DataOverview's Linked records note)
+                " Vehicle_Reg_No, UPI_ID, IP_Address, MO_Details, Accused_ID, has_synthetic_link FROM FIRs"
                 " ORDER BY has_synthetic_link DESC, id ASC LIMIT ?")
         else:
             con = _conn()
@@ -631,7 +633,7 @@ async def dataset_graph(limit: int = 3000) -> dict:
                 "SELECT id, District_Name, UnitName, FIR_YEAR, FIR_MONTH, FIR_Day, FIR_Stage,"
                 " CrimeGroup_Name, CrimeHead_Name, Place_of_Offence, VICTIM_COUNT, Accused_Count,"
                 " Arrested_Count_No_, Accused_ChargeSheeted_Count, Conviction_Count,"
-                " Vehicle_Reg_No, UPI_ID, IP_Address, MO_Details, Accused_ID FROM FIRs"
+                " Vehicle_Reg_No, UPI_ID, IP_Address, MO_Details, Accused_ID, has_synthetic_link FROM FIRs"
                 " WHERE is_synthetic_row = 0 AND has_synthetic_link = 1"
                 " ORDER BY FIR_YEAR DESC, FIR_MONTH DESC, id DESC LIMIT ?")
         rows = con.execute(query, [limit]).fetchall()

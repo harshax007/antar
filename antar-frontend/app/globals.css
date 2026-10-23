@@ -5481,3 +5481,18 @@ body:has(.bsx-tm-overlay) #cx-guide-trigger { display: none; }
 .bsx-ns-row .crime { margin-top: 2px; font: 600 10px 'Inter', sans-serif; color: #FCA5A5; background: rgba(225,64,56,.1);
   border: 1px solid rgba(225,64,56,.35); border-radius: 999px; padding: 1px 8px; }
 .bsx-ns-note { margin: 6px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--muted-2); }
+
+/* Data overview · Linked records: tile hints and the "What you can do with this" use cases */
+.ov-kpi-h { display: block; margin-top: 3px; font: 500 11px 'Inter', sans-serif; color: #7C8DA3; }
+.ov-uses { margin-top: 16px; padding: 18px 20px 20px; border-radius: 14px; background: rgba(255,255,255,.02); border: 1px solid var(--glass-border); }
+.ov-uses-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 12px; }
+.ov-use { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 12px; background: rgba(6,11,20,.7);
+  border: 1px solid rgba(255,255,255,.07); transition: border-color .2s ease, transform .35s var(--ease-spring, cubic-bezier(.22,1,.36,1)); }
+.ov-use:hover { border-color: rgba(34,230,240,.35); transform: translateY(-2px); }
+.ov-use-tag { font: 600 10.5px 'JetBrains Mono', monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); }
+.ov-use b { font: 600 14px/1.4 'Inter', sans-serif; color: #F1F5F9; overflow-wrap: anywhere; }
+.ov-use p { margin: 0; font-size: 12.5px; line-height: 1.5; color: #9FB0C4; }
+.ov-use button { margin-top: auto; align-self: flex-start; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,230,240,.4);
+  background: rgba(34,230,240,.08); color: var(--cyan); font: 600 12px 'Inter', sans-serif; cursor: pointer; }
+.ov-use button:hover { background: rgba(34,230,240,.18); }
+html[lang="kn"] .ov-use-tag { letter-spacing: normal; text-transform: none; }
