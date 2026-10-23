@@ -360,7 +360,6 @@ export default function AccountPage() {
               <User size={32} strokeWidth={1.5} style={{ color: "#ffffff" }} />
             </div>
             <div className="ac-av-ring" />
-            <span className="ac-online" title="Online" />
           </div>
           <div className="ac-pwho">
             <div className="ac-pname">{kn ? "ಅಧಿಕಾರಿ" : "Officer"}</div>
