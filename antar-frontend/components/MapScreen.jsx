@@ -289,6 +289,29 @@ function titleCase(t) {
   return t === t.toUpperCase() ? t.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()) : t;
 }
 const placeName = (r) => titleCase(r.area || r.beat || r.stations[0]);
+// View summaries already written in this tab, by the request that produced them. Kept in
+// sessionStorage too, so a reload or a trip to another screen does not ask again.
+const SUMMARY_KEY = "antar_view_summaries";
+const summaryCache = new Map();
+function summaryCacheGet(body) {
+  if (summaryCache.has(body)) return summaryCache.get(body);
+  try {
+    const all = JSON.parse(sessionStorage.getItem(SUMMARY_KEY) || "{}");
+    if (all[body]) { summaryCache.set(body, all[body]); return all[body]; }
+  } catch {}
+  return null;
+}
+function summaryCacheSet(body, text) {
+  summaryCache.set(body, text);
+  try {
+    const all = JSON.parse(sessionStorage.getItem(SUMMARY_KEY) || "{}");
+    all[body] = text;
+    const keys = Object.keys(all);
+    keys.slice(0, Math.max(0, keys.length - 60)).forEach((k) => delete all[k]);   // newest 60
+    sessionStorage.setItem(SUMMARY_KEY, JSON.stringify(all));
+  } catch {}
+}
+
 const shortDate = (iso) => { try { return new Date(iso + "T00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" }); } catch { return iso; } };
 const crimeMix = (r) => r.crimes.slice(0, 2).map((c) => crimeName(c.crime).toLowerCase()).join(", ");
 
@@ -955,33 +978,43 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (rightTab !== "summary" || !viewInsight || giLoading) return;
+    const body = JSON.stringify({
+      crime_type: crimeType,
+      district: selectedDistrict,
+      date: endDate,
+      stats: {
+        trend: viewInsight.trend,
+        concentration: viewInsight.concentration,
+        lead: viewInsight.lead,
+        second: viewInsight.second,
+        hotBand: viewInsight.hotBand,
+        hotFirst: viewInsight.hotFirst,
+        level: viewInsight.level
+      }
+    });
+    // A view already summarised is shown again without asking: same facts, same summary.
+    const kept = summaryCacheGet(body);
+    if (kept) { setLlmSummary(kept); setLlmLoading(false); return; }
     const ctrl = new AbortController();
     setLlmLoading(true);
     setLlmSummary(null);
-    fetch(`${API}/api/map/view_summary`, {
+    // Ask only once the view has settled: while the map loads, the figures pass through
+    // in-between states that would each cost a model call nobody reads.
+    const wait = setTimeout(() => fetch(`${API}/api/map/view_summary`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        crime_type: crimeType,
-        district: selectedDistrict,
-        date: endDate,
-        stats: {
-          trend: viewInsight.trend,
-          concentration: viewInsight.concentration,
-          lead: viewInsight.lead,
-          second: viewInsight.second,
-          hotBand: viewInsight.hotBand,
-          hotFirst: viewInsight.hotFirst,
-          level: viewInsight.level
-        }
-      }),
+      body,
       signal: ctrl.signal
     })
     .then(r => r.json())
-    .then(d => setLlmSummary(typeof d.summary === "string" && !/^unable to generate/i.test(d.summary.trim()) ? d.summary : null))
-    .catch(() => setLlmSummary(null))
-    .finally(() => { if (!ctrl.signal.aborted) setLlmLoading(false); });
-    return () => ctrl.abort();
+    .then(d => {
+      const ok = typeof d.summary === "string" && d.summary.trim() && !/^unable to generate/i.test(d.summary.trim());
+      if (ok) summaryCacheSet(body, d.summary);
+      setLlmSummary(ok ? d.summary : null);
+    })
+    .catch(() => { if (!ctrl.signal.aborted) setLlmSummary(null); })
+    .finally(() => { if (!ctrl.signal.aborted) setLlmLoading(false); }), 600);
+    return () => { clearTimeout(wait); ctrl.abort(); };
   }, [rightTab, viewInsight, giLoading, crimeType, selectedDistrict, endDate]);
 
   // ── Agents on the map: drag one onto a district, it runs there for the selected date ──

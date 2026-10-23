@@ -193,14 +193,24 @@ class TestMapSummary:
             seen.update(system=system, user=user, kw=kw)
             return "Read this: https://evil.example/?q=1 <img src=x>"
         monkeypatch.setattr(Q, "quickml_generate", fake)
+        map_api._SUMMARY_CACHE.clear()
         out = run(map_api.view_summary(self._req()))
         assert "<untrusted_data" in seen["user"] and seen["kw"].get("max_tokens") == 300
-        assert "evil.example" not in out["summary"] and out["summary"].startswith("Unable to generate")
+        # no summary rather than the bad one (the page writes its own line from the rows),
+        # and a rejected reply is never kept
+        assert out["summary"] is None and not map_api._SUMMARY_CACHE
 
+        calls = []
         async def good(system, user, **kw):
+            calls.append(1)
             return "Cases are rising in this view.\n\nMysuru City is the busiest area."
         monkeypatch.setattr(Q, "quickml_generate", good)
         assert run(map_api.view_summary(self._req()))["summary"] == "Cases are rising in this view. Mysuru City is the busiest area."
+        # the same view again comes from the cache, not a second model call
+        again = run(map_api.view_summary(self._req()))
+        assert again["summary"] == "Cases are rising in this view. Mysuru City is the busiest area."
+        assert again.get("cached") is True and len(calls) == 1
+        map_api._SUMMARY_CACHE.clear()
 
 
 # ── the judge ────────────────────────────────────────────────────────────────

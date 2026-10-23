@@ -10,6 +10,8 @@ from __future__ import annotations
 import sqlite3
 from typing import Optional
 import re
+import time
+from collections import OrderedDict
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -466,12 +468,40 @@ def _summary_facts(req: "SummaryRequest") -> dict:
     return {k: v for k, v in facts.items() if v is not None}
 
 
+# Written summaries, by the facts they were written from. The facts are the whole input to
+# the model, so the same facts give an answer already paid for: going back to a date or a
+# district costs nothing. Failures are never kept, so a later call can still succeed.
+_SUMMARY_CACHE: "OrderedDict[str, tuple[float, str]]" = OrderedDict()
+_SUMMARY_TTL_S = 6 * 3600
+_SUMMARY_MAX = 512
+
+
+def _summary_cached(key: str) -> str | None:
+    hit = _SUMMARY_CACHE.get(key)
+    if not hit or time.time() - hit[0] > _SUMMARY_TTL_S:
+        _SUMMARY_CACHE.pop(key, None)
+        return None
+    _SUMMARY_CACHE.move_to_end(key)
+    return hit[1]
+
+
+def _summary_keep(key: str, text: str) -> None:
+    _SUMMARY_CACHE[key] = (time.time(), text)
+    _SUMMARY_CACHE.move_to_end(key)
+    while len(_SUMMARY_CACHE) > _SUMMARY_MAX:
+        _SUMMARY_CACHE.popitem(last=False)
+
+
 @router.post("/view_summary", dependencies=[Depends(rate_limit(30, 0.2))])
 async def view_summary(req: SummaryRequest):
     import json
     from app.core.rag_security import fence, detect_injection
     from app.services.quickml import quickml_generate
     facts = _summary_facts(req)
+    key = json.dumps(facts, sort_keys=True, ensure_ascii=False)
+    cached = _summary_cached(key)
+    if cached:
+        return {"summary": cached, "cached": True}
     system = ("You are a senior police analyst. In two or three plain sentences, say what the map view "
               "below shows and what deserves attention first. Use only the facts given: never add a "
               "number, a place or a cause that is not in them. Plain text, one paragraph, no markdown, "
@@ -484,7 +514,9 @@ async def view_summary(req: SummaryRequest):
         # the summary is prose about a map: no links, no markup, a bounded length
         if not summary or detect_injection(summary) or re.search(r"https?://|<[a-z/!]|```", summary, re.I):
             raise ValueError("summary rejected")
-        return {"summary": re.sub(r"\s+", " ", summary)[:700]}
+        summary = re.sub(r"\s+", " ", summary)[:700]
+        _summary_keep(key, summary)
+        return {"summary": summary}
     except Exception:
         # no summary rather than an error message on screen: the page writes "In short"
         # from the rows it already shows
