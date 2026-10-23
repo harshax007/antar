@@ -11,6 +11,7 @@ import Constellation from "@/components/Constellation";
 import Constellation3D from "@/components/Constellation3D";
 import CrimeGraph from "@/components/CrimeGraph";
 import BrainViewSummary from "@/components/BrainViewSummary";
+import FocusPanel from "@/components/FocusPanel";
 import BrainLoader from "@/components/BrainLoader";
 import TypingSearchInput from "@/components/TypingSearchInput";
 import AgentMascot from "@/components/AgentMascot";
@@ -928,133 +929,11 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       </AnimatePresence>
 
       {/* ── Focus panel - the crime intelligence of the selected group ── */}
-      {view === "net" && focus && (() => {
-        const c = focus.comp, total = c.size || 1;
-        const pct = (n) => Math.round((n / total) * 100);
-        const yMax = Math.max(1, ...(c.byYear || []).map((y) => y.n));
-        const people = c.accused?.length ? c.accused : (c.people || []).map((p) => ({ ...p, n: null }));
-        const lines = c.lines?.length ? c.lines : (c.rows || []).map((r) => ({ ...r, n: 1 }));
-        const shownLines = lines.slice(0, 6);
-        const restFirs = c.size - shownLines.reduce((t, l) => t + (l.n || 1), 0);
-        const stations = (c.byStation || []).length;
-        // "CYBER CRIME" -> "Cyber crime": the register's capitals, read as a phrase
-        const nice = (t) => { const w = String(t || "").replace(/_/g, " ").trim(); return w === w.toUpperCase() ? w.charAt(0) + w.slice(1).toLowerCase() : w; };
-        return (
-        <aside className="bsx-focus" aria-label={kn ? "ಫೋಕಸ್" : "Focused group"}>
-          <header className="bf-head">
-            <div>
-              <span className="bf-k">{kn ? "ಫೋಕಸ್ · ಸಂಪರ್ಕಿತ ಗುಂಪು" : "Focus · linked group"}</span>
-              <h3>{focusName}</h3>
-              {focus.node.accused && <code>{focus.node.accused}</code>}
-            </div>
-            {/* labelled exit - a bare cross read as decoration, so users refreshed to escape focus */}
-            <button className="bf-exit" onClick={() => controlRef.current?.clear()}>{kn ? "ಫೋಕಸ್ ಮುಚ್ಚಿ" : "Exit focus"}</button>
-          </header>
-
-          <div className="bf-chips">
-            <span><b>{c.size}</b> {c.size === 1 ? "FIR" : "FIRs"}</span>
-            <span><b>{c.districts.length}</b> {c.districts.length === 1 ? "district" : "districts"}</span>
-            {stations > 0 && <span><b>{stations}</b> {stations === 1 ? "station" : "stations"}</span>}
-            {c.years && <span>{c.years[0] === c.years[1] ? c.years[0] : `${c.years[0]} to ${c.years[1]}`}</span>}
-          </div>
-
-          {/* The focused group in sentences - who is connected, how, and where. */}
-          <BrainViewSummary graph={graph} stats={graph?.stats} focus={focus} active={active} kinds={kinds}
-                            groupBy={groupBy} scope={scopeLabel()} district={null} dim3d={dim3d} kn={kn} />
-
-          <section className="bf-mix">
-            <div className="bf-donut"><Donut cats={c.cats} total={c.size} /></div>
-            <ul>
-              {c.cats.slice(0, 5).map((x) => (
-                <li key={x.cat}><i style={{ background: x.color }} /><span>{x.label}</span><b>{x.n}</b><em>{pct(x.n)}%</em></li>
-              ))}
-            </ul>
-          </section>
-
-          {c.byYear?.length > 1 && (
-            <section>
-              <h4>{kn ? "ವರ್ಷವಾರು" : "By year"}</h4>
-              <div className="bf-years">
-                {c.byYear.map((y) => (
-                  <div key={y.name} title={`${y.name}: ${y.n} FIRs`}>
-                    <b>{y.n}</b><i style={{ height: `${Math.max(6, (y.n / yMax) * 44)}px` }} /><span>{String(y.name).slice(2)}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {c.byDistrict?.length > 0 && (
-            <section>
-              <h4>{kn ? "ಎಲ್ಲಿ ದಾಖಲಾಗಿದೆ" : "Where it was registered"}</h4>
-              <ul className="bf-bars">
-                {c.byDistrict.slice(0, 5).map((d) => (
-                  <li key={d.name}><span>{d.name}</span><i><u style={{ width: `${Math.max(4, pct(d.n))}%` }} /></i><b>{d.n}</b></li>
-                ))}
-              </ul>
-              {c.byDistrict.length > 5 && <p className="bf-more">and {c.byDistrict.length - 5} more: {c.byDistrict.slice(5, 9).map((d) => d.name).join(", ")}{c.byDistrict.length > 9 ? "…" : ""}</p>}
-            </section>
-          )}
-
-          {people.length > 0 && (
-            <section>
-              <h4>{kn ? "ಸಂಬಂಧಿತ ಆರೋಪಿಗಳು" : "People involved"}<em>{people.length}</em></h4>
-              <ul className="bf-people">
-                {people.slice(0, 5).map((p) => (
-                  <li key={p.id}><b>{p.name}</b><code>{p.id}</code>{p.n != null && <span>{p.n} {p.n === 1 ? "FIR" : "FIRs"}</span>}</li>
-                ))}
-              </ul>
-              {people.length > 5 && <p className="bf-more">and {people.length - 5} more named accused</p>}
-              {c.noAccused > 0 && <p className="bf-more">{c.noAccused} {c.noAccused === 1 ? "FIR names" : "FIRs name"} no accused.</p>}
-            </section>
-          )}
-
-          {c.sharedKeys?.length > 0 && (
-            <section>
-              <h4>{kn ? "ಹಂಚಿಕೊಂಡ ಗುರುತುಗಳು" : "Shared identifiers"}</h4>
-              <ul className="bf-keys">
-                {c.sharedKeys.map((k) => <li key={k.kind + k.name}><span>{k.kind}</span><code>{k.name}</code><b>in {k.n} FIRs</b></li>)}
-              </ul>
-            </section>
-          )}
-
-          {shownLines.length > 0 && (
-            <section>
-              <h4>{kn ? "ಗುಂಪಿನ FIR ಗಳು" : "FIRs in this group"}</h4>
-              <ul className="bf-firs">
-                {shownLines.map((r, i) => (
-                  <li key={i}>
-                    <div><span>{nice(r.crime)}</span>{r.n > 1 && <b>{r.n} FIRs</b>}</div>
-                    <em>{[r.head && nice(r.head), r.zone, r.year].filter(Boolean).join(" · ")}</em>
-                  </li>
-                ))}
-              </ul>
-              {restFirs > 0 && <p className="bf-more">and {restFirs} more {restFirs === 1 ? "FIR" : "FIRs"} in this group</p>}
-            </section>
-          )}
-
-          {focus.node?.knowledge_boundary !== undefined && (
-            <section className="bf-gap">
-              <h4>{kn ? "ಗುರುತಿನ ಅಂತರ: UNSUB" : "Identity gap: UNSUB"}</h4>
-              <p>{kn ? "ಈ ಗುಂಪಿಗೆ ಯಾವುದೇ ದೃಢಪಡಿಸಿದ ಶಂಕಿತ ವ್ಯಕ್ತಿ ದಾಖಲಾಗಿಲ್ಲ." : "No confirmed suspect on record."}</p>
-            </section>
-          )}
-
-          {focus.whys.length > 0 && (
-            <section>
-              <h4>{kn ? "ಏಕೆ ಸಂಪರ್ಕಿತ" : "Why these are connected"}</h4>
-              <ul className="bf-whys">
-                {focus.whys.map((w, i) => <li key={i}><i style={{ background: LINK_COLORS[w.kind] || "rgba(255,255,255,0.2)" }} /><span>{w.text}</span></li>)}
-              </ul>
-            </section>
-          )}
-
-          <button className="bf-ask" onClick={() => router.push(`/ask?q=${encodeURIComponent(focus.node.accused ? `who is ${focus.node.accused}` : `${focus.node.crimeHead || ""} in ${focus.node.zone || ""}`)}`)}>
-            {kn ? "Antar ಕೇಳಿ →" : "Ask Antar →"}
-          </button>
-        </aside>
-        );
-      })()}
+      {view === "net" && focus && (
+        <FocusPanel key={focus.node.id} focus={focus} name={focusName} kn={kn} Donut={Donut} linkColors={LINK_COLORS}
+                    onExit={() => controlRef.current?.clear()}
+                    onAsk={() => router.push(`/ask?q=${encodeURIComponent(focus.node.accused ? `who is ${focus.node.accused}` : `${focus.node.crimeHead || ""} in ${focus.node.zone || ""}`)}`)} />
+      )}
 
       {/* ── Bottom-Left · Case activity year calendar (constellation views) ── */}
       {view === "net" && <div className="bsx-cal">
