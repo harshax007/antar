@@ -1339,22 +1339,16 @@ function DocsFull() {
                   forecast figure is read live from the engine's own back-test. */}
               {(lang === "kn" ? [
                 { val: "10L+", label: "ಅಧಿಕೃತ KSP ಸ್ಕೀಮಾದ FIR ಗಳು" },
-                { val: "40%", label: "ಅಗ್ರ 5% ಬೀಟ್‌ಗಳಲ್ಲೇ ಸಿಕ್ಕ ಅಪರಾಧ (ಹಿಂದಿನ ತಿಂಗಳ ವಿಧಾನ 38%)" },
                 { val: "16", label: "ವಿಶೇಷ ಏಜೆಂಟ್‌ಗಳು" },
                 { val: trackPct || "80%", label: "ಪರೀಕ್ಷಿತ ವಾರಗಳಲ್ಲಿ ಮುನ್ಸೂಚನೆ ವ್ಯಾಪ್ತಿ ಸರಿ" },
                 { val: "2.8 s", label: "ಸಾಮಾನ್ಯ ಉತ್ತರ ಸಮಯ" },
                 { val: "100%", label: "ಪೂರ್ಣ ಜಾಡು ಇರುವ ಉತ್ತರಗಳು" },
-                { val: "2", label: "ಯಾವುದೇ ಕ್ರಮಕ್ಕೆ ಇಬ್ಬರು ಅಧಿಕಾರಿಗಳ ಅನುಮೋದನೆ; AI ಸ್ವತಃ ಕ್ರಮ ಕೈಗೊಳ್ಳದು" },
               ] : [
                 { val: "10L+", label: "FIRs in the official KSP schema" },
-                // USP-02, from the 23-week back-test on real records (docs/FORECAST_BACKTEST.md)
-                { val: "40%", label: "Crime caught in the top 5% of beats (vs 38%)" },
                 { val: "16", label: "Specialist agents" },
                 { val: trackPct || "80%", label: "Forecast ranges held on tested weeks" },
                 { val: "2.8 s", label: "Typical answer time (median)" },
                 { val: "100%", label: "Answers with a full trace" },
-                // USP-01: a real action needs a second, named officer (app/core/hitl.py)
-                { val: "2", label: "Officers to approve any action; the AI can't act" },
               ]).map((s, i) => (
                 <motion.div 
                   key={s.label}
