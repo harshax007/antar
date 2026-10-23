@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLang, useTheme } from "@/components/Providers";
 import { User } from "lucide-react";
+import "@/components/editorial-account.css";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -245,6 +246,63 @@ export default function AccountPage() {
   // If a non-admin somehow lands on the admin section (after switching role back), bounce to preferences.
   const activeSection = section === "admin" && !isAdmin ? "preferences" : section;
 
+  // The top of each part of the account: what it is and who it is for, why it matters, and
+  // the one thing to do next. Read in five seconds, before any detail.
+  const toId = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const INTRO = {
+    briefing: {
+      en: `The last ${briefWindow} across your districts on one page, for the officer taking over a shift: what came in, where, and what to do first.`,
+      kn: `ಕಳೆದ ${briefWindow} ಒಂದೇ ಪುಟದಲ್ಲಿ, ಶಿಫ್ಟ್ ವಹಿಸಿಕೊಳ್ಳುವ ಅಧಿಕಾರಿಗೆ: ಏನು ದಾಖಲಾಯಿತು, ಎಲ್ಲಿ, ಮತ್ತು ಮೊದಲು ಏನು ಮಾಡಬೇಕು.`,
+      next: ["Start with the priority actions.", "ಆದ್ಯತಾ ಕ್ರಮಗಳಿಂದ ಆರಂಭಿಸಿ."],
+      cta: brief?.priority_actions?.length ? { en: "See priority actions", kn: "ಆದ್ಯತಾ ಕ್ರಮಗಳು", go: () => toId("ac-priority"), arrow: "↓" } : null,
+    },
+    alerts: {
+      en: "Alerts raised by Antar's watch: a place or a watched person that broke its usual pattern. For the duty officer.",
+      kn: "ಅಂತರ್ ಕಣ್ಗಾವಲು ಎತ್ತಿದ ಎಚ್ಚರಿಕೆಗಳು: ಸಾಮಾನ್ಯ ಮಾದರಿ ಮುರಿದ ಸ್ಥಳ ಅಥವಾ ವ್ಯಕ್ತಿ. ಕರ್ತವ್ಯದ ಅಧಿಕಾರಿಗೆ.",
+      next: ["Acknowledge an alert once someone is on it.", "ಯಾರಾದರೂ ಕ್ರಮ ಕೈಗೊಂಡ ನಂತರ ಸ್ವೀಕರಿಸಿ."],
+      cta: { en: "Open the forecast alerts", kn: "ಮುನ್ಸೂಚನೆ ಎಚ್ಚರಿಕೆಗಳು", go: () => router.push("/predict"), arrow: "→" },
+    },
+    preferences: {
+      en: "How Antar opens and reads for you: language, first screen, map view and date format. Only your account changes.",
+      kn: "ಅಂತರ್ ನಿಮಗೆ ಹೇಗೆ ತೆರೆಯುತ್ತದೆ: ಭಾಷೆ, ಮೊದಲ ಪರದೆ, ನಕ್ಷೆ ನೋಟ, ದಿನಾಂಕ ಸ್ವರೂಪ. ನಿಮ್ಮ ಖಾತೆ ಮಾತ್ರ ಬದಲಾಗುತ್ತದೆ.",
+      next: ["Change a setting, then save.", "ಬದಲಿಸಿ, ನಂತರ ಉಳಿಸಿ."],
+    },
+    vigil: {
+      en: "The safeguards against misuse: evidence hashing, no automatic identity merge, location-only profiling of unknown suspects. For supervisors and auditors.",
+      kn: "ದುರ್ಬಳಕೆ ತಡೆಯುವ ರಕ್ಷಣೆಗಳು: ಸಾಕ್ಷ್ಯ ಹ್ಯಾಶಿಂಗ್, ಸ್ವಯಂ ಗುರುತು ವಿಲೀನ ಇಲ್ಲ, ಅಪರಿಚಿತ ಶಂಕಿತರಿಗೆ ಸ್ಥಳ-ಮಾತ್ರ ವಿಶ್ಲೇಷಣೆ. ಮೇಲ್ವಿಚಾರಕರು ಮತ್ತು ಲೆಕ್ಕಪರಿಶೋಧಕರಿಗೆ.",
+      next: ["Leave these on unless a supervisor says otherwise.", "ಮೇಲ್ವಿಚಾರಕರು ಹೇಳದ ಹೊರತು ಇವು ಆನ್ ಆಗಿರಲಿ."],
+    },
+    notifications: {
+      en: "What Antar tells you about, and when. Fewer, sharper notices are read; a flood is ignored.",
+      kn: "ಅಂತರ್ ನಿಮಗೆ ಯಾವುದರ ಬಗ್ಗೆ, ಯಾವಾಗ ತಿಳಿಸುತ್ತದೆ. ಕಡಿಮೆ, ನಿಖರ ಸೂಚನೆಗಳು ಓದಲ್ಪಡುತ್ತವೆ.",
+      next: ["Turn on only what you act on.", "ನೀವು ಕ್ರಮ ಕೈಗೊಳ್ಳುವುದನ್ನು ಮಾತ್ರ ಆನ್ ಮಾಡಿ."],
+    },
+    security: {
+      en: "Your sign-in, password and the devices signed in as you. Police data stays behind this account.",
+      kn: "ನಿಮ್ಮ ಸೈನ್-ಇನ್, ಪಾಸ್‌ವರ್ಡ್ ಮತ್ತು ನಿಮ್ಮ ಹೆಸರಿನಲ್ಲಿ ಸೈನ್ ಇನ್ ಆದ ಸಾಧನಗಳು.",
+      next: ["Revoke any device you do not recognise.", "ಗುರುತಿಸದ ಸಾಧನವನ್ನು ರದ್ದುಮಾಡಿ."],
+    },
+    activity: {
+      en: "Every search, answer and approval made under your ID, read from the audit record. For you and for audit.",
+      kn: "ನಿಮ್ಮ ಐಡಿಯಲ್ಲಿ ಮಾಡಿದ ಪ್ರತಿ ಹುಡುಕಾಟ, ಉತ್ತರ ಮತ್ತು ಅನುಮೋದನೆ, ಆಡಿಟ್ ದಾಖಲೆಯಿಂದ.",
+      next: ["Check it when anything looks unfamiliar.", "ಏನಾದರೂ ಅಪರಿಚಿತವಾಗಿ ಕಂಡರೆ ಪರಿಶೀಲಿಸಿ."],
+    },
+    export: {
+      en: "Case dossiers and reports to download, for court, a briefing or a handover.",
+      kn: "ನ್ಯಾಯಾಲಯ, ಬ್ರೀಫಿಂಗ್ ಅಥವಾ ಹಸ್ತಾಂತರಕ್ಕಾಗಿ ಪ್ರಕರಣ ಕಡತಗಳು ಮತ್ತು ವರದಿಗಳು.",
+      next: ["Pick the format you need.", "ಬೇಕಾದ ಸ್ವರೂಪವನ್ನು ಆರಿಸಿ."],
+    },
+    admin: {
+      en: "Load new FIR data into Antar. Admins only; this step is in preview.",
+      kn: "ಹೊಸ FIR ದತ್ತಾಂಶವನ್ನು ಅಂತರ್‌ಗೆ ಸೇರಿಸಿ. ನಿರ್ವಾಹಕರಿಗೆ ಮಾತ್ರ; ಪೂರ್ವವೀಕ್ಷಣೆ ಹಂತ.",
+      next: ["Choose a file, then upload it.", "ಫೈಲ್ ಆರಿಸಿ, ನಂತರ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ."],
+    },
+  };
+  const secIdx = SECTIONS.findIndex((x) => x.key === activeSection);
+  const secMeta = SECTIONS[secIdx];
+  const intro = INTRO[activeSection];
+  const two = (n) => String(n).padStart(2, "0");
+
   return (
     <div className="ac-page">
       {/* ── LEFT SIDEBAR ── */}
@@ -292,6 +350,21 @@ export default function AccountPage() {
 
       {/* ── MAIN CONTENT ── */}
       <div className="ac-main">
+        {secMeta && intro && (
+          <header className="ac-hero" key={activeSection}>
+            <span className="ac-eyebrow">{kn ? "ಖಾತೆ" : "Account"} · {two(secIdx + 1)} / {two(SECTIONS.length)}</span>
+            <h1>{kn ? secMeta.kn : secMeta.en}</h1>
+            <p className="ac-lead">{kn ? intro.kn : intro.en}</p>
+            <div className="ac-next">
+              {intro.cta && (
+                <button type="button" className="ui-btn ui-btn--primary ac-cta" onClick={intro.cta.go}>
+                  {kn ? intro.cta.kn : intro.cta.en}{intro.cta.arrow && <span aria-hidden="true"> {intro.cta.arrow}</span>}
+                </button>
+              )}
+              <span>{kn ? intro.next[1] : intro.next[0]}</span>
+            </div>
+          </header>
+        )}
         {/* SHIFT BRIEF (A4) */}
         {activeSection === "briefing" && (
           <div className="ac-block">
@@ -318,7 +391,7 @@ export default function AccountPage() {
                   <div className="ac-bstat"><span className="v">{brief.key_incidents?.length ?? 0}</span><span className="k">{kn ? "ಪ್ರಮುಖ ಘಟನೆ" : "key incidents"}</span></div>
                   <div className="ac-bstat"><span className="v">{brief.window_hours}h</span><span className="k">{kn ? "ವಿಂಡೋ" : "window"}</span></div>
                 </div>
-                <div className="ac-shead">{kn ? "ಆದ್ಯತಾ ಕ್ರಮಗಳು" : "Priority actions"}</div>
+                <div className="ac-shead" id="ac-priority">{kn ? "ಆದ್ಯತಾ ಕ್ರಮಗಳು" : "Priority actions"}</div>
                 {(brief.priority_actions || []).map((a) => (
                   <div key={a.rank} className="ac-brief-action">
                     <span className="rank">{a.rank}</span>
@@ -353,38 +426,23 @@ export default function AccountPage() {
             {alertsList.length === 0 ? (
               <div className="ac-loading" style={{ color: "#94A3B8" }}>{kn ? "ಯಾವುದೇ ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳಿಲ್ಲ." : "No active watchdog alerts."}</div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <ol className="ac-alerts">
                 {alertsList.map((a, i) => (
-                  <div key={i} style={{
-                    background: "transparent",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "6px",
-                    padding: "12px",
-                    display: "flex", flexDirection: "column", gap: "8px"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "11px", color: "#FFFFFF", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{a.alert_type}</span>
-                      <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)" }}>{a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : "Just now"}</span>
+                  <li key={i} className={a.severity === "High" ? "hi" : ""}>
+                    <div className="ac-al-top">
+                      <span className="ac-al-type">{a.alert_type}</span>
+                      <span className="ac-al-time">{a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : (kn ? "ಈಗ" : "Just now")}</span>
                     </div>
-                    <div style={{ fontSize: "12.5px", color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
-                      {a.message}
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
-                      <span style={{ fontSize: "11px", color: a.severity === "High" ? "#EF4444" : "rgba(255,255,255,0.5)" }}>
-                        {kn ? "ತೀವ್ರತೆ:" : "Severity:"} {a.severity}
-                      </span>
-                      <button 
-                        onClick={() => setAlertsList(alertsList.filter((_, idx) => idx !== i))} 
-                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "4px", fontSize: "10px", cursor: "pointer", transition: "background 0.2s" }}
-                        onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                        onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
-                      >
+                    <p>{a.message}</p>
+                    <div className="ac-al-foot">
+                      <span className="ac-al-sev">{kn ? "ತೀವ್ರತೆ:" : "Severity:"} {a.severity}</span>
+                      <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" onClick={() => setAlertsList(alertsList.filter((_, idx) => idx !== i))}>
                         {kn ? "ಸ್ವೀಕರಿಸಿ" : "Acknowledge"}
                       </button>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ol>
             )}
           </div>
         )}
