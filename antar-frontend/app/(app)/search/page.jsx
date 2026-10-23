@@ -425,8 +425,7 @@ function SearchContent() {
         <div className="sx-listpanel">
           <div className="sx-searchwrap">
             <header className="sx-intro">
-              <span className="sx-eyebrow">{kn ? "ಹುಡುಕಾಟ · ತನಿಖಾ ಅಧಿಕಾರಿಗಳಿಗೆ" : "Search · for investigating officers"}</span>
-              <h1>{kn ? <>FIR ದಾಖಲೆಯಲ್ಲಿ ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕಿ, <em>ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ.</em></> : <>Find a person in the FIR register, <em>even misspelt.</em></>}</h1>
+              <h1>{kn ? <>ಹುಡುಕಾಟ · <em>ಅಪರಾಧ ದಾಖಲೆ</em></> : <>Search · <em>Criminal Record</em></>}</h1>
               <p>{kn
                 ? "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ತಂದೆಯ ಹೆಸರು, ಫೋನ್ ಅಥವಾ ವಾಹನ ಸಂಖ್ಯೆ. ದಾಖಲೆ ತೆರೆಯಿರಿ: ಪ್ರಕರಣಗಳು, ಅಪಾಯ, ಸಹಚರರು."
                 : "Name, alias, father's name, phone or vehicle plate. Open a record for their cases, risk and associates before an arrest or a visit."}</p>

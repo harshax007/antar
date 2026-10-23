@@ -11,6 +11,7 @@ import { fetchAPI } from "@/lib/api";
 import { readSession, isApprover, verifyOfficer, readApproverSession, saveApproverSession, clearApproverSession, APPROVER_ID } from "@/lib/auth";
 import { useLang } from "@/components/Providers";
 import "@/components/editorial-approvals.css";
+import AccountSidebar from "@/components/AccountSidebar";
 import {
   ShieldCheck, ShieldAlert, Clock, CheckCircle2, XCircle, Undo2, Siren, Eye, Fingerprint,
   RefreshCw, Inbox,
@@ -138,19 +139,20 @@ export default function ApprovalsPage() {
     : (kn ? "ನಿಮ್ಮ ವಿನಂತಿಗಳ ಸ್ಥಿತಿ" : "Status of requested actions"), [approver, kn]);
 
   return (
-    <div className="ap-page">
-      <div className="ap-wrap">
+    <div className="ac-page">
+      <AccountSidebar activeSection="approvals" hitlBadge={pendingN} />
+      <div className="ac-main ap-page" style={{ padding: "var(--sp-8) var(--sp-6) var(--sp-10)", overflowY: "auto", minHeight: "100vh" }}>
+        <div className="ap-wrap">
         <header className="ap-head">
           <div className="ap-hero">
-            <span className="ap-kicker">{kn ? "ಅನುಮೋದನೆಗಳು · ಎರಡು-ಅಧಿಕಾರಿ ನಿಯಮ · ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಗಳಿಗೆ" : "Approvals · two-officer rule · for supervising officers"}</span>
             <h1>{approver
               ? (pendingN > 0
                   ? (kn ? <><em>{pendingN}</em> ಕ್ರಮ ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ.</> : <><em>{pendingN} {pendingN === 1 ? "action" : "actions"}</em> waiting for your decision.</>)
                   : (kn ? "ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕೆ ಏನೂ ಬಾಕಿ ಇಲ್ಲ." : "Nothing is waiting for your decision."))
-              : (kn ? <>ಎರಡನೇ ಅಧಿಕಾರಿ ಅನುಮೋದಿಸುವವರೆಗೆ <em>ಏನೂ ಜಾರಿಯಾಗುವುದಿಲ್ಲ.</em></> : <>Nothing happens until <em>a second officer approves it.</em></>)}</h1>
+              : (kn ? <>ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿ <em>ಇನ್-ಲೂಪ್</em></> : <>Supervisor officer <em>in-loop</em></>)}</h1>
             <p>{kn
-              ? "ಗಸ್ತು ಮರುನಿಯೋಜನೆ ಮತ್ತು ವೀಕ್ಷಣಾ ಪಟ್ಟಿ ಸೇರ್ಪಡೆ ನೆಲದ ಮೇಲೆ ನಡೆಯುವುದನ್ನು ಬದಲಿಸುತ್ತವೆ. ಪ್ರತಿಯೊಂದಕ್ಕೂ ಕೇಳಿದವರಲ್ಲದ ಇನ್ನೊಬ್ಬ ಅಧಿಕಾರಿಯ ಲಿಖಿತ ಕಾರಣ ಬೇಕು, ಮತ್ತು ಅದು ಆಡಿಟ್‌ನಲ್ಲಿ ದಾಖಲಾಗುತ್ತದೆ."
-              : "Patrol redeployments and watchlist additions change what happens on the ground. Each one needs a written reason from an officer other than the one who asked, and the decision is recorded in the audit chain."}</p>
+              ? "ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆಯಿಲ್ಲದೆ ಏನೂ ಜಾರಿಯಾಗುವುದಿಲ್ಲ. ಗಸ್ತು ಮರುನಿಯೋಜನೆ ಮತ್ತು ವೀಕ್ಷಣಾ ಪಟ್ಟಿ ನವೀಕರಣಗಳಿಗೆ ಸ್ವತಂತ್ರ ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಲಿಖಿತ ಸಹಿ ಅಗತ್ಯ."
+              : "Nothing executes without an officer's approval. Patrol redeployments and watchlist updates require written sign-off from an independent supervising officer."}</p>
             <div className="ap-next">
               {approver && pendingN > 0 && (
                 <button type="button" className="ui-btn ui-btn--primary ap-cta" onClick={() => { setTab("pending"); setTimeout(() => { try { document.querySelector(".ap-list")?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {} }, 60); }}>
@@ -160,7 +162,7 @@ export default function ApprovalsPage() {
               <span>{approver
                 ? (pendingN > 0 ? (kn ? "ಕಾರಣ ಬರೆಯಿರಿ, ನಂತರ ಅನುಮೋದಿಸಿ ಅಥವಾ ತಿರಸ್ಕರಿಸಿ. ನೀವು ಸಲ್ಲಿಸಿದುದನ್ನು ನೀವೇ ನಿರ್ಧರಿಸಲಾಗದು." : "Write a reason, then approve or reject. You cannot decide a request you filed yourself.")
                     : (kn ? "ಹೊಸ ವಿನಂತಿಗಳು ಇಲ್ಲಿ ತಕ್ಷಣ ಕಾಣಿಸುತ್ತವೆ." : "New requests appear here as soon as they are filed."))
-                : (kn ? "ನಿರ್ಧರಿಸಲು ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿ ಕೆಳಗೆ ಸೈನ್ ಇನ್ ಮಾಡುತ್ತಾರೆ." : "To decide, a supervising officer signs in below.")}</span>
+                : (kn ? "ಬಾಕಿ ಇರುವ ಕ್ರಮಗಳನ್ನು ನಿರ್ಧರಿಸಲು ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯಾಗಿ ಸೈನ್ ಇನ್ ಮಾಡಿ." : "Sign in below with supervisor credentials to review and decide pending requests.")}</span>
             </div>
           </div>
           <div className="ap-identity">
@@ -178,7 +180,9 @@ export default function ApprovalsPage() {
           <ApproverSignIn kn={kn} onSignedIn={(s) => { saveApproverSession(s); setApproverSession(s); }} />
         )}
 
-        <div className="ap-stats">
+        {approver && (
+          <>
+            <div className="ap-stats">
           <div><b>{stats?.pending ?? "–"}</b><span>{kn ? "ಬಾಕಿ" : "pending"}</span></div>
           <div className={stats?.pending_high_risk ? "hot" : ""}><b>{stats?.pending_high_risk ?? "–"}</b><span>{kn ? "ಹೆಚ್ಚಿನ ಅಪಾಯ" : "high risk"}</span></div>
           <div className={stats?.expiring_within_2h ? "warn" : ""}><b>{stats?.expiring_within_2h ?? "–"}</b><span>{kn ? "2 ಗಂಟೆಯಲ್ಲಿ ಅವಧಿ ಮುಗಿಯುತ್ತದೆ" : "expiring < 2h"}</span></div>
@@ -216,6 +220,9 @@ export default function ApprovalsPage() {
               : <HistoryCard key={a.action_id} a={a} kn={kn} now={now} />)}
           </div>
         )}
+          </>
+        )}
+        </div>
       </div>
     </div>
   );
@@ -276,7 +283,7 @@ function ApproverSignIn({ kn, onSignedIn }) {
         <Fingerprint size={15} aria-hidden="true" />
         <div>
           <b>{kn ? "ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿ ಪ್ರವೇಶ" : "Supervising officer sign-in"}</b>
-          <span>{kn ? "ಅನುಮೋದಿಸಲು ಎರಡನೇ ಅಧಿಕಾರಿ ಬೇಕು. ಅನುಮೋದಕರ ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ." : "Approving needs a second officer. Enter the approver's ID and password."}</span>
+          <span>{kn ? "ಕ್ರಮಗಳನ್ನು ಪರಿಶೀಲಿಸಲು ನಿಮ್ಮ ಮೇಲ್ವಿಚಾರಕ ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ." : "Enter your supervisor ID and password to review and approve actions."}</span>
         </div>
       </div>
       <div className="ap-signin-row">

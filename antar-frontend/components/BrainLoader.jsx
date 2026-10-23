@@ -34,6 +34,13 @@ export const OSINT_STEPS = {
 };
 export const OSINT_ORBS = ["shaping", "searching", "connecting", "working"];
 
+// Trace & Observability steps
+export const TRACE_STEPS = {
+  en: ["Connecting to telemetry", "Reading the record of questions", "Tracing decision trees", "Almost ready"],
+  kn: ["ಟೆಲಿಮೆಟ್ರಿ ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ", "ಪ್ರಶ್ನೆ ದಾಖಲೆಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ", "ನಿರ್ಧಾರ ವೃಕ್ಷಗಳನ್ನು ಪತ್ತೆಮಾಡಲಾಗುತ್ತಿದೆ", "ಬಹುತೇಕ ಸಿದ್ಧ"],
+};
+export const TRACE_ORBS = ["searching", "connecting", "solving", "working"];
+
 export default function BrainLoader({ kn = false, fullscreen = false, steps: own, orbs = STEP_ORB, className = "" }) {
   const steps = (own || STEPS)[kn ? "kn" : "en"];
   // The steps run once and hold on the last: looping back to "Loading FIR records" while

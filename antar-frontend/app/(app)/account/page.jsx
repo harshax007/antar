@@ -399,7 +399,6 @@ export default function AccountPage() {
       <div className="ac-main">
         {secMeta && intro && (
           <header className="ac-hero" key={activeSection}>
-            <span className="ac-eyebrow">{kn ? "ಖಾತೆ" : "Account"} · {two(secIdx + 1)} / {two(SECTIONS.length)}</span>
             <h1>{kn ? secMeta.kn : secMeta.en}</h1>
             <p className="ac-lead">{kn ? intro.kn : intro.en}</p>
             <div className="ac-next">

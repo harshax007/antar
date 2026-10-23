@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw, Search, Layers } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { useLang } from "@/components/Providers";
+import BrainLoader, { TRACE_STEPS, TRACE_ORBS } from "@/components/BrainLoader";
 import "@/components/editorial-trace.css";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -666,9 +667,8 @@ function Toggle({ on, onClick, label, title }) {
 
 function Splash({ kn }) {
   return (
-    <div className="tlm tlm-center">
-      <div className="tlm-spinner" aria-hidden="true" />
-      <p>{kn ? "ಆಬ್ಸರ್ವಬಿಲಿಟಿ ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..." : "Reading the record of questions…"}</p>
+    <div className="tlm tlm-center" style={{ position: "relative", minHeight: "100vh", height: "100%", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--void, #060910)" }}>
+      <BrainLoader steps={TRACE_STEPS} orbs={TRACE_ORBS} kn={kn} />
     </div>
   );
 }

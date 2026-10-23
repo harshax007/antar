@@ -9,7 +9,7 @@
 .sx-intro { margin-bottom: var(--sp-4); }
 .sx-eyebrow { display: block; margin-bottom: var(--sp-2); font: 500 var(--fs-caption)/1.3 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
 html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
-.sx-intro h1 { margin: 0; font: 700 24px/1.12 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); text-wrap: balance; }
+.sx-intro h1 { margin: 0 0 var(--sp-2); font: 700 22px/1.2 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); text-wrap: balance; }
 .sx-intro h1 em { font-style: normal; color: var(--accent); }
 .sx-intro p { margin: var(--sp-2) 0 0; font-size: var(--fs-body-sm); line-height: 1.5; color: var(--text-2); }
 
@@ -23,7 +23,7 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-page .sx-fchips button:hover { color: var(--text-1); }
 .sx-page .sx-fchips button.on { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
 .sx-page .sx-fchip-pill { display: none; }
-.sx-page .sx-enginehint { font-size: var(--fs-caption); color: var(--text-3); }
+.sx-page .sx-enginehint { font-size: 10px; line-height: 1.4; color: var(--text-3); opacity: 0.85; margin-top: var(--sp-2); }
 .sx-page .sx-sortrow { font-size: var(--fs-caption); }
 
 /* results on hairlines */
