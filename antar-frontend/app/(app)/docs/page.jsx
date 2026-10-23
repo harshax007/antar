@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { SPRING } from "@/components/ui/MaterialPanel";
 import { useLang } from "@/components/Providers";
 import { newAssistantMsg, applyEvent, streamChat } from "@/lib/chatStream";
 import { asset } from "@/lib/assets";
@@ -491,7 +492,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={SPRING}
             style={{ overflow: "hidden" }}
           >
             <div style={{ padding: "16px 0 8px 0", display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr", minHeight: "360px" }} className="antar-expanded-grid">
@@ -1056,12 +1057,18 @@ function DocsFull() {
                         ].map((btn, i) => (
                           <motion.div
                             key={btn.id}
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: [1, 0.3, 1, 0.3, 1, 0.3, 1] }}
-                            transition={{ duration: 2, delay: 1.0 + (i * 0.15), ease: "easeInOut" }}
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={expandedDetail === btn.id}
+                            // They used to blink three times on arrival; a calm rise says "here" without shouting.
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ ...SPRING, delay: 0.5 + (i * 0.06) }}
                             onClick={() => setExpandedDetail(expandedDetail === btn.id ? null : btn.id)}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedDetail(expandedDetail === btn.id ? null : btn.id); } }}
                             whileHover={{ backgroundColor: "rgba(10,15,26,0.96)" }}
                             style={{
+                              position: "relative", isolation: "isolate",
                               background: "rgba(4,7,14,0.96)",
                               border: `1px solid ${expandedDetail === btn.id ? "rgba(34,230,240,0.5)" : "rgba(34,230,240,0.12)"}`,
                               borderRadius: "6px",
@@ -1072,6 +1079,10 @@ function DocsFull() {
                               transition: "color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.3s ease, scale 0.3s ease"
                             }}
                           >
+                            {expandedDetail === btn.id && (
+                              <motion.span layoutId="docs-detail-pill" transition={SPRING}
+                                style={{ position: "absolute", inset: -1, zIndex: -1, borderRadius: "6px", border: "1px solid rgba(34,230,240,0.5)", background: "rgba(34,230,240,0.06)" }} />
+                            )}
                             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: expandedDetail === btn.id ? "#22E6F0" : "#EEF3FA", fontWeight: 500, letterSpacing: "0.02em" }}>
                               {btn.label}
                             </span>
@@ -1082,16 +1093,17 @@ function DocsFull() {
                         ))}
                       </div>
 
-                      <AnimatePresence mode="wait">
+                      <AnimatePresence initial={false}>
                         {expandedDetail && (
                           <motion.div
-                            key={expandedDetail}
+                            key="detail-panel"
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                            transition={SPRING}
                             style={{ overflow: "hidden", maxWidth: "680px" }}
                           >
+                           <motion.div key={expandedDetail} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.22, ease: "easeOut" }}>
                             <div style={{ padding: "12px 16px", background: "rgba(3,5,12,0.9)", border: "1px solid rgba(34,230,240,0.15)", borderRadius: "8px", boxShadow: "0 0 20px rgba(0,0,0,0.5)" }}>
                               {(() => {
                                 // The three tabs, short and plain. Every line is something the product
@@ -1218,6 +1230,7 @@ function DocsFull() {
                               })()}
 
                             </div>
+                           </motion.div>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -1352,14 +1365,14 @@ function DocsFull() {
               ]).map((s, i) => (
                 <motion.div 
                   key={s.label}
-                  whileHover={{ scale: 1.1, y: -4 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  transition={SPRING}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flex: "1 1 0" }}
                 >
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 + (i * 0.08), duration: 0.5, type: "spring" }}
+                    transition={{ ...SPRING, delay: 0.2 + (i * 0.06) }}
                     style={{ fontFamily:"'Chakra Petch', sans-serif", fontSize:"22px", fontWeight:700, color:"#22E6F0", lineHeight:1, textShadow: "0 0 16px rgba(34,230,240,0.5)" }}
                   >
                     {s.val}
@@ -1572,8 +1585,14 @@ function DocsFull() {
       
         /* Tools Grid CSS from Mockup */
         .tools-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-bottom: 48px; text-align: left; }
-        .tools-card { border-radius:14px; padding:15px 16px 16px; display:flex; flex-direction:column; background: rgba(3,6,15,0.93); border: 1px solid rgba(255,255,255,0.06); transition:transform .25s ease,border-color .25s ease; cursor: pointer; }
+        .tools-card { border-radius:14px; padding:15px 16px 16px; display:flex; flex-direction:column; background: rgba(3,6,15,0.93); border: 1px solid rgba(255,255,255,0.06); transition:transform .35s var(--ease-spring, cubic-bezier(.22,1,.36,1)), border-color .25s ease; cursor: pointer;
+          animation: toolsArrive .5s var(--ease-spring, cubic-bezier(.22,1,.36,1)) both; }
+        .tools-card:nth-child(2) { animation-delay: .05s; } .tools-card:nth-child(3) { animation-delay: .1s; }
+        .tools-card:nth-child(4) { animation-delay: .15s; } .tools-card:nth-child(5) { animation-delay: .2s; } .tools-card:nth-child(6) { animation-delay: .25s; }
+        @keyframes toolsArrive { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
         .tools-card:hover { transform:translateY(-3px); border-color: rgba(34,230,240,0.3); }
+        .tools-card:active { scale: .985; transition: scale 90ms ease-out; }
+        @media (prefers-reduced-motion: reduce) { .tools-card { animation: none; } .tools-card:hover { transform: none; } }
         .tools-thead { display:flex; align-items:center; gap:10px; }
         .tools-tnum { font-family:'JetBrains Mono', monospace; font-size:11px; color:#475569; width:20px; }
         .tools-tname { font-family:'Chakra Petch', sans-serif; font-weight:600; font-size:16px; flex:1; color:#F8FAFC; }
