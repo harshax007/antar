@@ -2480,7 +2480,7 @@ export default function ChatPage() {
         <style>{`@media (min-width: 821px) { .cx-pillnav { display: none !important; } }`}</style>
         {/* the nav (and the switch in it) is hidden here on desktop, so the switch floats top right */}
         <LangToggle float />
-        <div style={{
+        <div className="cx-land" style={{
           position: "fixed",
           top: 0,
           left: 0,
@@ -2495,7 +2495,7 @@ export default function ChatPage() {
         }}>
 
           {/* 2. Centered AI Chat / Question Bar */}
-          <div style={{
+          <div className="cx-land-center" style={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
@@ -2663,6 +2663,7 @@ export default function ChatPage() {
                     }
                   }}
                   placeholder=""
+                  className="cx-land-input"
                   style={{
                     width: "100%",
                     minHeight: "72px",
@@ -2814,7 +2815,7 @@ export default function ChatPage() {
               <style jsx>{`
                 .sq-row { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 740px; }
                 .sq-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; flex: 1; min-width: 0; }
-                @media (max-width: 640px) { .sq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+                @media (max-width: 640px) { .sq-grid { grid-template-columns: 1fr; } .sq-q { -webkit-line-clamp: unset; display: block; min-height: 0; } }
                 .sq-q { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
                   white-space: normal; text-align: center; background: transparent;
                   border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 8px 12px; cursor: pointer; min-height: 44px; align-content: center;

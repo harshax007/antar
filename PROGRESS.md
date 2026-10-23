@@ -2363,3 +2363,15 @@ Next: the same pass on Chat, Brain, Map, Search and Docs, then the rest.
 * **Fix:** design-tokens.css had reused the chat's `--ink-1/--ink-2` (dark surfaces) for light text, which turned chat answer cards white. Text tokens are now `--text-1..4`, rules `--rule-1/2`.
 * **Search** (`editorial-search.css`): the left column opens with "Find a person in the FIR register, *even misspelt.*" for investigating officers, and why (cases, risk and associates before an arrest or a visit); the box is the next step. Filters underline, results on hairlines, the record reads as a title and a quiet fact line, figures on a rule, numbered flat sections; Show in Brain is the one solid button.
 * **Approvals** (`editorial-approvals.css`): the top names who it is for (supervising officers) and why it matters (redeployments and watchlist additions change what happens on the ground; a second officer decides, with a written reason, on the audit chain). The headline follows the role: "N actions waiting for your decision" for an approver, "Nothing happens until a second officer approves it." otherwise; the solid button opens the first request. Figures on a rule, requests as rows with a risk rule and a fact line instead of badge pills, Approve stays solid green, Reject outlined. Presentation only.
+
+### Every screen fits: phone, tablet, laptop, 1080p, large monitor - 2026-10-24
+Measured every screen (Chat, Brain, Map, Predict, Search, Trace, Approvals, Account and its sections, About, Docs) at 375×812, 768×1024, 1366×768, 1920×1080 and 2560×1440 with a fit check (anything wider than the screen, outside a scroll area), plus a look at each on a phone. Fixes are in `antar-frontend/app/responsive.css`:
+* **Chat landing:** it centred and clipped, so on a phone the headline sat under the top bar. Now it scrolls and centres only when there is room; suggested questions go one column on a phone with the whole question shown; typed text and the grey suggestion stay clear of Expert.
+* **Brain:** on a phone Fast Run landed on the "…" button; it sits under the stack now.
+* **Map:** stacked on a phone/tablet, the left column was squeezed to 19px and the View summary tabs sat on the calendar; Agents sat under Repeat locations. Both fixed.
+* **Search:** on a phone the list was ~26px tall under the intro. Stacked now: the list (own scroll), then the record; a tap scrolls to the record; the record's header puts the score under the name.
+* **Account, Approvals, Trace:** the shared sidebar was squeezed to 52px with the page drawn over it. On phones and tablets the sections are one swipeable row under a compact "Signed in as", with Sign out top right.
+* **Docs:** the example-question rows and the stats bar wrap on a phone.
+* **Guide "?":** moves to the bottom right on phones, above the tab bar.
+* **Large monitors:** Predict centres at 1680px instead of running 2545px wide.
+After the fixes, no screen has anything wider than the screen at any of the five sizes (Map's off-screen district list for screen readers is deliberate).

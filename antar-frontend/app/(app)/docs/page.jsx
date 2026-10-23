@@ -421,6 +421,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
     <div style={{ marginBottom: "12px" }}>
       {/* Compressed Header */}
       <motion.div 
+        className="dc-qrow"
         onClick={onToggle}
         whileHover={{ backgroundColor: "rgba(10,15,26,0.96)" }}
         style={{
@@ -456,7 +457,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
            {statusMessage}
         </span>
         
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", minWidth: "120px", justifyContent: "flex-end" }}>
+        <div className="dc-qrow-status" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", minWidth: "120px", justifyContent: "flex-end" }}>
           <motion.div 
             animate={{ opacity: status === "running" ? [0.4, 1, 0.4] : 1 }} 
             transition={{ repeat: status === "running" ? Infinity : 0, duration: 1.5 }} 
@@ -1346,6 +1347,7 @@ function DocsFull() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.6 }}
+              className="dc-stats"
               style={{ background: "rgba(3,6,15,0.8)", border: "1px solid rgba(34,230,240,0.15)", borderRadius: "12px", padding: "20px 24px", display: "flex", gap: "16px", flexWrap: "nowrap", justifyContent: "space-between", marginBottom: "42px", textAlign: "center", boxShadow: "0 0 30px rgba(34,230,240,0.03)", backdropFilter: "blur(12px)" }}
             >
               {/* Measured, not claimed: each figure is counted from the system (Oct 2026), and the

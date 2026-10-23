@@ -1,0 +1,89 @@
+/* ── Fit on every screen: phone, tablet, laptop, 1080p and large monitors ──
+   One place for the rules that keep each screen inside the viewport. Measured with a
+   fit check at 375×812, 768×1024, 1366×768, 1920×1080 and 2560×1440. */
+
+/* Chat landing: a fixed full-screen panel that used to centre its content and clip the
+   rest. On a phone (top bar + bottom tab bar) or a short laptop window the headline went
+   under the nav. Now it scrolls, and centres only when there is room (auto margins). */
+.cx-land { overflow-y: auto !important; overflow-x: hidden !important; }
+.cx-land-center { justify-content: flex-start !important; min-height: 100%; flex: 1 0 auto !important; padding-top: 32px !important; padding-bottom: 32px !important; }
+.cx-land-center > :first-child { margin-top: auto; }
+.cx-land-center > :last-child { margin-bottom: auto; }
+.cx-land-input { padding-right: 64px !important; }   /* typed text stays clear of the Expert button */
+@media (max-width: 820px) {
+  .cx-land-center { padding: 92px 16px 104px !important; }   /* clear of the top bar and the bottom tabs */
+}
+.cx-land-input ~ div[style*="pointer-events"] { right: 64px !important; }   /* the grey suggested question too */
+
+/* Brain on a phone: Terminal, Saved and "…" stack down the right edge, and Fast Run used to
+   land on top of "…". It now sits under the stack. */
+@media (max-width: 640px) {
+  .bsx-wrap .bsx-pill.think { top: 152px !important; right: 10px !important; left: auto !important; }
+}
+
+/* Map on phones and tablets: the rails are scroll boxes on desktop (min-height 0), which
+   let the stacked grid squeeze the left column to ~19px, so the right column's tabs sat on
+   top of the calendar. Stacked, they size to their content. */
+@media (max-width: 900px) {
+  .mx-page .mx-leftrail, .mx-page .mx-rightrail { overflow: visible !important; min-height: auto !important; height: auto !important; }
+}
+/* the district box + Repeat locations bar and the Agents button share the map's top edge;
+   on a phone Agents drops to a second row instead of sitting under Repeat locations */
+@media (max-width: 640px) {
+  .mx-page .mxa.tight { top: 54px !important; left: auto !important; }
+}
+
+/* The page-guide "?" floats at top:120px on the right. On a phone that lands on headlines
+   and map controls, so it moves to the bottom right, just above the tab bar. */
+@media (max-width: 820px) {
+  .cx-guide-btn { top: auto !important; bottom: calc(76px + env(safe-area-inset-bottom)) !important; right: 12px !important; }
+}
+
+/* Search on phones and tablets: the desktop split (list | record, each a fixed-height
+   scroller) left the list ~26px tall under the intro. Stacked, the page scrolls: the list
+   first, capped with its own scroll, then the whole record. */
+@media (max-width: 900px) {
+  .sx-page .sx-md { display: block !important; height: auto !important; overflow: visible !important; }
+  .sx-page .sx-listpanel { height: auto !important; max-height: none !important; border-right: 0 !important; }
+  .sx-page .sx-results { flex: none !important; height: auto; max-height: 52vh; overflow-y: auto; }
+  .sx-page .sx-md > .sx-detailpanel { height: auto !important; max-height: none !important; overflow: visible !important; border-top: 1px solid var(--rule-2); }
+}
+/* the record's header on a phone: avatar and name on one row, the score under them */
+@media (max-width: 640px) {
+  .sx-page .sx-hero { grid-template-columns: auto 1fr !important; gap: 12px 14px !important; }
+  .sx-page .sx-hero-risk { grid-column: 1 / -1; text-align: left !important; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .sx-page .sx-hero-risk .bar { margin-left: 0 !important; }
+  .sx-page .sx-dp-inner { padding: 16px; }
+}
+
+/* Account, Approvals and Trace share the Account sidebar. Stacked on a phone or tablet the
+   sidebar (a scroll box, min-height 0) was squeezed to ~52px with the page drawn over it,
+   and eleven stacked menu items would push the content a screen down. Here the officer
+   stays compact on top, the sections become one row you swipe, and Sign out sits top right. */
+@media (max-width: 1024px) {
+  .ac-page { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: auto auto !important; height: auto !important; min-height: 0; }
+  .ac-page .ac-sidebar { position: relative; overflow: visible !important; min-height: auto !important; height: auto !important; padding: 12px 16px 0 !important; border-bottom: 1px solid var(--rule-1) !important; }
+  .ac-page .ac-prof { padding-bottom: 10px !important; margin-bottom: 4px !important; border-bottom: 0 !important; }
+  .ac-page .ac-snav { flex-direction: row !important; flex-wrap: nowrap; overflow-x: auto; gap: 2px !important; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .ac-page .ac-snav::-webkit-scrollbar { display: none; }
+  .ac-page .ac-snav-item { flex: none !important; border-left: 0 !important; border-bottom: 2px solid transparent !important; padding: 10px !important; }
+  .ac-page .ac-snav-item.on { border-bottom-color: var(--accent) !important; }
+  .ac-page .ac-signout { position: absolute; top: 18px; right: 16px; margin: 0 !important; border: 0 !important; padding: 6px 0 !important; width: auto; }
+  .ac-page .ac-main { min-width: 0 !important; min-height: 0 !important; overflow: visible !important; }
+}
+
+/* Docs on a phone: the example-question rows and the five-figure stats bar were single
+   rows that did not wrap, so "Show Response" and the last figure ran off the right edge. */
+@media (max-width: 640px) {
+  .dc-qrow { flex-wrap: wrap !important; row-gap: 8px !important; padding: 14px 16px !important; }
+  .dc-qrow-status { margin-left: 0 !important; min-width: 0 !important; flex-basis: 100%; justify-content: flex-start !important; }
+  .dc-stats { flex-wrap: wrap !important; padding: 16px !important; row-gap: 16px !important; }
+  .dc-stats > * { flex: 1 1 40% !important; min-width: 0; }
+}
+
+/* Large monitors (2560 and up): Predict ran 2545px wide, so a sentence or
+   a row of figures stretched across the whole screen. It centres at a readable width
+   (Trace, About, Approvals and Search were already capped). */
+@media (min-width: 1800px) {
+  .px-page { width: 100%; max-width: 1680px; margin-left: auto !important; margin-right: auto !important; align-self: center; }
+}

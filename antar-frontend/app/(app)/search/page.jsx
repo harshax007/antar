@@ -561,7 +561,11 @@ function SearchContent() {
                   id={`sx-row-${r.suspect_id}`}
                   role="listitem"
                   className={`sx-rrow ${selectedId === r.suspect_id ? "active" : ""}`}
-                  onClick={() => setSelectedId(r.suspect_id)}
+                  onClick={() => {
+                    setSelectedId(r.suspect_id);
+                    // stacked on a phone, the record is below the list: bring it into view
+                    if (window.innerWidth <= 900) setTimeout(() => document.querySelector(".sx-detailpanel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+                  }}
                 >
                   {selectedId === r.suspect_id && <motion.span layoutId="sx-row-sel" className="sx-row-sel" transition={SPRING} />}
                   <span className={`sx-rav r-${t}`}>{initials(r.full_name)}</span>

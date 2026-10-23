@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./apple-feel.css";
 import "./design-tokens.css";
+import "./responsive.css";
 
 export const metadata = {
   title: "Antar - Crime Intelligence",
