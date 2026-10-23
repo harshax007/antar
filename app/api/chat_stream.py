@@ -233,6 +233,46 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         await q.close()
         return
 
+    # ── Misuse screen (vigil) before any data agent sees the question ────────
+    # AGENTS.md: vigil "audits the officer's prompt before the data agents see it". Only the
+    # screen used to call it, as a banner beside an answer that was still produced - so a
+    # question targeting a community was answered anyway (minus the community part), and a
+    # direct API call skipped the check entirely. A REJECTED question is now refused here,
+    # with the reason and a lawful way to ask; FLAGGED ones go on, as before.
+    try:
+        from app.agents.vigil_agent import audit_request
+        _screen = audit_request(query_text, officer=officer)
+    except Exception:
+        _screen = {}
+    if _screen.get("status") == "REJECTED":
+        answer = _L(lang,
+                    "Antar does not answer this. It asks about people by their caste, religion or community, "
+                    "which police analysis may not do (Article 15 of the Constitution; BNSS Sec 173, "
+                    "non-discriminatory investigation). Ask about the crime instead - for example "
+                    "\"theft cases in Rajajinagar this month\" or \"top beats for theft in Rajajinagar\".",
+                    "Antar ಇದಕ್ಕೆ ಉತ್ತರಿಸುವುದಿಲ್ಲ. ಇದು ಜಾತಿ, ಧರ್ಮ ಅಥವಾ ಸಮುದಾಯದ ಆಧಾರದ ಮೇಲೆ ಜನರ ಬಗ್ಗೆ ಕೇಳುತ್ತದೆ; "
+                    "ಪೊಲೀಸ್ ವಿಶ್ಲೇಷಣೆ ಹಾಗೆ ಮಾಡುವಂತಿಲ್ಲ (ಸಂವಿಧಾನದ ಅನುಚ್ಛೇದ 15; BNSS ಸೆಕ್ಷನ್ 173). ಬದಲಿಗೆ ಅಪರಾಧದ ಬಗ್ಗೆ "
+                    "ಕೇಳಿ - ಉದಾ: \"ರಾಜಾಜಿನಗರದಲ್ಲಿ ಈ ತಿಂಗಳ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳು\".")
+        await q.emit("step", agent="vigil", status="done",
+                     label=_L(lang, "Misuse check: blocked (Article 15)", "ದುರ್ಬಳಕೆ ತಪಾಸಣೆ: ತಡೆಯಲಾಗಿದೆ (ಅನುಚ್ಛೇದ 15)"))
+        async for chunk in token_stream(answer):
+            await q.emit("token", content=chunk)
+        refusal_trace = [{"step": "vigil", "detail": "; ".join(_screen.get("flags") or []) or "prohibited targeting",
+                          "citation": _screen.get("bnss_citation")}]
+        # A refusal is on the audit chain like any answer: who asked what, and why it was refused.
+        try:
+            audit_hash = audit_store.record_ai_reasoning(
+                officer=officer, session_id=session_id, user_text=req.text, answer=answer,
+                agents_used=["vigil"], citations=[], reasoning_id=reasoning_id, reasoning_trace=refusal_trace)
+        except Exception:
+            audit_hash = None
+        await q.emit("complete", session_id=session_id, template_id="REFUSED", mode="refusal",
+                     lang=lang, reasoning_id=reasoning_id, agents_used=["vigil"], reasoning=refusal_trace,
+                     elapsed_ms=int((time.perf_counter() - t_start) * 1000), audit_hash=audit_hash)
+        sessions.append_assistant_turn(session_id, answer, lang, "REFUSED", reasoning_id, refusal_trace)
+        await q.close()
+        return
+
     if command:
         await q.emit("step", agent="command", status="done", command=command,
                      label=f"/{command} — {SLASH_COMMANDS[command]['label']}")
