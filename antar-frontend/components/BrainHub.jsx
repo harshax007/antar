@@ -28,6 +28,8 @@ export default function BrainHub() {
   const kn = lang === "kn";
   const kpi = (sp.get("suspect") || sp.get("kpi") || "").trim();
   const [recs, setRecs] = useState(null);
+  // A linked-records use case ("Show the 25 FIRs") focuses the Brain on that key's group.
+  const [brainFocus, setBrainFocus] = useState("");
   const [sel, setSel] = useState({ year: null, month: null, day: null, district: null, cats: null });
   // Loading gate: hold the branded loader over the whole brain screen until the graph
   // data has actually arrived AND had a beat to build/paint - so the officer never
@@ -136,7 +138,7 @@ export default function BrainHub() {
       <div ref={topRef} style={{ position: "relative", minHeight: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
 
         <div style={{ flex: 1, position: "relative" }}>
-          <BrainStructure focusId={kpi} recs={recs} sel={sel} setSel={setSel} />
+          <BrainStructure focusId={brainFocus || kpi} recs={recs} sel={sel} setSel={setSel} />
         </div>
         {!(sel.type === "node" || sel.type === "group") && (
           <div style={{ position: "fixed", bottom: "64px", right: "20px", zIndex: 10, display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
@@ -163,7 +165,13 @@ export default function BrainHub() {
           </div>
         )}
       </div>
-      <DataOverview recs={recs} sel={sel} setSel={setSel} onJumpTop={jumpTop} />
+      <DataOverview recs={recs} sel={sel} setSel={setSel} onJumpTop={jumpTop}
+                    onFocusBrain={(key) => {
+                      // cleared first, so showing the same key again re-runs the focus
+                      setBrainFocus("");
+                      requestAnimationFrame(() => setBrainFocus(key));
+                      scrollToSection("top");
+                    }} />
     </div>
   );
 }

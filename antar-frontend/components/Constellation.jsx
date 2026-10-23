@@ -68,10 +68,13 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
   }, [legendFocus]);
   useEffect(() => { if (constel) onStats?.(constel.stats); }, [constel, onStats]);
 
-  function focusComponent(n) {
+  // `seeds`: every FIR an exact search matched - the focus is exactly those FIRs, so it
+  // counts the same records as the table that asked for them
+  function focusComponent(n, seeds) {
     const fg = fgRef.current;
     if (!fg || !dataRef.current) return;
-    const members = n.kind === "category"
+    const members = seeds?.length > 1 ? seeds
+      : n.kind === "category"
       ? dataRef.current.nodes.filter((m) => m.cat === n.cat)
       : n.comm
       ? dataRef.current.nodes.filter((m) => m.comm === n.comm)
@@ -554,14 +557,19 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
         // rank matches: named hubs first, then linked records, then dust
         const score = (m) => (m.role === "hub" || m.role === "top" ? 2 : m.comm ? 1 : 0);
         let found = null;
+        const exact = [];
         dataRef.current.nodes.forEach((m) => {
           if (m.kind === "agent") return;
-          // Only search by ACC-id (m.accused)
+          // Search by ACC-id (m.accused), or an exact shared key
+          // a shared key (vehicle, UPI ID, IP address) finds its FIRs too - the Data overview's
+          // "Show the N FIRs" focuses the Brain on one of these
+          const keyHit = [m.vehicle, m.upi, m.ip].some((v) => v && String(v).trim().toLowerCase() === needle);
           const hay = [m.accused];
-          if (!hay.some((v) => v && String(v).toLowerCase().includes(needle))) return;
+          if (!keyHit && !hay.some((v) => v && String(v).toLowerCase().includes(needle))) return;
+          if (keyHit || String(m.accused || "").trim().toLowerCase() === needle) exact.push(m);
           if (!found || score(m) > score(found)) found = m;
         });
-        if (found) focusComponent(found);
+        if (found) focusComponent(found, exact);
         return !!found;
       },
     };

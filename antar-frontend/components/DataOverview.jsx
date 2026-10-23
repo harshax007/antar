@@ -66,7 +66,7 @@ function linkStats(rows) {
   return out;
 }
 
-export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
+export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrain }) {
   const { lang } = useLang();
   const kn = lang === "kn";
   const [q, setQ] = useState("");
@@ -180,13 +180,15 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop }) {
 
   const links = useMemo(() => linkStats(filtered), [filtered]);
 
-  // A use case's action: the FIRs behind it, in the records table below. Not Chat or Search:
-  // those read the 10-lakh register, where some of these identifiers do not exist, so a
-  // button there could answer "no FIRs" for a link this page just showed.
+  // A use case's action: the FIRs behind it, both in the Brain above (focused on that key's
+  // linked group) and in the FIR records table below. Not Chat or Search: those read the
+  // 10-lakh register, where some of these identifiers do not exist, so a button there could
+  // answer "no FIRs" for a link this page just showed.
   function showFirs(key) {
     setQ(key);
     setPage(0);
-    requestAnimationFrame(() => document.querySelector(".ov-tablewrap")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    if (onFocusBrain) onFocusBrain(key);
+    else requestAnimationFrame(() => document.querySelector(".ov-tablewrap")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
   const sampleRows = useMemo(() => {

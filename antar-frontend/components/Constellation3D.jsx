@@ -160,10 +160,13 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     fg.nodeColor(nodeColor).nodeVisibility(nodeVisible).linkColor(linkColor).linkVisibility(linkVisible);
   }
 
-  function focusComponent(n) {
+  // `seeds`: every FIR an exact search matched - the focus is exactly those FIRs, so it
+  // counts the same records as the table that asked for them
+  function focusComponent(n, seeds) {
     const fg = fgRef.current;
     if (!fg || !dataRef.current) return;
-    const members = n.comm ? dataRef.current.nodes.filter((m) => m.comm === n.comm) : [n];
+    const members = seeds?.length > 1 ? seeds
+      : n.comm ? dataRef.current.nodes.filter((m) => m.comm === n.comm) : [n];
     focusRef.current = new Set(members.map((m) => m.id));
 
     const whys = [], seen = new Set();
@@ -491,13 +494,18 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         if (!needle || !dataRef.current) return false;
         const score = (m) => (m.role === "hub" || m.role === "top" ? 2 : m.comm ? 1 : 0);
         let found = null;
+        const exact = [];
         dataRef.current.nodes.forEach((m) => {
           if (m.kind === "agent") return;
+          // a shared key (vehicle, UPI ID, IP address) finds its FIRs too - the Data overview's
+          // "Show the N FIRs" focuses the Brain on one of these
+          const keyHit = [m.vehicle, m.upi, m.ip].some((v) => v && String(v).trim().toLowerCase() === needle);
           const hay = [m.accused, m.accused && aliasFor(m.accused), m.zone, m.district, m.crimeHead, m.crimeGroup];
-          if (!hay.some((v) => v && String(v).toLowerCase().includes(needle))) return;
+          if (!keyHit && !hay.some((v) => v && String(v).toLowerCase().includes(needle))) return;
+          if (keyHit || String(m.accused || "").trim().toLowerCase() === needle) exact.push(m);
           if (!found || score(m) > score(found)) found = m;
         });
-        if (found) focusComponent(found);
+        if (found) focusComponent(found, exact);
         return !!found;
       },
     };
