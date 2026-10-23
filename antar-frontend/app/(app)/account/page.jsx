@@ -362,10 +362,10 @@ export default function AccountPage() {
             <div className="ac-av-ring" />
             <span className="ac-online" title="Online" />
           </div>
-          <div className="ac-pname">{prefs.displayName || officer.name}</div>
-          <div className="ac-pid">{officer.id}</div>
-          <div className="ac-punit">{officer.unit}</div>
-          <div className="ac-role-badge">{officer.rank}</div>
+          <div className="ac-pwho">
+            <div className="ac-pname">{kn ? "ಅಧಿಕಾರಿ" : "Officer"}</div>
+            <div className="ac-pid">{officer.id}</div>
+          </div>
         </div>
 
         {/* Role switch removed */}

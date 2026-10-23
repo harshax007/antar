@@ -112,3 +112,16 @@ html[lang="kn"] .ac-al-tag { letter-spacing: normal; text-transform: none; font-
 .ac-al-step span { margin-right: var(--sp-2); font: 600 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
 .ac-page .ac-al-foot { justify-content: flex-start; gap: var(--sp-2); margin-top: var(--sp-4); }
 .ac-page .ac-al-time { font-size: var(--fs-label); color: var(--text-3); white-space: nowrap; }
+
+/* the officer: avatar and name on one line, the ID under the name */
+.ac-page .ac-prof { flex-direction: row; align-items: center; gap: var(--sp-3); padding-bottom: var(--sp-5); }
+.ac-page .ac-prof > * { align-self: center; }
+.ac-page .ac-av-wrap { flex: none; }
+.ac-page .ac-av { width: 44px; height: 44px; }
+.ac-page .ac-av svg { width: 22px; height: 22px; }
+.ac-page .ac-online { width: 10px; height: 10px; }
+.ac-page .ac-pwho { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ac-page .ac-pwho .ac-pname { margin: 0; font: 700 var(--fs-h3)/1.15 'Chakra Petch', sans-serif; color: var(--text-1); }
+.ac-page .ac-pwho .ac-pid { font: 500 var(--fs-label) 'JetBrains Mono', monospace; color: var(--text-3); }
+.ac-page .ac-av-wrap { position: relative; width: 44px; height: 44px; }
+.ac-page .ac-online { position: absolute; right: -1px; bottom: -1px; margin: 0; border: 2px solid #05080F; }
