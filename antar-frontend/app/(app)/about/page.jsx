@@ -100,28 +100,16 @@ export default function AboutPage() {
           <div className="ab-team-grid">
             {[
               {
-                initials: "HD", name: "Harsha D B",
+                initials: "HD", name: "Harsha D B", link: "https://www.linkedin.com/in/harshax07/",
                 role: ["Team Lead · Full-stack & security engineering", "ತಂಡದ ನಾಯಕ · ಫುಲ್-ಸ್ಟ್ಯಾಕ್ ಮತ್ತು ಭದ್ರತಾ ಇಂಜಿನಿಯರಿಂಗ್"],
-                bio: ["Leads the team and owns how Antar thinks and how it stays safe. Every answer an officer reads has passed through his pipeline first.",
-                      "ತಂಡವನ್ನು ಮುನ್ನಡೆಸುತ್ತಾರೆ; Antar ಹೇಗೆ ಯೋಚಿಸುತ್ತದೆ ಮತ್ತು ಹೇಗೆ ಸುರಕ್ಷಿತವಾಗಿರುತ್ತದೆ ಎಂಬುದು ಅವರ ಜವಾಬ್ದಾರಿ. ಅಧಿಕಾರಿ ಓದುವ ಪ್ರತಿ ಉತ್ತರವೂ ಮೊದಲು ಅವರ ವ್ಯವಸ್ಥೆಯ ಮೂಲಕ ಹಾದುಹೋಗುತ್ತದೆ."],
-                built: [
-                  ["The agents that work out each answer, and the checks that stop a wrong figure reaching an officer", "ಪ್ರತಿ ಉತ್ತರವನ್ನು ಲೆಕ್ಕ ಹಾಕುವ ಏಜೆಂಟ್‌ಗಳು, ಮತ್ತು ತಪ್ಪು ಅಂಕಿ ಅಧಿಕಾರಿಯನ್ನು ತಲುಪದಂತೆ ತಡೆಯುವ ಪರಿಶೀಲನೆಗಳು"],
-                  ["Approved query paths over the FIR register, so nobody runs free-form queries on police data", "FIR ದಾಖಲೆಯ ಮೇಲೆ ಅನುಮೋದಿತ ಪ್ರಶ್ನೆ ದಾರಿಗಳು - ಪೊಲೀಸ್ ದತ್ತಾಂಶದ ಮೇಲೆ ಮುಕ್ತ ಪ್ರಶ್ನೆಗಳಿಲ್ಲ"],
-                  ["Two-officer approvals and the audit record behind every action", "ಎರಡು-ಅಧಿಕಾರಿ ಅನುಮೋದನೆ ಮತ್ತು ಪ್ರತಿ ಕ್ರಮದ ಹಿಂದಿನ ಆಡಿಟ್ ದಾಖಲೆ"],
-                ],
-                focus: ["Backend · Security · Agents · Data", "ಬ್ಯಾಕೆಂಡ್ · ಭದ್ರತೆ · ಏಜೆಂಟ್‌ಗಳು · ದತ್ತಾಂಶ"],
+                bio: ["Leads the team and owns how Antar thinks and how it stays safe: the agents that work out each answer, the checks that stop a wrong figure reaching an officer, the approved query paths over the FIR register, and the two-officer approvals and audit record behind every action.",
+                      "ತಂಡವನ್ನು ಮುನ್ನಡೆಸುತ್ತಾರೆ; Antar ಹೇಗೆ ಯೋಚಿಸುತ್ತದೆ ಮತ್ತು ಹೇಗೆ ಸುರಕ್ಷಿತವಾಗಿರುತ್ತದೆ ಎಂಬುದು ಅವರ ಜವಾಬ್ದಾರಿ: ಪ್ರತಿ ಉತ್ತರವನ್ನು ಲೆಕ್ಕ ಹಾಕುವ ಏಜೆಂಟ್‌ಗಳು, ತಪ್ಪು ಅಂಕಿ ಅಧಿಕಾರಿಯನ್ನು ತಲುಪದಂತೆ ತಡೆಯುವ ಪರಿಶೀಲನೆಗಳು, FIR ದಾಖಲೆಯ ಮೇಲಿನ ಅನುಮೋದಿತ ಪ್ರಶ್ನೆ ದಾರಿಗಳು, ಮತ್ತು ಪ್ರತಿ ಕ್ರಮದ ಹಿಂದಿನ ಎರಡು-ಅಧಿಕಾರಿ ಅನುಮೋದನೆ ಹಾಗೂ ಆಡಿಟ್ ದಾಖಲೆ."],
               },
               {
-                initials: "CM", name: "Chandana M",
+                initials: "CM", name: "Chandana M", link: "https://www.linkedin.com/in/chandana-m-6b3bab284/",
                 role: ["System design & frontend engineering", "ಸಿಸ್ಟಮ್ ವಿನ್ಯಾಸ ಮತ್ತು ಫ್ರಂಟ್-ಎಂಡ್ ಇಂಜಿನಿಯರಿಂಗ್"],
-                bio: ["Owns everything an officer sees and touches, and makes complicated data feel calm and easy to read, even at the end of a long shift.",
-                      "ಅಧಿಕಾರಿ ನೋಡುವ ಮತ್ತು ಬಳಸುವ ಎಲ್ಲವೂ ಅವರ ಜವಾಬ್ದಾರಿ; ಜಟಿಲ ದತ್ತಾಂಶವನ್ನೂ ದೀರ್ಘ ಶಿಫ್ಟ್‌ನ ಕೊನೆಯಲ್ಲೂ ಶಾಂತವಾಗಿ, ಸುಲಭವಾಗಿ ಓದುವಂತೆ ಮಾಡುತ್ತಾರೆ."],
-                built: [
-                  ["The Brain, Map, Predict and Search screens officers work in", "ಅಧಿಕಾರಿಗಳು ಕೆಲಸ ಮಾಡುವ ಬ್ರೈನ್, ನಕ್ಷೆ, ಮುನ್ಸೂಚನೆ ಮತ್ತು ಹುಡುಕಾಟ ಪರದೆಗಳು"],
-                  ["The Kannada and English interface, from labels to fonts", "ಲೇಬಲ್‌ಗಳಿಂದ ಅಕ್ಷರಶೈಲಿಯವರೆಗೆ ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಇಂಟರ್ಫೇಸ್"],
-                  ["The layout that keeps each screen readable, with one clear next step", "ಪ್ರತಿ ಪರದೆಯನ್ನು ಓದಲು ಸುಲಭವಾಗಿಸುವ, ಒಂದು ಸ್ಪಷ್ಟ ಮುಂದಿನ ಹೆಜ್ಜೆಯ ವಿನ್ಯಾಸ"],
-                ],
-                focus: ["Frontend · System design · Maps · Bilingual UI", "ಫ್ರಂಟ್-ಎಂಡ್ · ಸಿಸ್ಟಮ್ ವಿನ್ಯಾಸ · ನಕ್ಷೆಗಳು · ದ್ವಿಭಾಷಾ UI"],
+                bio: ["Owns everything an officer sees and touches: the Brain, Map, Predict and Search screens, the Kannada and English interface, and a layout that keeps complicated data calm and easy to read, even at the end of a long shift.",
+                      "ಅಧಿಕಾರಿ ನೋಡುವ ಮತ್ತು ಬಳಸುವ ಎಲ್ಲವೂ ಅವರ ಜವಾಬ್ದಾರಿ: ಬ್ರೈನ್, ನಕ್ಷೆ, ಮುನ್ಸೂಚನೆ ಮತ್ತು ಹುಡುಕಾಟ ಪರದೆಗಳು, ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಇಂಟರ್ಫೇಸ್, ಹಾಗೂ ಜಟಿಲ ದತ್ತಾಂಶವನ್ನೂ ದೀರ್ಘ ಶಿಫ್ಟ್‌ನ ಕೊನೆಯಲ್ಲೂ ಶಾಂತವಾಗಿ, ಸುಲಭವಾಗಿ ಓದುವಂತೆ ಮಾಡುವ ವಿನ್ಯಾಸ."],
               },
             ].map((m) => (
               <article key={m.name} className="ab-member">
@@ -131,13 +119,12 @@ export default function AboutPage() {
                     <h3 className="ab-member-name">{m.name}</h3>
                     <span className="ab-member-role">{kn ? m.role[1] : m.role[0]}</span>
                   </div>
+                  <a className="ab-member-link" href={m.link} target="_blank" rel="noopener noreferrer"
+                     aria-label={`${m.name} on LinkedIn`}>
+                    LinkedIn <ArrowUpRight size={13} aria-hidden="true" />
+                  </a>
                 </header>
                 <p className="ab-member-bio">{kn ? m.bio[1] : m.bio[0]}</p>
-                <div className="ab-member-built">
-                  <span>{kn ? "ನಿರ್ಮಿಸಿದ್ದು" : "What they built"}</span>
-                  <ol>{m.built.map((b, n) => <li key={n}><em>{String(n + 1).padStart(2, "0")}</em>{kn ? b[1] : b[0]}</li>)}</ol>
-                </div>
-                <p className="ab-member-focus">{kn ? m.focus[1] : m.focus[0]}</p>
               </article>
             ))}
           </div>
