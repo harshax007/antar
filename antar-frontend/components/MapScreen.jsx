@@ -288,7 +288,11 @@ function titleCase(t) {
   if (/^[A-Z0-9-]+$/.test(t) && t.includes("-")) return t;          // a unit code stays a code
   return t === t.toUpperCase() ? t.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()) : t;
 }
-const placeName = (r) => titleCase(r.area || r.beat || r.stations[0]);
+const placeName = (r) => titleCase(r.area || r.beat || r.stations[0])
+  ?.replace(/\bRaiway\b/gi, "Railway")
+  ?.replace(/\bPlat Forms\b/gi, "Platforms")
+  ?.replace(/\bPootpath\b/gi, "Footpath")
+  ?.replace(/\bBda\b/g, "BDA");
 // View summaries already written in this tab, by the request that produced them. Kept in
 // sessionStorage too, so a reload or a trip to another screen does not ask again.
 const SUMMARY_KEY = "antar_view_summaries";
@@ -313,7 +317,7 @@ function summaryCacheSet(body, text) {
 }
 
 const shortDate = (iso) => { try { return new Date(iso + "T00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" }); } catch { return iso; } };
-const crimeMix = (r) => r.crimes.slice(0, 2).map((c) => crimeName(c.crime).toLowerCase()).join(", ");
+const crimeMix = (r) => r.crimes.slice(0, 2).map((c) => crimeName(c.crime)).join(" · ");
 
 // A repeat location, opened from its ring: what keeps happening there, and since when.
 function RepeatPopup({ r, kn, from }) {
@@ -734,6 +738,56 @@ export default function MapScreen() {
   const [repeatOn, setRepeatOn] = useState(false);
   const [repeats, setRepeats] = useState(null);
   const [rptSel, setRptSel] = useState(null);
+  const [leftWidth, setLeftWidth] = useState(300);
+  const [rightWidth, setRightWidth] = useState(340);
+  const [isResizing, setIsResizing] = useState(false);
+  const [rptShowAll, setRptShowAll] = useState(false);
+  const switchingRptRef = useRef(false);
+  const leftExpanded = leftWidth >= 420;
+  const startResizeLeft = useCallback((e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = leftWidth;
+    setIsResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    const onMove = (ev) => {
+      const next = Math.max(260, Math.min(600, startW + (ev.clientX - startX)));
+      setLeftWidth(next);
+    };
+    const onUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      try { window.dispatchEvent(new Event("resize")); } catch {}
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [leftWidth]);
+  const startResizeRight = useCallback((e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = rightWidth;
+    setIsResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    const onMove = (ev) => {
+      const next = Math.max(280, Math.min(620, startW + (startX - ev.clientX)));
+      setRightWidth(next);
+    };
+    const onUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      try { window.dispatchEvent(new Event("resize")); } catch {}
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [rightWidth]);
   // Only places on land inside Karnataka: a point out at sea (coastal-security FIRs carry
   // the boat's or the post's position) or across the border is not a place to send a beat.
   const rptOutside = useMemo(() => (repeats?.locations || []).filter((r) => karnatakaContains && !karnatakaContains(r.lat, r.lon)).length,
@@ -826,7 +880,9 @@ export default function MapScreen() {
     setSelectedDistrict(null);
     setDistrictDetail(null);
     setFlyBounds(null);
+    setRightWidth(340);
     setResetMapTrigger((v) => v + 1);
+    setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch {} }, 50);
   }
 
   // The district card follows the calendar and the crime filter: it is read again for the
@@ -1198,7 +1254,7 @@ export default function MapScreen() {
     : (kn ? "ಎಲ್ಲಾ ಅಪರಾಧ" : "All crimes");
 
   return (
-    <div className="mx-page">
+    <div className={`mx-page${isResizing ? " is-resizing" : ""}`} style={{ "--left-rail-w": `${leftWidth}px`, "--right-rail-w": `${rightWidth}px` }}>
       <div className="mx-mapwrap">
         {/* Geospatial Intelligence HUD Header Bar ($100B Company Product Quality) */}
         
@@ -1319,6 +1375,12 @@ export default function MapScreen() {
           {!dayView && <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} stateView={!selectedDistrict} />}
           {dayView && dayDots.map((c) => (
             <CircleMarker key={"day" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 8 : 3.6}
+              eventHandlers={{
+                popupclose: () => {
+                  if (selectedDistrict) setFlyBounds(gadmBounds(selectedDistrict));
+                  else { setFlyBounds(null); setResetMapTrigger((v) => v + 1); }
+                }
+              }}
               pathOptions={{ color: "#ffd2cf", weight: 1, fillColor: "#E14038", fillOpacity: 0.9 }}>
               <Popup className="mx-case-pop" maxWidth={320} minWidth={250} autoPanPadding={[24, 24]}>
                 <CasePopup c={c} kn={kn} />
@@ -1335,7 +1397,20 @@ export default function MapScreen() {
           {repeatOn && rptShown.map((r, i) => (
             <CircleMarker key={"rpt" + i} ref={(m) => { rptRefs.current[i] = m; }} center={[r.lat, r.lon]}
               radius={(selectedDistrict ? 7 : 5) + Math.min(9, Math.sqrt(r.firs) * 1.3)}
-              eventHandlers={{ click: () => setRptSel(i), popupclose: () => setRptSel((v) => (v === i ? null : v)) }}
+              eventHandlers={{
+                click: () => {
+                  switchingRptRef.current = true;
+                  setTimeout(() => { switchingRptRef.current = false; }, 800);
+                  setRptSel(i);
+                },
+                popupclose: () => {
+                  setRptSel((v) => (v === i ? null : v));
+                  if (!switchingRptRef.current) {
+                    if (selectedDistrict) setFlyBounds(gadmBounds(selectedDistrict));
+                    else { setFlyBounds(null); setResetMapTrigger((v) => v + 1); }
+                  }
+                }
+              }}
               pathOptions={{ color: "#FFB020", weight: rptSel === i ? 3 : 1.8, opacity: r.active ? 1 : 0.6,
                              dashArray: r.active ? undefined : "3 3", fillColor: "#FFB020", fillOpacity: r.active ? 0.24 : 0.08 }}>
               <Popup className="mx-case-pop mx-rpt-pop" maxWidth={320} minWidth={260} autoPanPadding={[24, 24]}>
@@ -1450,7 +1525,16 @@ export default function MapScreen() {
             </select>
           </label>
           <button type="button" className={`mx-rpt-btn ${repeatOn ? "on" : ""}`} aria-pressed={repeatOn}
-                  onClick={() => setRepeatOn((v) => !v)}
+                  onClick={() => setRepeatOn((v) => {
+                    const next = !v;
+                    if (!next) {
+                      setLeftWidth(300);
+                      if (selectedDistrict) setFlyBounds(gadmBounds(selectedDistrict));
+                      else { setFlyBounds(null); setResetMapTrigger((c) => c + 1); }
+                      setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch {} }, 50);
+                    }
+                    return next;
+                  })}
                   title="Places with 3 or more FIRs on 2 or more days in the last 90 days">
             <i aria-hidden="true" />{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat locations"}
             {repeatOn && repeats?.locations ? <b>{rptShown.length}</b> : null}
@@ -1489,6 +1573,11 @@ export default function MapScreen() {
       </div>
 
       {/* Left column: the calendar and the crime report. */}
+      <div className={`mx-leftrail-resizer${isResizing ? " active" : ""}`}
+           onMouseDown={startResizeLeft}
+           onDoubleClick={() => { setLeftWidth(300); setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch {} }, 50); }}
+           role="separator"
+           aria-orientation="vertical" />
       <div className="mx-leftrail">
       <div inert={reportOpen || showDossier ? "" : undefined} className="mx-cal mx-panel">
         <div className="mx-cal-h">
@@ -1598,55 +1687,86 @@ export default function MapScreen() {
       
         {repeatOn && (
           <div className="mx-panel mx-rpt-list" inert={reportOpen || showDossier ? "" : undefined}>
-            <div className="mx-bars-h">{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat locations"}<small>{kn ? "90 ದಿನ" : `90 days to ${shortDate(repeats?.to || endDate)}`}</small></div>
-            <p className="mx-rpt-what">{kn
-              ? "ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ ಮತ್ತೆ ಮತ್ತೆ ಅಪರಾಧ ದಾಖಲಾಗುವ ಜಾಗಗಳು: ಬೀಟ್ ಭೇಟಿ, ದೀಪ / CCTV ಪರಿಶೀಲನೆ ಮತ್ತು ಸ್ಥಳೀಯರೊಂದಿಗೆ ಮಾತುಕತೆಗೆ ಯೋಗ್ಯ."
-              : "Places where crime keeps coming back to the same spot. Each one is worth a beat visit, a look at the lighting and CCTV, and a word with the people there."}</p>
-            <div className="mx-rpt-legend">
-              <span><i className="on" />{kn ? "ಸಕ್ರಿಯ: ಕಳೆದ 14 ದಿನಗಳಲ್ಲಿ ಪ್ರಕರಣ" : "Active: a case in the last 14 days"}</span>
-              <span><i />{kn ? "ಹಿಂದೆ" : "Earlier"}</span>
+            <div className="mx-rpt-head">
+              <div>
+                <div className="mx-rpt-title">{kn ? "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು" : "Repeat Locations"}</div>
+                <small className="mx-rpt-sub">{kn ? "ಕಳೆದ 90 ದಿನಗಳ ವಿಶ್ಲೇಷಣೆ" : `90-day window · up to ${shortDate(repeats?.to || endDate)}`}</small>
+              </div>
+              <button type="button" className="mx-rpt-close" aria-label={kn ? "ಮುಚ್ಚಿ" : "Close"}
+                      onClick={() => {
+                        setRepeatOn(false);
+                        setLeftWidth(300);
+                        if (selectedDistrict) setFlyBounds(gadmBounds(selectedDistrict));
+                        else { setFlyBounds(null); setResetMapTrigger((c) => c + 1); }
+                        setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch {} }, 50);
+                      }}>×</button>
             </div>
-            {repeats?.busy && !repeats?.locations?.length && <p className="mx-rpt-none">{kn ? "ಓದಲಾಗುತ್ತಿದೆ…" : "Reading the register…"}</p>}
-            {repeats?.error && <p className="mx-rpt-none">{kn ? "ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "Could not be read just now."}</p>}
+            <p className="mx-rpt-what">{kn
+              ? "100 ಮೀಟರ್ ವ್ಯಾಪ್ತಿಯಲ್ಲಿ ಬೇರೆ ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3+ FIR ದಾಖಲಾದ ಸ್ಥಳಗಳು. ಬೀಟ್ ಗಸ್ತು, ದೀಪ ಮತ್ತು CCTV ಪರಿಶೀಲನೆಗೆ ಆದ್ಯತೆಯ ಕೇಂದ್ರಗಳು."
+              : "High-recurrence micro-zones (3+ FIRs within 100m across multiple days). Prioritize these locations for beat patrols, CCTV checks, and field inquiry."}</p>
+            <div className="mx-rpt-legend">
+              <span className="active-chip"><i className="on" />{kn ? "ಸಕ್ರಿಯ (ಕಳೆದ 14 ದಿನ)" : "Active (last 14d)"} <b>{rptShown.filter((r) => r.active).length}</b></span>
+              <span className="earlier-chip"><i />{kn ? "ಹಿಂದಿನವು (15–90 ದಿನ)" : "Earlier (15–90d)"} <b>{rptShown.filter((r) => !r.active).length}</b></span>
+            </div>
+            {repeats?.busy && !repeats?.locations?.length && <p className="mx-rpt-none">{kn ? "ಓದಲಾಗುತ್ತಿದೆ…" : "Scanning FIR registry…"}</p>}
+            {repeats?.error && <p className="mx-rpt-none">{kn ? "ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "Unable to load repeat locations right now."}</p>}
             {repeats && !repeats.busy && !repeats.error && !rptShown.length && (
-              <p className="mx-rpt-none">{kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಸ್ಥಳ ಇಲ್ಲ." : "No place had 3 or more FIRs on 2 or more days in this period."}</p>
+              <p className="mx-rpt-none">{kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಸ್ಥಳ ಇಲ್ಲ." : "No location recorded 3+ FIRs across multiple days in this period."}</p>
             )}
-            <ol>
-              {rptShown.slice(0, 8).map((r, i) => (
-                <li key={i} className={rptSel === i ? "sel" : ""}>
+            <ol className={leftExpanded ? "is-expanded" : ""}>
+              {(leftExpanded || rptShowAll ? rptShown : rptShown.slice(0, 8)).map((r, i) => (
+                <li key={i} className={`${rptSel === i ? "sel" : ""} ${r.active ? "is-active" : ""}`}>
                   <button type="button" onClick={() => {
+                    switchingRptRef.current = true;
+                    setTimeout(() => { switchingRptRef.current = false; }, 800);
                     setRptSel(i);
                     setFlyBounds(L.latLngBounds([r.lat - 0.012, r.lon - 0.012], [r.lat + 0.012, r.lon + 0.012]));
                     setTimeout(() => rptRefs.current[i]?.openPopup(), 650);
                   }}>
-                    <b>{placeName(r)}{r.active && <em>{kn ? "ಸಕ್ರಿಯ" : "active"}</em>}</b>
-                    <span>{kn ? `${r.days} ದಿನಗಳಲ್ಲಿ ${r.firs} FIR` : `${r.firs} FIRs on ${r.days} days`} · {crimeMix(r)}</span>
-                    <span>{r.stations[0]} · {kn ? "ಕೊನೆಯದು" : "last"} {shortDate(r.last)}</span>
+                    <div className="mx-rpt-row1">
+                      <b>{placeName(r)}</b>
+                      <div className="mx-rpt-badges">
+                        {r.active && <em>{kn ? "ಸಕ್ರಿಯ" : "ACTIVE"}</em>}
+                        <span className="mx-rpt-cnt">{kn ? `${r.firs} FIR · ${r.days} ದಿನ` : `${r.firs} FIRs · ${r.days}d`}</span>
+                      </div>
+                    </div>
+                    <div className="mx-rpt-crimes">{crimeMix(r)}</div>
+                    <div className="mx-rpt-meta">
+                      <span>{r.stations[0]}</span>
+                      <span>{kn ? "ಕೊನೆಯ ಪ್ರಕರಣ:" : "Last case:"} {shortDate(r.last)}</span>
+                    </div>
                   </button>
                 </li>
               ))}
             </ol>
+            {!leftExpanded && rptShown.length > 8 && (
+              <button type="button" className="mx-rpt-more" onClick={() => setRptShowAll((v) => !v)}>
+                {rptShowAll
+                  ? (kn ? "ಪ್ರಮುಖ 8 ಮಾತ್ರ ತೋರಿಸಿ ▴" : "Show top 8 locations ▴")
+                  : (kn ? `ಎಲ್ಲಾ ${rptShown.length} ಸ್ಥಳಗಳನ್ನು ತೋರಿಸಿ ▾` : `Show all ${rptShown.length} locations ▾`)}
+              </button>
+            )}
             <details className="mx-rpt-how">
-              <summary>{kn ? "ಇದನ್ನು ಹೇಗೆ ಲೆಕ್ಕಿಸಲಾಗಿದೆ" : "How this is worked out"}</summary>
+              <summary>{kn ? "ಲೆಕ್ಕಾಚಾರದ ವಿಧಾನ ಮತ್ತು ಹೊರಗಿಡುವಿಕೆ" : "Methodology & Exclusions"}</summary>
               <p>{kn
-                ? "ಸುಮಾರು 100 ಮೀ ಒಳಗೆ, 90 ದಿನಗಳಲ್ಲಿ 2 ಅಥವಾ ಹೆಚ್ಚು ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3 ಅಥವಾ ಹೆಚ್ಚು FIR."
-                : "The same spot, within about 100 m, with 3 or more FIRs on 2 or more different days in the 90 days up to the selected date. It follows the crime filter and the open district."}</p>
-              <p>{kn ? "ಹೊರಗಿಡಲಾಗಿದೆ: " : "Left out, because they are not places a patrol can go to: "}
+                ? "ಆಯ್ದ ದಿನಾಂಕದವರೆಗಿನ 90 ದಿನಗಳಲ್ಲಿ ಸುಮಾರು 100 ಮೀ ವ್ಯಾಪ್ತಿಯೊಳಗೆ 2+ ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3+ FIR ದಾಖಲಾದ ಸ್ಥಳಗಳನ್ನು ಗುರುತಿಸಲಾಗುತ್ತದೆ."
+                : "Identifies micro-zones within a ~100m radius that recorded 3+ FIRs across 2+ distinct days in the 90-day window ending on the selected date."}</p>
+              <p>{kn ? "ಗಸ್ತು ಕಳುಹಿಸಲಾಗದ ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ಹೊರಗಿಡಲಾಗಿದೆ: " : "Excluded non-patrol coordinates: "}
                 {(kn ? [
                   ["online_station", "ಆನ್‌ಲೈನ್ ಅಪರಾಧ (ಠಾಣೆಯ ಸ್ವಂತ ಸ್ಥಳದಲ್ಲಿ ದಾಖಲಾದವು)"],
                   ["station_default", "ಸ್ಥಳ ನಮೂದಿಸದಾಗ ಬಳಸುವ ಠಾಣೆಯ ಡೀಫಾಲ್ಟ್ ಸ್ಥಳ"],
                   ["unit_position", "ಪ್ರದರ್ಶನ ದಾಖಲೆಗಳಲ್ಲಿ ಘಟಕದ ಸ್ವಂತ ಸ್ಥಳ"],
                   ["placeholder", "13.000, 77.000 ನಂತಹ ಕೃತಕ ನಿರ್ದೇಶಾಂಕಗಳು"],
-                  ["outside", "ರಾಜ್ಯದ ಭೂ ಗಡಿಯ ಹೊರಗಿನ ಬಿಂದುಗಳು (ಉದಾ: ಸಮುದ್ರದಲ್ಲಿ)"],
+                  ["outside", "ರಾಜ್ಯದ ಭೂ ಗಡಿಯ ಹೊರಗಿನ ಬಿಂದುಗಳು"],
                 ] : [
-                  ["online_station", "online crime (filed at the station's own position)"],
-                  ["station_default", "a station's default point, used when no location was typed in"],
-                  ["unit_position", "a unit's own position on demonstration records"],
-                  ["placeholder", "made-up coordinates such as 13.000, 77.000"],
-                  ["outside", "points outside the state's land boundary, such as out at sea"],
+                  ["online_station", "online offenses logged at station coordinates"],
+                  ["station_default", "default station coordinates (unmapped incidents)"],
+                  ["unit_position", "unit-level coordinates on demonstration records"],
+                  ["placeholder", "placeholder coordinates (e.g. 13.000, 77.000)"],
+                  ["outside", "coordinates outside state land boundaries"],
                 ]).filter(([k]) => ({ ...repeats?.left_out, outside: rptOutside })[k])
-                  .map(([k, t]) => `${t} (${({ ...repeats.left_out, outside: rptOutside })[k]})`).join("; ") || (kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಯಾವುದೂ ಇಲ್ಲ" : "nothing in this period")}
-                {kn ? ". ಕಾಣೆಯಾದವರ ವರದಿಗಳು ಮತ್ತು CrPC ಪ್ರಕರಣಗಳನ್ನು ಎಣಿಸಲಾಗಿಲ್ಲ." : ". Missing-person reports and CrPC cases are not counted."}</p>
+                  .map(([k, t]) => `${t} (${({ ...repeats.left_out, outside: rptOutside })[k]})`).join("; ") || (kn ? "ಈ ಅವಧಿಯಲ್ಲಿ ಯಾವುದೂ ಇಲ್ಲ" : "none in this period")}
+                {kn ? ". ಕಾಣೆಯಾದವರ ವರದಿಗಳು ಮತ್ತು CrPC ಪ್ರಕರಣಗಳನ್ನು ಹೊರಗಿಡಲಾಗಿದೆ." : ". Missing-person reports and CrPC procedural entries are excluded."}</p>
             </details>
           </div>
         )}
@@ -1735,6 +1855,11 @@ export default function MapScreen() {
 
       {/* Right column: View summary (default) and Where next as tabs. Where next opens
           on click - or by itself when a station or beat is clicked on the map. */}
+      <div className="mx-rightrail-resizer"
+           onMouseDown={startResizeRight}
+           onDoubleClick={() => { setRightWidth(340); setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch {} }, 50); }}
+           role="separator"
+           aria-orientation="vertical" />
       <div className="mx-rightrail fx-rail">
           <div className="mx-rtabs" role="tablist" aria-label={kn ? "ಬಲ ಫಲಕ" : "Right panel"}>
             <button role="tab" aria-selected={rightTab === "summary"} className={rightTab === "summary" ? "on" : ""}
@@ -1895,7 +2020,7 @@ export default function MapScreen() {
                   <h3>{kn ? "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ" : "View summary"}</h3>
                   <p>{crimeLabel} · {selectedDistrict || (kn ? "ಕರ್ನಾಟಕ" : "Karnataka")} · {new Date(`${endDate}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
                 </div>
-                <button type="button" onClick={() => setRightTab(null)} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close the summary"} title={kn ? "ಮುಚ್ಚಿ" : "Close"}><X size={16} /></button>
+                <button type="button" onClick={() => { setRightTab(null); setRightWidth(340); setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch {} }, 50); }} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close the summary"} title={kn ? "ಮುಚ್ಚಿ" : "Close"}><X size={16} /></button>
               </header>
 
               {!viewInsight ? (

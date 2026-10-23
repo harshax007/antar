@@ -1396,10 +1396,11 @@ function DocsFull() {
                 <span style={{ color: "#22E6F0", textShadow: "0 0 20px rgba(34,230,240,0.4)" }}>{lang === "kn" ? "ದೃಶ್ಯೀಕರಿಸಲಾಗಿದೆ." : "Visualized."}</span>
               </motion.h2>
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
-                style={{ fontSize: "14px", color: "#94A3B8", maxWidth: "600px", margin: "0 auto", lineHeight: 1.6 }}>
+                className="whitespace-normal md:whitespace-nowrap"
+                style={{ fontSize: "clamp(12.5px, 1vw, 14px)", color: "#94A3B8", maxWidth: "100%", margin: "0 auto", lineHeight: 1.6 }}>
                 {lang === "kn" 
-                  ? "ಅಡಗಿರುವ ಸಿಂಡಿಕೇಟ್‌ಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವುದರಿಂದ ಮತ್ತು ಅಪರಾಧ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳನ್ನು ಊಹಿಸುವುದರಿಂದ ಹಿಡಿದು ಆಳವಾದ ಫೋರೆನ್ಸಿಕ್ ವಿಶ್ಲೇಷಣೆಯವರೆಗೆ, ನಮ್ಮ ಆರು ವಿಶೇಷ ಪರಿಕರಗಳ ಸೂಟ್ ಕಚ್ಚಾ ಡೇಟಾವನ್ನು ಕಾರ್ಯಸಾಧ್ಯವಾದ, ಕಾರ್ಯತಂತ್ರದ ಮುನ್ನೋಟವಾಗಿ ಪರಿವರ್ತಿಸುತ್ತದೆ." 
-                  : "From uncovering hidden syndicates and forecasting crime hotspots to deep forensic document analysis, our suite of six specialized tools transforms raw data into actionable, strategic foresight."}
+                  ? "ಅಧಿಕೃತ FIR ದಾಖಲೆಗಳನ್ನು ಸ್ಪಷ್ಟ, ಕಾರ್ಯಾಚರಣೆಯ ಗುಪ್ತಚರ ಮಾಹಿತಿಯಾಗಿ ಪರಿವರ್ತಿಸುವ ಆರು ವಿಶೇಷ ಪರಿಕರಗಳು, ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸಲು, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳನ್ನು ಗುರುತಿಸಲು ಮತ್ತು ಗಸ್ತು ಯೋಜಿಸಲು ನೆರವಾಗುತ್ತವೆ." 
+                  : "Six specialized tools that turn official FIR records into clear, actionable intelligence, helping officers link cases, track hotspots, and plan patrols."}
               </motion.p>
             </div>
 
@@ -1415,7 +1416,7 @@ function DocsFull() {
                   <div className="bub b2">12 FIRs · +18% vs last qtr ▾</div>
                   <div className="typing"><i></i><i></i><i></i></div>
                 </div>
-                <p className="tools-tdesc">Ask in English or Kannada, by voice or text. Specialist agents turn your question into a cited answer drawn from live FIR records.</p>
+                <p className="tools-tdesc">Query in English or Kannada by voice or text. Every response is verified, cited, and generated directly from official FIR records.</p>
               </div>
 
               {/* 2 brain */}
@@ -1430,7 +1431,7 @@ function DocsFull() {
                     <circle className="nd" cx="70" cy="70" r="3"/><circle className="nd" cx="150" cy="66" r="3"/>
                   </svg>
                 </div>
-                <p className="tools-tdesc">A second brain for cases. It surfaces hidden links, shared phones, aliases, and contacts across cases that were never formally connected.</p>
+                <p className="tools-tdesc">Uncover hidden connections across isolated cases. Automatically surfaces shared phone numbers, aliases, vehicles, and financial links.</p>
               </div>
 
               {/* 3 map */}
@@ -1442,7 +1443,7 @@ function DocsFull() {
                   <span className="gln" style={{top:0,bottom:0,left:"34%",width:"1px"}}></span><span className="gln" style={{top:0,bottom:0,left:"68%",width:"1px"}}></span>
                   <span className="pin2"></span><span className="ring"></span><span className="ring d"></span><span className="hot"></span>
                 </div>
-                <p className="tools-tdesc">Karnataka crime by place. Day, 7-day and 28-day views; each FIR of a day on the map; hotspots tested for significance; places where crime keeps coming back; and the station forecast.</p>
+                <p className="tools-tdesc">Track spatial crime patterns across Karnataka with 1-day, 7-day, and 28-day views. Pinpoint recurring hotspots, individual FIR locations, and station trends.</p>
               </div>
 
               {/* 4 predict */}
@@ -1456,7 +1457,7 @@ function DocsFull() {
                     <circle className="dot" cx="178" cy="30" r="3.4"/>
                   </svg>
                 </div>
-                <p className="tools-tdesc">Spots unusual rises early and gives a likely range for the next 7 days, so patrols can be planned before a problem grows.</p>
+                <p className="tools-tdesc">Detect abnormal crime spikes early and generate 7-day risk forecasts, enabling commanders to plan and deploy patrols proactively.</p>
               </div>
 
               {/* 5 search */}
@@ -1468,7 +1469,7 @@ function DocsFull() {
                   <span className="scan"></span>
                   <span className="mag"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3" strokeLinecap="round"/></svg></span>
                 </div>
-                <p className="tools-tdesc">Find anyone, fast, even with spelling mistakes, by name, alias, phone or vehicle number. Open-source checks take any phone, UPI ID, vehicle, bank account, IMEI or website to the open web and public registries, and say what to do next.</p>
+                <p className="tools-tdesc">Run fault-tolerant searches across names, aliases, phones, and vehicles. Cross-check UPI IDs, IMEIs, and accounts against public registries with clear next steps.</p>
               </div>
 
               {/* 6 alerts */}
@@ -1479,7 +1480,7 @@ function DocsFull() {
                   <span className="shield" style={{color: "#EAB308"}}><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path className="chk" style={{stroke:"#EAB308"}} d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
                   <span className="log l1"><span className="dot" style={{background: "#EAB308"}}></span></span><span className="log l2"></span><span className="log l3"></span>
                 </div>
-                <p className="tools-tdesc">Alerts when an area breaks its usual pattern, and watchlists for a person, a pattern or a corridor. Adding a watch is a proposal a supervising officer approves.</p>
+                <p className="tools-tdesc">Receive real-time alerts on pattern anomalies and maintain watchlists for suspects, MOs, or corridors, governed by supervisor approval.</p>
               </div>
             </div>
 

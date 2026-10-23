@@ -441,27 +441,27 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
         const where = (x) => (x.districts > 1 ? (kn ? `${x.districts} ಜಿಲ್ಲೆಗಳಲ್ಲಿ` : `across ${x.districts} districts`) : (kn ? `${x.names[0] || ""} ನಲ್ಲಿ` : `in ${x.names[0] || "one district"}`));
         const cases = [
           t.accused && {
-            k: "accused", tag: kn ? "ಪುನರಾವರ್ತಿತ ಆರೋಪಿ" : "Follow a repeat offender",
+            k: "accused", tag: kn ? "ಪುನರಾವರ್ತಿತ ಆರೋಪಿ ಟ್ರ್ಯಾಕಿಂಗ್" : "Repeat Offender Tracking",
             fact: kn ? `${t.accused.value} ${t.accused.firs} FIR ಗಳಲ್ಲಿ, ${where(t.accused)}.` : `${t.accused.value} is named in ${t.accused.firs} FIRs ${where(t.accused)}.`,
-            why: kn ? "ಎಲ್ಲಾ ಠಾಣೆಗಳ ಪ್ರಕರಣಗಳನ್ನು ಒಂದೇ ಕಡತದಲ್ಲಿ ನೋಡಿ." : "See every station's cases on one person, in one file.",
+            why: kn ? "ವಿವಿಧ ಠಾಣೆಗಳ ಪ್ರಕರಣಗಳನ್ನು ಒಂದೇ ಕಡತದಲ್ಲಿ ಒಗ್ಗೂಡಿಸಿ ಸಮನ್ವಯ ತನಿಖೆ ನಡೆಸಿ." : "Consolidate multi-station offenses into a single case file for coordinated prosecution.",
             act: kn ? `${t.accused.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.accused.firs} FIRs`, go: () => showFirs(t.accused.value),
           },
           t.upi && {
-            k: "upi", tag: kn ? "ಮ್ಯೂಲ್ ಖಾತೆ ಪತ್ತೆ" : "Trace a money-mule account",
+            k: "upi", tag: kn ? "ಹಣಕಾಸು ಮತ್ತು ಮ್ಯೂಲ್ ಖಾತೆ ಪತ್ತೆ" : "Financial Trail & Mule Accounts",
             fact: kn ? `UPI ${t.upi.value} ${t.upi.firs} FIR ಗಳಲ್ಲಿ, ${where(t.upi)}.` : `UPI ID ${t.upi.value} appears in ${t.upi.firs} FIRs ${where(t.upi)}.`,
-            why: kn ? "ಒಂದೇ ಖಾತೆಗೆ ಹಣ ಕಳುಹಿಸಿದ ಸಂತ್ರಸ್ತರು - ಬ್ಯಾಂಕ್‌ಗೆ ಒಂದೇ ನೋಟಿಸ್." : "Victims who paid one account - one notice to the bank covers them all.",
+            why: kn ? "ಒಂದೇ ಖಾತೆಗೆ ಹಣ ಕಳುಹಿಸಿದ ಸಂತ್ರಸ್ತರ ಪ್ರಕರಣಗಳನ್ನು ಸೇರಿಸಿ ಬ್ಯಾಂಕ್ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ." : "Link multiple fraud complaints to one beneficiary account for unified bank action.",
             act: kn ? `${t.upi.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.upi.firs} FIRs`, go: () => showFirs(t.upi.value),
           },
           t.vehicle && {
-            k: "vehicle", tag: kn ? "ವಾಹನ ಹಿಂಬಾಲಿಸಿ" : "Track a vehicle",
+            k: "vehicle", tag: kn ? "ವಾಹನ ಮತ್ತು ಸಂಚಾರ ಜೋಡಣೆ" : "Vehicle & Transit Linkage",
             fact: kn ? `${t.vehicle.value} ${t.vehicle.firs} FIR ಗಳಲ್ಲಿ, ${where(t.vehicle)}.` : `Vehicle ${t.vehicle.value} is in ${t.vehicle.firs} FIRs ${where(t.vehicle)}.`,
-            why: kn ? "ಒಂದೇ ವಾಹನ, ಹಲವು ಘಟನೆಗಳು - ಚೆಕ್‌ಪೋಸ್ಟ್ ಎಚ್ಚರಿಕೆಗೆ ಯೋಗ್ಯ." : "One vehicle, several incidents - worth a checkpost alert.",
+            why: kn ? "ಹಲವು ಘಟನೆಗಳಲ್ಲಿ ಭಾಗಿಯಾದ ವಾಹನಗಳನ್ನು ಗುರುತಿಸಿ ಚೆಕ್‌ಪೋಸ್ಟ್ ಎಚ್ಚರಿಕೆ ನೀಡಿ." : "Flag repeat vehicles involved across multiple incidents for checkpost alerts.",
             act: kn ? `${t.vehicle.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.vehicle.firs} FIRs`, go: () => showFirs(t.vehicle.value),
           },
           t.ip && {
-            k: "ip", tag: kn ? "ಸೈಬರ್ ಜಾಲ" : "Join up cyber cases",
+            k: "ip", tag: kn ? "ಸೈಬರ್ ಮೂಲಸೌಕರ್ಯ ವಿಶ್ಲೇಷಣೆ" : "Cyber Infrastructure Correlation",
             fact: kn ? `IP ${t.ip.value} ${t.ip.firs} FIR ಗಳಲ್ಲಿ, ${where(t.ip)}.` : `IP address ${t.ip.value} is behind ${t.ip.firs} FIRs ${where(t.ip)}.`,
-            why: kn ? "ಬೇರೆ ಬೇರೆ ದೂರುಗಳು, ಒಂದೇ ಮೂಲ - ಒಂದೇ ತನಿಖೆ." : "Separate complaints, one source - one investigation instead of many.",
+            why: kn ? "ಒಂದೇ ಮೂಲದಿಂದ ಬಂದ ಪ್ರತ್ಯೇಕ ಸೈಬರ್ ದೂರುಗಳನ್ನು ಒಂದೇ ತನಿಖೆಯಡಿ ತನ್ನಿ." : "Group separate cyber complaints from a single network source into one investigation.",
             act: kn ? `${t.ip.firs} FIR ಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${t.ip.firs} FIRs`, go: () => showFirs(t.ip.value),
           },
         ].filter(Boolean);
@@ -469,8 +469,8 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
         return (
           <div className="ov-uses">
             <div className="ov-ptitle" style={{ margin: 0 }}>
-              {kn ? "ಇದರಿಂದ ಏನು ಮಾಡಬಹುದು" : "What you can do with this"}
-              <span>{kn ? "ಈ ನೋಟದ ದಾಖಲೆಗಳಿಂದ, ಪ್ರತಿಯೊಂದೂ ಪರಿಶೀಲಿಸಬೇಕಾದ ಸುಳಿವು - ಬಟನ್ ಅದರ FIR ಗಳನ್ನು ಕೆಳಗಿನ ಪಟ್ಟಿಯಲ್ಲಿ ತೋರಿಸುತ್ತದೆ" : "from the records in view - each one a lead to check; the button lists its FIRs in the table below"}</span>
+              {kn ? "ಬುದ್ಧಿವಂತ ಡೇಟಾದ ಪ್ರಭಾವ" : "Impact of Intelligent Data"}
+              <span>{kn ? "ಸಕ್ರಿಯ ದಾಖಲೆಗಳಿಂದ ಪತ್ತೆಯಾದ ಪ್ರಕರಣಗಳ ನಡುವಿನ ಸುಳಿವುಗಳು. ಕೆಳಗಿನ ಪಟ್ಟಿಯಲ್ಲಿ FIR ಗಳನ್ನು ನೋಡಲು ಆಯ್ಕೆಮಾಡಿ" : "Cross-case leads surfaced from active records. Select any lead to inspect its linked FIRs below."}</span>
             </div>
             <div className="ov-uses-grid">
               {cases.map((c) => (
@@ -489,7 +489,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
       {stages.length > 0 && (
         <div className="ov-stages">
           <div className="ov-ptitle" style={{ margin: 0 }}>
-            {isFull ? (kn ? "ತನಿಖಾ ಹಂತ" : "Investigation stage") : (kn ? "ಈ ಸಂಪರ್ಕಿತ ಪ್ರಕರಣಗಳು ಎಲ್ಲಿವೆ" : "Where these linked cases stand")} <span>{kn ? "ಈ ನೋಟದ ದಾಖಲೆಗಳಿಂದ" : "from records in view"}</span>
+            {isFull ? (kn ? "ತನಿಖಾ ಹಂತ" : "Investigation Stage Breakdown") : (kn ? "ಸಂಪರ್ಕಿತ ಪ್ರಕರಣಗಳ ಪ್ರಸ್ತುತ ಸ್ಥಿತಿ" : "Case Status of Linked Records")} <span>{kn ? "ಈ ನೋಟದ ದಾಖಲೆಗಳಿಂದ" : "Active distribution across current view"}</span>
           </div>
           <div className="ov-stagerow">
             {stages.map((s) => (
