@@ -1794,7 +1794,6 @@ const avgConf = predictions?.length
           one thing to do next, before any detail. */}
       <header className="px-hero">
         <div className="px-hero-main">
-          <span className="px-eyebrow">{kn ? "7 ದಿನಗಳ ಅಪರಾಧ ಅಪಾಯ ಮುನ್ಸೂಚನೆ · ಠಾಣೆ ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳಿಗೆ" : "7-Day Crime Risk Forecast · for station and district officers"}</span>
           <h1 className="px-title">
             {kn
               ? <>ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಅಪರಾಧ <em>ಎಲ್ಲಿ ಹೆಚ್ಚಾಗಬಹುದು.</em></>
