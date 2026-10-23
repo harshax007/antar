@@ -3498,6 +3498,8 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .ab-meaning-title { font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text, #F8FAFC); margin-bottom: 4px; }
 .ab-meaning-text { font-size: 13.5px; line-height: 1.55; color: var(--muted, #94A3B8); margin: 0; }
 .ab-meaning-text strong, .ab-meaning-text b { color: var(--text, #F8FAFC); font-weight: 600; }
+/* the meaning itself, read first */
+.ab-meaning-word { display: block; margin: 2px 0 8px; font: 700 26px/1.1 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--cyan, #22E6F0); }
 .ab-meaning-text em { color: var(--cyan, #22E6F0); font-style: normal; font-weight: 500; }
 
 /* 2. Middle 2-Column Grid: How it started + Vision */

@@ -22,11 +22,6 @@ export default function AboutPage() {
             <h1 className="ab-title">
               {kn ? "ಟೀಮ್ ವಿಮರಕ್ಷ" : "Team Vimaraksha"}
             </h1>
-            <p className="ab-lead">
-              {kn
-                ? "ಪೊಲೀಸ್ ತನಿಖೆ ಮತ್ತು ಸಾರ್ವಜನಿಕ ಸುರಕ್ಷತೆಗಾಗಿ ಪ್ರಾಯೋಗಿಕ ಹಾಗೂ ಸುರಕ್ಷಿತ ತಂತ್ರಜ್ಞಾನವನ್ನು ನಿರ್ಮಿಸುವ ಇಂಜಿನಿಯರಿಂಗ್ ತಂಡ."
-                : "Building practical, secure intelligence tools for law enforcement and public safety."}
-            </p>
           </div>
 
           <div className="ab-meaning">
@@ -36,11 +31,13 @@ export default function AboutPage() {
             <p className="ab-meaning-text">
               {kn ? (
                 <>
-                  <b>ವಿಮರ್ಶೆ</b> (ಆಳವಾದ ಪರಿಶೀಲನೆ ಮತ್ತು ಚಿಂತನೆ) ಮತ್ತು <b>ರಕ್ಷೆ</b> (ಭದ್ರತೆ ಮತ್ತು ರಕ್ಷಣೆ) ಎಂಬ ಎರಡು ಪದಗಳಿಂದ <b>ವಿಮರಕ್ಷ</b> ಹುಟ್ಟಿದೆ. ದಾಖಲೆಗಳನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಪರಿಶೀಲಿಸಿ ಮುಂಚಿತವಾಗಿಯೇ ಸುರಕ್ಷತೆ ಒದಗಿಸುವುದು ಇದರ ಉದ್ದೇಶ.
+                  <span className="ab-meaning-word">ಮುನ್ಸೂಚಕ ಭದ್ರತೆ</span>
+                  <b>ವಿಮರ್ಶೆ</b> ಎಂದರೆ ಸೂಕ್ಷ್ಮವಾಗಿ ನೋಡಿ ಮುಂದೆ ಯೋಚಿಸುವುದು; <b>ರಕ್ಷೆ</b> ಎಂದರೆ ಕಾಪಾಡುವುದು. ಎರಡೂ ಸೇರಿ: ಅಪಾಯ ಸಂಭವಿಸುವ ಮೊದಲೇ ಅದನ್ನು ಕಾಣುವಷ್ಟು ಎಚ್ಚರಿಕೆಯಿಂದ ದಾಖಲೆಗಳನ್ನು ಓದುವುದು.
                 </>
               ) : (
                 <>
-                  Formed from <strong>Vimarsha</strong> (critical inquiry and reflection) and <strong>Raksha</strong> (protection and safeguarding). It stands for <em>protection through thoughtful inquiry</em>, examining records carefully to prevent harm early.
+                  <span className="ab-meaning-word">Predictive Security</span>
+                  <strong>Vimarsha</strong> is to look closely and think ahead; <strong>Raksha</strong> is to protect. Put together: read the records carefully enough to see trouble coming, and act before it does.
                 </>
               )}
             </p>
@@ -55,13 +52,13 @@ export default function AboutPage() {
             </div>
             <blockquote className="ab-origin-quote">
               {kn
-                ? "“ನಮ್ಮಲ್ಲಿ ಬೃಹತ್ ಪ್ರಮಾಣದ FIR ದತ್ತಾಂಶವಿದೆ, ಆದರೆ ಅದರ ಮೇಲೆ ಯೋಚಿಸುವ ಬುದ್ಧಿವಂತ ಪದರ ಇಲ್ಲ ಮತ್ತು ದತ್ತಾಂಶವನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಹುಡುಕಿ ತೆಗೆಯುವುದು ಸುಲಭವಲ್ಲ.”"
-                : "“We have large data of FIRs, but no intelligent layer and thinking layer, and it is not easy to retrieve the data securely.”"}
+                ? "“ವರ್ಷಗಳ FIR ಗಳು ನಮ್ಮಲ್ಲಿವೆ. ಇಲ್ಲದಿರುವುದು ಅವುಗಳನ್ನು ಒಟ್ಟಿಗೆ ಯೋಚಿಸುವ ದಾರಿ, ಮತ್ತು ಅವುಗಳನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಹೊರತೆಗೆಯುವ ದಾರಿ.”"
+                : "“We have years of FIRs. What we don't have is a way to think across them, or a safe way to get them out.”"}
             </blockquote>
             <p className="ab-card-text">
               {kn
-                ? "ಪೊಲೀಸ್ ಇಲಾಖೆಗಳಲ್ಲಿ ಲಕ್ಷಾಂತರ FIR ದಾಖಲೆಗಳಿವೆ, ಆದರೆ ತನಿಖೆಯ ಸಮಯದಲ್ಲಿ ಪ್ರಕರಣಗಳ ನಡುವಿನ ನಂಟನ್ನು ಹುಡುಕುವುದು ಕಷ್ಟಕರವಾಗಿತ್ತು. ಈ ಸಮಸ್ಯೆಯನ್ನು ಪರಿಹರಿಸಲು ನಾವು Antar ಅನ್ನು ಅಭಿವೃದ್ಧಿಪಡಿಸಿದ್ದೇವೆ. ಇದು FIR ದತ್ತಾಂಶದ ಮೇಲೆ ಸುರಕ್ಷಿತ ಚಿಂತನಾ ಪದರವಾಗಿ ಕೆಲಸ ಮಾಡುತ್ತದೆ ಮತ್ತು ಅಧಿಕಾರಿಗಳಿಗೆ ಕನ್ನಡ ಅಥವಾ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ತಕ್ಷಣವೇ ಪರಿಶೀಲಿಸಿದ ಮಾಹಿತಿಯನ್ನು ನೀಡುತ್ತದೆ."
-                : "Police stations hold hundreds of thousands of FIRs across districts, yet important links between repeat offenders, vehicles, and crime patterns stay buried in static text. Manual lookup takes hours, and opening raw database access is unsafe. We developed Antar to solve this problem by adding a secure thinking and retrieval layer over FIR records."}
+                ? "ಇದೇ ನಾವು ಆರಂಭಿಸಿದ ಸಮಸ್ಯೆ. ದಾಖಲೆಗಳು ಎಲ್ಲವೂ ಇದ್ದವು - ಲಕ್ಷಾಂತರ, ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ. ಆದರೆ ಮುಖ್ಯವಾದ ವಿಷಯ - ಒಂದೇ ವ್ಯಕ್ತಿ, ಒಂದೇ ಬೈಕ್ ಅಥವಾ ಒಂದೇ UPI ಖಾತೆ ಮೂರು ಬೇರೆ ಠಾಣೆಗಳ ಪ್ರಕರಣಗಳಲ್ಲಿ ಕಾಣಿಸಿಕೊಂಡಿರುವುದು - ಯಾರಿಗೂ ಪಕ್ಕಪಕ್ಕ ಓದಲು ಸಮಯವಿಲ್ಲದ ಪಠ್ಯದಲ್ಲಿ ಹುದುಗಿತ್ತು. ಕೈಯಾರೆ ಹುಡುಕಲು ಗಂಟೆಗಳು ಬೇಕಾಗುತ್ತಿದ್ದವು, ಮತ್ತು ದತ್ತಾಂಶಕ್ಕೆ ನೇರ ಪ್ರವೇಶ ಕೊಡುವುದು ಸುರಕ್ಷಿತವಲ್ಲ. ಹಾಗಾಗಿ ನಾವು Antar ನಿರ್ಮಿಸಿದೆವು: FIR ಗಳನ್ನು ಒಟ್ಟಿಗೆ ಓದುವ, ಕನ್ನಡ ಅಥವಾ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಉತ್ತರಿಸುವ, ಮತ್ತು ಪ್ರತಿ ಉತ್ತರದ ಹಿಂದಿನ ದಾಖಲೆಗಳನ್ನು ತೋರಿಸುವ ವ್ಯವಸ್ಥೆ."
+                : "That was the problem we started with. The records were all there, lakhs of them, spread across districts. But the part that mattered, that the same man, the same bike or the same UPI account had turned up in cases at three different stations, sat inside text nobody had time to read side by side. Looking it up by hand took hours, and giving people direct access to the database was never going to be safe. So we built Antar: something that reads across the FIRs for you, answers in Kannada or English, and shows you the records behind every answer."}
             </p>
           </section>
 
@@ -71,27 +68,27 @@ export default function AboutPage() {
             </div>
             <div className="ab-vision-list">
               <div className="ab-vision-row">
-                <strong>{kn ? "ಬುದ್ಧಿವಂತ ವಿಶ್ಲೇಷಣಾ ಪದರ" : "Intelligent thinking layer"}</strong>
+                <strong>{kn ? "ಪ್ರಕರಣಗಳನ್ನು ಒಟ್ಟಿಗೆ ಯೋಚಿಸುವುದು" : "Thinking across cases"}</strong>
                 <span>
                   {kn
-                    ? "ಪ್ರಕರಣಗಳ ನಡುವಿನ ಸಂಬಂಧಗಳು, ಅಪರಾಧದ ಮಾದರಿಗಳು ಮತ್ತು ಸಹಚರರ ಜಾಲವನ್ನು ಗುರುತಿಸಿ ತನಿಖೆಗೆ ವೇಗ ನೀಡುವುದು."
-                    : "Turn static FIR archives into active intelligence by connecting repeat modus operandi, co-accused networks, and district trends."}
+                    ? "ಈಗಾಗಲೇ ದಾಖಲೆಯಲ್ಲಿರುವುದನ್ನು ಜೋಡಿಸುವುದು - ಒಂದೇ ವಿಧಾನ, ಒಂದೇ ಸಹ-ಆರೋಪಿ, ಒಂದೇ ಜಿಲ್ಲೆಯ ಪ್ರವೃತ್ತಿ - ಹೊಸ ಪ್ರಕರಣ ಶೂನ್ಯದಿಂದ ಆರಂಭವಾಗಬಾರದು."
+                    : "Join up what is already on record, the same method, the same co-accused, the same district trend, so no case has to start from zero."}
                 </span>
               </div>
               <div className="ab-vision-row">
-                <strong>{kn ? "ಸುರಕ್ಷಿತ ಮಾಹಿತಿ ಪಡೆಯುವಿಕೆ" : "Secure data retrieval"}</strong>
+                <strong>{kn ? "ನಿಜವಾದ ದತ್ತಾಂಶದೊಂದಿಗೆ ಸುರಕ್ಷಿತ" : "Safe with real data"}</strong>
                 <span>
                   {kn
-                    ? "ಹುದ್ದೆ ಆಧಾರಿತ ಪ್ರವೇಶ (RBAC) ಮತ್ತು ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆಯೊಂದಿಗೆ ಪ್ರತಿ ಅಂಕಿಅಂಶವೂ ಅಧಿಕೃತ FIR ಗೆ ಜೋಡಣೆಯಾಗಿರುತ್ತದೆ."
-                    : "Enforce role-based permissions, approved query paths, and tamper-evident audit logs with every figure tied to its source FIR."}
+                    ? "ಪ್ರತಿ ಅಧಿಕಾರಿ ತಮ್ಮ ಹುದ್ದೆಗೆ ಅನುಮತಿಸಿದ್ದನ್ನು ಮಾತ್ರ ನೋಡುತ್ತಾರೆ, ಪ್ರಶ್ನೆಗಳು ಅನುಮೋದಿತ ದಾರಿಗಳಲ್ಲೇ ಹೋಗುತ್ತವೆ, ಪ್ರತಿ ಅಂಕಿಯೂ ತನ್ನ FIR ಗೆ ಹಿಂದಿರುಗುತ್ತದೆ, ಮತ್ತು ಪ್ರತಿ ಬಳಕೆ ದಾಖಲಾಗುತ್ತದೆ."
+                    : "Officers see only what their role allows, questions go through approved paths, every figure points back to its FIR, and every use is logged. Anything that changes things on the ground needs a second officer to say yes."}
                 </span>
               </div>
               <div className="ab-vision-row">
-                <strong>{kn ? "ಅಧಿಕಾರಿಗಳ ಭಾಷೆಯಲ್ಲೇ ಸಂವಹನ" : "Built for field officers"}</strong>
+                <strong>{kn ? "ಕ್ಷೇತ್ರದ ಅಧಿಕಾರಿಗಳಿಗಾಗಿ" : "Made for officers in the field"}</strong>
                 <span>
                   {kn
-                    ? "ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಎರಡರಲ್ಲೂ ಸರಳವಾಗಿ ಪ್ರಶ್ನಿಸಿ ನಿಖರವಾದ ಉತ್ತರ ಪಡೆಯುವ ಸೌಲಭ್ಯ."
-                    : "Support natural queries in Kannada and English so officers can move straight from a question to verified case records in seconds."}
+                    ? "ಸಹೋದ್ಯೋಗಿಯನ್ನು ಕೇಳುವಂತೆಯೇ, ಕನ್ನಡ ಅಥವಾ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಕೇಳಿ - ಕೆಲವೇ ಸೆಕೆಂಡುಗಳಲ್ಲಿ ದಾಖಲೆಗಳು ಸಿಗುತ್ತವೆ."
+                    : "Ask the way you would ask a colleague, in Kannada or English, typed or spoken, and have the records in front of you in seconds."}
                 </span>
               </div>
             </div>
@@ -115,8 +112,8 @@ export default function AboutPage() {
                 </div>
                 <p className="ab-member-bio">
                   {kn
-                    ? "Antar ನ ಮೂಲ ವಾಸ್ತುಶಿಲ್ಪ, ಮಲ್ಟಿ-ಏಜೆಂಟ್ ಚಿಂತನಾ ವ್ಯವಸ್ಥೆ ಹಾಗೂ ಸುರಕ್ಷಿತ ಡೇಟಾ ಹುಡುಕಾಟದ ಪೈಪ್‌ಲೈನ್ ವಿನ್ಯಾಸಗೊಳಿಸಿದ್ದಾರೆ."
-                    : "Architected Antar’s core backend, multi-agent reasoning pipeline, and security guardrails for fast, deterministic, and safe FIR retrieval."}
+                    ? "Antar ನ ಹಿನ್ನೆಲೆ ವ್ಯವಸ್ಥೆಯನ್ನು ನಿರ್ಮಿಸಿದರು: ಉತ್ತರವನ್ನು ಲೆಕ್ಕ ಹಾಕುವ ಏಜೆಂಟ್‌ಗಳು, ಅವುಗಳನ್ನು ಪ್ರಾಮಾಣಿಕವಾಗಿಡುವ ನಿಯಮಗಳು, ಮತ್ತು FIR ದಾಖಲೆಯ ಮೇಲೆ ವೇಗದ, ಸುರಕ್ಷಿತ ಹುಡುಕಾಟ."
+                    : "Built Antar's backend: the agents that work out each answer, the checks that keep them honest, and the fast, safe lookups over the FIR register."}
                 </p>
               </div>
             </div>
@@ -132,8 +129,8 @@ export default function AboutPage() {
                 </div>
                 <p className="ab-member-bio">
                   {kn
-                    ? "ಅಧಿಕಾರಿಗಳ ತನಿಖಾ ಕಾರ್ಯಕ್ಷೇತ್ರ, ಅಪರಾಧ ನಕ್ಷೆಗಳು ಮತ್ತು ಕನ್ನಡ-ಇಂಗ್ಲಿಷ್ ಇಂಟರ್ಫೇಸ್ ಅನ್ನು ಸರಳ ಹಾಗೂ ಸ್ಪಷ್ಟವಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಿದ್ದಾರೆ."
-                    : "Designed and engineered the investigative workspace across search, spatial crime mapping, and bilingual views to keep complex data clear and minimal."}
+                    ? "ಅಧಿಕಾರಿಗಳು ನೋಡುವ ಎಲ್ಲವನ್ನೂ ವಿನ್ಯಾಸಗೊಳಿಸಿ ನಿರ್ಮಿಸಿದರು - ಹುಡುಕಾಟ, ಅಪರಾಧ ನಕ್ಷೆ, ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಪರದೆಗಳು - ದತ್ತಾಂಶ ಜಟಿಲವಾಗಿದ್ದರೂ ಪರದೆ ಶಾಂತ ಮತ್ತು ಓದಲು ಸುಲಭ."
+                    : "Designed and built what officers actually see, search, the crime map, the Kannada and English screens, and kept them calm and easy to read even when the data is not."}
                 </p>
               </div>
             </div>
