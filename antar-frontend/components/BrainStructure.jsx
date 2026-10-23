@@ -333,6 +333,18 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     setFirTo(t);
   }
 
+  // The Case activity panel back to how it opens: this view, every year, the whole FIR
+  // range, no day picked, the calendar on its own default year.
+  const activityIsDefault = calMode === "view" && scopeMode === "year" && yearFrom == null && yearTo == null
+    && calYear == null && !sel.month && !sel.day;
+  function resetActivity() {
+    setCalMode("view");
+    setScopeMode("year");
+    setFirScope(1, maxSupportedFIRs);
+    setYearScope(null, null);
+    setCalYear(null);
+  }
+
   function resetScope() {
     if (scopeMode === "year") setYearScope(null, null);
     else setFirScope(1, maxSupportedFIRs);
@@ -951,6 +963,10 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
             </span>
             {calYearTotal != null && <span className="bsx-calcount">{calYearTotal.toLocaleString()} FIRs</span>}
             <span className={`bsx-calstatus ${calLoading ? "loading" : ""}`}>{calStatus}</span>
+            <button type="button" className="bsx-calreset" onClick={resetActivity} disabled={activityIsDefault}
+                    title={kn ? "ವರ್ಷ, ವ್ಯಾಪ್ತಿ ಮತ್ತು ದಿನವನ್ನು ಮೊದಲಿನಂತೆ ಮಾಡಿ" : "Back to all years, this view, no day picked"}>
+              {kn ? "ಮರುಹೊಂದಿಸಿ" : "Reset"}
+            </button>
             <button className="bsx-caltoggle" aria-expanded={!minActivity} onClick={() => setMinActivity(!minActivity)}
                     aria-label={minActivity ? (kn ? "ತೆರೆಯಿರಿ" : "Expand case activity") : (kn ? "ಮಡಚಿ" : "Collapse case activity")}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6" /></svg>

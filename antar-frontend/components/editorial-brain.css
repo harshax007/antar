@@ -109,3 +109,10 @@ html[lang="kn"] .bsx-wrap .ov-clock-head em { letter-spacing: normal; text-trans
 .bsx-wrap .ov-officer .ov-toggle i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-sm); border: 1px solid var(--rule-2); }
 /* the three charts sit without a rule above them (owner's call) */
 .bsx-wrap .ov-charts > .ov-panel { border-top: 0 !important; }
+
+/* Case activity: reset to how the panel opens */
+.bsx-wrap .bsx-calreset { margin-left: auto; min-height: 28px; padding: 0 var(--sp-3); border-radius: var(--r-sm); border: 1px solid var(--rule-2); background: none;
+  font: 600 var(--fs-label) 'Inter', sans-serif; color: var(--text-2); cursor: pointer; white-space: nowrap; }
+.bsx-wrap .bsx-calreset:hover:not(:disabled) { color: var(--text-1); border-color: rgba(34,230,240,.45); }
+.bsx-wrap .bsx-calreset:disabled { opacity: .4; cursor: default; }
+.bsx-wrap .bsx-calreset + .bsx-caltoggle { margin-left: var(--sp-2); }
