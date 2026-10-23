@@ -25,9 +25,6 @@ export default function AboutPage() {
           </div>
 
           <div className="ab-meaning">
-            <div className="ab-meaning-title">
-              {kn ? "‘ವಿಮರಕ್ಷ’ ಪದದ ಅರ್ಥ" : "Meaning of Vimaraksha"}
-            </div>
             <p className="ab-meaning-text">
               {kn ? (
                 <>
