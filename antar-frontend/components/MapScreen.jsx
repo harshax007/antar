@@ -957,6 +957,7 @@ export default function MapScreen() {
     if (rightTab !== "summary" || !viewInsight || giLoading) return;
     const ctrl = new AbortController();
     setLlmLoading(true);
+    setLlmSummary(null);
     fetch(`${API}/api/map/view_summary`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -977,8 +978,8 @@ export default function MapScreen() {
       signal: ctrl.signal
     })
     .then(r => r.json())
-    .then(d => setLlmSummary(d.summary))
-    .catch(() => {})
+    .then(d => setLlmSummary(typeof d.summary === "string" && !/^unable to generate/i.test(d.summary.trim()) ? d.summary : null))
+    .catch(() => setLlmSummary(null))
     .finally(() => { if (!ctrl.signal.aborted) setLlmLoading(false); });
     return () => ctrl.abort();
   }, [rightTab, viewInsight, giLoading, crimeType, selectedDistrict, endDate]);
@@ -1875,8 +1876,33 @@ export default function MapScreen() {
                 };
                 const hot = topGiZones.filter((z) => z.is_hotspot);
                 const how = (z) => (z >= 4 ? "far above" : z >= 2.5 ? "well above" : "above");
+                // "In short" when the model is slow or down: the same rows below, as sentences.
+                // Only figures this panel already shows - nothing added.
+                const plain = [
+                  hot.length ? `${hot.length} confirmed hotspot${hot.length > 1 ? "s" : ""}, led by ${hot[0].zone}.` : "No confirmed hotspot in this view.",
+                  topAlert ? `${topAlert.zone} is above its usual level for ${crime(topAlert.crime_type).toLowerCase()} (${topAlert.observed} recorded).` : null,
+                  viewInsight.outlook ? `Next ${viewInsight.outlook.horizon} days: ${viewInsight.outlook.name}${viewInsight.outlook.where ? `, ${viewInsight.outlook.where}` : ""} is likely to see ${viewInsight.outlook.lo} to ${viewInsight.outlook.hi} FIRs.` : null,
+                  viewInsight.patrol.length ? `Consider patrol at ${[...new Set(viewInsight.patrol)].join(", ")}.` : null,
+                ].filter(Boolean).join(" ");
+                const plainKn = [
+                  hot.length ? `${hot.length} ದೃಢಪಟ್ಟ ಹಾಟ್‌ಸ್ಪಾಟ್, ಮೊದಲನೆಯದು ${hot[0].zone}.` : "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ದೃಢಪಟ್ಟ ಹಾಟ್‌ಸ್ಪಾಟ್ ಇಲ್ಲ.",
+                  topAlert ? `${topAlert.zone} ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು (${topAlert.observed} ದಾಖಲಾಗಿದೆ).` : null,
+                  viewInsight.outlook ? `ಮುಂದಿನ ${viewInsight.outlook.horizon} ದಿನ: ${viewInsight.outlook.name}, ${viewInsight.outlook.lo}–${viewInsight.outlook.hi} FIR ಸಾಧ್ಯತೆ.` : null,
+                  viewInsight.patrol.length ? `ಗಸ್ತು: ${[...new Set(viewInsight.patrol)].join(", ")}.` : null,
+                ].filter(Boolean).join(" ");
+                const fromModel = !llmLoading && llmSummary;
                 return (
                 <div key={`${endDate}|${crimeType}|${selectedDistrict || ""}`} className="mx-swap">
+                  {/* In short, first: what an officer reads when there is time for one line. */}
+                  <div className="mx-sum-note is-top">
+                    <h4>{kn ? "ಸಂಕ್ಷಿಪ್ತವಾಗಿ" : "In short"}</h4>
+                    {llmLoading
+                      ? <p className="dim">{kn ? "ಬರೆಯುತ್ತಿದೆ…" : "Writing…"}</p>
+                      : <p>{fromModel ? llmSummary.replace(/^[\s\n]*[●*•]?\s*Analyzing(\.\.\.)?\s*\n*/i, "") : (kn ? plainKn : plain)}</p>}
+                    {!llmLoading && <small>{fromModel
+                      ? (kn ? "ಕೆಳಗಿನ ಅಂಕಿಅಂಶಗಳಿಂದ ಬರೆಯಲಾಗಿದೆ" : "Written by Antar from the figures below.")
+                      : (kn ? "ಕೆಳಗಿನ ಸಾಲುಗಳಿಂದ ನೇರವಾಗಿ" : "Taken directly from the rows below.")}</small>}
+                  </div>
                   {/* How to read the view, then what stands out in it. The day's count, its change,
                       the 30-day total and the district ranking are in the left column, once. */}
                   <p className={`mx-sum-state lvl-${viewInsight.level}`}>
@@ -1927,17 +1953,6 @@ export default function MapScreen() {
                       </div>
                     )}
                   </dl>
-
-                  {/* The same figures in a sentence or two. It arrives after the rows and never
-                      replaces them; if the model is slow or down, it is simply absent. */}
-                  {(llmLoading || llmSummary) && (
-                    <div className="mx-sum-note">
-                      <h4>{kn ? "ಸಂಕ್ಷಿಪ್ತವಾಗಿ" : "In short"}</h4>
-                      {llmLoading && <p className="dim">{kn ? "ಬರೆಯುತ್ತಿದೆ…" : "Writing…"}</p>}
-                      {!llmLoading && llmSummary && <p>{llmSummary.replace(/^[\s\n]*[●*•]?\s*Analyzing(\.\.\.)?\s*\n*/i, "")}</p>}
-                      {!llmLoading && llmSummary && <small>{kn ? "ಮೇಲಿನ ಅಂಕಿಅಂಶಗಳಿಂದ ಬರೆಯಲಾಗಿದೆ" : "Written by Antar from the figures above."}</small>}
-                    </div>
-                  )}
 
                       {/* Integrated Geo-Intel Ticker */}
                       <div 

@@ -486,4 +486,6 @@ async def view_summary(req: SummaryRequest):
             raise ValueError("summary rejected")
         return {"summary": re.sub(r"\s+", " ", summary)[:700]}
     except Exception:
-        return {"summary": "Unable to generate summary at this time. Please check the data manually."}
+        # no summary rather than an error message on screen: the page writes "In short"
+        # from the rows it already shows
+        return {"summary": None}
