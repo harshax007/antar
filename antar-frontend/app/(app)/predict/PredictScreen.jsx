@@ -1166,7 +1166,7 @@ const PREDICT_MODERN_STYLES = `
 /* ── Hierarchy (design-tokens.css): what to look at first ──
    1 the page title  2 the week in five figures  3 this week's plan (start here)
    4 the forecast and the alerts  5 events  6 the fold-outs. One primary button per view. */
-.px-page { gap: var(--sp-6); padding-top: 72px; }
+.px-page { gap: var(--sp-6); padding-top: 40px; }
 .px-head { align-items: flex-end; gap: var(--sp-4); }
 .px-title { font-size: var(--fs-h1); line-height: 1.15; letter-spacing: .01em; margin-bottom: var(--sp-2); color: var(--text-1); }
 .px-sub { font: 400 var(--fs-body)/1.55 'Inter', sans-serif; color: var(--text-2); max-width: 72ch; letter-spacing: 0; }
