@@ -4,6 +4,13 @@ Antar — re-anchor the WOW-3 demo spike (planted pattern P2) to the current wee
     python scripts/replant_p2.py --dry-run     # show the plan, change nothing
     python scripts/replant_p2.py               # apply, writing a revert file
     python scripts/replant_p2.py --revert      # put every moved row back
+    python scripts/replant_p2.py --anchor 2026-10-29   # set the spike up for a given day
+
+`--anchor` (2026-10-23) plants the spike for the week ending on that date instead of today,
+so a demo day can be prepared in advance rather than on its morning. Every run now ADDS to
+the revert file (keeping each row's original date), so a second run never loses the way
+back to the first; and the January-2025 gang surge - the resolved pattern the Brain cites -
+is never used as a donor.
 
 ## What is wrong
 
@@ -85,8 +92,17 @@ def week_bounds(ref_now: date, w: int) -> tuple[date, date]:
     return ref_now - timedelta(days=7 * w + 6), ref_now - timedelta(days=7 * w)
 
 
+# The Jan-2025 "gang surge" (P2.jan2025_surge_weekly, 3 weeks from 6 Jan 2025) is the
+# resolved pattern the Brain matches the spike against. Taking donors from it quietly erased
+# that evidence a few rows per run.
+SURGE = (date(2025, 1, 6), date(2025, 1, 26))
+ANCHOR: date | None = None      # set by --anchor
+
+
 def _ref_now(con: sqlite3.Connection) -> date:
-    """The scanner's reference date: min(latest row, as-of)."""
+    """The scanner's reference date: min(latest row, as-of), or the --anchor date."""
+    if ANCHOR is not None:
+        return ANCHOR
     from app.services.zcql_repo import data_today
     latest = con.execute("SELECT MAX(date) FROM FIRs WHERE date IS NOT NULL").fetchone()[0]
     latest_d = date.fromisoformat(str(latest)[:10])
@@ -116,7 +132,7 @@ def plan(con: sqlite3.Connection, zone: str, ctype: str) -> tuple[list[tuple], d
         w = (ref_now - dd).days // 7
         if w in want and (ref_now - dd).days >= 0:
             in_week[w].append(rowid)
-        else:
+        elif not (SURGE[0] <= dd <= SURGE[1]):
             outside.append((rowid, str(d)[:10]))
 
     # Future-dated rows are the best donors: they are seed-world padding the demo never
@@ -209,7 +225,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split(chr(10) + chr(10))[0])
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--revert", action="store_true")
+    ap.add_argument("--anchor", help="YYYY-MM-DD: plant the spike for the week ending on this date")
     args = ap.parse_args()
+    global ANCHOR
+    if args.anchor:
+        ANCHOR = date.fromisoformat(args.anchor)
 
     from app.core.db_path import get_db_path
     from app.seeds.planted_patterns import P2
@@ -239,9 +259,16 @@ def main() -> int:
 
         record = apply(con, moves)
         REVERT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        # Merge with an earlier run: a row moved twice keeps its ORIGINAL date, so one
+        # --revert still returns everything to where it was before the first run.
+        prior = (json.loads(REVERT_FILE.read_text(encoding="utf-8")).get("moves", [])
+                 if REVERT_FILE.exists() else [])
+        first = {m["rowid"]: m for m in prior}
+        for m in record:
+            first.setdefault(m["rowid"], m)
         REVERT_FILE.write_text(json.dumps(
             {"zone": zone, "crime_type": ctype, "ref_now": ref_now.isoformat(),
-             "moves": record}, indent=2), encoding="utf-8")
+             "moves": list(first.values())}, indent=2), encoding="utf-8")
 
         after = con.execute("SELECT COUNT(*) FROM FIRs").fetchone()[0]
         print("after:")
