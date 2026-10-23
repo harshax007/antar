@@ -49,8 +49,8 @@ export default function AboutPage() {
             </div>
             <blockquote className="ab-origin-quote">
               {kn
-                ? "“KSP ಬಳಿ ವರ್ಷಗಳ FIR ಗಳಿವೆ. ಉತ್ತರ ಅವುಗಳಲ್ಲೇ ಇತ್ತು. ಅದನ್ನು ಹುಡುಕಲು ಯಾರಿಗೂ ಸಮಯವಿರಲಿಲ್ಲ.”"
-                : "“KSP has years of FIRs. The answer was already in them. Nobody had the time to find it.”"}
+                ? "“KSP ಬಳಿ ಬೃಹತ್ ಪ್ರಮಾಣದ FIR ದತ್ತಾಂಶವಿದೆ, ಆದರೆ ಅದರ ಮೇಲೆ ಯೋಚಿಸುವ ಬುದ್ಧಿವಂತ ಪದರ ಇಲ್ಲ, ಮತ್ತು ಆ ದತ್ತಾಂಶವನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಹೊರತೆಗೆಯುವುದು ಸುಲಭವಲ್ಲ.”"
+                : "“KSP has a large amount of FIR data, but no intelligent layer that can think across it, and it is not easy to retrieve that data securely.”"}
             </blockquote>
             <p className="ab-card-text">
               {kn
