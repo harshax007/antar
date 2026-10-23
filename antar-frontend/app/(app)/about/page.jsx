@@ -49,8 +49,8 @@ export default function AboutPage() {
             </div>
             <blockquote className="ab-origin-quote">
               {kn
-                ? "“ಉತ್ತರ FIR ಗಳಲ್ಲೇ ಇತ್ತು. ಅದನ್ನು ಹುಡುಕಲು ಯಾರಿಗೂ ಸಮಯವಿರಲಿಲ್ಲ.”"
-                : "“The answer was already in the FIRs. Nobody had the time to find it.”"}
+                ? "“KSP ಬಳಿ ವರ್ಷಗಳ FIR ಗಳಿವೆ. ಉತ್ತರ ಅವುಗಳಲ್ಲೇ ಇತ್ತು. ಅದನ್ನು ಹುಡುಕಲು ಯಾರಿಗೂ ಸಮಯವಿರಲಿಲ್ಲ.”"
+                : "“KSP has years of FIRs. The answer was already in them. Nobody had the time to find it.”"}
             </blockquote>
             <p className="ab-card-text">
               {kn
