@@ -10,6 +10,7 @@ import { Mic, MicOff, X, ShieldCheck, Search, ArrowRight, Brain, MapPin, Sparkle
 import ProposeAction from "@/components/ProposeAction";
 import { AnimatePresence, motion } from "framer-motion";
 import { SPRING } from "@/components/ui/MaterialPanel";
+import "@/components/editorial-search.css";
 import BrainLoader, { OSINT_STEPS, OSINT_ORBS } from "@/components/BrainLoader";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -423,6 +424,13 @@ function SearchContent() {
         {/* LEFT: search + results list */}
         <div className="sx-listpanel">
           <div className="sx-searchwrap">
+            <header className="sx-intro">
+              <span className="sx-eyebrow">{kn ? "ಹುಡುಕಾಟ · ತನಿಖಾ ಅಧಿಕಾರಿಗಳಿಗೆ" : "Search · for investigating officers"}</span>
+              <h1>{kn ? <>FIR ದಾಖಲೆಯಲ್ಲಿ ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕಿ, <em>ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ.</em></> : <>Find a person in the FIR register, <em>even misspelt.</em></>}</h1>
+              <p>{kn
+                ? "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ತಂದೆಯ ಹೆಸರು, ಫೋನ್ ಅಥವಾ ವಾಹನ ಸಂಖ್ಯೆ. ದಾಖಲೆ ತೆರೆಯಿರಿ: ಪ್ರಕರಣಗಳು, ಅಪಾಯ, ಸಹಚರರು."
+                : "Name, alias, father's name, phone or vehicle plate. Open a record for their cases, risk and associates before an arrest or a visit."}</p>
+            </header>
             <div className="sx-searchbar">
               <Search size={15} />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={kn ? "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ಫೋನ್, ನಂ.ತಟ್ಟೆ…" : "Search name, alias, phone, vehicle plate…"} aria-label={kn ? "ಶಂಕಿತರನ್ನು ಹುಡುಕಿ" : "Search suspects"} />
