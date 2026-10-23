@@ -29,12 +29,12 @@ export default function AboutPage() {
               {kn ? (
                 <>
                   <span className="ab-meaning-word">ಮುನ್ಸೂಚಕ ಭದ್ರತೆ</span>
-                  <b>ವಿಮರಕ್ಷ</b> ಎಂದರೆ ದಾಖಲೆಗಳಲ್ಲಿ ಅಪಾಯವನ್ನು ಮೊದಲೇ ಕಂಡು, ಅದು ಸಂಭವಿಸುವ ಮುನ್ನವೇ ತಡೆಯುವುದು.
+                  <b>ವಿಮರಕ್ಷ</b>ದಲ್ಲಿ, ದಾಖಲೆಗಳಲ್ಲಿನ ಎಚ್ಚರಿಕೆಯ ಸೂಚನೆಗಳನ್ನು ಮೊದಲೇ ಗುರುತಿಸಿ, ಅಪರಾಧ ಸಂಭವಿಸುವ ಮುನ್ನವೇ ಸುರಕ್ಷತಾ ಕ್ರಮಗಳನ್ನು ಜಾರಿಗೆ ತರುವುದರ ಮೇಲೆ ನಾವು ಗಮನ ಹರಿಸುತ್ತೇವೆ.
                 </>
               ) : (
                 <>
                   <span className="ab-meaning-word">Predictive Security</span>
-                  <strong>Vimaraksha</strong> means seeing trouble early in the records, and stopping it before it happens.
+                  At <strong>Vimaraksha</strong>, we focus on putting secure measures in place before a crime happens, by spotting the warning signs early in the records.
                 </>
               )}
             </p>
