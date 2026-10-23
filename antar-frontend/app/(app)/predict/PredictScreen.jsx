@@ -1590,11 +1590,11 @@ const avgConf = predictions?.length
       <div className="px-head">
         <div className="px-head-l">
           <h1 className="px-title">
-            {kn ? "ವಾರದ ಅಪರಾಧ ಮುನ್ನೋಟ" : "Weekly Crime Outlook"}
+            {kn ? "7 ದಿನಗಳ ಅಪರಾಧ ಅಪಾಯ ಮುನ್ಸೂಚನೆ" : "7-Day Crime Risk Forecast"}
           </h1>
           <div className="px-sub">
-            {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಯೋಜನೆ: ಗಸ್ತು ಎಲ್ಲಿ, ಯಾವ ಠಾಣೆ ಪರಿಶೀಲಿಸಬೇಕು, ಯಾವ ಉತ್ಸವಕ್ಕೆ ಬಂದೋಬಸ್ತ್."
-                : "What the next 7 days look like, area by area. Read the counts, open any forecast or alert for its reasons, then act on the plan."}
+            {kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಗೆ ಪ್ರದೇಶವಾರು ಮುನ್ಸೂಚನೆ, ಪ್ರತಿಯೊಂದಕ್ಕೂ ನಿರೀಕ್ಷಿತ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಆಧಾರ ಸಹಿತ - ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ನಿರ್ಧಾರಗಳಿಗೆ ಆದ್ಯತೆಯ ಕ್ರಮದಲ್ಲಿ."
+                : "Area-level forecasts for the next 7 days, each with an expected range and the evidence behind it, ranked by risk to support patrol and bandobast decisions."}
           </div>
         </div>
         <div className="px-head-r">
