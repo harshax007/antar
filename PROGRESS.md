@@ -2335,3 +2335,18 @@ Tests: tests/test_osint_checks.py (41, offline). The older search tests now stat
 * **Outdated descriptions** fixed (QuickML model names, the FIR count, the database name, a Kannada FIR figure).
 * **Kannada** for the OSINT results and explainer, the Search OSINT panel, the Map's repeat-location list and card, and Predict's tile hints, notes and event card. The EN | ಕನ್ನಡ choice is now remembered in the browser (it reset on every reload).
 * **Backend:** chat sessions are durable (`obs/chat_sessions.db`, write-through): follow-ups and "why?" survive a restart. The test suite runs on a copy of main.db (7 s backup), so pytest is safe while the backend serves. `python scripts/release_check.py` checks data, agents, the core tests, config and on-screen claims, and exits non-zero on a failure. First run: READY, one warning (no Brave search key). It found one test that only passed with live credentials (fixed).
+
+## Design system pass, Predict first - 2026-10-24
+
+**Audit (whole app, from the CSS):** 35 font sizes in CSS plus 26 inline, 307 rules under 11px (down to 7.5px), 49 spacing values with 37% off the 4px grid, 19 corner radii, no shared button tiers. Font families are not part of the fix (the English fonts stay as they are).
+
+**Foundations:** `antar-frontend/app/design-tokens.css`, imported in the root layout. A type scale by role (11 caption, 12 label, 13 small body, 14 body, 16 lead, 18 panel title, 20 section title, 28 page title, 32 figure), 4px spacing, four radii, four text-emphasis levels, and three button tiers (`ui-btn--primary / --secondary / --ghost`, plus `--sm`). Rule: one primary per view.
+
+**Predict:**
+* Order: title, the week in five figures, then **This week's plan** under a "Start here" label (it used to sit below the forecast list), then the forecast and alerts, events, and the two fold-outs.
+* Week figures keep their colour only when non-zero; zeros step back.
+* One primary per view: "Copy for the briefing note" on the page; "Mark as reviewed" on a picked forecast, with "Ask Antar" secondary and the rest (how it was worked out, what if, audit trail, map) as quiet buttons after a divider.
+* The picked forecast's title is one step below the page title (it was the same size).
+* Every Predict rule (the screen's own sheet and its rules in globals.css: px-, pxd-, cl-) snapped to the scale: text now uses 9 sizes, all on the scale; 10 of 315 spacings are off the grid, and those are 1px hairlines.
+
+Next: the same pass on Chat, Brain, Map, Search and Docs, then the rest.

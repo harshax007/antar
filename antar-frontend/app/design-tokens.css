@@ -1,0 +1,58 @@
+/* ── Antar design tokens ──
+   One scale for type, space, corners and buttons, so every screen reads the same way:
+   the eye finds the title, then the one primary action, then the detail.
+   Font FAMILIES are unchanged (Inter for text, Chakra Petch for titles, JetBrains Mono
+   for codes and ids); this file only fixes sizes, rhythm and emphasis. */
+:root {
+  /* type: eight steps, 11px floor. Roles, not sizes, in component CSS. */
+  --fs-caption: 11px;   /* footnotes, units under a figure */
+  --fs-label: 12px;     /* chips, table heads, field labels */
+  --fs-body-sm: 13px;   /* secondary text, notes */
+  --fs-body: 14px;      /* reading text */
+  --fs-lead: 16px;      /* card titles, lead sentences */
+  --fs-h3: 18px;        /* panel titles */
+  --fs-h2: 20px;        /* section titles */
+  --fs-h1: 28px;        /* the page title, once per screen */
+  --fs-figure: 32px;    /* headline numbers */
+
+  /* space: 4px grid */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+
+  /* corners */
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
+
+  /* text emphasis on the dark surface: four levels, nothing dimmer than ink-4 for text */
+  --ink-1: #F1F5F9;   /* titles, figures, the thing to read */
+  --ink-2: #B4C2D6;   /* body */
+  --ink-3: #8A99AD;   /* notes, captions */
+  --ink-4: #5B6B80;   /* zero / disabled */
+  --line-1: rgba(255,255,255,.08);
+  --line-2: rgba(255,255,255,.14);
+  --accent: #22E6F0;
+  --accent-ink: #04121A;   /* text on a filled accent button */
+}
+[data-theme="light"] {
+  --ink-1: #0F172A; --ink-2: #334155; --ink-3: #64748B; --ink-4: #94A3B8;
+  --line-1: rgba(15,23,42,.08); --line-2: rgba(15,23,42,.16);
+  --accent: #0891B2; --accent-ink: #FFFFFF;
+}
+
+/* ── Buttons: three tiers. One primary per view; everything else steps down. ── */
+.ui-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: 36px; padding: 0 var(--sp-4);
+  border-radius: var(--r-md); border: 1px solid transparent; font: 600 var(--fs-body-sm)/1 'Inter', sans-serif; white-space: nowrap; cursor: pointer;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease; }
+.ui-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ui-btn:active:not(:disabled) { scale: .97; transition: scale 90ms ease-out; }
+.ui-btn:disabled { opacity: .5; cursor: default; }
+.ui-btn--primary { background: var(--accent); color: var(--accent-ink); box-shadow: 0 6px 18px rgba(34,230,240,.18); }
+.ui-btn--primary:hover:not(:disabled) { background: #5EF0F7; }
+.ui-btn--secondary { background: rgba(34,230,240,.08); border-color: rgba(34,230,240,.38); color: var(--accent); }
+.ui-btn--secondary:hover:not(:disabled) { background: rgba(34,230,240,.16); }
+.ui-btn--ghost { background: transparent; border-color: var(--line-2); color: var(--ink-2); }
+.ui-btn--ghost:hover:not(:disabled) { color: var(--ink-1); border-color: rgba(34,230,240,.4); }
+.ui-btn--sm { min-height: 30px; padding: 0 var(--sp-3); font-size: var(--fs-label); }
+[data-theme="light"] .ui-btn--primary:hover:not(:disabled) { background: #0E7490; }
+
+/* ── Section heading: an optional eyebrow, the title, one line of note ── */
+.ui-eyebrow { display: block; margin-bottom: var(--sp-1); font: 600 var(--fs-caption)/1.2 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+html[lang="kn"] .ui-eyebrow { letter-spacing: normal; text-transform: none; font-size: var(--fs-label); }
