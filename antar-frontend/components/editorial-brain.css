@@ -98,3 +98,12 @@ html[lang="kn"] .bsx-wrap .ov-clock-head em { letter-spacing: normal; text-trans
 .bsx-wrap .ov-out-acc b { font: 700 var(--fs-h2) 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); }
 .bsx-wrap .ov-out-acc span { margin-top: var(--sp-1); font-size: var(--fs-body-sm); color: var(--text-2); }
 @media (max-width: 1100px) { .bsx-wrap .ov-officer { grid-template-columns: 1fr; gap: var(--sp-6); } }
+
+/* the two officer panels as boxes (owner's call): a quiet surface, a hairline border,
+   the title row as the box's header */
+.bsx-wrap .ov-officer .ov-panel { border: 1px solid var(--rule-2) !important; border-radius: var(--r-lg) !important;
+  background: rgba(255,255,255,.025) !important; padding: var(--sp-4) var(--sp-6) !important; }
+.bsx-wrap .ov-officer .ov-panel:not(.shut) { padding-bottom: var(--sp-6) !important; }
+.bsx-wrap .ov-officer .ov-panel:hover { border-color: rgba(34,230,240,.3) !important; }
+.bsx-wrap .ov-officer .ov-toggle { min-height: 40px; align-items: center; }
+.bsx-wrap .ov-officer .ov-toggle i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-sm); border: 1px solid var(--rule-2); }
