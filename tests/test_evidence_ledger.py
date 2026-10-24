@@ -126,3 +126,12 @@ class TestEndpoints:
         assert ok.status_code == 200 and ok.json()["accused_id"] == aid
         missing = await _get("/api/evidence/entity/ACC-nope-000")
         assert missing.status_code == 404
+
+
+def test_district_centroids_stay_in_karnataka():
+    from app.services import evidence_ledger as e
+    # a swapped pair is put back; a point outside the state is dropped
+    assert e._ka_point(77.59, 12.97) == (12.97, 77.59)
+    assert e._ka_point(28.6, 60.9) is None
+    cent = e._district_centroids()
+    assert cent and all(e._in_ka(c["lat"], c["lon"]) for c in cent.values())

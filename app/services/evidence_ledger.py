@@ -210,26 +210,46 @@ def _days_between(d1: str, d2: str) -> int | None:
         return None
 
 
+# Karnataka's bounding box, a little padded. A point outside it is a recording error.
+_KA_LAT, _KA_LON = (11.4, 18.6), (73.9, 78.7)
+
+
+def _in_ka(lat: float, lon: float) -> bool:
+    return _KA_LAT[0] <= lat <= _KA_LAT[1] and _KA_LON[0] <= lon <= _KA_LON[1]
+
+
+def _ka_point(lat, lon) -> tuple[float, float] | None:
+    """A usable Karnataka point from one row: as recorded, or with latitude and longitude
+    swapped back when they were entered the wrong way round. None otherwise."""
+    try:
+        lat, lon = float(lat), float(lon)
+    except (TypeError, ValueError):
+        return None
+    if _in_ka(lat, lon):
+        return lat, lon
+    if _in_ka(lon, lat):
+        return lon, lat
+    return None
+
+
 def _district_centroids() -> dict[str, dict]:
-    """Mean lat/lon per district over its real FIR coordinates (for map arc endpoints)."""
+    """Median lat/lon per district over its FIR coordinates (for map arc endpoints).
+
+    A plain mean was dragged off by rows with latitude and longitude swapped, and by points
+    outside the state: Bengaluru City's endpoint landed at 28.6 N, 60.9 E. Swapped pairs are
+    put back, anything still outside Karnataka is dropped, and the median ignores the rest."""
+    from statistics import median
     _ensure()
-    acc: dict[str, list[float]] = {}
+    acc: dict[str, tuple[list[float], list[float]]] = {}
     for r in _rows:
         dn = (r.get("District_Name") or "").strip()
-        if not dn:
+        pt = _ka_point(r.get("Latitude"), r.get("Longitude")) if dn else None
+        if pt is None:
             continue
-        try:
-            lat = float(r.get("Latitude"))
-            lon = float(r.get("Longitude"))
-        except (TypeError, ValueError):
-            continue
-        if lat == 0 and lon == 0:
-            continue
-        a = acc.setdefault(dn, [0.0, 0.0, 0])
-        a[0] += lat
-        a[1] += lon
-        a[2] += 1
-    return {d: {"lat": round(s[0] / s[2], 6), "lon": round(s[1] / s[2], 6)} for d, s in acc.items() if s[2]}
+        lats, lons = acc.setdefault(dn, ([], []))
+        lats.append(pt[0])
+        lons.append(pt[1])
+    return {d: {"lat": round(median(la), 6), "lon": round(median(lo), 6)} for d, (la, lo) in acc.items() if la}
 
 
 def corridors(limit: int = 20) -> list[dict]:
