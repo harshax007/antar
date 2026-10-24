@@ -279,6 +279,7 @@ function CasePopup({ c, kn }) {
         <div className="mx-case-n">{people.map(([k, v]) => <div key={k}><b>{v}</b><span>{k}</span></div>)}</div>
       )}
       {!c.placed && <p className="mx-case-note">{kn ? "ಸ್ಥಳ ದಾಖಲಾಗಿಲ್ಲ: ಜಿಲ್ಲೆಯ ಕೇಂದ್ರದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ." : "No usable position on the FIR: the dot is at the district's centre."}</p>}
+      {c.fir_id && <a className="mx-case-open" href={`/case/${encodeURIComponent(c.fir_id)}`}>{kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ →" : "Open the case timeline →"}</a>}
     </div>
   );
 }

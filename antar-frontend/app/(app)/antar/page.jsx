@@ -799,8 +799,8 @@ function SourcesPanel({ msg, kn, router }) {
         <div className="nx-srcgrid">
           {cites.map((c, j) => (
             <button type="button" className="nx-srccard" key={j}
-                    onClick={() => router.push(`/search?q=${encodeURIComponent(c.fir || "")}`)}
-                    title={kn ? "ಮೂಲ ದಾಖಲೆ ಹುಡುಕಿ" : "Open this record in Search"}>
+                    onClick={() => router.push(c.id ? `/case/${encodeURIComponent(c.id)}` : `/search?q=${encodeURIComponent(c.fir || "")}`)}
+                    title={c.id ? (kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case: summary and timeline") : (kn ? "ಮೂಲ ದಾಖಲೆ ಹುಡುಕಿ" : "Open this record in Search")}>
               <b>FIR {c.fir}</b>
               <span>{[c.station, c.section].filter(Boolean).join(" · ")}</span>
               <i>{c.date || ""}{c.date ? " · " : ""}{kn ? "ಮೂಲ ದಾಖಲೆ" : "Source record"} →</i>

@@ -718,6 +718,8 @@ def extract_citations(rows: list[dict]) -> list[dict]:
         if fir:
             cites.append({
                 "fir": fir,
+                # the register's unique id, which a crime number is not: what /api/case opens
+                "id": r.get("crime_id") or r.get("fir_id"),
                 "station": r.get("station_code") or r.get("UnitName"),
                 "date": str(r.get("occurred_at") or r.get("date") or "")[:10],
                 "section": r.get("acts_sections") or r.get("ipc_section") or r.get("ActSection"),
