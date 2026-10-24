@@ -159,3 +159,5 @@ html[lang="kn"] .cg-plan-h { letter-spacing: normal; text-transform: none; font-
 /* a wider legend column, so the View summary reads in full lines and its box isn't cut at the edge */
 .bsx-wrap .bsx-cg-legend { width: min(360px, calc(100vw - 32px)); max-width: none; box-sizing: border-box; }
 .bsx-wrap .bsx-cg-legend .bsx-cg-summary, .bsx-wrap .bsx-cg-legend .bsx-summary-b { width: 100%; box-sizing: border-box; }
+/* no arrow on the Crime Graph's View summary toggle (owner's call) */
+.bsx-wrap .bsx-cg-summary .bsx-summary-h > span[aria-hidden="true"] { display: none; }
