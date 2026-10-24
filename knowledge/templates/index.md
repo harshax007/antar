@@ -25,7 +25,7 @@
 * [T30 — What a festival or event does to registered crime (Deepavali, Dasara, Ganesha, Ugadi, Sankranti, Ramzan, New Year), measured from past FIRs](./t30-what-a-festival-or-event-does-to-registered-crime-deepav.md) - 2 parameter(s)
 * [T4 — Top suspects by linked-crime count in a zone](./t4-top-suspects-by-linked-crime-count-in-a-zone.md) - 2 parameter(s)
 * [T5 — Repeat offenders (prior_count ≥ N)](./t5-repeat-offenders-prior-count-n.md) - 3 parameter(s)
-* [T7 — Demographic breakdown of victims/suspects](./t7-demographic-breakdown-of-victims-suspects.md) - 2 parameter(s)
+* [T7 — Demographic breakdown of victims/suspects](./t7-demographic-breakdown-of-victims-suspects.md) - 4 parameter(s)
 * [T8 — Crime counts by investigation status (filter by zone, crime type and period)](./t8-crime-counts-by-investigation-status-filter-by-zone-crime.md) - 7 parameter(s)
 * [T9 — All crimes linked to a suspect](./t9-all-crimes-linked-to-a-suspect.md) - 1 parameter(s)
 * [AST — (internal) Dynamic AST query representation](./ast-internal-dynamic-ast-query-representation.md) - 1 parameter(s)

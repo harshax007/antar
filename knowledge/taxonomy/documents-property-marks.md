@@ -8,7 +8,7 @@ tags:
   - ksp
 generated:
   by: process:antar-okf-export
-  at: "2026-10-23T12:47:16Z"
+  at: "2026-10-24T15:11:41Z"
 sources:
   - id: ksp-fir-registry-firs-table
     resource: urn:antar:registry:firs

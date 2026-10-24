@@ -8,7 +8,7 @@ tags:
   - coverage-limited
 generated:
   by: process:antar-okf-export
-  at: "2026-10-23T12:47:17Z"
+  at: "2026-10-24T15:11:42Z"
 sources:
   - id: ksp-fir-registry-mo-details
     resource: urn:antar:registry:firs

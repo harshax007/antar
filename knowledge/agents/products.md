@@ -7,7 +7,7 @@ tags:
   - service
 generated:
   by: process:antar-okf-export
-  at: "2026-10-23T12:47:17Z"
+  at: "2026-10-24T15:11:42Z"
 sources:
   - id: antar-agent-manifest
     resource: /AGENTS.md

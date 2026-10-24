@@ -8,7 +8,13 @@ parameters:
     type: "Literal of 'victims', 'suspects'"
     required: false
   - name: dimension
-    type: "Literal of 'age_band', 'gender', 'occupation', 'zone', 'address_zone'"
+    type: "Literal of 'age_band', 'gender', 'occupation', 'zone', 'address_zone', 'relation', 'age_group'"
+    required: false
+  - name: crime_types
+    type: list of str
+    required: false
+  - name: zones
+    type: list of str
     required: false
 executor:
   resource: /app/services/zcql_repo.py
@@ -25,7 +31,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-23T12:47:17Z"
+  at: "2026-10-24T15:11:41Z"
 status: stable
 ---
 
