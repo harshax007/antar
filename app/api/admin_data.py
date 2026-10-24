@@ -17,6 +17,7 @@ from app.core.schema_registry import get_table_schema
 
 router = APIRouter()
 from app.core.db_path import DB_PATH
+from app.core.db_path import registry_connect
 
 class FIRRecord(BaseModel):
     # Core DB fields (normalized from CSV)
@@ -164,7 +165,7 @@ async def ingest_dataset(background_tasks: BackgroundTasks, file: UploadFile = F
 
     # Bulk Insert to SQLite
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         cursor = conn.cursor()
         
         columns = list(valid_records[0].keys())

@@ -46,6 +46,7 @@ from app.forecast import asof as asof_mod
 from app.forecast import features as F
 from app.forecast import model as M
 from app.forecast import run as R
+from app.core.db_path import registry_connect
 
 WINDOW_FROM = date(2023, 10, 2)          # first target week
 REFIT_EVERY = 4                          # weeks
@@ -387,7 +388,7 @@ if __name__ == "__main__":
     import sys
     from app.core.db_path import DB_PATH
     from app.forecast import report
-    con = sqlite3.connect(DB_PATH, timeout=60)
+    con = registry_connect(DB_PATH, timeout=60)
     cats = sys.argv[1].split(",") if len(sys.argv) > 1 else None
     result = run(con, cats=cats)
     save(con, result)

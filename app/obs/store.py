@@ -1,6 +1,7 @@
 import sqlite3, time
 from contextlib import contextmanager
 from app.obs.config import DB_PATH, ensure_dirs, NON_CONVERSATIONAL_SURFACES
+from app.core.db_path import registry_connect
 
 _SCHEMA = """
 -- one row per user turn (written once, at trace close)
@@ -121,7 +122,7 @@ _schema_ready = False
 def init_db() -> None:
     global _schema_ready
     ensure_dirs()
-    with sqlite3.connect(DB_PATH) as c:
+    with registry_connect(DB_PATH) as c:
         c.execute("PRAGMA journal_mode=WAL;")
         c.executescript(_SCHEMA)
     _schema_ready = True
@@ -148,7 +149,7 @@ def conn():
             # cannot be created the write below will raise and be handled where the
             # caller already handles it.
             pass
-    c = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = registry_connect(DB_PATH, timeout=5.0)
     c.row_factory = sqlite3.Row
     try:
         yield c

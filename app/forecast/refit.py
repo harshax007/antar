@@ -31,6 +31,7 @@ from app.forecast import asof as asof_mod
 from app.forecast import backtest as BT
 from app.forecast import run as R
 from app.forecast import store
+from app.core.db_path import registry_connect
 
 META_KEY = "refit.last"
 _DOCS = pathlib.Path(__file__).resolve().parents[2] / "docs"
@@ -139,7 +140,7 @@ def run_once(conn: sqlite3.Connection, *, force: bool = False, backtest: bool = 
 if __name__ == "__main__":
     import sys
     from app.core.db_path import DB_PATH
-    con = sqlite3.connect(DB_PATH, timeout=60)
+    con = registry_connect(DB_PATH, timeout=60)
     if "--check" in sys.argv:
         print(json.dumps(state(con), indent=2))
     else:

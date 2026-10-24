@@ -26,7 +26,7 @@
     },
     "linkage": {
       "path": "app/agents/linkage_agent.py",
-      "sha256": "4548d2b27fae1054a8be82f14f0b117f3642512bd3f0f11e59a7bd826e8fe3b6"
+      "sha256": "36a3b990cc92583e18cf99f7aa3ecb27de6eec5a8c8a0f0c19eb38e762b1258e"
     },
     "network": {
       "path": "app/agents/network_agent.py",

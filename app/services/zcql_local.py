@@ -12,6 +12,7 @@ from app.services.zcql_repo import QuerySpec, render_zcql
 
 USE_LOCAL = os.getenv("USE_LOCAL", "1") not in ("0", "false", "False")
 from app.core.db_path import DB_PATH, ensure_db_staged
+from app.core.db_path import registry_connect
 
 # The `crimes` view every template queries. It used to exist only inside the shipped
 # database, defined nowhere in code, so it could not be changed or reviewed. The code now
@@ -54,7 +55,7 @@ def ensure_indexes():
     if _indexes_checked or not os.path.exists(DB_PATH):
         return
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         _ensure_crimes_view(conn)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_firs_group_date ON FIRs(CrimeGroup_Name, date)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_firs_district ON FIRs(District_Name)")
@@ -137,7 +138,7 @@ def _virtual_table(spec: QuerySpec) -> list[dict]:
     if spec.table == "__suspect_crimes__":
         sid = next(f.value for f in spec.filters if f.column == "suspect_id")
         sql = "SELECT c.* FROM crimes c JOIN crime_suspects cs ON c.crime_id = cs.crime_id WHERE cs.suspect_id = ?"
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.row_factory = _dict_factory
         rows = conn.execute(sql, (sid,)).fetchall()
         conn.close()
@@ -162,7 +163,7 @@ def _virtual_table(spec: QuerySpec) -> list[dict]:
             params.extend(zones)
         sql += " GROUP BY s.suspect_id ORDER BY crime_count DESC LIMIT 10"
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.row_factory = _dict_factory
         rows = conn.execute(sql, params).fetchall()
         conn.close()
@@ -231,7 +232,7 @@ def _shared_identifiers(spec: QuerySpec) -> list[dict]:
     limit = int(spec.limit or 10)
     types = list(IDENTIFIER_COLUMNS) if kt == "any" else [kt]
     out: list[dict] = []
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     try:
         for t in types:
@@ -382,7 +383,7 @@ def _case_outcomes(spec: QuerySpec) -> list[dict]:
     sql = (f"SELECT g AS grp, COUNT(*) AS firs, {', '.join(bucket_sql)}, "
            f"SUM(acc) AS accused, SUM(arr) AS arrested, SUM(chs) AS chargesheeted, SUM(conv) AS convicted_accused "
            f"FROM ({per_fir}) GROUP BY g ORDER BY firs DESC")
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     try:
         rows = conn.execute(sql, bucket_args + args).fetchall()
@@ -437,7 +438,7 @@ def _case_stages(spec: QuerySpec) -> list[dict]:
            f"FROM ({per_fir}) GROUP BY g")
     q_args = (bucket_args + list(_OPEN_INV) + [today] + list(_OPEN_INV) + [today]
               + list(_OPEN_INV) + [today, older] + list(_OPEN_INV) + args)
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     try:
         rows = conn.execute(sql, q_args).fetchall()
@@ -465,7 +466,7 @@ def _time_pattern(spec: QuerySpec) -> list[dict]:
            f"COUNT(DISTINCT SUBSTR(date, 1, 10)) AS days, MIN(SUBSTR(date, 1, 10)) AS first_date, "
            f"MAX(SUBSTR(date, 1, 10)) AS last_date "
            f"FROM FIRs WHERE {' AND '.join(where)} AND date IS NOT NULL GROUP BY k ORDER BY k")
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     try:
         rows = conn.execute(sql, args).fetchall()
@@ -497,7 +498,7 @@ _LINK_KEYS = (("Accused_ID", "accused ID"), ("Vehicle_Reg_No", "vehicle"), ("UPI
 def _fir_link(spec: QuerySpec) -> list[dict]:
     a, b = _fval(spec, "fir_a"), _fval(spec, "fir_b")
     cols = ", ".join(c for c, _ in _LINK_KEYS) + ", fir_id, CrimeNo, date, ActSection, FIR_Stage"
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     out = []
     try:
@@ -554,9 +555,9 @@ def _event_effect(spec: QuerySpec) -> list[dict]:
 
 def _connect_ro() -> sqlite3.Connection:
     try:
-        return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        return registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
     except sqlite3.OperationalError:
-        return sqlite3.connect(DB_PATH)      # a path a URI cannot express (tests, odd mounts)
+        return registry_connect(DB_PATH)      # a path a URI cannot express (tests, odd mounts)
 
 
 def year_cognizable(year: int) -> tuple[int, int]:
@@ -666,7 +667,7 @@ def insert_crimes(records: list[dict]):
     _VIRTUAL_CACHE.clear()
     if USE_LOCAL:
         if not records: return
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         
         # We need to map keys to FIRs columns
         cursor = conn.cursor()
@@ -725,7 +726,7 @@ def _world() -> dict:
         return _world_cache["data"]
 
     ensure_indexes()
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     
     world = {}
@@ -752,7 +753,7 @@ def _world() -> dict:
 def scan_rows(crime_type: str | None = None, period: str | None = None) -> list[dict]:
     """Shared helper: fetch lat/lon crime rows for geo/pattern agents using fast numeric columns."""
     from datetime import date, timedelta
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     where = ["geo_ok = 1"]
     params: list = []

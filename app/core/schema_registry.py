@@ -6,6 +6,7 @@ import sqlite3
 from typing import List, Dict
 
 from app.core.db_path import DB_PATH
+from app.core.db_path import registry_connect
 
 _KNOWN_TABLES = {"FIRs", "crimes", "suspects", "crime_suspects"}
 
@@ -15,7 +16,7 @@ def get_table_schema(table_name: str) -> List[Dict]:
     if table_name not in _KNOWN_TABLES:       # PRAGMA cannot take a bound parameter
         return [{"error": "unknown table"}]
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(f"PRAGMA table_info({table_name})")
         columns = cursor.fetchall()

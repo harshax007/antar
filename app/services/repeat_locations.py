@@ -41,6 +41,7 @@ from functools import lru_cache
 import h3
 
 from app.core.db_path import DB_PATH
+from app.core.db_path import registry_connect
 
 _ONLINE = re.compile(r"\b(CEN|CYBER|CID)\b", re.I)
 _UNIT_CODE = re.compile(r"^[A-Z0-9]+(-[A-Z0-9]+)+$")     # BLR-YPR-02, KLB-01, SCRB-HQ
@@ -88,7 +89,7 @@ def _spots(rows: list) -> list[list]:
 
 
 def _connect() -> sqlite3.Connection:
-    con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     return con
 

@@ -24,6 +24,7 @@ import uuid
 from typing import Any
 
 from app.core.db_path import DB_PATH, ensure_db_staged
+from app.core.db_path import registry_connect
 
 MAX_PER_OFFICER = 200
 MAX_BYTES = 24_000            # one finding, serialised
@@ -34,7 +35,7 @@ _ready = False
 def _db() -> sqlite3.Connection:
     global _ready
     ensure_db_staged()
-    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn = registry_connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     if not _ready:
         conn.execute("""

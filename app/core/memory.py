@@ -13,12 +13,13 @@ import sqlite3
 from typing import Any
 
 from app.core.db_path import DB_PATH
+from app.core.db_path import registry_connect
 
 
 def init_memory_db() -> None:
     """Initialize officer_memory table and seed demo login identities."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.execute("""
         CREATE TABLE IF NOT EXISTS officer_memory (
             officer_id TEXT PRIMARY KEY,
@@ -77,7 +78,7 @@ def init_memory_db() -> None:
 def get_officer_memory(officer_id: str) -> dict[str, Any]:
     """Retrieve full memory profile for an officer, falling back to clean default if not found."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         cursor = conn.execute("SELECT officer_id, role, full_name, station, preferences, conclusions, bookmarks, updated_at FROM officer_memory WHERE officer_id = ?", (officer_id,))
         row = cursor.fetchone()
         conn.close()
@@ -111,7 +112,7 @@ def get_officer_memory(officer_id: str) -> dict[str, Any]:
 def list_officers() -> list[dict[str, Any]]:
     """List all registered officers for the demo login switcher."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         cursor = conn.execute("SELECT officer_id, role, full_name, station, preferences FROM officer_memory ORDER BY officer_id")
         rows = cursor.fetchall()
         conn.close()
@@ -137,7 +138,7 @@ def update_officer_preferences(officer_id: str, preferences: dict[str, Any]) -> 
         cur_prefs = cur.get("preferences", {})
         cur_prefs.update(preferences)
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.execute("UPDATE officer_memory SET preferences = ?, updated_at = ? WHERE officer_id = ?",
                      (json.dumps(cur_prefs), int(time.time()), officer_id))
         conn.commit()
@@ -156,7 +157,7 @@ def add_officer_conclusion(officer_id: str, conclusion_text: str) -> None:
         # Keep latest 15 conclusions
         conclusions = [conclusion_text.strip()] + [c for c in conclusions if c != conclusion_text.strip()][:14]
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.execute("UPDATE officer_memory SET conclusions = ?, updated_at = ? WHERE officer_id = ?",
                      (json.dumps(conclusions), int(time.time()), officer_id))
         conn.commit()
@@ -179,7 +180,7 @@ def toggle_officer_bookmark(officer_id: str, item: dict[str, Any]) -> list[dict[
             bookmarks.insert(0, item)
             bookmarks = bookmarks[:25]
             
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.execute("UPDATE officer_memory SET bookmarks = ?, updated_at = ? WHERE officer_id = ?",
                      (json.dumps(bookmarks), int(time.time()), officer_id))
         conn.commit()

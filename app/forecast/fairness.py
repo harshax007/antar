@@ -32,6 +32,7 @@ import sqlite3
 
 from app.forecast import service as S
 from app.forecast.features import ALL
+from app.core.db_path import registry_connect
 
 
 def _group(district: str | None) -> str:
@@ -155,7 +156,7 @@ def report(conn: sqlite3.Connection) -> str:
 if __name__ == "__main__":
     import pathlib
     from app.core.db_path import DB_PATH
-    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    conn = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
     out = pathlib.Path(__file__).resolve().parents[2] / "docs" / "FORECAST_FAIRNESS.md"
     out.write_text(report(conn), encoding="utf-8")
     print("wrote", out)

@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from app.core import antar_identity as identity
+from app.core.db_path import registry_connect
 
 _CACHE_TTL_S = 300.0
 _CACHE_MAX = 256
@@ -104,7 +105,7 @@ def _refuse(bottom: str, *, nxt: list[str] | None = None) -> dict:
 def _ro() -> sqlite3.Connection:
     from app.core.db_path import DB_PATH, ensure_db_staged
     ensure_db_staged()
-    return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    return registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
 
 
 def _in_registry(sid: str) -> bool:

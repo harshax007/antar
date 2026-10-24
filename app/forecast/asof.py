@@ -19,6 +19,7 @@ import os
 import sqlite3
 from dataclasses import dataclass
 from datetime import date, timedelta
+from app.core.db_path import registry_connect
 
 ENV = "ANTAR_FORECAST_AS_OF"
 
@@ -91,7 +92,7 @@ def current(ttl_s: float = 60.0) -> AsOf:
     import time
     if _current["value"] is None or time.monotonic() - _current["at"] > ttl_s:
         from app.core.db_path import DB_PATH
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         try:
             _current["value"] = resolve(con)
         finally:

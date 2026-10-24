@@ -17,6 +17,7 @@ from app.services.zcql_repo import (
     CRIME_TYPES, CRIME_TYPE_SYNONYMS, ALL_ZONES, BENGALURU_ZONES, REGIONS,
     normalize_crime_types, PERIODS,
 )
+from app.core.db_path import registry_connect
 
 # Columns that actually exist on the `crimes` view (probed 2026-07-29).
 CRIME_COLUMNS = [
@@ -92,7 +93,7 @@ def known_zones() -> list[str]:
     try:
         import sqlite3
         from app.core.db_path import DB_PATH
-        rows = sqlite3.connect(DB_PATH).execute(
+        rows = registry_connect(DB_PATH).execute(
             "SELECT DISTINCT zone FROM crimes WHERE zone IS NOT NULL").fetchall()
         zones = [r[0] for r in rows if r[0]]
         return zones or list(ALL_ZONES)

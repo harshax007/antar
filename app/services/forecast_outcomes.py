@@ -29,6 +29,7 @@ import time
 from datetime import date, timedelta
 
 from app.core.db_path import DB_PATH, ensure_db_staged
+from app.core.db_path import registry_connect
 
 MIN_WEEKS = 4                 # scored weeks before recent accuracy may change the confidence level
 LOW, HIGH = 0.70, 0.90
@@ -36,7 +37,7 @@ LOW, HIGH = 0.70, 0.90
 
 def _conn() -> sqlite3.Connection:
     ensure_db_staged()
-    c = sqlite3.connect(DB_PATH, timeout=10)
+    c = registry_connect(DB_PATH, timeout=10)
     c.execute("""CREATE TABLE IF NOT EXISTS forecast_kept (
         as_of_week TEXT NOT NULL, unit TEXT NOT NULL, expected REAL, lo80 REAL, hi80 REAL, lo90 REAL, hi90 REAL,
         kept_at INTEGER, PRIMARY KEY (as_of_week, unit))""")

@@ -22,11 +22,12 @@ from app.services.district_cache import get_all as dc_all, get_district as dc_ge
 router = APIRouter()
 
 from app.core.db_path import DB_PATH, ensure_db_staged
+from app.core.db_path import registry_connect
 
 
 def _db() -> sqlite3.Connection:
     ensure_db_staged()
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -283,7 +284,7 @@ async def day_cases(date: Optional[str] = None, crime_type: Optional[str] = None
         if crime_type:
             where.append("crime_type = ?")
             args.append(crime_type)
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         con.row_factory = sqlite3.Row
         try:
             rows = con.execute(
@@ -325,7 +326,7 @@ async def predicted(crime_type: Optional[str] = None, period: Optional[str] = No
     from app.forecast.asof import current
 
     def work():
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         try:
             try:
                 cat = S.resolve_category(crime_type)

@@ -55,6 +55,7 @@ import numpy as np
 
 from app.services.zcql_repo import build_spec
 from app.services.zcql_local import run_query, DB_PATH
+from app.core.db_path import registry_connect
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 Z_THRESHOLD     = 2.0    # MAD-z flag threshold (≈ 2σ Gaussian equivalent)
@@ -145,7 +146,7 @@ def _zone_centroids() -> dict[str, tuple[float, float]]:
     An average over every located FIR (1.9 s of the Map's 2.2 s Gi* call, on every call).
     It changes only when rows are added, so it is kept until the newest row id moves."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         try:
             sig = conn.execute("SELECT MAX(rowid) FROM FIRs").fetchone()[0]
             if sig is not None and sig == _centroid_cache["sig"]:

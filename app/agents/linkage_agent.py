@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.services import product_store, evidence_ledger
+from app.core.db_path import registry_connect
 
 
 def compile_linkage(fir_id: str) -> dict[str, Any]:
@@ -76,7 +77,7 @@ def brain_linkage(keys: dict[str, str], limit: int = 8) -> dict[str, Any]:
         con = sqlite3.connect(f"file:{intel}?immutable=1", uri=True)
     else:
         ensure_db_staged()
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     cols = ("rowid AS rid, District_Name, UnitName, FIR_YEAR, FIR_MONTH, CrimeGroup_Name, "
             "CrimeHead_Name, " + ", ".join(c for c, _ in BRAIN_KEYS))

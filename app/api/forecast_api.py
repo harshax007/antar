@@ -17,13 +17,14 @@ from pydantic import BaseModel, Field
 from app.core.db_path import DB_PATH, ensure_db_staged
 from app.forecast import backtest as BT
 from app.forecast import service as S
+from app.core.db_path import registry_connect
 
 router = APIRouter()
 
 
 def _ro() -> sqlite3.Connection:
     ensure_db_staged()
-    return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    return registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
 
 
 async def _call(fn, *args, **kw) -> dict:

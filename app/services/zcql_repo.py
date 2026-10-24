@@ -27,6 +27,7 @@ from functools import lru_cache
 from typing import Annotated, Any, Callable, Literal, Optional
 
 from pydantic import BaseModel, BeforeValidator, Field, field_validator
+from app.core.db_path import registry_connect
 
 
 def _as_str_list(v: Any) -> list[str]:
@@ -240,7 +241,7 @@ def data_crime_groups() -> tuple[str, ...]:
         # DB_PATH while this module is still initialising is a circular import. It failed
         # silently and left the vocabulary empty.
         from app.core.db_path import DB_PATH
-        con = sqlite3.connect(str(DB_PATH))      # not a file: URI — a Windows path's
+        con = registry_connect(str(DB_PATH))      # not a file: URI — a Windows path's
         try:                                     # backslashes are not URI-safe
             return tuple(r[0] for r in con.execute(
                 "SELECT DISTINCT CrimeGroup_Name FROM FIRs "
@@ -509,7 +510,7 @@ def station_index() -> dict[str, list[tuple[str, str]]]:
     try:
         import sqlite3
         from app.core.db_path import DB_PATH
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         try:
             rows = con.execute("SELECT station, MIN(district_norm), COUNT(*) FROM FIRs "
                                "WHERE station IS NOT NULL AND TRIM(station) <> '' GROUP BY station").fetchall()
@@ -604,7 +605,7 @@ def data_today() -> date:
         # every time, was swallowed, and the anchor silently fell back to the wall clock.
         # It now reads the registry it actually queries; min() keeps the wall clock as the
         # ceiling, so relative windows never run past today.
-        con = sqlite3.connect(str(DB_PATH))
+        con = registry_connect(str(DB_PATH))
         try:
             top = con.execute("SELECT MAX(date) FROM FIRs").fetchone()[0]
         finally:
@@ -629,7 +630,7 @@ def real_data_today() -> date:
     try:
         import sqlite3
         from app.core.db_path import DB_PATH
-        con = sqlite3.connect(str(DB_PATH))
+        con = registry_connect(str(DB_PATH))
         try:
             top = con.execute(
                 "SELECT MAX(date) FROM FIRs WHERE is_synthetic_row = 0").fetchone()[0]
@@ -697,7 +698,7 @@ def data_first_year() -> int:
     try:
         import sqlite3
         from app.core.db_path import DB_PATH
-        con = sqlite3.connect(str(DB_PATH))
+        con = registry_connect(str(DB_PATH))
         try:
             low = con.execute("SELECT MIN(date) FROM FIRs WHERE date >= '1990'").fetchone()[0]
         finally:

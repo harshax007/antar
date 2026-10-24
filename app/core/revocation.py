@@ -21,6 +21,7 @@ import threading
 import time
 
 from app.core.db_path import DB_PATH, ensure_db_staged
+from app.core.db_path import registry_connect
 
 _lock = threading.Lock()
 _tokens: dict[str, int] = {}          # token hash -> the token's own expiry
@@ -30,7 +31,7 @@ _loaded = False
 
 def _conn() -> sqlite3.Connection:
     ensure_db_staged()
-    c = sqlite3.connect(DB_PATH, timeout=10)
+    c = registry_connect(DB_PATH, timeout=10)
     c.execute("CREATE TABLE IF NOT EXISTS revoked_tokens (token_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL)")
     c.execute("CREATE TABLE IF NOT EXISTS revoked_officers (officer TEXT PRIMARY KEY, not_after INTEGER NOT NULL, "
               "by_officer TEXT, at INTEGER)")

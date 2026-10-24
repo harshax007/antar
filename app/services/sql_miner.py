@@ -20,6 +20,7 @@ from app.core.db_path import DB_PATH
 from app.services.zcql_local import _dict_factory
 from app.services.zcql_repo import resolve_period
 from app.agents.system_catalog import resolve_zones_catalog, normalize_statuses
+from app.core.db_path import registry_connect
 
 # Relaxation ladder — drop the most specific constraint first so the officer's primary
 # intent (the crime type / keywords) survives longest.
@@ -91,7 +92,7 @@ def mine(intent, relax_level: int = 0, limit: int = 25) -> list[dict]:
     if " WHERE " not in sql:
         return []
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.row_factory = _dict_factory
         rows = conn.execute(sql, params).fetchall()
         conn.close()

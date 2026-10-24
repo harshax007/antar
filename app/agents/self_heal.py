@@ -26,6 +26,7 @@ from app.core.db_path import DB_PATH
 from app.services.zcql_local import _dict_factory
 from app.agents.intent_parser import parse_intent, Intent
 from app.agents.system_catalog import INTENTS
+from app.core.db_path import registry_connect
 
 LLM = Callable[..., Awaitable[str]]
 
@@ -63,7 +64,7 @@ def _fetch_by_ids(crime_ids: list[str]) -> list[dict]:
     if not ids:
         return []
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.row_factory = _dict_factory
         ph = ",".join("?" * len(ids))
         rows = conn.execute(
@@ -143,7 +144,7 @@ def _dead_end_message(intent: Intent, lang: str) -> str:
     kn = lang == "kn"
     parts: list[str] = []
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         if intent.crime_types:
             ct = intent.crime_types[0]
             n = conn.execute("SELECT COUNT(*) FROM crimes WHERE TRIM(UPPER(crime_type))=?",

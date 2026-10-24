@@ -27,6 +27,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.services.zcql_local import DB_PATH
 from app.core.db_path import ensure_db_staged
+from app.core.db_path import registry_connect
 
 router = APIRouter()
 
@@ -59,7 +60,7 @@ def _title(s: str | None) -> str:
 
 def _conn() -> sqlite3.Connection:
     ensure_db_staged()
-    c = sqlite3.connect(DB_PATH)
+    c = registry_connect(DB_PATH)
     c.row_factory = sqlite3.Row
     return c
 

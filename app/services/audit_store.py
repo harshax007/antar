@@ -52,6 +52,7 @@ _GENESIS = "0" * 64
 _META_KEYS = ("hash", "prev_hash", "chain_verifiable")
 
 from app.core.db_path import DB_PATH
+from app.core.db_path import registry_connect
 
 
 def _payload_of(entry: dict) -> dict:
@@ -96,7 +97,7 @@ def _write(payload: dict, cols: dict, after=None) -> dict:
     with _write_lock:
         conn = None
         try:
-            conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
+            conn = registry_connect(DB_PATH, timeout=30, isolation_level=None)
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute("SELECT hash FROM audit_log ORDER BY log_id DESC LIMIT 1").fetchone()
             prev = row[0] if row else _GENESIS
@@ -126,7 +127,7 @@ def _write(payload: dict, cols: dict, after=None) -> dict:
 
 def init_db():
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.execute("""
         CREATE TABLE IF NOT EXISTS audit_log (
             log_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,7 +179,7 @@ def load_from_db():
     global _log, _last_hash
     init_db()
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM audit_log ORDER BY log_id ASC").fetchall()
         conn.close()
@@ -327,7 +328,7 @@ def record_ai_reasoning(
 
 def get_reasoning_trace(reasoning_id: str) -> list[dict] | None:
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         row = conn.execute("SELECT trace_json FROM agent_reasoning_logs WHERE reasoning_id = ?", (reasoning_id,)).fetchone()
         conn.close()
@@ -484,7 +485,7 @@ def _stored_entries() -> list[dict] | None:
     """Every entry as stored, in the order it was written. Other processes write to the
     same table, so the ledger is the database, not this process's memory."""
     try:
-        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True, timeout=10)
+        conn = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True, timeout=10)
         conn.row_factory = sqlite3.Row
         try:
             return [_entry_of(r) for r in conn.execute(
@@ -526,7 +527,7 @@ def archive_and_restart(officer: str, reason: str) -> dict:
     breaks = sum(1 for a, b in zip(old, old[1:]) if b.get("chain_verifiable") and b.get("prev_hash") != a.get("hash"))
     archive_id = f"arc-{uuid.uuid4().hex[:12]}"
     archived_at = datetime.now(timezone.utc).isoformat()
-    conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
+    conn = registry_connect(DB_PATH, timeout=30, isolation_level=None)
     try:
         conn.execute("BEGIN IMMEDIATE")
         conn.execute("CREATE TABLE IF NOT EXISTS audit_log_archive AS "
@@ -592,7 +593,7 @@ def clear() -> None:
     _log.clear()
     _last_hash = "0" * 64
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         conn.execute("DELETE FROM audit_log")
         conn.commit()
         conn.close()

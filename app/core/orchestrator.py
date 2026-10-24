@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Coroutine
 
 import structlog
+from app.core.db_path import registry_connect
 
 logger = structlog.get_logger()
 
@@ -243,7 +244,7 @@ def _refit_forecasts() -> dict | None:
     import sqlite3
     from app.core.db_path import DB_PATH
     from app.forecast import refit
-    con = sqlite3.connect(DB_PATH, timeout=60)
+    con = registry_connect(DB_PATH, timeout=60)
     try:
         if not refit.due(con)["forecasts"]:
             return None

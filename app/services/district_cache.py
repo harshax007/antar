@@ -18,10 +18,11 @@ from typing import Optional
 _cache: Optional[dict[str, dict]] = None   # zone → aggregate dict
 
 from app.core.db_path import DB_PATH
+from app.core.db_path import registry_connect
 
 
 def _db() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 

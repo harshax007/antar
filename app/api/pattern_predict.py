@@ -13,6 +13,7 @@ from fastapi import APIRouter
 from app.services.zcql_local import scan_rows as _scan_rows, _world
 from app.services import product_store
 from app.services.patterns import find_clusters, predict_risk
+from app.core.db_path import registry_connect
 
 router = APIRouter()
 
@@ -636,7 +637,7 @@ async def predict_leads(zone: str) -> dict:
 
     def work():
         ensure_db_staged()
-        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        conn = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         try:
             return case_leads.build(conn, zone)
         finally:
@@ -888,7 +889,7 @@ async def predict_model_card() -> dict:
     from app.forecast import card
 
     def _build() -> dict:
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         try:
             return card.build(con)
         finally:

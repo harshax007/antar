@@ -35,6 +35,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core import orchestrator
+from app.core.db_path import registry_connect
 
 router = APIRouter()
 
@@ -167,7 +168,7 @@ async def _run_job(job_id: str) -> None:
                 from app.forecast import service as _S, asof as _asof
                 def _run():
                     ensure_db_staged()
-                    con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+                    con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
                     try:
                         district = None if str(target).lower() in ("general", "", "none") else str(target)
                         return _S.hotspots(con, horizon=7, category=None, district=district,

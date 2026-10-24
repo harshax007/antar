@@ -18,6 +18,7 @@ from functools import lru_cache
 from app.services.zcql_repo import (CRIME_TYPES, ALL_ZONES, REGIONS, WOMEN_CRIMES,
                                     CRIME_TYPE_SYNONYMS, normalize_crime_types)
 from app.agents.system_catalog import STATUS_SYNONYMS, normalize_statuses
+from app.core.db_path import registry_connect
 
 _ZONE_LOOKUP = {z.lower(): z for z in ALL_ZONES}
 _REGION_LOOKUP = {r.lower(): r for r in REGIONS}
@@ -83,7 +84,7 @@ def _db_places() -> dict[str, str]:
     try:
         import sqlite3
         from app.core.db_path import DB_PATH
-        conn = sqlite3.connect(DB_PATH)
+        conn = registry_connect(DB_PATH)
         vals = [r[0] for r in conn.execute("SELECT DISTINCT zone FROM crimes WHERE zone IS NOT NULL")]
         conn.close()
         return {str(v).strip().lower(): str(v).strip() for v in vals if v and len(str(v).strip()) > 3}
@@ -311,7 +312,7 @@ def _head_groups() -> dict[str, set[str]]:
     try:
         import sqlite3
         from app.core.db_path import DB_PATH
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         try:
             for h, g in con.execute("SELECT DISTINCT TRIM(CrimeHead_Name), UPPER(TRIM(crime_type)) FROM FIRs "
                                     "WHERE CrimeHead_Name IS NOT NULL"):

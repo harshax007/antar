@@ -34,6 +34,7 @@ import threading
 import time
 
 from app.forecast.categories import categorize
+from app.core.db_path import registry_connect
 
 CUBE_VERSION = "2"
 CUBE_FROM = "2018-01-01"      # a year before training starts (2019), for the same-week-last-year lag
@@ -258,7 +259,7 @@ def ensure(conn: sqlite3.Connection | None = None, *, check_now: bool = False,
     own = conn is None
     if own:
         from app.core.db_path import DB_PATH
-        conn = sqlite3.connect(DB_PATH, timeout=60)
+        conn = registry_connect(DB_PATH, timeout=60)
     try:
         with _build_lock:
             ensure_geo_columns(conn)

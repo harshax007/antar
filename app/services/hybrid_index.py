@@ -27,6 +27,7 @@ from typing import Optional
 from app.core.db_path import DB_PATH
 from app.services.zcql_local import _dict_factory
 from app.agents.system_catalog import CRIME_TEXT_COLUMNS
+from app.core.db_path import registry_connect
 
 _CORPUS_MAX = int(os.getenv("SELF_HEAL_CORPUS_MAX", "40000"))
 _RRF_K = 60
@@ -129,7 +130,7 @@ _INDEX: Optional[HybridIndex] = None
 
 
 def _load_corpus(cap: int) -> list[dict]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     cols = ("crime_id, fir_number, crime_type, act, acts_sections, zone, district, "
             "station_code, occurred_at, status, io_name")

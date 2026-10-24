@@ -25,6 +25,7 @@ from app.forecast import features as F
 from app.forecast import model as M
 from app.forecast import store
 from app.forecast.categories import CATEGORIES
+from app.core.db_path import registry_connect
 
 # The near-repeat feature changes the design matrix, so fitted models from the other
 # setting are not comparable and must not be reused: the version string carries the flag
@@ -171,7 +172,7 @@ def ensure(conn: sqlite3.Connection | None = None, override: str | None = None) 
     own = conn is None
     if own:
         from app.core.db_path import DB_PATH
-        conn = sqlite3.connect(DB_PATH, timeout=60)
+        conn = registry_connect(DB_PATH, timeout=60)
     try:
         store.ensure(conn)
         a = asof_mod.resolve(conn, override)
@@ -187,6 +188,6 @@ def ensure(conn: sqlite3.Connection | None = None, override: str | None = None) 
 if __name__ == "__main__":                              # python -m app.forecast.run [as-of]
     import sys
     from app.core.db_path import DB_PATH
-    con = sqlite3.connect(DB_PATH, timeout=60)
+    con = registry_connect(DB_PATH, timeout=60)
     a = asof_mod.resolve(con, sys.argv[1] if len(sys.argv) > 1 else None)
     print(json.dumps(compute(con, a), indent=2))

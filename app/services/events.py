@@ -35,6 +35,7 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from app.core.db_path import registry_connect
 
 FEED_URL_DEFAULT = ("https://calendar.google.com/calendar/ical/"
                     "en.indian%23holiday%40group.v.calendar.google.com/public/basic.ics")
@@ -259,7 +260,7 @@ _effects_lock = threading.Lock()
 def _db() -> sqlite3.Connection:
     from app.core.db_path import DB_PATH, ensure_db_staged
     ensure_db_staged()
-    return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    return registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
 
 
 def _real_end(conn: sqlite3.Connection) -> date | None:
