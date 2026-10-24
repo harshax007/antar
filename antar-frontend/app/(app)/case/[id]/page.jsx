@@ -65,11 +65,15 @@ export default function CasePage() {
   const c = data.counts || {};
   // the step the case is at, or, once it has closed, the last step it reached
   const now = data.steps.find((s) => s.state === "current") || [...data.steps].reverse().find((s) => s.state === "done");
+  const daysOpen = data.steps.find((s) => s.key === "investigation" && s.state === "current")?.days_open ?? null;
+  const brain = data.source === "brain";
+  const KEY_WORD = { vehicle: L("Vehicle", "ವಾಹನ"), upi: L("UPI ID", "UPI ಐಡಿ"), ip: L("IP address", "IP ವಿಳಾಸ") };
   const sim = data.similar;
   const same = data.same_accused;
   const vb = c.victims_by || {};
+  const ONE = { men: "man", women: "woman", boys: "boy", girls: "girl" };
   const victimsBy = [["men", "ಪುರುಷರು"], ["women", "ಮಹಿಳೆಯರು"], ["boys", "ಹುಡುಗರು"], ["girls", "ಹುಡುಗಿಯರು"]]
-    .filter(([k]) => vb[k] > 0).map(([k, kk]) => `${vb[k]} ${kn ? kk : k}`);
+    .filter(([k]) => vb[k] > 0).map(([k, kk]) => `${vb[k]} ${kn ? kk : vb[k] === 1 ? ONE[k] : k}`);
 
   return (
     <main className="cs-page">
@@ -79,12 +83,20 @@ export default function CasePage() {
         </div>
 
         <header className="cs-head">
-          <span className="cs-eyebrow">{L("Case file", "ಪ್ರಕರಣ ಕಡತ")} · FIR {data.fir_id}{data.crime_no ? ` · ${L("Crime no.", "ಅಪರಾಧ ಸಂ.")} ${data.crime_no}` : ""}</span>
+          <span className="cs-eyebrow">{brain ? L("Brain record", "ಬ್ರೈನ್ ದಾಖಲೆ") : L("Case file", "ಪ್ರಕರಣ ಕಡತ")} · {brain ? data.fir_id : `FIR ${data.fir_id}`}{data.crime_no ? ` · ${L("Crime no.", "ಅಪರಾಧ ಸಂ.")} ${data.crime_no}` : ""}</span>
           <h1 className="cs-title">{data.crime_head}</h1>
           <p className="cs-meta">{[data.station, data.district, `${L("registered", "ದಾಖಲು")} ${nice(data.registered)}`].filter(Boolean).join(" · ")}</p>
           {now && (
             <p className="cs-now"><span>{L("Where it stands", "ಈಗಿನ ಸ್ಥಿತಿ")}</span><b>{now.title}</b>{now.detail ? <em>{now.detail}</em> : null}</p>
           )}
+          <dl className="cs-figs">
+            <div><dt>{L("Accused named", "ಹೆಸರಿಸಿದ ಆರೋಪಿಗಳು")}</dt><dd>{c.accused}</dd></div>
+            <div><dt>{L("Arrested", "ಬಂಧಿತರು")}</dt><dd>{c.arrested}</dd></div>
+            <div><dt>{L("Charge-sheeted", "ದೋಷಾರೋಪಣೆ")}</dt><dd>{c.chargesheeted}</dd></div>
+            <div><dt>{L("Convicted", "ಶಿಕ್ಷೆ")}</dt><dd>{c.convicted}</dd></div>
+            <div><dt>{L("Victims", "ಸಂತ್ರಸ್ತರು")}</dt><dd>{c.victims}</dd>{victimsBy.length > 0 && <small>{victimsBy.join(", ")}</small>}</div>
+            {daysOpen != null && <div><dt>{L("Days open", "ತೆರೆದ ದಿನಗಳು")}</dt><dd className={daysOpen >= 90 ? "late" : ""}>{daysOpen.toLocaleString("en-IN")}</dd></div>}
+          </dl>
           <p className="cs-why">{L("For the investigating officer and their supervisor: where this case stands, what is overdue, who was affected, and how cases like it have ended.",
                                    "ತನಿಖಾಧಿಕಾರಿ ಮತ್ತು ಮೇಲ್ವಿಚಾರಕರಿಗೆ: ಪ್ರಕರಣ ಎಲ್ಲಿದೆ, ಏನು ಬಾಕಿ, ಯಾರು ಬಾಧಿತರು, ಮತ್ತು ಇಂತಹ ಪ್ರಕರಣಗಳು ಹೇಗೆ ಮುಗಿದವು.")}</p>
           <div className="cs-cta">
@@ -122,16 +134,16 @@ export default function CasePage() {
 
           <div className="cs-side">
             <section className="cs-block">
-              <h2><span className="cs-n" aria-hidden="true" />{L("In this case", "ಈ ಪ್ರಕರಣದಲ್ಲಿ")}</h2>
+              <h2><span className="cs-n" aria-hidden="true" />{L("Case details", "ಪ್ರಕರಣದ ವಿವರಗಳು")}</h2>
               <dl className="cs-facts">
-                <div><dt>{L("Accused named", "ಹೆಸರಿಸಿದ ಆರೋಪಿಗಳು")}</dt><dd>{c.accused}</dd></div>
-                <div><dt>{L("Arrested", "ಬಂಧಿತರು")}</dt><dd>{c.arrested}</dd></div>
-                <div><dt>{L("Charge-sheeted", "ದೋಷಾರೋಪಣೆ")}</dt><dd>{c.chargesheeted}</dd></div>
-                <div><dt>{L("Convicted", "ಶಿಕ್ಷೆ")}</dt><dd>{c.convicted}</dd></div>
-                <div><dt>{L("Victims", "ಸಂತ್ರಸ್ತರು")}</dt><dd>{c.victims}{victimsBy.length > 0 && <small>{victimsBy.join(", ")}</small>}</dd></div>
+                {data.stage && <div><dt>{L("Stage on record", "ದಾಖಲೆಯ ಹಂತ")}</dt><dd className="wrap">{data.stage}</dd></div>}
                 {data.sections?.length > 0 && <div><dt>{L("Sections", "ಸೆಕ್ಷನ್‌ಗಳು")}</dt><dd className="wrap">{data.sections.join(", ")}</dd></div>}
                 {data.place && <div><dt>{L("Place", "ಸ್ಥಳ")}</dt><dd className="wrap">{data.place}</dd></div>}
                 {data.io && <div><dt>{L("Investigating officer", "ತನಿಖಾಧಿಕಾರಿ")}</dt><dd className="wrap">{data.io}</dd></div>}
+                {data.mo && <div><dt>{L("How it was done", "ವಿಧಾನ")}</dt><dd className="wrap">{data.mo}</dd></div>}
+                {brain && Object.entries(data.keys || {}).filter(([k]) => k !== "upi").map(([k, v]) => (
+                  <div key={k}><dt>{KEY_WORD[k] || k}</dt><dd className="wrap mono">{v}</dd></div>
+                ))}
                 {data.upi && <div><dt>{L("UPI ID on the FIR", "FIR ನಲ್ಲಿನ UPI ಐಡಿ")}</dt><dd className="wrap">
                   <button type="button" className="cs-link" onClick={() => router.push(`/search?view=money&account=${encodeURIComponent(data.upi)}`)}>{data.upi} · {L("Follow the money →", "ಹಣವನ್ನು ಅನುಸರಿಸಿ →")}</button></dd></div>}
               </dl>
@@ -174,14 +186,14 @@ export default function CasePage() {
 
             {same && same.count > 0 && (
               <section className="cs-block">
-                <h2><span className="cs-n" aria-hidden="true" />{L("The accused's other FIRs", "ಆರೋಪಿಯ ಇತರ FIR ಗಳು")}</h2>
+                <h2><span className="cs-n" aria-hidden="true" />{brain ? L("The accused's other records", "ಆರೋಪಿಯ ಇತರ ದಾಖಲೆಗಳು") : L("The accused's other FIRs", "ಆರೋಪಿಯ ಇತರ FIR ಗಳು")}</h2>
                 <p className="cs-sub">{L(`${same.accused_id} is named in ${same.count} other ${same.count === 1 ? "FIR" : "FIRs"}${same.districts?.length ? `, in ${same.districts.join(", ")}` : ""}.`,
                                           `${same.accused_id} ಅನ್ನು ${same.count} ಇತರ FIR ಗಳಲ್ಲಿ ಹೆಸರಿಸಲಾಗಿದೆ.`)}</p>
                 <ul className="cs-others">
                   {same.firs.map((f) => (
                     <li key={f.fir_id}>
                       <button type="button" onClick={() => router.push(`/case/${encodeURIComponent(f.fir_id)}`)}>
-                        <b>FIR {f.fir_id}</b><span>{[nice(f.date), f.district, f.crime, f.stage].filter(Boolean).join(" · ")}</span>
+                        <b>{String(f.fir_id).startsWith("B-") ? L("Record", "ದಾಖಲೆ") : "FIR"} {f.fir_id}</b><span>{[nice(f.date), f.district, f.crime, f.stage].filter(Boolean).join(" · ")}</span>
                       </button>
                     </li>
                   ))}

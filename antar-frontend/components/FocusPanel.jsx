@@ -337,6 +337,16 @@ export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, on
                 <li key={i}>
                   <div><span>{nice(r.crime)}</span>{r.n > 1 && <b>{r.n} FIRs</b>}</div>
                   <em>{[r.head && nice(r.head), r.zone, r.year].filter(Boolean).join(" · ")}</em>
+                  {r.ids?.length > 0 && (
+                    <span className="fp-cases">
+                      {r.ids.slice(0, 6).map((rid, k) => (
+                        <a key={rid} href={`/case/B-${rid}`} title={L("Open this FIR's case timeline", "ಈ FIR ನ ಪ್ರಕರಣ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ")}>
+                          {r.ids.length === 1 ? L("Case timeline →", "ಪ್ರಕರಣ ಕಾಲರೇಖೆ →") : `${L("Case", "ಪ್ರಕರಣ")} ${k + 1}`}
+                        </a>
+                      ))}
+                      {r.ids.length > 6 && <i>{L(`+${r.ids.length - 6} more`, `+${r.ids.length - 6}`)}</i>}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

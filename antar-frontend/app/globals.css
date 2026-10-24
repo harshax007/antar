@@ -5713,3 +5713,7 @@ html[lang="kn"] .ov-use-tag { letter-spacing: normal; text-transform: none; }
 }
 .mx-rpt-more:hover { background: rgba(34, 230, 240, 0.14); }
 .mx-rpt-how { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(148, 163, 184, 0.12); font-size: 11.5px; color: #8492A6; }
+
+/* an FIR id in a chat answer: opens that case's timeline */
+.cx-firlink { color: var(--accent, #22E6F0); font-family: 'JetBrains Mono', monospace; font-size: .95em; text-decoration: underline; text-decoration-color: rgba(34,230,240,.35); text-underline-offset: 3px; }
+.cx-firlink:hover { text-decoration-color: currentColor; }

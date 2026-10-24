@@ -130,7 +130,7 @@ export function buildCrimeGraph(records, { sampleUnlinkedPerCat = 8, maxNodes = 
   recs.forEach((r) => {
     if (!chosen.has(r._i)) return;
     nodes.push({
-      id: `fir:${r._i}`, kind: "fir", cat: r._cat, name: `${r.CrimeHead_Name || r.CrimeGroup_Name} · ${r.UnitName}`,
+      id: `fir:${r._i}`, rid: r.id, kind: "fir", cat: r._cat, name: `${r.CrimeHead_Name || r.CrimeGroup_Name} · ${r.UnitName}`,
       district: r.District_Name, zone: r.UnitName, crimeGroup: r.CrimeGroup_Name, crimeHead: r.CrimeHead_Name,
       year: r.FIR_YEAR, accused: r.Accused_ID, vehicle: r.Vehicle_Reg_No, upi: r.UPI_ID, ip: r.IP_Address,
       mo: r.MO_Details || "", stage: r.FIR_Stage || r.status || "", place: r.Place_of_Offence || "",
@@ -605,8 +605,9 @@ export function groupProfile(members) {
     const crime = f.crimeGroup || f.crimeHead || "FIR";
     const head = f.crimeHead && f.crimeHead !== f.crimeGroup ? f.crimeHead : null;
     const k = `${crime}|${head || ""}|${f.zone || ""}|${f.year || ""}`;
-    const cur = lines.get(k) || { crime, head, zone: f.zone, year: f.year, n: 0 };
+    const cur = lines.get(k) || { crime, head, zone: f.zone, year: f.year, n: 0, ids: [] };
     cur.n += 1;
+    if (f.rid != null) cur.ids.push(f.rid);       // each FIR opens as a case (/case/B-<id>)
     lines.set(k, cur);
   });
   return {

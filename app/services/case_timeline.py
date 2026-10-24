@@ -186,7 +186,120 @@ def _other_firs(con: sqlite3.Connection, r: sqlite3.Row) -> dict | None:
                       "crime": x["crime_type"], "stage": " ".join(str(x["FIR_Stage"] or "").replace("_", " ").split()).title()} for x in rows[:8]]}
 
 
+# ── Brain records ────────────────────────────────────────────────────────────
+# The Brain graph is drawn from a smaller curated dataset (intelligent.db) whose records are
+# not rows of the register. They open as cases too, as "B-<id>": the same timeline, built from
+# the same kind of fields, with cases like it and the accused's other records drawn from that
+# dataset. They carry no per-victim rows, only the count.
+import os
+INTEL_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "intelligent.db")
+BRAIN_PREFIX = "B-"
+
+
+def _intel() -> sqlite3.Connection | None:
+    if not os.path.exists(INTEL_DB):
+        return None
+    con = sqlite3.connect(f"file:{INTEL_DB}?immutable=1", uri=True)
+    con.row_factory = sqlite3.Row
+    return con
+
+
+def _brain_row(r: sqlite3.Row) -> dict:
+    """An intelligent.db row in the register's shape, so build() can read it."""
+    try:
+        reg = f"{int(r['FIR_YEAR']):04d}-{int(r['FIR_MONTH']):02d}-{int(r['FIR_Day']):02d}"
+    except (TypeError, ValueError):
+        reg = ""
+    return {
+        "fir_id": f"{BRAIN_PREFIX}{r['id']}", "CrimeNo": None, "date": reg, "zone": r["UnitName"],
+        "District_Name": r["District_Name"], "district_norm": r["District_Name"], "UnitName": r["UnitName"],
+        "station": r["UnitName"], "FIR_Type": None, "FIR_Stage": r["FIR_Stage"], "status": None,
+        "CrimeGroup_Name": r["CrimeGroup_Name"], "CrimeHead_Name": r["CrimeHead_Name"], "crime_type": r["CrimeGroup_Name"],
+        "ActSection": None, "Place_of_Offence": r["Place_of_Offence"], "Village_Area_Name": None, "Beat_Name": None,
+        "IOName": None, "VICTIM_COUNT": r["VICTIM_COUNT"], "Male": None, "Female": None, "Boy": None, "Girl": None,
+        "Accused_Count": r["Accused_Count"], "Arrested_Count_No_": r["Arrested_Count_No_"],
+        "Accused_ChargeSheeted_Count": r["Accused_ChargeSheeted_Count"], "Conviction_Count": r["Conviction_Count"],
+        "Accused_ID": r["Accused_ID"], "MO_Details": r["MO_Details"], "UPI_ID": r["UPI_ID"],
+        "is_synthetic_row": int(r["is_synthetic_row"] or 0),
+        "_vehicle": r["Vehicle_Reg_No"], "_ip": r["IP_Address"],
+    }
+
+
+def _brain_similar(con: sqlite3.Connection, r: dict) -> dict | None:
+    """How records with the same crime group ended: the station, else the district, else all."""
+    group = r["CrimeGroup_Name"]
+    if not group:
+        return None
+    rid = int(r["fir_id"][len(BRAIN_PREFIX):])
+    for scope, clause, val in (("station", "UnitName = ?", r["UnitName"]), ("district", "District_Name = ?", r["District_Name"]),
+                               ("state", None, None)):
+        where, args = ["CrimeGroup_Name = ?", "id <> ?"], [group, rid]
+        if clause:
+            where.insert(0, clause)
+            args.insert(0, val)
+        rows = con.execute("SELECT UPPER(TRIM(FIR_Stage)) AS st, COUNT(*) AS n FROM FIRs WHERE "
+                           + " AND ".join(where) + " GROUP BY 1", args).fetchall()
+        total = sum(x["n"] for x in rows)
+        if total < MIN_SIMILAR and scope != "state":
+            continue
+        by = {x["st"] or "": x["n"] for x in rows}
+        open_inv = sum(by.get(k, 0) for k in ("UNDER INVESTIGATION", "TRANSFERRED - UNDER INVESTIGATION", "TRACED"))
+        reached_court = sum(n for k, n in by.items() if _STAGES.get(k, ("", None))[0] == "court")
+        decided = by.get("CONVICTED", 0) + by.get("DIS/ACQ", 0)
+        pct = lambda n, d: round(100 * n / d) if d else None   # noqa: E731
+        return {"scope": scope, "where": {"station": r["UnitName"], "district": r["District_Name"], "state": "the Brain dataset"}[scope],
+                "cases": total, "crime_head": _crime_label(group, None),
+                "still_under_investigation": pct(open_inv, total), "reached_court": pct(reached_court, total),
+                "undetected": pct(by.get("UNDETECTED", 0), total),
+                "convicted_of_decided": pct(by.get("CONVICTED", 0), decided) if decided >= MIN_DECIDED else None,
+                "convicted": by.get("CONVICTED", 0), "decided": decided,
+                "stages": sorted(({"stage": k.title(), "n": n} for k, n in by.items() if k), key=lambda x: -x["n"])[:8]}
+    return None
+
+
+def _brain_others(con: sqlite3.Connection, r: dict) -> dict | None:
+    aid = (r["Accused_ID"] or "").strip()
+    if not aid:
+        return None
+    rid = int(r["fir_id"][len(BRAIN_PREFIX):])
+    rows = con.execute("SELECT id, FIR_YEAR, FIR_MONTH, FIR_Day, District_Name, CrimeGroup_Name, FIR_Stage FROM FIRs "
+                       "WHERE Accused_ID = ? AND id <> ? ORDER BY FIR_YEAR DESC, FIR_MONTH DESC LIMIT 25", (aid, rid)).fetchall()
+    def day(x):
+        try:
+            return f"{int(x['FIR_YEAR']):04d}-{int(x['FIR_MONTH']):02d}-{int(x['FIR_Day']):02d}"
+        except (TypeError, ValueError):
+            return ""
+    return {"accused_id": aid, "count": len(rows), "districts": sorted({x["District_Name"] for x in rows if x["District_Name"]}),
+            "firs": [{"fir_id": f"{BRAIN_PREFIX}{x['id']}", "date": day(x), "district": x["District_Name"],
+                      "crime": _crime_label(x["CrimeGroup_Name"], None), "stage": (x["FIR_Stage"] or "").title()} for x in rows[:8]]}
+
+
+def brain_timeline(case_id: str) -> dict | None:
+    try:
+        rid = int(str(case_id)[len(BRAIN_PREFIX):])
+    except ValueError:
+        return None
+    con = _intel()
+    if con is None:
+        return None
+    try:
+        row = con.execute("SELECT * FROM FIRs WHERE id = ?", (rid,)).fetchone()
+        if row is None:
+            return None
+        r = _brain_row(row)
+        d = build(con, r, brain=True)
+        d["source"] = "brain"
+        d["keys"] = {k: v for k, v in (("vehicle", r["_vehicle"]), ("upi", r["UPI_ID"]), ("ip", r["_ip"])) if v}
+        d["recorded"] = ("A record of the Brain's curated dataset, not a row of the FIR register. Only the "
+                         "registration is dated; arrests, charge-sheets and verdicts are counts.")
+        return d
+    finally:
+        con.close()
+
+
 def timeline(fir: str, station: str | None = None) -> dict | None:
+    if str(fir).upper().startswith(BRAIN_PREFIX) and str(fir)[len(BRAIN_PREFIX):].isdigit():
+        return brain_timeline(fir)
     con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
     try:
         r = find(con, fir, station)
@@ -197,7 +310,7 @@ def timeline(fir: str, station: str | None = None) -> dict | None:
         con.close()
 
 
-def build(con: sqlite3.Connection, r: sqlite3.Row) -> dict:
+def build(con: sqlite3.Connection, r, brain: bool = False) -> dict:
     today = date.today()
     reg = str(r["date"] or "")[:10]
     try:
@@ -285,11 +398,11 @@ def build(con: sqlite3.Connection, r: sqlite3.Row) -> dict:
                                   "boys": _int(r["Boy"]), "girls": _int(r["Girl"])}},
         "mo": r["MO_Details"],
         "upi": (r["UPI_ID"] or "").strip() or None,
-        "victims": _victims(con, r["fir_id"]),
+        "victims": [] if brain else _victims(con, r["fir_id"]),
         "summary": " ".join(bits),
         "steps": steps,
-        "similar": _similar(con, r),
-        "same_accused": _other_firs(con, r),
+        "similar": _brain_similar(con, r) if brain else _similar(con, r),
+        "same_accused": _brain_others(con, r) if brain else _other_firs(con, r),
         "demonstration": bool(r["is_synthetic_row"]),
         "recorded": "Only the registration is dated in the register. Arrests, charge-sheets and "
                     "verdicts are recorded as counts, so their dates are shown as not recorded.",

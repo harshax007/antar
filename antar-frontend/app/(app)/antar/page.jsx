@@ -322,6 +322,23 @@ function normalizeAnswerText(raw) {
 // Inline rendering for every piece of answer text: **bold** (the Phase-1 compose prompt
 // leads with a bold verdict) PLUS entity/number highlighting, so counts, FIR numbers,
 // sections and dates stand out wherever they appear - body, list items and table cells.
+// Every shape of FIR id in the register (app/agents/case_answer.py keeps the same list): an id
+// written anywhere in an answer opens that case's timeline.
+const FIR_ID_RE = /\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}|FIR-20\d\d-[\w-]{4,40})\b/g;
+function WithCaseLinks({ text }) {
+  const s = String(text ?? "");
+  const out = [];
+  let last = 0;
+  for (const m of s.matchAll(FIR_ID_RE)) {
+    if (m.index > last) out.push(<Highlighted key={`t${last}`} text={s.slice(last, m.index)} />);
+    out.push(<Link key={`f${m.index}`} href={`/case/${encodeURIComponent(m[1])}`} className="cx-firlink" title="Open the case timeline">{m[1]}</Link>);
+    last = m.index + m[0].length;
+  }
+  if (!out.length) return <Highlighted text={s} />;
+  if (last < s.length) out.push(<Highlighted key={`t${last}`} text={s.slice(last)} />);
+  return <>{out}</>;
+}
+
 function MdInline({ text }) {
   // Robust to whatever the LLM emits: **bold**, `code`, and stray single-asterisk
   // emphasis are all normalized so raw markdown never leaks onto the screen.
@@ -334,7 +351,7 @@ function MdInline({ text }) {
     if (c) return <code key={i} className="cx-code">{c[1]}</code>;
     // Drop leftover unpaired markdown emphasis tokens that would otherwise render literally.
     const clean = p.replace(/\*\*/g, "").replace(/(^|\s)\*(\S)/g, "$1$2").replace(/(\S)\*(\s|$)/g, "$1$2");
-    return <Highlighted key={i} text={clean} />;
+    return <WithCaseLinks key={i} text={clean} />;
   });
 }
 

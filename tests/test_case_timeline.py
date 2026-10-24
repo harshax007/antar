@@ -74,3 +74,22 @@ class TestEndpoint:
         other = "Mysuru City" if (d["district"] or "").upper() != "MYSURU CITY" else "Bagalkot"
         r = TestClient(app).get(f"/api/case/{fir}", headers={"X-Role": "Constable", "X-Posting": other})
         assert r.status_code == 403 and "posting" in r.json()["detail"]
+
+
+class TestBrainRecords:
+    """Records of the Brain's curated dataset open as cases too, as B-<id>."""
+
+    def test_a_brain_record_reads_as_a_case(self):
+        import os
+        if not os.path.exists(ct.INTEL_DB):
+            pytest.skip("intelligent.db not present")
+        d = ct.timeline("B-1")
+        assert d["source"] == "brain" and d["fir_id"] == "B-1"
+        assert [s["key"] for s in d["steps"]] == ["registered", "investigation", "arrest", "chargesheet", "court"]
+        assert d["victims"] == [] and "Brain" in d["recorded"]
+        others = d["same_accused"]
+        assert others is None or all(f["fir_id"].startswith("B-") for f in others["firs"])
+
+    def test_an_unknown_brain_record_is_404(self):
+        from main import app
+        assert TestClient(app).get("/api/case/B-99999999", headers={"X-Role": "Inspector"}).status_code == 404

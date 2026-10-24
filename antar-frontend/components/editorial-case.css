@@ -22,6 +22,15 @@ html[lang="kn"] .cs-eyebrow { letter-spacing: normal; text-transform: none; font
 html[lang="kn"] .cs-now span { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
 .cs-now b { font: 600 var(--fs-h3) 'Inter', sans-serif; color: var(--text-1); }
 .cs-now em { font-style: normal; font-size: var(--fs-body); color: var(--text-2); }
+/* the figures on a rule, as on the other screens */
+.cs-figs { display: grid; grid-template-columns: repeat(6, minmax(0, max-content)); gap: 0; margin: var(--sp-4) 0 0; border-bottom: 1px solid var(--rule-1); }
+.cs-figs > div { padding: var(--sp-3) var(--sp-6) var(--sp-3) var(--sp-4); border-left: 1px solid var(--rule-1); }
+.cs-figs > div:first-child { border-left: 0; padding-left: 0; }
+.cs-figs dt { font-size: var(--fs-label); color: var(--text-3); }
+.cs-figs dd { margin: var(--sp-1) 0 0; font: 700 var(--fs-h2)/1.1 'Chakra Petch', sans-serif; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.cs-figs dd.late { color: #FBBF24; }
+.cs-figs small { display: block; margin-top: 2px; font-size: var(--fs-caption); color: var(--text-3); }
+.cs-facts dd.mono { font-family: 'JetBrains Mono', monospace; }
 .cs-why { margin: var(--sp-4) 0 0; max-width: 74ch; font-size: var(--fs-body); line-height: 1.6; color: var(--text-2); }
 .cs-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); margin-top: var(--sp-5); }
 .cs-cta span { font-size: var(--fs-label); color: var(--text-3); }
@@ -88,12 +97,16 @@ html[lang="kn"] .cs-now span { letter-spacing: normal; text-transform: none; fon
 
 @media (max-width: 900px) {
   .cs-page { padding-top: 76px; }
+  .cs-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cs-figs > div { padding: var(--sp-3) var(--sp-3) var(--sp-3) 0; border-left: 0; }
+  .cs-figs > div:nth-child(n+4) { border-top: 1px solid var(--rule-1); }
   .cs-grid { grid-template-columns: minmax(0, 1fr); }
   .cs-grid > :first-child { padding-right: 0; }
   .cs-side { padding: var(--sp-6) 0 0; margin-top: var(--sp-6); border-left: 0; border-top: 1px solid var(--rule-1); }
 }
 
 [data-theme="light"] .cs-page .ui-btn--primary { background: #0F172A; color: #fff; }
+[data-theme="light"] .cs-figs dd.late { color: #B45309; }
 
 /* a case sheet on paper: no navigation, black on white */
 @media print {
