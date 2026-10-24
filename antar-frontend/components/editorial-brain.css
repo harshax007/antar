@@ -162,3 +162,8 @@ html[lang="kn"] .cg-plan-h { letter-spacing: normal; text-transform: none; font-
 /* no arrow on the Crime Graph's View summary toggle (owner's call) */
 .bsx-wrap .bsx-cg-summary .bsx-summary-h > span[aria-hidden="true"] { display: none; }
 .bsx-wrap .bsx-cg-legend .bsx-cg-summary { border-top: 0; padding-top: 4px; }   /* and no rule above it */
+/* the crime panel's close button: it was an empty button, so there was nothing to see or press */
+.bsx-wrap .bsx-cg-detail .cg-close { top: 14px; right: 14px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--r-sm);
+  border: 1px solid var(--rule-2); background: rgba(9,14,24,.9); color: var(--text-2); z-index: 2; }
+.bsx-wrap .bsx-cg-detail .cg-close:hover { color: var(--text-1); border-color: rgba(34,230,240,.45); }
+.bsx-wrap .bsx-cg-detail .eyebrow, .bsx-wrap .bsx-cg-detail > b { padding-right: 40px; }

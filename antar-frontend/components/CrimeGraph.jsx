@@ -591,7 +591,10 @@ export default function CrimeGraph({ recs, kn }) {
       {/* detail panel - right, on selection */}
       {selc && (
         <aside className="bsx-cg-detail">
-          <button className="bs-detail-close" onClick={() => setSel(null)}></button>
+          <button type="button" className="bs-detail-close cg-close" onClick={() => setSel(null)}
+                  aria-label={kn ? "ಮುಚ್ಚಿ" : "Close"} title={kn ? "ಮುಚ್ಚಿ" : "Close"}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
           <span className="eyebrow" style={{ color: selc.color }}>{kn ? "ಅಪರಾಧ ಚಕ್ರ" : "crime cycle"} · {y}</span>
           <b>{selc.label}</b>
           <CrimePlan c={selc} p={profile} kn={kn} y={y} lastYear={apiData?.scope_years?.[apiData.scope_years.length - 1]}
