@@ -243,18 +243,36 @@ def _suspect_id_from_text(text: str) -> str | None:
     return None
 
 
+# Templates whose rows are individual cases: the first cited FIR can be opened as a case.
+_CASE_LISTS = {"T1", "T9", "T12", "T18", "T20", "T21", "T29"}
+
+
 def _query_actions(query: dict) -> list[dict]:
+    """The next screen for an answer, named for what it opens."""
     actions: list[dict] = []
     tid = query.get("template_id")
-    if tid in {"T1"}:
-        actions.append({"type": "navigate", "payload": "/trends", "label": "View Trends"})
-    elif tid in {"T3", "T11"}:
-        actions.append({"type": "navigate", "payload": "/map", "label": "Open Map"})
-    elif tid in {"T4", "T9"}:
-        actions.append({"type": "navigate", "payload": "/network", "label": "Open Network Graph"})
+    params = query.get("params") or {}
+    cts = params.get("crime_types") or []
+    map_params = {"crime_type": cts[0]} if cts else {}
+    if tid in {"T1", "T8", "T11", "T12", "T23"}:
+        actions.append({"type": "navigate", "payload": "/map", "label": "Open on the map", "params": map_params})
+    elif tid in {"T3", "T26", "T30"}:
+        actions.append({"type": "navigate", "payload": "/predict", "label": "See the forecast"})
+    elif tid in {"T4", "T5", "T9"}:
+        actions.append({"type": "navigate", "payload": "/antarBrain", "label": "Open the network in Brain"})
     elif tid == "T2":
-        actions.append({"type": "navigate", "payload": "/profiles", "label": "View Profiles"})
-        
+        actions.append({"type": "navigate", "payload": "/search", "label": "Open in Search",
+                        "params": {"q": params.get("name") or params.get("query") or ""}})
+    elif tid == "T7" and params.get("entity") == "victims":
+        actions.append({"type": "navigate", "payload": "/social", "label": "District social insights"})
+    # a UPI ID asked about, or shared across districts: follow its money
+    if tid in {"T19", "T20"} and str(params.get("key_type") or "").lower() == "upi" and params.get("value"):
+        actions.append({"type": "navigate", "payload": f"/money?account={params['value']}", "label": "Follow the money"})
+    if tid in _CASE_LISTS:
+        first = next((c for c in query.get("citations") or [] if c.get("id")), None)
+        if first:
+            actions.append({"type": "navigate", "payload": f"/case/{first['id']}", "label": f"Open case {first['id']}"})
+
     for s in query.get("suspects", [])[:2]:
         actions.append({"type": "open_profile", "label": f"Open {s['name']}",
                         "params": {"suspect_id": s["id"]}})

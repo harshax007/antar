@@ -5,6 +5,8 @@ GET /api/money/overview               the accounts most worth a look, with the r
 GET /api/money/search?q=              accounts by id, label, FIR id or suspect id
 GET /api/money/trail?account=&depth=  accounts within N hops, money summed per pair
 GET /api/money/account/{id}           one account: totals, flags, FIRs, transactions
+GET /api/money/export?account=        one account's transactions as CSV, for a bank or
+                                      financial-intelligence request (every export is on the audit log)
 
 Names suspects and follows money between people, so Inspector and above (mounted with that
 dependency in main.py).
@@ -12,8 +14,12 @@ dependency in main.py).
 from __future__ import annotations
 
 import asyncio
+import csv
+import io
+import re
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
 
 from app.services import money_trail
 
@@ -53,3 +59,27 @@ async def account(account_id: str) -> dict:
     if a is None:
         raise HTTPException(status_code=404, detail=f"No account {account_id} in the money trail.")
     return a
+
+
+@router.get("/export")
+async def export(account: str = Query(..., min_length=2, max_length=80)) -> Response:
+    _ready()
+    a = await asyncio.to_thread(money_trail.account, account.strip(), None)
+    if a is None:
+        raise HTTPException(status_code=404, detail=f"No account {account} in the money trail.")
+    acc = a["account"]["account_id"]
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["account", acc, "kind", a["account"]["kind"], "district", a["account"]["district"] or ""])
+    w.writerow(["money_in_inr", a["total_in"], "money_out_inr", a["total_out"],
+                "warning_signs", "; ".join(f["title"] for f in a["flags"])])
+    w.writerow(["firs", " ".join(f["fir_id"] for f in a["firs"])])
+    w.writerow([])
+    w.writerow(["txn_id", "date_time", "direction", "counterparty", "amount_inr", "channel", "purpose", "fir_id"])
+    for t in sorted(a["transactions"], key=lambda t: t["ts"]):
+        inbound = t["to_account"] == acc
+        w.writerow([t["txn_id"], t["ts"], "in" if inbound else "out", t["from_account"] if inbound else t["to_account"],
+                    t["amount_inr"], t["channel"], t["purpose"], t["fir_id"] or ""])
+    name = re.sub(r"[^A-Za-z0-9._-]+", "_", acc)
+    return Response(buf.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="money-trail-{name}.csv"'})

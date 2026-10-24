@@ -138,6 +138,37 @@ async def search(q: str, limit: int = 10, threshold: float = 0.82, field: str = 
     }
 
 
+@router.get("/{suspect_id}/cases")
+async def cases(suspect_id: str) -> dict:
+    """The FIRs that name this person (crime_suspects), newest first: their criminal history,
+    each one openable as a case (/case/{fir_id})."""
+    import sqlite3
+    from datetime import date
+    from app.core.db_path import DB_PATH, registry_connect
+    con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    try:
+        rows = con.execute(
+            "SELECT f.fir_id, SUBSTR(f.date, 1, 10) AS d, COALESCE(f.district_norm, f.District_Name) AS district, "
+            "f.station, COALESCE(f.CrimeHead_Name, f.crime_type) AS crime, f.crime_type, f.FIR_Stage, cs.role "
+            "FROM crime_suspects cs JOIN FIRs f ON f.fir_id = cs.crime_id "
+            "WHERE cs.suspect_id = ? AND f.date <= ? ORDER BY f.date DESC LIMIT 200",
+            (suspect_id, date.today().isoformat())).fetchall()
+    finally:
+        con.close()
+    seen, out = set(), []
+    for r in rows:                       # a fir_id can repeat in the register; one row per case
+        if r["fir_id"] in seen:
+            continue
+        seen.add(r["fir_id"])
+        tidy = lambda v: " ".join(str(v or "").replace("_", " ").split())   # noqa: E731 ("Under_Investigation")
+        out.append({"fir_id": r["fir_id"], "date": r["d"], "district": r["district"], "station": r["station"],
+                    "crime": tidy(r["crime"]).capitalize(), "crime_type": tidy(r["crime_type"]),
+                    "stage": tidy(r["FIR_Stage"]).title(), "role": tidy(r["role"])})
+    return {"suspect_id": suspect_id, "count": len(out), "cases": out,
+            "districts": sorted({c["district"] for c in out if c["district"]})}
+
+
 @router.get("/{suspect_id}")
 async def profile(suspect_id: str) -> dict:
     prof = profile_agent.compute_profile(suspect_id)

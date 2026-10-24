@@ -65,6 +65,22 @@ export default function MoneyPage() {
     get(`/api/money/account/${encodeURIComponent(sel)}`).then(setAcct).catch(() => setAcct({ error: true }));
   }, [sel]);
 
+  // the account's full ledger as CSV, for a bank or financial-intelligence request
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async (id) => {
+    setExporting(true);
+    try {
+      const r = await fetch(`${API}/api/money/export?account=${encodeURIComponent(id)}`);
+      if (!r.ok) throw new Error(String(r.status));
+      const url = URL.createObjectURL(await r.blob());
+      const a = document.createElement("a");
+      a.href = url; a.download = `money-trail-${id.replace(/[^A-Za-z0-9._-]+/g, "_")}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch { /* the button says so below */ setExporting("error"); return; }
+    setExporting(false);
+  };
+
   const doSearch = (e) => {
     e?.preventDefault();
     if (q.trim().length < 2) return;
@@ -157,7 +173,8 @@ export default function MoneyPage() {
               <>
                 <span className="mt-kind" style={{ color: KIND[acct.account.kind]?.border }}>{L(KIND[acct.account.kind]?.en, KIND[acct.account.kind]?.kn)}</span>
                 <h2 className="mt-acct">{acct.account.account_id}</h2>
-                <p className="mt-sub">{[acct.account.label !== acct.account.account_id ? acct.account.label : null, acct.account.district, acct.account.bank].filter(Boolean).join(" · ")}</p>
+                <p className="mt-sub">{[acct.account.label !== acct.account.account_id ? acct.account.label : null, acct.account.district,
+                  acct.account.bank && !/^(bank|upi)$/i.test(acct.account.bank) ? acct.account.bank : null].filter(Boolean).join(" · ")}</p>
                 {acct.suspect && <p className="mt-sus">{L("Held by", "ಹೊಂದಿರುವವರು")} <b>{acct.suspect.full_name || acct.suspect.suspect_id}</b> ({acct.suspect.suspect_id}){acct.suspect.prior_count != null ? L(`, ${acct.suspect.prior_count} prior cases`, `, ${acct.suspect.prior_count} ಹಿಂದಿನ ಪ್ರಕರಣಗಳು`) : ""}</p>}
                 <dl className="mt-facts">
                   <div><dt>{L("Money in", "ಬಂದ ಹಣ")}</dt><dd>{rupees(acct.total_in)}<small>{L(`${acct.count_in} from ${acct.senders} accounts`, `${acct.senders} ಖಾತೆಗಳಿಂದ ${acct.count_in}`)}</small></dd></div>
@@ -196,11 +213,17 @@ export default function MoneyPage() {
                     );
                   })}
                 </ul>
-                {acct.account.account_id !== root && (
-                  <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm mt-follow" onClick={() => setRoot(acct.account.account_id)}>
-                    {L("Follow the money from here", "ಇಲ್ಲಿಂದ ಹಣವನ್ನು ಅನುಸರಿಸಿ")}
+                <div className="mt-actions">
+                  {acct.account.account_id !== root && (
+                    <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={() => setRoot(acct.account.account_id)}>
+                      {L("Follow the money from here", "ಇಲ್ಲಿಂದ ಹಣವನ್ನು ಅನುಸರಿಸಿ")}
+                    </button>
+                  )}
+                  <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" disabled={exporting === true} onClick={() => exportCsv(acct.account.account_id)}
+                          title={L("All transactions of this account, for a bank or financial-intelligence request", "ಈ ಖಾತೆಯ ಎಲ್ಲ ವಹಿವಾಟುಗಳು")}>
+                    {exporting === true ? L("Preparing…", "ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…") : exporting === "error" ? L("Export failed, try again", "ರಫ್ತು ವಿಫಲ") : L("Export transactions (CSV)", "ವಹಿವಾಟು ರಫ್ತು (CSV)")}
                   </button>
-                )}
+                </div>
               </>
             )}
           </aside>

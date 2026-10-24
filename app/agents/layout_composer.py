@@ -158,6 +158,12 @@ def build_custody(query: dict, mode: str = "offline") -> dict | None:
         citations = query.get("citations", []) or []
         tid = query.get("template_id", "") or ""
         firs = [c.get("fir") for c in citations if c.get("fir")]
+        if tid == "SOCIAL":
+            # a link between districts, computed from FIR rates and public indicators: Derived
+            from app.services.social_indicators import YEARS
+            return {"record_count": 30, "groups": None, "source": "District indicators (Census 2011, NFHS-5) and FIR rates",
+                    "as_of": f"FIRs {YEARS[0]}-{YEARS[1]}", "range": None, "firs": [], "fir_total": 0,
+                    "verification": "D", "method": "Spearman rank correlation across 30 districts"}
 
         from app.services.zcql_repo import data_today, TEMPLATES
         tmpl = TEMPLATES.get(tid)

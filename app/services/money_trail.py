@@ -78,7 +78,7 @@ def _snapshot() -> dict:
                     "FIR_Stage, Accused_ID FROM FIRs WHERE COALESCE(UPI_ID, '') <> '' "
                     "AND date <= date('now','localtime') ORDER BY date DESC"):
                 firs[r["u"]].append({"fir_id": r["fir_id"], "date": r["d"], "district": r["district"], "crime": r["head"],
-                                     "stage": (r["FIR_Stage"] or "").title(), "accused_id": r["Accused_ID"] or None})
+                                     "stage": " ".join(str(r["FIR_Stage"] or "").replace("_", " ").split()).title(), "accused_id": r["Accused_ID"] or None})
             suspects = {r["suspect_id"]: dict(r) for r in con.execute(
                 "SELECT suspect_id, full_name, alias, address_zone, prior_count FROM suspects "
                 "WHERE suspect_id IN (SELECT suspect_id FROM money_accounts WHERE suspect_id IS NOT NULL)")}
@@ -122,7 +122,7 @@ def _flags(account: str, kind: str, txin: list, txout: list, firs: list[dict]) -
     return out
 
 
-def account(account_id: str) -> dict | None:
+def account(account_id: str, tx_limit: int | None = 60) -> dict | None:
     snap = _snapshot()
     a = snap["accounts"].get(account_id)
     if a is None:
@@ -143,7 +143,7 @@ def account(account_id: str) -> dict | None:
         "last": max([t["ts"] for t in txin + txout], default=None),
         "flags": _flags(account_id, a["kind"], txin, txout, firs),
         "firs": firs,
-        "transactions": sorted(txin + txout, key=lambda t: t["ts"], reverse=True)[:60],
+        "transactions": sorted(txin + txout, key=lambda t: t["ts"], reverse=True)[:tx_limit],
     }
 
 

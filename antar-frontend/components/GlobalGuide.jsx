@@ -303,13 +303,78 @@ const GUIDES = {
   },
 
   social: {
-    title: L("Demographics Guide", "ಜನಸಂಖ್ಯಾ ಮಾರ್ಗದರ್ಶಿ"),
-    lead: L("Aggregate victim and offender demographics for resource planning and prevention programmes.",
-            "ಸಂಪನ್ಮೂಲ ಯೋಜನೆ ಮತ್ತು ತಡೆಗಟ್ಟುವ ಕಾರ್ಯಕ್ರಮಗಳಿಗಾಗಿ ಸಂತ್ರಸ್ತರು ಮತ್ತು ಅಪರಾಧಿಗಳ ಒಟ್ಟು ಜನಸಂಖ್ಯಾ ಮಾಹಿತಿ."),
+    title: L("Social Insights Guide", "ಸಾಮಾಜಿಕ ಒಳನೋಟ ಮಾರ್ಗದರ್ಶಿ"),
+    lead: L("How crime across Karnataka's 30 districts lines up with urbanisation, population growth, education, child marriage, household amenities and alcohol use, and who the victims are.",
+            "ಕರ್ನಾಟಕದ 30 ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಅಪರಾಧವು ನಗರೀಕರಣ, ಜನಸಂಖ್ಯಾ ಬೆಳವಣಿಗೆ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯ ವಿವಾಹ, ಗೃಹ ಸೌಲಭ್ಯ ಮತ್ತು ಮದ್ಯಪಾನದೊಂದಿಗೆ ಹೇಗೆ ಹೊಂದುತ್ತದೆ, ಮತ್ತು ಸಂತ್ರಸ್ತರು ಯಾರು."),
     blocks: [
+      { h: L("Reading a link", "ಸಂಬಂಧ ಓದುವುದು"), items: [
+        [L("The sentence", "ವಾಕ್ಯ"), L("What goes with more or less crime, and how strongly.", "ಯಾವುದು ಹೆಚ್ಚು ಅಥವಾ ಕಡಿಮೆ ಅಪರಾಧದೊಂದಿಗೆ ಬರುತ್ತದೆ, ಎಷ್ಟು ಬಲವಾಗಿ.")],
+        [L("ρ and p", "ρ ಮತ್ತು p"), L("ρ runs from -1 to +1: the further from 0, the stronger. p below 0.05 means the link is unlikely to be chance.", "ρ -1 ರಿಂದ +1: 0 ಯಿಂದ ದೂರವಾದಷ್ಟು ಬಲ. p 0.05 ಕ್ಕಿಂತ ಕಡಿಮೆ ಎಂದರೆ ಆಕಸ್ಮಿಕವಲ್ಲ.")],
+        [L("Urbanisation held constant", "ನಗರೀಕರಣ ಸ್ಥಿರ"), L("Cities report more crime. A link that holds once urbanisation is taken out is not only a city effect.", "ನಗರಗಳು ಹೆಚ್ಚು ವರದಿ ಮಾಡುತ್ತವೆ. ನಗರೀಕರಣ ತೆಗೆದರೂ ಉಳಿಯುವ ಸಂಬಂಧ ಕೇವಲ ನಗರ ಪರಿಣಾಮವಲ್ಲ.")],
+        [L("Reading in italics", "ಓರೆ ಅಕ್ಷರದ ಅರ್ಥ"), L("What the link most likely means. Better-off districts recording more crime usually reflects reporting, not more offending.", "ಸಂಬಂಧದ ಸಂಭವನೀಯ ಅರ್ಥ. ಉತ್ತಮ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ದಾಖಲಾತಿ ಸಾಮಾನ್ಯವಾಗಿ ವರದಿಯ ಪರಿಣಾಮ.")],
+      ] },
+      { h: L("On the screen", "ಪರದೆಯಲ್ಲಿ"), items: [
+        [L("Kind of crime", "ಅಪರಾಧದ ಪ್ರಕಾರ"), L("All crime, property, violent, against women, fraud and cyber, road accidents.", "ಎಲ್ಲ, ಆಸ್ತಿ, ಹಿಂಸಾತ್ಮಕ, ಮಹಿಳೆಯರ ವಿರುದ್ಧ, ವಂಚನೆ ಮತ್ತು ಸೈಬರ್, ರಸ್ತೆ ಅಪಘಾತ.")],
+        [L("Each district", "ಪ್ರತಿ ಜಿಲ್ಲೆ"), L("Pick an indicator to see every district as a dot; Bengaluru Urban is outlined.", "ಸೂಚಕ ಆರಿಸಿ, ಪ್ರತಿ ಜಿಲ್ಲೆ ಒಂದು ಚುಕ್ಕೆ; ಬೆಂಗಳೂರು ನಗರ ಗುರುತಿಸಲಾಗಿದೆ.")],
+        [L("Districts table", "ಜಿಲ್ಲಾ ಪಟ್ಟಿ"), L("Sort by any column. Rates are FIRs per lakh people a year, 2016-2022.", "ಯಾವುದೇ ಕಾಲಂ ಪ್ರಕಾರ ವಿಂಗಡಿಸಿ. ದರ: ವರ್ಷಕ್ಕೆ ಲಕ್ಷ ಜನರಿಗೆ FIR, 2016-2022.")],
+        [L("Ask in Chat", "ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ"), L("“Is alcohol linked to crimes against women?” gets the same figures in Chat.", "“ಮದ್ಯಪಾನ ಮಹಿಳೆಯರ ವಿರುದ್ಧದ ಅಪರಾಧಕ್ಕೆ ಸಂಬಂಧಿಸಿದೆಯೇ?” ಚಾಟ್‌ನಲ್ಲೂ ಅದೇ ಅಂಕಿ.")],
+      ] },
       { h: L("Hard limit", "ಕಟ್ಟುನಿಟ್ಟಾದ ಮಿತಿ"), warn: true, items: [
-        [L("Population level only", "ಒಟ್ಟು ಮಟ್ಟ ಮಾತ್ರ"), L("Never a basis to target, stop or suspect any person or community.", "ಯಾವುದೇ ವ್ಯಕ್ತಿ ಅಥವಾ ಸಮುದಾಯವನ್ನು ಗುರಿಯಾಗಿಸಲು, ತಡೆಯಲು ಅಥವಾ ಶಂಕಿಸಲು ಎಂದಿಗೂ ಆಧಾರವಲ್ಲ.")],
-        [L("Monitored", "ನಿಗಾವಹಿಸಲಾಗಿದೆ"), L("The misuse check stops any search that picks suspects by caste, religion or community.", "ಜಾತಿ, ಧರ್ಮ ಅಥವಾ ಸಮುದಾಯದ ಆಧಾರದ ಮೇಲೆ ಶಂಕಿತರನ್ನು ಹುಡುಕುವ ಪ್ರಶ್ನೆಯನ್ನು ದುರ್ಬಳಕೆ ತಪಾಸಣೆ ತಡೆಯುತ್ತದೆ.")],
+        [L("Districts, not people", "ಜಿಲ್ಲೆಗಳು, ವ್ಯಕ್ತಿಗಳಲ್ಲ"), L("A link between districts says nothing about any person in them, and is never a basis to target, stop or suspect anyone.", "ಜಿಲ್ಲೆಗಳ ನಡುವಿನ ಸಂಬಂಧ ಯಾವುದೇ ವ್ಯಕ್ತಿಯ ಬಗ್ಗೆ ಹೇಳುವುದಿಲ್ಲ; ಯಾರನ್ನೂ ಗುರಿಯಾಗಿಸಲು ಆಧಾರವಲ್ಲ.")],
+        [L("Sources", "ಮೂಲಗಳು"), L("Census of India 2011 and NFHS-5 (2019-21) district factsheets.", "ಭಾರತದ ಜನಗಣತಿ 2011 ಮತ್ತು NFHS-5 (2019-21) ಜಿಲ್ಲಾ ಮಾಹಿತಿ.")],
+      ] },
+    ],
+  },
+
+  money: {
+    title: L("Money Trail Guide", "ಹಣದ ಜಾಡು ಮಾರ್ಗದರ್ಶಿ"),
+    lead: L("Follow money from a complainant's account through the UPI IDs named in FIRs to where it ended up, and see which accounts behave like collection points or mules.",
+            "ದೂರುದಾರರ ಖಾತೆಯಿಂದ FIR ಗಳಲ್ಲಿನ UPI ಐಡಿಗಳ ಮೂಲಕ ಹಣ ಎಲ್ಲಿ ತಲುಪಿತು ಎಂದು ಅನುಸರಿಸಿ."),
+    blocks: [
+      { h: L("Accounts worth a look", "ಗಮನಿಸಬೇಕಾದ ಖಾತೆಗಳು"), items: [
+        [L("Ranking", "ಶ್ರೇಣಿ"), L("Most warning signs first, then the most money received.", "ಹೆಚ್ಚು ಎಚ್ಚರಿಕೆಗಳು ಮೊದಲು, ನಂತರ ಹೆಚ್ಚು ಹಣ ಪಡೆದವು.")],
+        [L("Warning signs", "ಎಚ್ಚರಿಕೆಗಳು"), L("Collects from many accounts; money passes straight through within 48 hours; amounts just under Rs 50,000; named in several FIRs; cash taken out. Each states its numbers.", "ಹಲವು ಖಾತೆಗಳಿಂದ ಸಂಗ್ರಹ; 48 ಗಂಟೆಯಲ್ಲಿ ಹಣ ಮುಂದೆ; ₹50,000 ಕ್ಕಿಂತ ಸ್ವಲ್ಪ ಕಡಿಮೆ; ಹಲವು FIR; ನಗದು ಹಿಂಪಡೆತ.")],
+        [L("Find", "ಹುಡುಕಿ"), L("Search by UPI ID, account, FIR id or suspect id.", "UPI ಐಡಿ, ಖಾತೆ, FIR ಅಥವಾ ಶಂಕಿತ ಐಡಿಯಿಂದ ಹುಡುಕಿ.")],
+      ] },
+      { h: L("The graph", "ಗ್ರಾಫ್"), items: [
+        [L("Colours", "ಬಣ್ಣಗಳು"), L("Complainant, UPI on an FIR, collector account, suspect, cash withdrawal: see the legend under the graph.", "ದೂರುದಾರ, FIR ನ UPI, ಸಂಗ್ರಹ ಖಾತೆ, ಶಂಕಿತ, ನಗದು: ಗ್ರಾಫ್ ಕೆಳಗಿನ ಸೂಚಿ ನೋಡಿ.")],
+        [L("Arrows", "ಬಾಣಗಳು"), L("Payer to payee; the thicker the arrow, the more money. Hover for the amount and dates.", "ಪಾವತಿದಾರರಿಂದ ಸ್ವೀಕರಿಸುವವರಿಗೆ; ದಪ್ಪ ಬಾಣ = ಹೆಚ್ಚು ಹಣ.")],
+        [L("Steps", "ಹಂತಗಳು"), L("1, 2 or 3 steps from the chosen account. Click an account to read it; “Follow the money from here” re-centres the graph.", "ಆಯ್ದ ಖಾತೆಯಿಂದ 1, 2 ಅಥವಾ 3 ಹಂತ. ಖಾತೆ ಕ್ಲಿಕ್ ಮಾಡಿ ಓದಿ.")],
+      ] },
+      { h: L("The account", "ಖಾತೆ"), items: [
+        [L("Money in and out", "ಬಂದ ಮತ್ತು ಹೋದ ಹಣ"), L("Totals, how many accounts, and when it was active.", "ಒಟ್ಟು, ಎಷ್ಟು ಖಾತೆಗಳು, ಯಾವಾಗ ಸಕ್ರಿಯ.")],
+        [L("FIRs", "FIR ಗಳು"), L("Every FIR naming the account; each opens the full case.", "ಖಾತೆಯನ್ನು ಹೆಸರಿಸುವ ಪ್ರತಿ FIR; ಪ್ರತಿಯೊಂದೂ ಪ್ರಕರಣ ತೆರೆಯುತ್ತದೆ.")],
+        [L("Export", "ರಫ್ತು"), L("Download the account's transactions as CSV for a bank or financial-intelligence request.", "ಬ್ಯಾಂಕ್ ಅಥವಾ ಆರ್ಥಿಕ ಗುಪ್ತಚರ ವಿನಂತಿಗಾಗಿ ವಹಿವಾಟುಗಳನ್ನು CSV ಆಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.")],
+      ] },
+    ],
+  },
+
+  case: {
+    title: L("Case Guide", "ಪ್ರಕರಣ ಮಾರ್ಗದರ್ಶಿ"),
+    lead: L("One FIR start to finish: a summary, the investigation timeline, the victims, how cases like it ended, and the accused's other FIRs.",
+            "ಒಂದು FIR ಆರಂಭದಿಂದ ಕೊನೆಯವರೆಗೆ: ಸಾರಾಂಶ, ತನಿಖೆಯ ಕಾಲರೇಖೆ, ಸಂತ್ರಸ್ತರು, ಇಂತಹ ಪ್ರಕರಣಗಳು ಹೇಗೆ ಮುಗಿದವು."),
+    blocks: [
+      { h: L("Timeline", "ಕಾಲರೇಖೆ"), items: [
+        [L("Steps", "ಹಂತಗಳು"), L("Registered, investigation, arrests, charge-sheet, court. The blue dot is where the case is now.", "ದಾಖಲು, ತನಿಖೆ, ಬಂಧನ, ದೋಷಾರೋಪಣೆ, ನ್ಯಾಯಾಲಯ. ನೀಲಿ ಚುಕ್ಕೆ = ಈಗಿನ ಹಂತ.")],
+        [L("Date not recorded", "ದಿನಾಂಕ ದಾಖಲಾಗಿಲ್ಲ"), L("The register dates only the registration; later steps are counts, so no date is guessed.", "ದಾಖಲೆಯಲ್ಲಿ ನೋಂದಣಿಗೆ ಮಾತ್ರ ದಿನಾಂಕ; ನಂತರದ ಹಂತಗಳಿಗೆ ದಿನಾಂಕ ಊಹಿಸಲಾಗುವುದಿಲ್ಲ.")],
+        [L("60 and 90 days", "60 ಮತ್ತು 90 ದಿನ"), L("An open case shows its BNSS s.187(3) clock: default bail if the investigation runs past these marks.", "ತೆರೆದ ಪ್ರಕರಣ BNSS s.187(3) ಗಡಿಯಾರ ತೋರಿಸುತ್ತದೆ.")],
+      ] },
+      { h: L("Around the case", "ಪ್ರಕರಣದ ಸುತ್ತ"), items: [
+        [L("Cases like this", "ಇಂತಹ ಪ್ರಕರಣಗಳು"), L("Same crime at the same station, or the district or state when there are too few; no conviction rate under 10 verdicts.", "ಅದೇ ಠಾಣೆಯ ಅದೇ ಅಪರಾಧ; ಕಡಿಮೆ ಇದ್ದರೆ ಜಿಲ್ಲೆ ಅಥವಾ ರಾಜ್ಯ.")],
+        [L("Follow the money", "ಹಣ ಅನುಸರಿಸಿ"), L("When the FIR names a UPI ID, it opens on the Money trail.", "FIR ನಲ್ಲಿ UPI ಐಡಿ ಇದ್ದರೆ ಹಣದ ಜಾಡಿನಲ್ಲಿ ತೆರೆಯುತ್ತದೆ.")],
+        [L("Print or save as PDF", "ಮುದ್ರಿಸಿ ಅಥವಾ PDF"), L("A clean case sheet for the file.", "ಕಡತಕ್ಕೆ ಸ್ವಚ್ಛ ಪ್ರಕರಣ ಹಾಳೆ.")],
+      ] },
+    ],
+  },
+
+  governance: {
+    title: L("Data Protection Guide", "ಮಾಹಿತಿ ಸಂರಕ್ಷಣೆ ಮಾರ್ಗದರ್ಶಿ"),
+    lead: L("How Antar handles personal data: the law it follows, who sees what, what is kept and for how long, and how every step can be checked.",
+            "ಅಂತರ್ ವೈಯಕ್ತಿಕ ಮಾಹಿತಿಯನ್ನು ಹೇಗೆ ನಿರ್ವಹಿಸುತ್ತದೆ."),
+    blocks: [
+      { h: L("Reading the page", "ಪುಟ ಓದುವುದು"), items: [
+        [L("Numbered sections", "ಸಂಖ್ಯೆಯ ವಿಭಾಗಗಳು"), L("Jump to any from the list at the top.", "ಮೇಲಿನ ಪಟ್ಟಿಯಿಂದ ಯಾವುದಕ್ಕಾದರೂ ಹೋಗಿ.")],
+        [L("File names", "ಕಡತದ ಹೆಸರುಗಳು"), L("Each claim names the part of the system that makes it true, so it can be checked.", "ಪ್ರತಿ ಹೇಳಿಕೆಯು ಅದನ್ನು ನಿಜ ಮಾಡುವ ಭಾಗವನ್ನು ಹೆಸರಿಸುತ್ತದೆ.")],
       ] },
     ],
   },
@@ -324,6 +389,8 @@ const GUIDES = {
         [L("Map", "ನಕ್ಷೆ"), L("District hotspots across Karnataka.", "ಕರ್ನಾಟಕದಾದ್ಯಂತ ಜಿಲ್ಲಾ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು.")],
         [L("Predict", "ಮುನ್ಸೂಚನೆ"), L("7-day risk forecasts with explanations.", "ವಿವರಣೆಯೊಂದಿಗೆ 7 ದಿನಗಳ ಅಪಾಯ ಮುನ್ಸೂಚನೆ.")],
         [L("Search", "ಹುಡುಕಾಟ"), L("Find people, aliases, phones and vehicles.", "ವ್ಯಕ್ತಿಗಳು, ಉಪನಾಮಗಳು, ಫೋನ್ ಮತ್ತು ವಾಹನಗಳನ್ನು ಹುಡುಕಿ.")],
+        [L("Money", "ಹಣ"), L("Follow money between accounts named in FIRs.", "FIR ಗಳಲ್ಲಿನ ಖಾತೆಗಳ ನಡುವೆ ಹಣ ಅನುಸರಿಸಿ.")],
+        [L("Social insights", "ಸಾಮಾಜಿಕ ಒಳನೋಟ"), L("District social indicators against crime; open it from Predict.", "ಜಿಲ್ಲಾ ಸಾಮಾಜಿಕ ಸೂಚಕಗಳು ಮತ್ತು ಅಪರಾಧ; Predict ನಿಂದ ತೆರೆಯಿರಿ.")],
         [L("Account", "ಖಾತೆ"), L("Your shift brief, alerts, approvals, settings and records.", "ನಿಮ್ಮ ಶಿಫ್ಟ್ ಬ್ರೀಫ್, ಎಚ್ಚರಿಕೆ, ಅನುಮೋದನೆ, ಸೆಟ್ಟಿಂಗ್ ಮತ್ತು ದಾಖಲೆಗಳು.")],
       ] },
     ],
@@ -334,7 +401,7 @@ function pickGuide(path, expertOn) {
   if (!path) return "general";
   if (path.startsWith("/antarBrain")) return "brain";
   if (path.startsWith("/antar")) return expertOn ? "expert" : "chat";
-  for (const key of ["predict", "map", "search", "trace", "approvals", "account", "network", "trends", "profiles", "social"]) {
+  for (const key of ["predict", "map", "search", "trace", "approvals", "account", "network", "trends", "profiles", "social", "money", "case", "governance"]) {
     if (path.startsWith(`/${key}`)) return key;
   }
   return "general";

@@ -1038,6 +1038,9 @@ function SearchContent() {
                   {isSearch && row?.match_method && <div className="sx-field"><span className="k">{kn ? "ಹುಡುಕಾಟ ಹೊಂದಾಣಿಕೆ" : "Search match"}</span><span className="v mono">{matchWhy(row)?.txt || row.match_method}</span></div>}
                 </div>
 
+                {/* The FIRs that name this person, each one openable as a case */}
+                <PersonCases id={p.suspect_id} kn={kn} />
+
                 {/* ROW 1 RIGHT: Why this risk score - points each factor actually contributed */}
                 {(p.risk_attributions || p.factors) && (
                   <div className="sx-sec">
@@ -1143,6 +1146,50 @@ function SearchContent() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// The person's criminal history: the FIRs that name them (GET /api/profile/{id}/cases),
+// newest first, each opening the full case.
+function PersonCases({ id, kn }) {
+  const router = useRouter();
+  const [d, setD] = useState(null);
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    setD(null); setAll(false);
+    fetch(`${API}/api/profile/${encodeURIComponent(id)}/cases`)
+      .then((r) => (r.ok ? r.json() : null)).then((j) => { if (alive) setD(j || { cases: [] }); })
+      .catch(() => { if (alive) setD({ cases: [] }); });
+    return () => { alive = false; };
+  }, [id]);
+  if (!d) return null;
+  const list = all ? d.cases : d.cases.slice(0, 8);
+  return (
+    <div className="sx-sec">
+      <div className="sx-sec-t">{kn ? "ಈ ವ್ಯಕ್ತಿಯನ್ನು ಹೆಸರಿಸುವ FIR ಗಳು" : "FIRs naming this person"} <span className="cnt">{d.cases.length}{d.districts?.length > 1 ? (kn ? ` · ${d.districts.length} ಜಿಲ್ಲೆ` : ` · ${d.districts.length} districts`) : ""}</span></div>
+      {d.cases.length === 0 ? (
+        <div className="sx-empty-sm">{kn ? "ದಾಖಲೆಯಲ್ಲಿ ಈ ವ್ಯಕ್ತಿಯನ್ನು ಹೆಸರಿಸುವ FIR ಇಲ್ಲ." : "No FIR in the register names this person."}</div>
+      ) : (
+        <ul className="sx-cases">
+          {list.map((c) => (
+            <li key={c.fir_id}>
+              <button type="button" onClick={() => router.push(`/case/${encodeURIComponent(c.fir_id)}`)} title={kn ? "ಪ್ರಕರಣ ತೆರೆಯಿರಿ" : "Open the case"}>
+                <b>{c.crime || c.crime_type}</b>
+                <span>{[c.date, c.station, c.district].filter(Boolean).join(" · ")}</span>
+                <em>{[c.stage, c.role].filter(Boolean).join(" · ")}</em>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {d.cases.length > 8 && (
+        <button type="button" className="sx-cases-all" onClick={() => setAll((v) => !v)}>
+          {all ? (kn ? "ಕಡಿಮೆ ತೋರಿಸಿ" : "Show fewer") : (kn ? `ಎಲ್ಲ ${d.cases.length} ತೋರಿಸಿ` : `Show all ${d.cases.length}`)}
+        </button>
+      )}
     </div>
   );
 }

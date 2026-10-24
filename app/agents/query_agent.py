@@ -1098,6 +1098,22 @@ async def query_agent_run(
                 _set_cached_query(cache_key, res)
             return res
 
+    # "Is alcohol linked to crimes against women?" is a question about districts, answered from
+    # the social indicator analysis (app/agents/social_answer.py), not from a FIR template.
+    from app.agents import social_answer as _social
+    if _social.wants_social(user_text):
+        try:
+            res = _social.answer(user_text, lang or "en")
+        except Exception as e:          # the indicator file missing, etc.
+            import structlog
+            structlog.get_logger(__name__).warning("social_answer_failed", error=str(e)[:200])
+            res = None
+        if res is not None:
+            log_step(session_id, "query", "SOCIAL", user_text[:80], f"{len(res['rows'])} links",
+                     int((time.time() - t0) * 1000))
+            _set_cached_query(cache_key, res)
+            return res
+
     # A year the register does not hold: say so, before any template can widen the question.
     beyond = outside_record(user_text, lang or "en")
     if beyond:

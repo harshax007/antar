@@ -183,7 +183,7 @@ def _other_firs(con: sqlite3.Connection, r: sqlite3.Row) -> dict | None:
     return {"accused_id": aid, "count": len(rows),
             "districts": sorted({x["district_norm"] for x in rows if x["district_norm"]}),
             "firs": [{"fir_id": x["fir_id"], "date": x["date"], "district": x["district_norm"],
-                      "crime": x["crime_type"], "stage": (x["FIR_Stage"] or "").title()} for x in rows[:8]]}
+                      "crime": x["crime_type"], "stage": " ".join(str(x["FIR_Stage"] or "").replace("_", " ").split()).title()} for x in rows[:8]]}
 
 
 def timeline(fir: str, station: str | None = None) -> dict | None:
@@ -278,7 +278,7 @@ def build(con: sqlite3.Connection, r: sqlite3.Row) -> dict:
         "fir_id": r["fir_id"], "crime_no": r["CrimeNo"], "registered": reg, "zone": r["zone"],
         "station": r["station"] or r["UnitName"], "district": r["district_norm"] or r["District_Name"],
         "crime_group": r["CrimeGroup_Name"], "crime_head": head, "sections": sections,
-        "place": where, "io": r["IOName"], "stage": (r["FIR_Stage"] or r["status"] or "").title(),
+        "place": where, "io": r["IOName"], "stage": " ".join(str(r["FIR_Stage"] or r["status"] or "").replace("_", " ").split()).title(),
         "counts": {"accused": accused, "arrested": arrested, "chargesheeted": charged,
                    "convicted": convicted, "victims": victims,
                    "victims_by": {"men": _int(r["Male"]), "women": _int(r["Female"]),
