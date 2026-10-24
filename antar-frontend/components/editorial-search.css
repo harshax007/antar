@@ -81,3 +81,16 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-page .sx-cases em { grid-column: 2; grid-row: 1 / 3; align-self: center; font: 500 11.5px 'Inter', sans-serif; font-style: normal; color: var(--text-2); text-align: right; }
 .sx-page .sx-cases button:hover b { color: var(--accent); }
 .sx-page .sx-cases-all { margin-top: var(--sp-2); padding: 0; border: 0; background: none; color: var(--accent); font: 500 12.5px 'Inter', sans-serif; cursor: pointer; }
+
+/* the money trail around a person: one block per account, figures on a line, warning signs as tags */
+.sx-page .sx-money { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-3); }
+.sx-page .sx-money li { display: grid; gap: 6px; padding: var(--sp-3); border: 1px solid var(--rule-2); border-radius: var(--r-md); }
+.sx-page .sx-money .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px var(--sp-3); }
+.sx-page .sx-money .top b { font: 600 13.5px 'JetBrains Mono', monospace; color: var(--text-1); word-break: break-all; }
+.sx-page .sx-money .top span { font-size: 12px; color: var(--text-3); }
+.sx-page .sx-money .nums { display: flex; flex-wrap: wrap; gap: 4px var(--sp-4); font: 600 13px 'JetBrains Mono', monospace; color: var(--text-1); }
+.sx-page .sx-money .nums em { margin-right: 4px; font: 400 12px 'Inter', sans-serif; font-style: normal; color: var(--text-3); }
+.sx-page .sx-money .nums small { font: 400 11.5px 'Inter', sans-serif; color: var(--text-3); }
+.sx-page .sx-money .flags { display: flex; flex-wrap: wrap; gap: 4px; }
+.sx-page .sx-money .flags i { padding: 1px 7px; border-radius: 999px; font: 500 11px/1.6 'Inter', sans-serif; font-style: normal; color: #FBBF24; background: rgba(251,191,36,.1); }
+.sx-page .sx-money .ui-btn { justify-self: start; }

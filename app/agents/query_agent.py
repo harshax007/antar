@@ -1098,6 +1098,21 @@ async def query_agent_run(
                 _set_cached_query(cache_key, res)
             return res
 
+    # One FIR named ("status of FIR C00026"): answered from that case, with its timeline
+    # (app/agents/case_answer.py). It used to fall through to a statewide count.
+    from app.agents import case_answer as _case
+    if _case.wants_case(user_text):
+        try:
+            res = _case.answer(user_text, lang or "en")
+        except Exception as e:
+            import structlog
+            structlog.get_logger(__name__).warning("case_answer_failed", error=str(e)[:200])
+            res = None
+        if res is not None:
+            log_step(session_id, "query", res["template_id"], user_text[:80], res["params"].get("fir_id", ""),
+                     int((time.time() - t0) * 1000))
+            return res
+
     # "Is alcohol linked to crimes against women?" is a question about districts, answered from
     # the social indicator analysis (app/agents/social_answer.py), not from a FIR template.
     from app.agents import social_answer as _social

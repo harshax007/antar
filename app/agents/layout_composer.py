@@ -158,6 +158,11 @@ def build_custody(query: dict, mode: str = "offline") -> dict | None:
         citations = query.get("citations", []) or []
         tid = query.get("template_id", "") or ""
         firs = [c.get("fir") for c in citations if c.get("fir")]
+        if tid == "CASE":
+            r0 = rows[0] if isinstance(rows[0], dict) else {}
+            return {"record_count": 1, "groups": None, "source": "FIR register",
+                    "as_of": r0.get("registered"), "range": None, "firs": firs[:1], "fir_total": len(firs[:1]),
+                    "verification": "K", "method": "Case timeline of one FIR"}
         if tid == "SOCIAL":
             # a link between districts, computed from FIR rates and public indicators: Derived
             from app.services.social_indicators import YEARS

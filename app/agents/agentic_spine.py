@@ -271,7 +271,8 @@ def _query_actions(query: dict) -> list[dict]:
     if tid in _CASE_LISTS:
         first = next((c for c in query.get("citations") or [] if c.get("id")), None)
         if first:
-            actions.append({"type": "navigate", "payload": f"/case/{first['id']}", "label": f"Open case {first['id']}"})
+            actions.append({"type": "navigate", "payload": f"/case/{first['id']}", "label": "Open case timeline",
+                            "params": {"fir_id": first["id"]}})
 
     for s in query.get("suspects", [])[:2]:
         actions.append({"type": "open_profile", "label": f"Open {s['name']}",

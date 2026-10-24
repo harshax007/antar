@@ -229,3 +229,32 @@ def search(q: str, limit: int = 12) -> list[dict]:
         a = snap["accounts"][aid]
         res.append({"account_id": aid, "kind": a["kind"], "label": a["label"], "district": a["district"]})
     return res[:limit]
+
+
+def for_person(suspect_id: str) -> dict:
+    """The money trail around one person: accounts they hold (suspect accounts), and the UPI IDs
+    on the FIRs that name them (crime_suspects), each with its totals and warning signs."""
+    snap = _snapshot()
+    sid = str(suspect_id or "").strip()
+    held = [aid for aid, a in snap["accounts"].items() if (a["suspect_id"] or "") == sid]
+    con = _con()
+    try:
+        upis = [r[0] for r in con.execute(
+            "SELECT DISTINCT TRIM(f.UPI_ID) FROM crime_suspects cs JOIN FIRs f ON f.fir_id = cs.crime_id "
+            "WHERE cs.suspect_id = ? AND COALESCE(f.UPI_ID, '') <> ''", (sid,))]
+    finally:
+        con.close()
+    out = []
+    for aid, how in [(a, "held") for a in held] + [(u, "on_fir") for u in upis if u not in held]:
+        d = account(aid, 0)
+        if not d:
+            continue
+        # who paid this person's accounts, and who they paid: the counterparties one step out
+        counter = {t["from_account"] for t in snap["to"].get(aid, [])} | {t["to_account"] for t in snap["from"].get(aid, [])}
+        out.append({"account_id": aid, "how": how, "kind": d["account"]["kind"], "label": d["account"]["label"],
+                    "total_in": d["total_in"], "total_out": d["total_out"], "count_in": d["count_in"],
+                    "count_out": d["count_out"], "counterparties": len(counter), "first": d["first"], "last": d["last"],
+                    "flags": [f["title"] for f in d["flags"]], "firs": len(d["firs"])})
+    out.sort(key=lambda a: -(a["total_in"] + a["total_out"]))
+    return {"suspect_id": sid, "accounts": out,
+            "total_in": sum(a["total_in"] for a in out), "total_out": sum(a["total_out"] for a in out)}

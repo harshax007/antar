@@ -1041,6 +1041,9 @@ function SearchContent() {
                 {/* The FIRs that name this person, each one openable as a case */}
                 <PersonCases id={p.suspect_id} kn={kn} />
 
+                {/* The money trail around this person: accounts they hold, UPI IDs on their FIRs */}
+                <PersonMoney id={p.suspect_id} kn={kn} />
+
                 {/* ROW 1 RIGHT: Why this risk score - points each factor actually contributed */}
                 {(p.risk_attributions || p.factors) && (
                   <div className="sx-sec">
@@ -1146,6 +1149,62 @@ function SearchContent() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+const inr = (n) => {
+  const v = Number(n) || 0;
+  if (v >= 1e7) return `₹${(v / 1e7).toFixed(2)} Cr`;
+  if (v >= 1e5) return `₹${(v / 1e5).toFixed(2)} L`;
+  return `₹${v.toLocaleString("en-IN")}`;
+};
+
+// The money trail around a person (GET /api/money/person/{id}): the accounts they hold and the
+// UPI IDs on the FIRs that name them, each one step from the full trail.
+function PersonMoney({ id, kn }) {
+  const router = useRouter();
+  const [d, setD] = useState(null);
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    setD(null);
+    fetch(`${API}/api/money/person/${encodeURIComponent(id)}`)
+      .then((r) => (r.ok ? r.json() : { accounts: [], unavailable: r.status === 403 ? "role" : "error" }))
+      .then((j) => { if (alive) setD(j); })
+      .catch(() => { if (alive) setD({ accounts: [], unavailable: "error" }); });
+    return () => { alive = false; };
+  }, [id]);
+  if (!d) return null;
+  const how = { held: kn ? "ಈ ವ್ಯಕ್ತಿಯ ಖಾತೆ" : "Held by this person", on_fir: kn ? "ಇವರನ್ನು ಹೆಸರಿಸುವ FIR ನಲ್ಲಿನ UPI" : "UPI on an FIR naming them" };
+  return (
+    <div className="sx-sec">
+      <div className="sx-sec-t">{kn ? "ಹಣದ ಜಾಡು" : "Money trail"} <span className="cnt">{d.accounts.length ? `${inr(d.total_in)} ${kn ? "ಒಳಗೆ" : "in"} · ${inr(d.total_out)} ${kn ? "ಹೊರಗೆ" : "out"}` : ""}</span></div>
+      {d.unavailable === "role" ? (
+        <div className="sx-empty-sm">{kn ? "ಹಣದ ಜಾಡಿಗೆ ಇನ್ಸ್‌ಪೆಕ್ಟರ್ ಅಥವಾ ಮೇಲಿನ ಪ್ರವೇಶ ಬೇಕು." : "The money trail needs Inspector access or above."}</div>
+      ) : d.accounts.length === 0 ? (
+        <div className="sx-empty-sm">{kn ? "ಈ ವ್ಯಕ್ತಿಗೆ ಸಂಬಂಧಿಸಿದ ಖಾತೆ ಹಣದ ಜಾಡಿನಲ್ಲಿ ಇಲ್ಲ." : "No account linked to this person in the money trail."}</div>
+      ) : (
+        <ul className="sx-money">
+          {d.accounts.map((a) => (
+            <li key={a.account_id}>
+              <div className="top">
+                <b>{a.account_id}</b>
+                <span>{how[a.how]}</span>
+              </div>
+              <div className="nums">
+                <span><em>{kn ? "ಒಳಗೆ" : "In"}</em> {inr(a.total_in)} <small>({a.count_in})</small></span>
+                <span><em>{kn ? "ಹೊರಗೆ" : "Out"}</em> {inr(a.total_out)} <small>({a.count_out})</small></span>
+                <span><em>{kn ? "ಸಂಪರ್ಕ ಖಾತೆಗಳು" : "Counterparties"}</em> {a.counterparties}</span>
+              </div>
+              {a.flags.length > 0 && <div className="flags">{a.flags.map((f) => <i key={f}>{f}</i>)}</div>}
+              <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={() => router.push(`/money?account=${encodeURIComponent(a.account_id)}`)}>
+                {kn ? "ಹಣವನ್ನು ಅನುಸರಿಸಿ" : "Follow the money"} →
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

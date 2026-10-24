@@ -70,3 +70,35 @@ def test_a_persons_firs_open_as_cases():
     assert r.status_code == 200 and d["count"] > 0
     assert all("_" not in (c["stage"] or "") for c in d["cases"])
     assert len({c["fir_id"] for c in d["cases"]}) == d["count"]
+
+
+class TestOneFir:
+    def test_every_register_id_shape_is_recognised(self):
+        from app.agents import case_answer
+        for q, fir in [("status of FIR C00026", "C00026"), ("show FIR K1026329", "K1026329"),
+                       ("what happened in fir c00507", "C00507"), ("FIR SYN-c58fcac323e8 please", "SYN-c58fcac323e8")]:
+            assert case_answer.fir_ids(q) == [fir]
+        assert not case_answer.wants_case("what links FIR C00026 and FIR C00507")   # two: T29's question
+
+    def test_a_question_about_one_fir_is_answered_from_that_case(self):
+        r = _ask("status of FIR C00026")
+        assert r["template_id"] == "CASE" and "Amengad PS" in r["answer"] and "Where it is now" in r["answer"]
+        assert r["actions"][0] == {"type": "navigate", "payload": "/case/C00026", "label": "Open case timeline"}
+
+    def test_a_closed_case_says_where_it_ended(self):
+        r = _ask("show FIR K1026329")
+        assert "Where it is now:** Investigation — Closed as undetected" in r["answer"]
+
+    def test_an_unknown_id_says_so_instead_of_listing_other_cases(self):
+        r = _ask("show FIR C99999999")
+        assert r["template_id"] == "UNRESOLVED" and "No FIR C99999999" in r["answer"] and not r["rows"]
+
+
+def test_a_persons_money_trail():
+    from main import app
+    from app.services import money_trail as m
+    sid = next(a["suspect_id"] for a in m._snapshot()["accounts"].values() if a["suspect_id"])
+    r = TestClient(app).get(f"/api/money/person/{sid}", headers={"X-Role": "Inspector"})
+    d = r.json()
+    assert r.status_code == 200 and d["accounts"] and d["accounts"][0]["how"] in ("held", "on_fir")
+    assert TestClient(app).get(f"/api/money/person/{sid}", headers={"X-Role": "Constable"}).status_code == 403

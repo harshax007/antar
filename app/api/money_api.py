@@ -5,6 +5,7 @@ GET /api/money/overview               the accounts most worth a look, with the r
 GET /api/money/search?q=              accounts by id, label, FIR id or suspect id
 GET /api/money/trail?account=&depth=  accounts within N hops, money summed per pair
 GET /api/money/account/{id}           one account: totals, flags, FIRs, transactions
+GET /api/money/person/{suspect_id}    the accounts a person holds, and the UPI IDs on FIRs naming them
 GET /api/money/export?account=        one account's transactions as CSV, for a bank or
                                       financial-intelligence request (every export is on the audit log)
 
@@ -83,3 +84,9 @@ async def export(account: str = Query(..., min_length=2, max_length=80)) -> Resp
     name = re.sub(r"[^A-Za-z0-9._-]+", "_", acc)
     return Response(buf.getvalue(), media_type="text/csv",
                     headers={"Content-Disposition": f'attachment; filename="money-trail-{name}.csv"'})
+
+
+@router.get("/person/{suspect_id}")
+async def person(suspect_id: str) -> dict:
+    _ready()
+    return await asyncio.to_thread(money_trail.for_person, suspect_id)
