@@ -267,7 +267,7 @@ def _query_actions(query: dict) -> list[dict]:
         actions.append({"type": "navigate", "payload": "/social", "label": "District social insights"})
     # a UPI ID asked about, or shared across districts: follow its money
     if tid in {"T19", "T20"} and str(params.get("key_type") or "").lower() == "upi" and params.get("value"):
-        actions.append({"type": "navigate", "payload": f"/money?account={params['value']}", "label": "Follow the money"})
+        actions.append({"type": "navigate", "payload": f"/search?view=money&account={params['value']}", "label": "Follow the money"})
     if tid in _CASE_LISTS:
         first = next((c for c in query.get("citations") or [] if c.get("id")), None)
         if first:

@@ -165,6 +165,7 @@ const GUIDES = {
             "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ತಂದೆಯ ಹೆಸರು, ಫೋನ್ ಅಥವಾ ವಾಹನ ಸಂಖ್ಯೆಯಿಂದ FIR ದಾಖಲೆಯಲ್ಲಿ ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕಿ, ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ, ಮತ್ತು ಅವರ ದಾಖಲೆ ತೆರೆಯಿರಿ."),
     blocks: [
       { h: L("Searching", "ಹುಡುಕುವುದು"), items: [
+        [L("People · Money trail", "ವ್ಯಕ್ತಿಗಳು · ಹಣದ ಜಾಡು"), L("Two views at the top: find a person, or follow money between accounts named in FIRs.", "ಮೇಲೆ ಎರಡು ನೋಟಗಳು: ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕಿ, ಅಥವಾ FIR ಖಾತೆಗಳ ನಡುವೆ ಹಣ ಅನುಸರಿಸಿ.")],
         [L("The box", "ಪೆಟ್ಟಿಗೆ"), L("Type, or press the mic and say the name. Close spellings and sound-alike names match too.", "ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಮೈಕ್ ಒತ್ತಿ ಹೆಸರು ಹೇಳಿ. ಹತ್ತಿರದ ಕಾಗುಣಿತ ಮತ್ತು ಒಂದೇ ಉಚ್ಚಾರದ ಹೆಸರುಗಳೂ ಹೊಂದುತ್ತವೆ.")],
         [L("All · Name · Alias · Father · Phone", "ಎಲ್ಲಾ · ಹೆಸರು · ಅಡ್ಡಹೆಸರು · ತಂದೆ · ಫೋನ್"), L("Limit the search to one field.", "ಹುಡುಕಾಟವನ್ನು ಒಂದು ಕ್ಷೇತ್ರಕ್ಕೆ ಸೀಮಿತಗೊಳಿಸಿ.")],
         [L("Results", "ಫಲಿತಾಂಶಗಳು"), L("Sorted by risk. Each row shows the alias, ID, area, risk tier and FIR count.", "ಅಪಾಯದ ಪ್ರಕಾರ. ಪ್ರತಿ ಸಾಲು ಅಡ್ಡಹೆಸರು, ID, ಪ್ರದೇಶ, ಅಪಾಯ, FIR ಸಂಖ್ಯೆ ತೋರಿಸುತ್ತದೆ.")],
@@ -389,7 +390,7 @@ const GUIDES = {
         [L("Map", "ನಕ್ಷೆ"), L("District hotspots across Karnataka.", "ಕರ್ನಾಟಕದಾದ್ಯಂತ ಜಿಲ್ಲಾ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು.")],
         [L("Predict", "ಮುನ್ಸೂಚನೆ"), L("7-day risk forecasts with explanations.", "ವಿವರಣೆಯೊಂದಿಗೆ 7 ದಿನಗಳ ಅಪಾಯ ಮುನ್ಸೂಚನೆ.")],
         [L("Search", "ಹುಡುಕಾಟ"), L("Find people, aliases, phones and vehicles.", "ವ್ಯಕ್ತಿಗಳು, ಉಪನಾಮಗಳು, ಫೋನ್ ಮತ್ತು ವಾಹನಗಳನ್ನು ಹುಡುಕಿ.")],
-        [L("Money", "ಹಣ"), L("Follow money between accounts named in FIRs.", "FIR ಗಳಲ್ಲಿನ ಖಾತೆಗಳ ನಡುವೆ ಹಣ ಅನುಸರಿಸಿ.")],
+        [L("Search › Money trail", "ಹುಡುಕಾಟ › ಹಣದ ಜಾಡು"), L("Follow money between accounts named in FIRs.", "FIR ಗಳಲ್ಲಿನ ಖಾತೆಗಳ ನಡುವೆ ಹಣ ಅನುಸರಿಸಿ.")],
         [L("Social insights", "ಸಾಮಾಜಿಕ ಒಳನೋಟ"), L("District social indicators against crime; open it from Predict.", "ಜಿಲ್ಲಾ ಸಾಮಾಜಿಕ ಸೂಚಕಗಳು ಮತ್ತು ಅಪರಾಧ; Predict ನಿಂದ ತೆರೆಯಿರಿ.")],
         [L("Account", "ಖಾತೆ"), L("Your shift brief, alerts, approvals, settings and records.", "ನಿಮ್ಮ ಶಿಫ್ಟ್ ಬ್ರೀಫ್, ಎಚ್ಚರಿಕೆ, ಅನುಮೋದನೆ, ಸೆಟ್ಟಿಂಗ್ ಮತ್ತು ದಾಖಲೆಗಳು.")],
       ] },
@@ -401,6 +402,8 @@ function pickGuide(path, expertOn) {
   if (!path) return "general";
   if (path.startsWith("/antarBrain")) return "brain";
   if (path.startsWith("/antar")) return expertOn ? "expert" : "chat";
+  // the Money trail is a view of Search (/search?view=money)
+  if (path.startsWith("/search") && typeof window !== "undefined" && /[?&]view=money/.test(window.location.search)) return "money";
   for (const key of ["predict", "map", "search", "trace", "approvals", "account", "network", "trends", "profiles", "social", "money", "case", "governance"]) {
     if (path.startsWith(`/${key}`)) return key;
   }

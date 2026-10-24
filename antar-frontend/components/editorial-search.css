@@ -94,3 +94,12 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-page .sx-money .flags { display: flex; flex-wrap: wrap; gap: 4px; }
 .sx-page .sx-money .flags i { padding: 1px 7px; border-radius: 999px; font: 500 11px/1.6 'Inter', sans-serif; font-style: normal; color: #FBBF24; background: rgba(251,191,36,.1); }
 .sx-page .sx-money .ui-btn { justify-self: start; }
+
+/* People | Money trail */
+.sx-views { display: inline-flex; gap: 2px; padding: 3px; margin-bottom: var(--sp-4); border-radius: var(--r-sm); border: 1px solid var(--rule-2); }
+.sx-views button { height: 30px; padding: 0 14px; border: 0; border-radius: 4px; background: none; color: var(--text-3); font: 500 13px 'Inter', sans-serif; cursor: pointer; }
+.sx-views button:hover { color: var(--text-1); }
+.sx-views button.on { background: rgba(255,255,255,.08); color: var(--text-1); font-weight: 600; }
+.sx-page--money { display: block; overflow-y: auto; }
+.sx-page--money > .sx-views { margin: 76px 0 0 max(16px, calc((100% - 1680px) / 2 + 16px)); }
+.sx-page--money .mt-page { padding-top: var(--sp-4); }

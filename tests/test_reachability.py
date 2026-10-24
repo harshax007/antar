@@ -44,7 +44,7 @@ class TestActions:
         acts = _query_actions({"template_id": "T20", "params": {"key_type": "upi", "value": "user1077@bank"},
                                "citations": [{"fir": "1000", "id": "C16633"}]})
         payloads = [a["payload"] for a in acts]
-        assert "/money?account=user1077@bank" in payloads and "/case/C16633" in payloads
+        assert "/search?view=money&account=user1077@bank" in payloads and "/case/C16633" in payloads
 
 
 def test_money_export_is_a_csv_ledger():

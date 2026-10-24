@@ -64,7 +64,7 @@ def answer(text: str, lang: str = "en") -> dict:
                      f"{sim['reached_court']}% reached court and {sim['undetected']}% were closed as undetected.")
     actions = [{"type": "navigate", "payload": f"/case/{d['fir_id']}", "label": "Open case timeline"}]
     if d.get("upi"):
-        actions.append({"type": "navigate", "payload": f"/money?account={d['upi']}", "label": "Follow the money"})
+        actions.append({"type": "navigate", "payload": f"/search?view=money&account={d['upi']}", "label": "Follow the money"})
     row = {"fir_id": d["fir_id"], "crime_no": d["crime_no"], "registered": d["registered"], "station": d["station"],
            "district": d["district"], "stage": d["stage"], **{k: v for k, v in d["counts"].items() if k != "victims_by"}}
     return {**base, "template_id": "CASE", "answer": "\n".join(lines), "rows": [row],

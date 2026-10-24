@@ -5,6 +5,7 @@ import OsintReport, { reportText as osintReportText } from "@/components/OsintRe
 import OsintDocs from "@/components/OsintDocs";
 import { fetchAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useLang } from "@/components/Providers";
 import { Mic, MicOff, X, ShieldCheck, Search, ArrowRight, Brain, MapPin, Sparkles, FolderGit2, Calendar, Users, Hash, Activity } from "lucide-react";
 import ProposeAction from "@/components/ProposeAction";
@@ -82,6 +83,8 @@ function SearchContent() {
   const sp = useSearchParams();
   const { lang } = useLang();
   const kn = lang === "kn";
+  const view = sp?.get("view") === "money" ? "money" : "people";
+  const setView = (v) => router.replace(v === "money" ? "/search?view=money" : "/search");
 
   const [role, setRoleState] = useState("Officer");
   const [trueAdmin, setTrueAdmin] = useState(false);
@@ -418,6 +421,16 @@ function SearchContent() {
     ].map(([k, label, detail]) => ({ k, label, detail, pts: Math.round(p.risk_attributions?.[k] ?? (p.factors?.[k] || 0) * 25) })),
     strongMatches: (p.similar_cases || []).filter((c) => (c.score || 0) >= 0.25),
   } : null;
+  // Search has two views: People (records) and the Money trail (/search?view=money)
+  if (view === "money") {
+    return (
+      <div className="sx-page sx-page--money">
+        <SearchViews view={view} onChange={setView} kn={kn} />
+        <MoneyTrail />
+      </div>
+    );
+  }
+
   return (
     <div className="sx-page">
       {p && (
@@ -435,6 +448,7 @@ function SearchContent() {
         {/* LEFT: search + results list */}
         <div className="sx-listpanel">
           <div className="sx-searchwrap">
+            <SearchViews view={view} onChange={setView} kn={kn} />
             <header className="sx-intro">
               <h1>{kn ? <>ಹುಡುಕಾಟ · <em>ಅಪರಾಧ ದಾಖಲೆ</em></> : <>Search · <em>Criminal Record</em></>}</h1>
               <p>{kn
@@ -1153,6 +1167,21 @@ function SearchContent() {
   );
 }
 
+const MoneyTrail = dynamic(() => import("@/components/MoneyTrail"), { ssr: false });
+
+// People | Money trail: the two ways into a case from Search.
+function SearchViews({ view, onChange, kn }) {
+  const tabs = [["people", kn ? "ವ್ಯಕ್ತಿಗಳು" : "People"], ["money", kn ? "ಹಣದ ಜಾಡು" : "Money trail"]];
+  return (
+    <nav className="sx-views" role="tablist" aria-label={kn ? "ಹುಡುಕಾಟ ನೋಟ" : "Search view"}>
+      {tabs.map(([k, label]) => (
+        <button key={k} type="button" role="tab" aria-selected={view === k} className={view === k ? "on" : ""}
+                onClick={() => view !== k && onChange(k)}>{label}</button>
+      ))}
+    </nav>
+  );
+}
+
 const inr = (n) => {
   const v = Number(n) || 0;
   if (v >= 1e7) return `₹${(v / 1e7).toFixed(2)} Cr`;
@@ -1198,7 +1227,7 @@ function PersonMoney({ id, kn }) {
                 <span><em>{kn ? "ಸಂಪರ್ಕ ಖಾತೆಗಳು" : "Counterparties"}</em> {a.counterparties}</span>
               </div>
               {a.flags.length > 0 && <div className="flags">{a.flags.map((f) => <i key={f}>{f}</i>)}</div>}
-              <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={() => router.push(`/money?account=${encodeURIComponent(a.account_id)}`)}>
+              <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={() => router.push(`/search?view=money&account=${encodeURIComponent(a.account_id)}`)}>
                 {kn ? "ಹಣವನ್ನು ಅನುಸರಿಸಿ" : "Follow the money"} →
               </button>
             </li>
