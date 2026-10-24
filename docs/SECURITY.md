@@ -226,6 +226,26 @@ took officer and role from the request body.
 Cron endpoints compare the secret in constant time and, **in production, refuse** the
 shipped default and the `.env.example` placeholder.
 
+In production the process **refuses to start** in `header` mode (`security.enforce_posture`):
+an unsigned identity there is not a warning, because any caller could send `X-Role: Admin`.
+
+### The Policymaker role (2026-10-24)
+
+Counts, trends, rates, hotspots and forecasts, never an FIR row or a named person. It ranks
+below Constable, so every existing rank check refuses it, and `AGGREGATE_ONLY_ROLES` is
+enforced at four more points, each tested on its own in `tests/test_policymaker_role.py`:
+
+| Point | What it does |
+|---|---|
+| Gateway (`auth_middleware.aggregate_path_ok`) | An allowlist of routes. A route added later is closed to the role until someone opens it. 403 with a reason otherwise. |
+| `policy.decide` | Aggregate-level agents only, with `aggregate_only` applied; every person- or case-level agent is refused |
+| `zcql_repo.build_spec` | Only `AGGREGATE_TEMPLATES` and the server's internal ones; anything else raises `AggregateOnlyError` |
+| Query agent | A question that would list FIRs is counted instead (T1/T12 -> T8, counts by status); one about a person is refused before self-heal can mine rows another way. Its cache line is separate. |
+
+Demo account `U-8001` (created with `scripts/set_password.py`; the password is only in the
+git-ignored local files). The frontend offers it Chat, Map and Predict and explains any other
+screen; that is presentation, the four points above are the control.
+
 ---
 
 ## 5. Production checklist

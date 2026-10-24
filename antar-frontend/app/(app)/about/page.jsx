@@ -141,6 +141,9 @@ export default function AboutPage() {
             <Link href="/docs">
               {kn ? "ದಾಖಲಾತಿ" : "Documentation"} <ArrowUpRight size={13} />
             </Link>
+            <Link href="/governance">
+              {kn ? "ಮಾಹಿತಿ ಸಂರಕ್ಷಣೆ" : "Data protection"} <ArrowUpRight size={13} />
+            </Link>
             <Link href="/antar">
               {kn ? "Antar ತೆರೆಯಿರಿ" : "Open Antar"} <ArrowUpRight size={13} />
             </Link>

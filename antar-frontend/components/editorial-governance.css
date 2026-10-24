@@ -1,0 +1,41 @@
+/* ── Data protection page (app/(app)/governance) · editorial layer on design-tokens.css ──
+   A reading page: one column, numbered sections on hairlines, each claim with the file
+   that makes it true in a quiet monospace line. */
+
+.gv-page { min-height: 100vh; padding: 96px 16px 80px; color: var(--text-1); }
+.gv-wrap { max-width: 860px; margin: 0 auto; }
+
+.gv-head { padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule-2); }
+.gv-eyebrow { display: block; margin-bottom: var(--sp-2); font: 500 var(--fs-caption)/1.4 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+html[lang="kn"] .gv-eyebrow { letter-spacing: normal; text-transform: none; }
+.gv-head h1 { margin: 0; font: 700 clamp(28px, 3.4vw, 42px)/1.1 'Chakra Petch', sans-serif; letter-spacing: -.02em; text-wrap: balance; }
+.gv-head p { margin: var(--sp-4) 0 0; max-width: 68ch; font-size: 16px; line-height: 1.65; color: var(--text-2); }
+.gv-head .gv-kn-note { font-size: 13px; color: var(--text-3); }
+
+.gv-toc { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); padding: var(--sp-4) 0; border-bottom: 1px solid var(--rule-1); }
+.gv-toc a { font: 500 13px 'Inter', sans-serif; color: var(--text-2); text-decoration: none; }
+.gv-toc a span { margin-right: 6px; font: 500 11px 'JetBrains Mono', monospace; color: var(--accent); }
+.gv-toc a:hover { color: var(--text-1); }
+
+.gv-sec { padding: var(--sp-6) 0 var(--sp-2); border-bottom: 1px solid var(--rule-1); scroll-margin-top: 90px; }
+.gv-sec h2 { margin: 0 0 var(--sp-4); font: 600 20px/1.3 'Inter', sans-serif; color: var(--text-1); }
+.gv-sec h2 span { margin-right: var(--sp-3); font: 500 12px 'JetBrains Mono', monospace; letter-spacing: .06em; color: var(--accent); }
+.gv-lede { margin: 0 0 var(--sp-4); max-width: 68ch; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+
+.gv-items { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-5); padding-bottom: var(--sp-4); }
+.gv-items b { display: block; font-size: 15.5px; font-weight: 600; color: var(--text-1); }
+.gv-items p { margin: 4px 0 0; max-width: 70ch; font-size: 14.5px; line-height: 1.6; color: var(--text-2); }
+.gv-items code { display: inline-block; margin-top: 6px; font: 400 11.5px 'JetBrains Mono', monospace; color: var(--text-3); }
+
+.gv-roles { margin: 0 0 var(--sp-5); display: grid; border-top: 1px solid var(--rule-1); }
+.gv-roles > div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: var(--sp-4); padding: 10px 0; border-bottom: 1px solid var(--rule-1); }
+.gv-roles dt { font: 600 14px 'Inter', sans-serif; color: var(--text-1); }
+.gv-roles dd { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-2); }
+.gv-keep dt { color: var(--text-1); }
+
+.gv-foot { margin: var(--sp-6) 0 0; max-width: 70ch; font-size: 13.5px; line-height: 1.6; color: var(--text-3); }
+
+@media (max-width: 640px) {
+  .gv-page { padding-top: 80px; }
+  .gv-roles > div { grid-template-columns: 1fr; gap: 2px; }
+}

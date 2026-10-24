@@ -32,7 +32,7 @@ export const POLICY_ROLE = "Policymaker";
 // A Policymaker reads the state of crime - counts, trends, rates, hotspots, forecasts - and
 // never an FIR row or a named person. The server enforces it (auth_middleware.AGGREGATE_ONLY_ROLES);
 // these screens are the ones that work within it, so the rest are not offered.
-export const POLICY_SCREENS = ["/antar", "/ask", "/map", "/predict", "/docs", "/about", "/account", "/guide", "/info"];
+export const POLICY_SCREENS = ["/antar", "/ask", "/map", "/predict", "/docs", "/about", "/account", "/guide", "/info", "/governance"];
 
 export function isAggregateOnly(sessionOrRole) {
   const role = typeof sessionOrRole === "string" ? sessionOrRole : sessionOrRole?.role;
