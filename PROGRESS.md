@@ -137,6 +137,17 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Where next: station list scrolls, station card in plain words · 2026-10-24
+
+The Where next station list was clipped with no way to scroll. A rail rule kept every
+panel child at full height, and that included the list. The list now shrinks and scrolls.
+
+The station card leads with the range and a verdict against a usual week (About usual,
+or N% above or below). The two bands follow as "8 in 10" and "9 in 10" chances. The card
+also shows what the forecast weighed, a legend and one summary line under the 26-week
+chart, and the next 7 days by crime type in place of a lone "Other" row. The
+demonstration-data caveat sits in a box.
+
 ## Geo intel: links between districts as next steps · 2026-10-24
 
 The Map's "Links between districts" dialog now answers "which district do I call about
