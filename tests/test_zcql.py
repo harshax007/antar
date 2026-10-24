@@ -172,10 +172,16 @@ def test_a_crime_type_with_no_real_rows_is_flagged_and_a_real_one_is_not():
 def test_the_answer_says_when_a_count_is_demonstration_records_only():
     from app.agents.answer_writer import write_answer
     from app.agents.query_agent import run_template
+    # missing persons have no head in the real register: the count is demonstration records only
+    p = {"crime_types": ["MISSING_PERSON"], "limit": 10, "dimension": "zone"}
+    rows, _ = run_template("T11", p)
+    text = write_answer(rows, "T11", "en", p, "Which districts have the most missing persons?")
+    assert "Jayanagar" not in text and "demonstration records" in text
+    # vehicle theft now also counts the register's own sub-headings (HEAD_BACKED), so it is real
     p = {"crime_types": ["VEHICLE_THEFT"], "limit": 10, "dimension": "zone"}
     rows, _ = run_template("T11", p)
     text = write_answer(rows, "T11", "en", p, "Which districts have the most vehicle theft?")
-    assert "Jayanagar" not in text and "demonstration records" in text
+    assert "Jayanagar" not in text and "demonstration records" not in text
     p = {"crime_types": ["THEFT"], "limit": 10, "dimension": "zone"}
     rows, _ = run_template("T11", p)
     assert "demonstration records" not in write_answer(rows, "T11", "en", p, "Which districts have the most theft?")

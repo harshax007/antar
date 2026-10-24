@@ -48,9 +48,11 @@ class TestBoard:
         assert find_future_dates(board) == []
 
     def test_full_zone_coverage(self, board):
-        zones = {c["zone"] for c in board["predictions"]}
+        # statewide police units (CID, Railways, ...) are listed apart and not counted as areas
+        zones = {c["zone"] for c in board["predictions"] if not c.get("unit")}
+        units = {c["zone"] for c in board["predictions"] if c.get("unit")}
         assert len(zones) >= 20, f"only {len(zones)} zones covered"
-        assert board["zones_covered"] == len(zones)
+        assert board["zones_covered"] == len(zones) and board["units_covered"] == len(units)
 
     def test_as_of_is_today_and_rolls(self, board):
         assert board["as_of"] == date.today().isoformat()
