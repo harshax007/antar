@@ -87,8 +87,3 @@
 @media (min-width: 1800px) {
   .px-page { width: 100%; max-width: 1680px; margin-left: auto !important; margin-right: auto !important; align-self: center; }
 }
-
-/* A screen outside the signed-in role (AppShell): one plain message, one way back. */
-.ax-denied { max-width: 560px; margin: clamp(96px, 18vh, 180px) auto 0; padding: 0 16px; text-align: center; }
-.ax-denied h1 { margin: 0 0 12px; font: 700 clamp(22px, 2.4vw, 28px)/1.2 'Chakra Petch', sans-serif; color: var(--text-1, #fff); }
-.ax-denied p { margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: var(--text-2, #A9B6C8); }

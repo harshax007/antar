@@ -6,7 +6,7 @@ GET /api/case/{fir_id}   one FIR: an automated summary, its investigation timeli
 
 Case-level data, so Constable and above (mounted with that dependency in main.py), and the
 same need-to-know rule as chat: below Analyst, an officer with a posting opens cases of
-their own district only. A Policymaker never reaches it (the gateway allowlist).
+their own district only.
 """
 from __future__ import annotations
 

@@ -229,14 +229,7 @@ shipped default and the `.env.example` placeholder.
 In production the process **refuses to start** in `header` mode (`security.enforce_posture`):
 an unsigned identity there is not a warning, because any caller could send `X-Role: Admin`.
 
-### The Policymaker role (2026-10-24)
-
-Counts, trends, rates, hotspots and forecasts, never an FIR row or a named person. It ranks
-below Constable, so every existing rank check refuses it, and `AGGREGATE_ONLY_ROLES` is
-enforced at four more points, each tested on its own in `tests/test_policymaker_role.py`:
-
-| Point | What it does |
-|---|---|
+---|---|
 | Gateway (`auth_middleware.aggregate_path_ok`) | An allowlist of routes. A route added later is closed to the role until someone opens it. 403 with a reason otherwise. |
 | `policy.decide` | Aggregate-level agents only, with `aggregate_only` applied; every person- or case-level agent is refused |
 | `zcql_repo.build_spec` | Only `AGGREGATE_TEMPLATES` and the server's internal ones; anything else raises `AggregateOnlyError` |

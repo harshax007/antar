@@ -63,11 +63,9 @@ class TestEndpoint:
         r = TestClient(app).get(f"/api/case/{_fir('Convicted')}", headers={"X-Role": "Inspector"})
         assert r.status_code == 200 and r.json()["steps"] and "zone" not in r.json()
 
-    def test_unknown_is_404_and_a_policymaker_is_refused(self):
+    def test_unknown_is_404(self):
         from main import app
-        c = TestClient(app)
-        assert c.get("/api/case/NO-SUCH-FIR", headers={"X-Role": "Inspector"}).status_code == 404
-        assert c.get(f"/api/case/{_fir('Convicted')}", headers={"X-Role": "Policymaker"}).status_code == 403
+        assert TestClient(app).get("/api/case/NO-SUCH-FIR", headers={"X-Role": "Inspector"}).status_code == 404
 
     def test_below_analyst_a_case_outside_the_posting_is_refused(self):
         from main import app

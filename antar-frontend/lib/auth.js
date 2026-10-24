@@ -18,7 +18,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 export const ACCOUNTS = {
   "U-7001": { role: "Admin", name: "Operations Officer", home: "/antar" },
   "U-9001": { role: "Approver", name: "Supervising Officer", home: "/approvals" },
-  "U-8001": { role: "Policymaker", name: "Policy Office", home: "/antar" },
 };
 
 // Kept for existing imports: the operations account.
@@ -26,23 +25,6 @@ export const ADMIN_ID = "U-7001";
 export const ADMIN_ROLE = "Admin";
 export const APPROVER_ID = "U-9001";
 export const APPROVER_ROLE = "Approver";
-export const POLICY_ID = "U-8001";
-export const POLICY_ROLE = "Policymaker";
-
-// A Policymaker reads the state of crime - counts, trends, rates, hotspots, forecasts - and
-// never an FIR row or a named person. The server enforces it (auth_middleware.AGGREGATE_ONLY_ROLES);
-// these screens are the ones that work within it, so the rest are not offered.
-export const POLICY_SCREENS = ["/antar", "/ask", "/map", "/predict", "/docs", "/about", "/account", "/guide", "/info", "/governance"];
-
-export function isAggregateOnly(sessionOrRole) {
-  const role = typeof sessionOrRole === "string" ? sessionOrRole : sessionOrRole?.role;
-  return role === POLICY_ROLE;
-}
-
-export function screenAllowed(role, path) {
-  if (!isAggregateOnly(role)) return true;
-  return POLICY_SCREENS.some((p) => path === p || path.startsWith(`${p}/`));
-}
 const SESSION_KEY = "antar_session";
 
 function normId(id) {

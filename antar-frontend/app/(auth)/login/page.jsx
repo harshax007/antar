@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLang, useTheme } from "@/components/Providers";
 import { asset } from "@/lib/assets";
-import { ADMIN_ID, POLICY_ID, signIn, homeFor } from "@/lib/auth";
+import { ADMIN_ID, signIn, homeFor } from "@/lib/auth";
 import { raiseCurtain } from "@/lib/curtain";
 
 const COPY = {
@@ -202,32 +202,6 @@ export default function LoginPage() {
             onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
           >
             [ {kn ? "ಡೆಮೊ ಪ್ರವೇಶ" : "DEMO ACCESS"} ]
-          </button>
-          {/* The Policymaker account: counts, trends and forecasts only, no FIR rows or names. */}
-          <button
-            type="button"
-            onClick={() => {
-              setBadge(POLICY_ID);
-              setPassword(process.env.NEXT_PUBLIC_DEMO_PW_POLICY || "");
-              if (!process.env.NEXT_PUBLIC_DEMO_PW_POLICY) document.getElementById("pw")?.focus();
-              setError("");
-            }}
-            disabled={busy}
-            title={kn ? "ನೀತಿ ನಿರೂಪಕ: ಎಣಿಕೆಗಳು ಮತ್ತು ಪ್ರವೃತ್ತಿಗಳು ಮಾತ್ರ" : "Policymaker: counts and trends only"}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "rgba(255,255,255,0.35)",
-              fontSize: "11px",
-              fontFamily: "'JetBrains Mono', monospace",
-              cursor: "pointer",
-              letterSpacing: "0.06em",
-              transition: "color 0.2s ease"
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#22E6F0")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
-          >
-            [ {kn ? "ನೀತಿ ನೋಟ" : "POLICY VIEW"} ]
           </button>
         </div>
       </section>

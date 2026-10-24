@@ -9,7 +9,7 @@ import ScreenTransition3D from "@/components/ScreenTransition3D";
 import PillNav from "@/components/PillNav";
 import GlobalGuide from "@/components/GlobalGuide";
 import { Menu, X, Sun, Moon, User } from "lucide-react";
-import { readSession, isValidSession, clearSession, screenAllowed } from "@/lib/auth";
+import { readSession, isValidSession, clearSession } from "@/lib/auth";
 import { lowerCurtain } from "@/lib/curtain";
 
 const NAV = [
@@ -140,17 +140,7 @@ export default function AppShell({ children }) {
       {/* 3D Glassmorphic Screen Switching Overlay */}
       <ScreenTransition3D targetPath={navigatingTo} lang={lang} />
 
-      <main className="ax-main" style={{ transition: "opacity 0.15s ease" }}>
-        {session && !screenAllowed(session.role, path) ? (
-          <section className="ax-denied" role="status">
-            <h1>{lang === "kn" ? "ಈ ಪುಟ ನಿಮ್ಮ ಪಾತ್ರಕ್ಕೆ ಲಭ್ಯವಿಲ್ಲ" : "This screen is not part of your role"}</h1>
-            <p>{lang === "kn"
-              ? "ನೀತಿ ನಿರೂಪಕರು ಎಣಿಕೆಗಳು, ಪ್ರವೃತ್ತಿಗಳು, ದರಗಳು ಮತ್ತು ಮುನ್ಸೂಚನೆಗಳನ್ನು ನೋಡುತ್ತಾರೆ. ಪ್ರತ್ಯೇಕ FIR ಗಳು ಮತ್ತು ಹೆಸರಿಸಿದ ವ್ಯಕ್ತಿಗಳು ತನಿಖಾಧಿಕಾರಿಗಳಿಗೆ ಮಾತ್ರ."
-              : "A Policymaker sees counts, trends, rates, hotspots and forecasts. Individual FIRs and named people are for investigating officers."}</p>
-            <Link href="/antar" className="ui-btn ui-btn--primary">{lang === "kn" ? "ಚಾಟ್‌ಗೆ ಹೋಗಿ" : "Go to Chat"}</Link>
-          </section>
-        ) : children}
-      </main>
+      <main className="ax-main" style={{ transition: "opacity 0.15s ease" }}>{children}</main>
       <DemoOverlay />
     </div>
   );

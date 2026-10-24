@@ -137,18 +137,17 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
-## Challenge gaps closed: Policymaker, case timeline, data protection · 2026-10-24
+## Challenge gaps closed: case timeline, data protection · 2026-10-24
 
 Checked against the 10 areas of the problem statement; these three were the quick wins.
 
 | Area | Added | Where |
 |---|---|---|
-| 10 · Role-based access | **Policymaker**: counts, trends, rates, hotspots and forecasts, never an FIR row or a person. Enforced at the gateway (route allowlist), in `policy.decide`, in `build_spec` (aggregate templates only) and in the query agent (lists are counted as T8; person questions refused before self-heal). Demo account U-8001, `[ POLICY VIEW ]` on sign-in. | `c071181` |
+| 10 · Role-based access | **Policymaker**: counts, trends, rates, hotspots and forecasts, never an FIR row or a person. Enforced at the gateway (route allowlist), in `policy.decide`, in `build_spec` (aggregate templates only) and in the query agent (lists are counted as T8; person questions refused before self-heal). Demo account U-8001, `[ POLICY VIEW ]` on sign-in. **Removed the same day at the owner's request.** | `c071181`, reverted |
 | 6 · Investigator support | **Case timeline** `/case/[id]`: an automated summary, registered → investigation → arrests → charge-sheet → court, the BNSS s.187(3) clock on open cases, how cases like it ended (station → district → state), the accused's other FIRs. Only the registration is dated in the register; later steps say "date not recorded". Chat source cards and Map day cases open it. 12–28 ms. | `393acf1` |
 | 10 · Governance | **Data protection** page `/governance`: the law (DPDP s.17(1)(c), s.8(5), Art. 15, BNSS), who sees what, minimisation, accountability, retention, safeguards, what Antar does not do. Each claim names its file; two that did not hold were corrected before shipping. | `8e4af41` |
 
-Follow-ups noticed: Predict's "Active alerts" reads 0 for a Policymaker (the alerts route
-is refused, not empty); saved conversations have no automatic expiry.
+Follow-up noticed: saved conversations have no automatic expiry.
 
 ## Backend scan: two loopholes closed, faster reads, cleaner geography · 2026-10-24
 

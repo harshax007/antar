@@ -712,11 +712,6 @@ asks `policy.decide(ctx, agent)` before an agent runs:
 | `PERMIT_WITH_OBLIGATIONS` | the agent declares obligations | they are applied to the result by the orchestrator, whatever the agent's own code returned |
 | `PERMIT` | otherwise | |
 
-An aggregate-only role (`Policymaker`, `auth_middleware.AGGREGATE_ONLY_ROLES`) is decided before
-rank: it is permitted every `sensitivity: aggregate` agent, with `aggregate_only` added to its
-obligations, and the `query` agent, which runs only its aggregate templates for that role
-(`zcql_repo.AGGREGATE_TEMPLATES`). Every other agent is `DENY`. See docs/SECURITY.md, section 4.
-
 The caller is the request's security context (`app/core/security_context.py`): officer and role
 from the verified token, one `call_chain_id` per request. Every decision is written on the
 audit row for that request. Routers keep their own role checks; this is a second, independent one.

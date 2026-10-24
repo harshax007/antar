@@ -6,7 +6,6 @@ import { useLang } from "@/components/Providers";
 import "@/components/editorial-governance.css";
 
 const ROLES = [
-  ["Policymaker", "Counts, trends, rates, hotspots and forecasts for the state. Never an FIR row or a named person."],
   ["Constable", "Case rows of their own posting; statewide counts."],
   ["Inspector", "Adds people, networks, dossiers and open-web checks, and may propose an action."],
   ["Analyst", "Case rows statewide; may propose an action."],
@@ -31,7 +30,7 @@ const SECTIONS = [
   },
   {
     key: "purpose", en: "Purpose and need to know", kn: "ಉದ್ದೇಶ ಮತ್ತು ಅಗತ್ಯ ಮಾಹಿತಿ",
-    lede: "Antar exists to help police prevent and investigate crime. Who may see what is decided on the server from the signed-in account, at four separate points, never by the screen.",
+    lede: "Antar exists to help police prevent and investigate crime. Who may see what is decided on the server from the signed-in account, by the route and again before each agent runs, never by the screen.",
     roles: true,
     items: [
       ["Your district first",
@@ -81,7 +80,7 @@ const SECTIONS = [
   {
     key: "not", en: "What Antar does not do", kn: "ಅಂತರ್ ಮಾಡದಿರುವುದು",
     items: [
-      ["Forecast people", "Forecasts are about places and periods. A risk score on a named accused orders the record for an investigating officer, shows each factor that made it, passes a bias screen, and is never shown to a Policymaker."],
+      ["Forecast people", "Forecasts are about places and periods. A risk score on a named accused orders the record for an investigating officer, shows each factor that made it and passes a bias screen."],
       ["Act on its own", "No real-world action happens without a named officer's approval."],
       ["Replace the investigating officer", "A link, a lead or a similar case is a reason to look, not a finding. Inferred claims are marked as inferred and checked against base rates before they can be confirmed."],
     ],
