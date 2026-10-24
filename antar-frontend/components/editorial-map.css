@@ -160,15 +160,6 @@ html[lang="kn"] .gi-todo span { letter-spacing: normal; text-transform: none; }
 .mx-case-open { display: inline-block; margin-top: 10px; font: 600 12.5px 'Inter', sans-serif; color: var(--accent, #22E6F0); text-decoration: none; }
 .mx-case-open:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-/* the first five seconds: a short headline section at the top of the left column */
-.mx-page .mx-intro { padding: var(--sp-4) var(--sp-4) var(--sp-4); }
-.mx-intro-eyebrow { display: block; margin-bottom: var(--sp-1); font: 500 var(--fs-caption)/1.4 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
-html[lang="kn"] .mx-intro-eyebrow { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
-.mx-page .mx-intro h1 { margin: 0; font: 700 var(--fs-h3)/1.2 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); }
-.mx-page .mx-intro p { margin: var(--sp-2) 0 var(--sp-3); font-size: var(--fs-label); line-height: 1.5; color: var(--text-2); }
-.mx-page .mx-intro .ui-btn { border-radius: var(--r-sm); box-shadow: none; background: var(--text-1); color: #050A12; border-color: transparent; }
-.mx-page .mx-intro .ui-btn:hover { background: #fff; }
-[data-theme="light"] .mx-page .mx-intro .ui-btn { background: #0F172A; color: #fff; }
 /* a selected day is marked by its fill, not a glow */
 .mx-page .mx-cal-grid td.sel .dn { box-shadow: none; }
 /* the district picker over the map: a square-edged control like the rest */
