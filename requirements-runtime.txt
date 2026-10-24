@@ -51,6 +51,7 @@ networkx==3.6.1
 # ── Utilities ─────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
 structlog==24.4.0
+PyYAML==6.0.3                     # AGENTS.md is parsed at import; app/core/policy.py denies every agent without it
 beautifulsoup4==4.15.0
 cryptography==42.0.5
 gTTS==2.5.1

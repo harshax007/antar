@@ -109,6 +109,19 @@ class TestPolicy:
         assert d.outcome == policy.PERMIT
 
 
+
+    def test_a_broken_manifest_fails_closed_for_officers(self, monkeypatch):
+        from app.agents import manifest
+        monkeypatch.setattr(manifest, "load", lambda: manifest.Manifest(errors=("PyYAML is not installed",)))
+        ctx, d = _as("Superintendent", lambda: policy.decide(SC.current(), "profile"))
+        assert d.denied and "AGENTS.md" in d.reason
+        # the autonomous loop has no role to check; it is not stopped by this
+        sctx, tok = SC.begin("system:test", "system", origin="system")
+        try:
+            assert not policy.decide(sctx, "products").denied
+        finally:
+            SC.end(tok)
+
 class TestManifestDeclaration:
     def _block(self, **over):
         d = {"agent": "t", "kind": "worker", "role": "r", "module": "m::f", "graph_node": None, "routes": [],

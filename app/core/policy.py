@@ -64,19 +64,30 @@ def _rank(role: str) -> int:
 
 
 def _agent_def(name: str):
+    """(declaration or None, whether the manifest itself is broken)."""
     try:
         from app.agents import manifest
-        agents = manifest.load().agents
+        m = manifest.load()
     except Exception:
-        return None
+        return None, True
+    agents = m.agents
     a = agents.get(name)
     if a is None:
         a = next((x for x in agents.values() if name in x.aliases), None)
-    return a
+    return a, bool(m.errors) or not agents
 
 
 def decide(ctx: SecurityContext | None, agent: str) -> Decision:
-    a = _agent_def(agent)
+    a, broken = _agent_def(agent)
+    if a is None and broken and not (ctx is not None and ctx.origin == "system"):
+        # The manifest could not be read (a missing PyYAML, a malformed block), so nothing
+        # says who may run this. Fail closed: permitting here would open every agent,
+        # person-level ones included, to every role.
+        _bump("deny")
+        d = Decision(DENY, "agent policy unavailable (AGENTS.md could not be read)")
+        if ctx is not None:
+            ctx.note_decision(agent, DENY, d.reason)
+        return d
     if a is None or not getattr(a, "sensitivity", ""):
         # run under a name the manifest does not declare (a job wrapper): nothing to decide on
         _bump("undeclared")
