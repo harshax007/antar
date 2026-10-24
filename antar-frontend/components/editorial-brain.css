@@ -161,3 +161,4 @@ html[lang="kn"] .cg-plan-h { letter-spacing: normal; text-transform: none; font-
 .bsx-wrap .bsx-cg-legend .bsx-cg-summary, .bsx-wrap .bsx-cg-legend .bsx-summary-b { width: 100%; box-sizing: border-box; }
 /* no arrow on the Crime Graph's View summary toggle (owner's call) */
 .bsx-wrap .bsx-cg-summary .bsx-summary-h > span[aria-hidden="true"] { display: none; }
+.bsx-wrap .bsx-cg-legend .bsx-cg-summary { border-top: 0; padding-top: 4px; }   /* and no rule above it */
