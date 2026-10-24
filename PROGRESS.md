@@ -137,6 +137,26 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Backend scan: two loopholes closed, faster reads, cleaner geography · 2026-10-24
+
+| Fix | Effect |
+|---|---|
+| Production refuses to start without `ANTAR_AUTH_SECRET` | before, it only warned, and any caller could send `X-Role: Admin` |
+| `policy.decide` fails closed when AGENTS.md cannot be read; PyYAML pinned | before, a missing PyYAML opened every agent to every role |
+| `registry_connect()`: memory-mapped reads on 67 registry connections | district-year breakdown 34 → 11 ms, one FIR by id 2 → 0.3 ms |
+| District centre points: swapped coordinates put back, median, Karnataka only | Bengaluru City was at 28.6 N, 60.9 E; now 12.97 N, 77.58 E |
+| Evidence ledger leaves out rows dated after today, reloads daily | corridors no longer report a last FIR in December 2026 |
+| Dead `app/agents/chat_stream.py` removed | one chat stream to edit, not two |
+
+Still open, found in the same scan:
+- Package advisories (python-multipart, starlette, requests, cryptography, scikit-learn).
+  Some are held back by the zcatalyst-sdk pins; run `pip-audit` before upgrading.
+- 2,933 duplicate `fir_id`s in the registry.
+- `ACC-nnnnnn` ledger ids vs `ACC-KA-nnnnnn` register ids.
+- The forecast's top 5% catches 23% vs 22.8% for last-4-weeks hotspots.
+- Two tests already fail on today's date: `test_full_zone_coverage` (51 zones vs 55) and
+  `test_the_answer_says_when_a_count_is_demonstration_records_only`.
+
 ## Where next: station list scrolls, station card in plain words · 2026-10-24
 
 The Where next station list was clipped with no way to scroll. A rail rule kept every
