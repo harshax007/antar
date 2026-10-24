@@ -93,6 +93,23 @@ def decide(ctx: SecurityContext | None, agent: str) -> Decision:
         _bump("undeclared")
         return Decision(PERMIT, "no declared policy")
     obligations = tuple(a.obligations)
+    if ctx is not None and ctx.origin != "system":
+        from app.core.auth_middleware import AGGREGATE_ONLY_ROLES
+        if ctx.role in AGGREGATE_ONLY_ROLES:
+            # Rank does not apply: this role is below Constable, yet may read every aggregate.
+            # The query agent is case-level but runs only its aggregate templates for this
+            # role (zcql_repo.build_spec), so it is permitted with aggregate_only on top.
+            if a.sensitivity == "aggregate" or a.agent == "query":
+                # the query agent keeps its rows: they are aggregate rows by then
+                extra = () if a.agent == "query" else ("aggregate_only",)
+                obs = tuple(dict.fromkeys(obligations + extra))
+                _bump("obligations")
+                ctx.note_decision(agent, PERMIT_WITH_OBLIGATIONS, obligations=obs)
+                return Decision(PERMIT_WITH_OBLIGATIONS, obligations=obs)
+            _bump("deny")
+            d = Decision(DENY, f"{ctx.role} sees aggregates only (this is {a.sensitivity}-level data)")
+            ctx.note_decision(agent, DENY, d.reason)
+            return d
     if ctx is None:
         _bump("unbound")
     elif ctx.origin != "system" and _rank(ctx.role) < _rank(a.min_role):

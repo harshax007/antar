@@ -8,6 +8,7 @@ import OfficerSelector from "@/components/OfficerSelector";
 import LangToggle from "@/components/LangToggle";
 import { asset } from "@/lib/assets";
 import { fetchAPI } from "@/lib/api";
+import { readSession, isAggregateOnly, screenAllowed } from "@/lib/auth";
 
 export default function PillNav() {
   const path = usePathname() || "";
@@ -19,6 +20,14 @@ export default function PillNav() {
   // Pending human-in-the-loop decisions, for the APPROVALS badge. Polled lightly, and
   // refreshed instantly when the Approvals screen reports a change.
   const [hitlPending, setHitlPending] = useState(0);
+  // A Policymaker is offered only the screens that work on aggregates (lib/auth.js).
+  const [role, setRole] = useState(null);
+  useEffect(() => {
+    const read = () => setRole(readSession()?.role || null);
+    read();
+    window.addEventListener("antar-role", read);
+    return () => window.removeEventListener("antar-role", read);
+  }, []);
   // Scroll edge: once an area that sits under this floating nav is scrolled, its content
   // fades out as it passes beneath the nav instead of being cut by a hard line. Only areas
   // whose top is under the nav and that are actually scrolled get it (see .is-under-nav in
@@ -46,7 +55,7 @@ export default function PillNav() {
     let alive = true;
     let t = null;
     const pull = () => {
-      if (!alive || document.hidden) return;
+      if (!alive || document.hidden || isAggregateOnly(readSession())) return;
       fetchAPI("/api/hitl/stats")
         .then((s) => { if (alive) setHitlPending(s?.pending || 0); })
         .catch(() => {});
@@ -139,7 +148,7 @@ export default function PillNav() {
     { en: "MAP", kn: "ನಕ್ಷೆ", href: "/map" },
     { en: "PREDICT", kn: "ಮುನ್ಸೂಚನೆ", href: "/predict" },
     { en: "SEARCH", kn: "ಹುಡುಕಾಟ", href: "/search" },
-  ];
+  ].filter((l) => screenAllowed(role, l.href));
   // APPROVALS used to sit here. It now lives inside Account (the queue is personal to the
   // officer, not a screen of the investigation), and its pending count rides on ACCOUNT.
 

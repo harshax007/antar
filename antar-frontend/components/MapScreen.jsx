@@ -15,7 +15,7 @@ import { AnimatePresence } from "framer-motion";
 import ProposeAction from "@/components/ProposeAction";
 import { useForecast, ForecastLayer, ForecastPanel, ForecastCard, ModelCardModal, AsOfChip } from "@/components/ForecastPanel";
 import { makeContains } from "@/lib/forecast";
-import { readSession } from "@/lib/auth";
+import { readSession, isAggregateOnly } from "@/lib/auth";
 import BrainLoader, { MAP_STEPS, MAP_ORBS } from "@/components/BrainLoader";
 import { MAP_AGENTS, MapAgentsMenu, AgentDropLayer, MapAgentResult } from "@/components/MapAgents";
 import { FESTIVALS } from "@/lib/festivals";
@@ -693,6 +693,9 @@ export default function MapScreen() {
     const ctrl = new AbortController();
     const q = new URLSearchParams({ date: endDate });
     if (crimeType) q.set("crime_type", crimeType);
+    // A Policymaker is not sent the day's FIRs one by one (the server refuses them); the
+    // day's counts above still come from gi_star.
+    if (isAggregateOnly(readSession())) { setDayCases({ error: "role", cases: [], date: endDate }); return () => ctrl.abort(); }
     fetch(`${API}/api/map/day_cases?${q}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("day"))))
       .then(setDayCases)
@@ -1485,7 +1488,8 @@ export default function MapScreen() {
         {dayView && (
           <div className="mx-fckey" role="note" style={{ width: keyRoom }}>
             <span className="mx-fckey-dots day" aria-hidden="true"><i /></span>
-            <p>{dayCases?.error ? <>{kn ? "ಈ ದಿನದ ಪ್ರಕರಣಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "The cases for this day could not be read just now."}</> : kn ? <>
+            <p>{dayCases?.error === "role" ? <>{kn ? "ನಿಮ್ಮ ಪಾತ್ರಕ್ಕೆ ಪ್ರತ್ಯೇಕ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಲಾಗುವುದಿಲ್ಲ; ಮೇಲಿನ ಎಣಿಕೆಗಳು ಈ ದಿನದವು." : "Individual cases are not shown for your role. The counts above are this day's."}</>
+              : dayCases?.error ? <>{kn ? "ಈ ದಿನದ ಪ್ರಕರಣಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "The cases for this day could not be read just now."}</> : kn ? <>
                 <b>ಪ್ರತಿ ಚುಕ್ಕೆ {prettyDate(endDate, true)} ರಂದು ದಾಖಲಾದ ಒಂದು FIR.</b> ಕರ್ನಾಟಕದಲ್ಲಿ {dayDots.length}{selectedDistrict ? `, ಈ ಜಿಲ್ಲೆಯಲ್ಲಿ ${dayInDistrict.length}` : ""}. {selectedDistrict ? "ಜಿಲ್ಲೆ ಕಾರ್ಡ್‌ನಲ್ಲಿ ಪಟ್ಟಿ ಇದೆ." : "ಪ್ರಕರಣಗಳನ್ನು ಓದಲು ಜಿಲ್ಲೆ ತೆರೆಯಿರಿ."}
               </> : <>
                 <b>Each dot is one FIR registered on {prettyDate(endDate, false)}.</b>{" "}

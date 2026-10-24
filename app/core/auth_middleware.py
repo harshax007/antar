@@ -25,6 +25,7 @@ import base64
 import hashlib
 import hmac
 import json
+import re
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -36,8 +37,13 @@ from app.core.settings import settings
 # It ranks above Analyst so it can read the evidence an approval rests on (Inspector+ routes),
 # and below Admin so it cannot read the administrative audit log. Approving is a separate
 # permission enforced inside hitl.py — rank alone never grants it.
-ROLES = ["Constable", "Inspector", "Analyst", "Approver", "Admin", "Superintendent"]
+# "Policymaker" reads the state of crime, not cases: counts, trends, rates, hotspots and
+# forecasts, never an FIR row or a named person. It ranks lowest, so every rank check
+# refuses it, and AGGREGATE_ONLY_ROLES is enforced on top of rank at three more points:
+# the gateway allowlist below, policy.decide, and the query templates (zcql_repo).
+ROLES = ["Policymaker", "Constable", "Inspector", "Analyst", "Approver", "Admin", "Superintendent"]
 _RANK = {r: i for i, r in enumerate(ROLES)}
+AGGREGATE_ONLY_ROLES = frozenset({"Policymaker"})
 _DEFAULT_OFFICER = "OF-1001"
 
 
@@ -51,7 +57,7 @@ class Identity:
     expires_at: int = 0
 
     def at_least(self, minimum: str) -> bool:
-        return _RANK.get(self.role, -1) >= _RANK.get(minimum, 1)
+        return _RANK.get(self.role, -1) >= _RANK.get(minimum, _RANK["Inspector"])
 
 
 def auth_mode() -> str:
@@ -226,6 +232,26 @@ _PUBLIC_PREFIXES = ("/api/health", "/api/auth/login")
 _PROTECTED_PREFIXES = ("/api/", "/trace", "/trust", "/report/")
 _CRON_PATHS = ("/api/alerts/scan", "/api/brain/consolidate")
 
+# What an aggregate-only role may call. An allowlist, so a route added later is closed to it
+# until someone decides otherwise. Chat is on it because the query path enforces the same
+# rule per template; everything here returns counts, areas or rates, not FIR rows or people.
+_AGGREGATE_PATHS = re.compile(
+    r"^/api/(?:"
+    r"health|auth/.*"
+    r"|chat(?:/.*)?"
+    r"|dashboard/.*|analytics/.*|social/.*"
+    r"|voice/.*|translate/?|docs/.*|feedback(?:/.*)?|session(?:/.*)?|export/.*"
+    r"|forecast/(?:hotspots|layer|explain|unit/.*|backtest|scorecard|status|outcomes|feedback)"
+    r"|map/(?:hotspots|districts|districts/rich|district/[^/]+|heat|gi_star|repeat_locations"
+    r"|predicted|darkzones|anchor_areas|view_summary)"
+    r"|predict(?:/(?:engine|board|dashboard|briefing|model-card|[^/]+/scenario|[^/]+/reasoning))?"
+    r"|pattern"
+    r")$|^/report/[^/]+$")
+
+
+def aggregate_path_ok(path: str) -> bool:
+    return bool(_AGGREGATE_PATHS.match(path.rstrip("/") or "/"))
+
 
 def install_gateway(app) -> None:
     """Signed mode: reject unauthenticated /api/* before any router runs (fail closed)."""
@@ -238,16 +264,32 @@ def install_gateway(app) -> None:
                 and path.startswith(_PROTECTED_PREFIXES)
                 and not path.startswith(_PUBLIC_PREFIXES)
                 and not path.rstrip("/").endswith(_CRON_PATHS)):
-            if resolve_identity(request) is None:
-                headers = {"WWW-Authenticate": "Bearer"}
-                # This refusal is returned from outside the CORS middleware, so it has to
-                # name the origin itself. Without it a browser reports a network error
-                # instead of a 401, and the frontend cannot tell an expired session from
-                # a server that is down.
-                origin = request.headers.get("origin")
-                allowed = settings.allowed_origins_list
-                if origin and (origin in allowed or "*" in allowed):
-                    headers.update({"Access-Control-Allow-Origin": origin, "Vary": "Origin"})
+            ident = resolve_identity(request)
+            if ident is not None and ident.role in AGGREGATE_ONLY_ROLES and not aggregate_path_ok(path):
+                return JSONResponse({"detail": "This role sees counts, trends and rates, not case records "
+                                               "or named people."}, status_code=403,
+                                    headers=_cors_headers(request))
+            if ident is None:
+                headers = {"WWW-Authenticate": "Bearer", **_cors_headers(request)}
                 return JSONResponse({"detail": "Authentication required."}, status_code=401,
                                     headers=headers)
+        elif (auth_mode() != "signed" and request.method != "OPTIONS"
+              and path.startswith(_PROTECTED_PREFIXES) and not path.startswith(_PUBLIC_PREFIXES)):
+            # header mode (development): the same allowlist, from the claimed role
+            ident = resolve_identity(request)
+            if ident is not None and ident.role in AGGREGATE_ONLY_ROLES and not aggregate_path_ok(path):
+                return JSONResponse({"detail": "This role sees counts, trends and rates, not case records "
+                                               "or named people."}, status_code=403,
+                                    headers=_cors_headers(request))
         return await call_next(request)
+
+
+def _cors_headers(request: Request) -> dict:
+    # A refusal from the gateway is returned from outside the CORS middleware, so it has to
+    # name the origin itself. Without it a browser reports a network error instead of the
+    # status, and the frontend cannot tell a refusal from a server that is down.
+    origin = request.headers.get("origin")
+    allowed = settings.allowed_origins_list
+    if origin and (origin in allowed or "*" in allowed):
+        return {"Access-Control-Allow-Origin": origin, "Vary": "Origin"}
+    return {}

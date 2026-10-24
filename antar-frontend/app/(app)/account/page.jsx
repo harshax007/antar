@@ -106,12 +106,17 @@ export default function AccountPage() {
   const kn = lang === "kn";
 
   const [role, setRoleState] = useState("Admin");
+  // The signed-in account, as the server issued it. A Policymaker gets the sections that do
+  // not read cases: Preferences, Security, Export Centre.
+  const [signedIn, setSignedIn] = useState(null);
   useEffect(() => {
     try {
       const s = JSON.parse(sessionStorage.getItem("antar_session") || "null");
       if (s?.role) setRoleState(s.role === "Admin" ? "Admin" : "Admin");
+      if (s?.officer) setSignedIn({ id: s.officer, role: s.role });
     } catch {}
   }, []);
+  const policy = signedIn?.role === "Policymaker";
 
   function setRole(next) {
     setRoleState(next);
@@ -288,10 +293,10 @@ export default function AccountPage() {
     { key: "security", en: "Security", kn: "ಭದ್ರತೆ", icon: "lock" },
     { key: "activity", en: "Activity Log", kn: "ಚಟುವಟಿಕೆ", icon: "file" },
     { key: "export", en: "Export Centre", kn: "ರಫ್ತು ಕೇಂದ್ರ", icon: "download" },
-    ...(isAdmin ? [{ key: "admin", en: "Admin · Data", kn: "ನಿರ್ವಾಹಕ · ಡೇಟಾ", icon: "db" }] : []),
-  ];
+    ...(isAdmin && !policy ? [{ key: "admin", en: "Admin · Data", kn: "ನಿರ್ವಾಹಕ · ಡೇಟಾ", icon: "db" }] : []),
+  ].filter((s) => !policy || ["preferences", "security", "export"].includes(s.key));
   // If a non-admin somehow lands on the admin section (after switching role back), bounce to preferences.
-  const activeSection = section === "admin" && !isAdmin ? "preferences" : section;
+  const activeSection = (section === "admin" && !isAdmin) || !SECTIONS.some((s) => s.key === section) ? "preferences" : section;
 
   // The top of each part of the account: what it is and who it is for, why it matters, and
   // the one thing to do next. Read in five seconds, before any detail.
@@ -363,8 +368,8 @@ export default function AccountPage() {
           </div>
           <div className="ac-pwho">
             <span className="ac-pkick">{kn ? "ಸೈನ್ ಇನ್ ಆಗಿರುವವರು" : "Signed in as"}</span>
-            <div className="ac-pname">{kn ? "ಅಧಿಕಾರಿ" : "Officer"}</div>
-            <div className="ac-pid">{officer.id}</div>
+            <div className="ac-pname">{policy ? (kn ? "ನೀತಿ ನಿರೂಪಕ" : "Policymaker") : (kn ? "ಅಧಿಕಾರಿ" : "Officer")}</div>
+            <div className="ac-pid">{policy ? signedIn.id : officer.id}</div>
           </div>
         </div>
 

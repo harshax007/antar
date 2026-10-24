@@ -2109,6 +2109,8 @@ def build_spec(template_id: str, params: dict) -> QuerySpec:
     tmpl = TEMPLATES.get(template_id)
     if not tmpl:
         raise KeyError(f"Unknown template_id {template_id!r}. Valid: {list(TEMPLATES)}")
+    if not tmpl.internal and template_id not in AGGREGATE_TEMPLATES and aggregate_only_caller():
+        raise AggregateOnlyError(f"{template_id} lists cases or people; this role sees aggregates only")
     # The LLM frequently emits explicit nulls or empty strings (e.g. {"limit": null} or
     # {"limit": ""}) for params it has no value for; either OVERRIDES the field default and
     # then fails int/str validation. Drop both so the model defaults apply.
@@ -2119,6 +2121,24 @@ def build_spec(template_id: str, params: dict) -> QuerySpec:
 
 # Roles from this rank up see case rows statewide.
 STATEWIDE_FROM = "Analyst"
+
+# Templates that answer with counts, rates or rankings and never an FIR row or a person.
+# An aggregate-only role (auth_middleware.AGGREGATE_ONLY_ROLES) may run these and the
+# internal ones the server aggregates from itself (the anomaly scan, the map density);
+# any other template is refused for it in build_spec.
+AGGREGATE_TEMPLATES = frozenset({"T3", "T7", "T8", "T11", "T13", "T16", "T17", "T22", "T23",
+                                 "T24", "T25", "T26", "T27", "T28", "T30"})
+
+
+class AggregateOnlyError(PermissionError):
+    """A case- or person-level template asked for by an aggregate-only role."""
+
+
+def aggregate_only_caller() -> bool:
+    from app.core import security_context
+    from app.core.auth_middleware import AGGREGATE_ONLY_ROLES
+    ctx = security_context.current()
+    return bool(ctx is not None and ctx.origin != "system" and ctx.role in AGGREGATE_ONLY_ROLES)
 
 
 def scoped_posting() -> str:

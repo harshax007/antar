@@ -1062,8 +1062,10 @@ async def query_agent_run(
     
     # -- CACHE LOOKUP --
     # the answer depends on whose question it is when case rows are limited to a posting
-    from app.services.zcql_repo import scoped_posting as _scoped_posting
-    cache_key = f"{lang}:{_scoped_posting().lower()}:{user_text.strip().lower()}"
+    from app.services.zcql_repo import scoped_posting as _scoped_posting, aggregate_only_caller as _agg_only
+    # an aggregate-only caller gets its own cache line: an Inspector's cached list of FIRs
+    # must never be served to it, nor its refusal to an Inspector
+    cache_key = f"{lang}:{_scoped_posting().lower()}:{'agg:' if _agg_only() else ''}{user_text.strip().lower()}"
     cached = _get_cached_query(cache_key)
     if cached:
         return cached
@@ -1161,6 +1163,30 @@ async def query_agent_run(
                     "agent": "query", "suggested_followups": _starter_suggestions(answer_lang),
                     "reasoning": [{"step": "filters", "detail":
                                    f"Refused: 'absconding' cannot be combined with {template_id}."}],
+                    "llm_answer": False}
+
+    # Aggregate-only roles: a question that would list FIRs or people is refused here, before
+    # it runs and before self-heal (which mines rows directly) can try to answer it another way.
+    if _agg_only():
+        from app.services.zcql_repo import AGGREGATE_TEMPLATES as _AGG
+        # "How many burglaries in Mysuru City in 2025" routes to the case LIST, whose length
+        # is the count. For this role the same filters are counted instead (T8: the count by
+        # investigation status), so the question is answered without a single FIR row.
+        if template_id in ("T1", "T12") and isinstance(params, dict) and not params.get("arrest_status"):
+            keep = ("zones", "crime_types", "date_from", "date_to", "period", "stations", "heads", "unapplied")
+            params = {k: v for k, v in params.items() if k in keep}
+            log_step(session_id, "query", "aggregate_only", user_text[:80], f"{template_id} counted as T8",
+                     int((time.time() - t0) * 1000))
+            template_id = "T8"
+        if template_id not in _AGG:
+            log_step(session_id, "query", "aggregate_only", user_text[:80], template_id,
+                     int((time.time() - t0) * 1000))
+            return {"answer": aggregate_only_message(answer_lang), "rows": [], "citations": [],
+                    "template_id": "UNRESOLVED", "params": {}, "agent": "query",
+                    "suggested_followups": AGGREGATE_EXAMPLES[answer_lang if answer_lang == "kn" else "en"],
+                    "reasoning": [{"step": "policy", "detail":
+                                   f"Refused for an aggregate-only role: {template_id} would list cases "
+                                   "or people. Counts, trends, rates and rankings are available."}],
                     "llm_answer": False}
 
     # Resolve-or-refuse, BEFORE the template runs: an unresolvable filter must not reach
@@ -1438,6 +1464,26 @@ def _bound_to_today(spec) -> None:
         return
     from datetime import date as _date
     spec.filters.append(Filter("occurred_at", "<=", f"{_date.today().isoformat()} 23:59"))
+
+
+AGGREGATE_EXAMPLES = {
+    "en": ["How many burglaries were registered in Mysuru City in 2025?",
+           "Which districts had the most FIRs this year?",
+           "What is the conviction rate by district?",
+           "How does crime change during Dasara?"],
+    "kn": ["2025 ರಲ್ಲಿ ಮೈಸೂರು ನಗರದಲ್ಲಿ ಎಷ್ಟು ಕನ್ನಗಳ್ಳತನ ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆ?",
+           "ಈ ವರ್ಷ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು FIR ಗಳಿವೆ?",
+           "ಜಿಲ್ಲಾವಾರು ಶಿಕ್ಷೆಯ ಪ್ರಮಾಣ ಎಷ್ಟು?",
+           "ದಸರಾ ಸಮಯದಲ್ಲಿ ಅಪರಾಧ ಹೇಗೆ ಬದಲಾಗುತ್ತದೆ?"],
+}
+
+
+def aggregate_only_message(lang: str = "en") -> str:
+    if lang == "kn":
+        return ("ನಿಮ್ಮ ಪಾತ್ರಕ್ಕೆ ಎಣಿಕೆಗಳು, ಪ್ರವೃತ್ತಿಗಳು, ದರಗಳು ಮತ್ತು ಶ್ರೇಣಿಗಳು ಮಾತ್ರ ಲಭ್ಯ. "
+                "ಪ್ರತ್ಯೇಕ FIR ಗಳು ಅಥವಾ ಹೆಸರಿಸಿದ ವ್ಯಕ್ತಿಗಳು ಲಭ್ಯವಿಲ್ಲ. ಉದಾಹರಣೆಗೆ, ಜಿಲ್ಲೆ ಅಥವಾ ವರ್ಷದ ಪ್ರಕಾರ ಎಷ್ಟು ಪ್ರಕರಣಗಳು ಎಂದು ಕೇಳಿ.")
+    return ("Your role sees counts, trends, rates and rankings, not individual FIRs or named people. "
+            "Ask how many cases, where, when, or how outcomes compare, for example by district or year.")
 
 
 def _execute(template_id: str, params: dict) -> list[dict]:
