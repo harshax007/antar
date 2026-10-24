@@ -3518,8 +3518,10 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .ab-meaning-text em { color: var(--cyan, #22E6F0); font-style: normal; font-weight: 500; }
 
 /* 2. Middle 2-Column Grid: How it started + Vision */
-.ab-mid-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
-.ab-card { padding: 20px 22px; border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08)); border-radius: 12px; background: rgba(255, 255, 255, 0.015); display: flex; flex-direction: column; justify-content: center; }
+/* two sections side by side on a rule, not two boxes */
+.ab-mid-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; align-items: stretch; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.ab-card { padding: 20px 28px 4px 0; border: 0; border-radius: 0; background: none; display: flex; flex-direction: column; justify-content: flex-start; }
+.ab-card + .ab-card { padding-left: 28px; border-left: 1px solid rgba(255, 255, 255, 0.08); }
 [data-theme="light"] .ab-card { background: #FFFFFF; }
 .ab-sec-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan, #22E6F0); margin-bottom: 10px; }
 
@@ -3536,10 +3538,11 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 
 /* 3. Bottom Row: Team Members */
 .ab-team-section { display: flex; flex-direction: column; }
-.ab-team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.ab-member { padding: 16px 20px; border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08)); border-radius: 12px; background: rgba(255, 255, 255, 0.015); display: flex; align-items: flex-start; gap: 14px; transition: border-color 0.2s ease; }
+.ab-team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.ab-member { padding: 16px 28px 16px 0; border: 0; border-radius: 0; background: none; display: flex; align-items: flex-start; gap: 14px; }
+.ab-member + .ab-member { padding-left: 28px; border-left: 1px solid rgba(255, 255, 255, 0.08); }
 [data-theme="light"] .ab-member { background: #FFFFFF; }
-.ab-member:hover { border-color: rgba(34, 230, 240, 0.28); }
+.ab-member:hover .ab-member-name { color: #fff; }
 .ab-avatar { width: 40px; height: 40px; border-radius: 10px; background: rgba(34, 230, 240, 0.08); border: 1px solid rgba(34, 230, 240, 0.25); color: var(--cyan, #22E6F0); font-family: 'Chakra Petch', sans-serif; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; margin-top: 2px; }
 .ab-member-body { flex: 1; min-width: 0; }
 .ab-member-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 5px; }

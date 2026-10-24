@@ -723,7 +723,8 @@ const PREDICT_MODERN_STYLES = `
 .pxd-hd2 { justify-content: flex-start; align-items: center; gap: 12px; }
 .pxd-hd2 > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .pxd-ttl { letter-spacing: 0; }
-.pxd-ttl i { font-style: normal; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: #B4C2D6; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1px 8px; margin-left: 6px; vertical-align: 1px; }
+.pxd-ttl i { font-style: normal; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: #8A99AD; margin-left: 8px; }
+.pxd-ttl i::before { content: "· "; color: #5B6B80; }
 .pxd-note { font-size: 12px; line-height: 1.45; color: #B4C2D6; }
 .pxd-sub, .pxd-granhint { font-family: 'Inter', sans-serif; font-size: 12px; }
 .pxd-xlabels { font-family: 'Inter', sans-serif; font-size: 11px; }
@@ -897,16 +898,18 @@ const PREDICT_MODERN_STYLES = `
 .pxd-rep { margin-left: 6px; font: 600 11px 'JetBrains Mono', monospace; color: #8FA3BC; }
 .pxd-more { display: block; margin: 8px auto 4px; }
 /* Sections folded until asked for */
-.px-fold { margin-top: 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,.07); background: rgba(10,16,28,.5); }
-.px-fold > summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 16px 20px 16px 40px; position: relative; }
+.px-fold { margin-top: 24px; border: 0; border-top: 1px solid rgba(255,255,255,.1); border-radius: 0; background: none; }
+.px-fold > summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 16px 0 16px 24px; position: relative; }
 .px-fold > summary::-webkit-details-marker { display: none; }
-.px-fold > summary::before { content: "▸"; position: absolute; left: 18px; top: 14px; color: #22E6F0; transition: transform .2s; }
+.px-fold > summary::before { content: "▸"; position: absolute; left: 4px; top: 14px; color: #22E6F0; transition: transform .2s; }
 .px-fold[open] > summary::before { transform: rotate(90deg); }
 .px-fold > summary b { font: 650 14px 'Inter', sans-serif; color: #EEF3FA; }
 .px-fold > summary span { font-size: 13px; line-height: 1.5; color: #8FA3BC; }
 .px-fold > summary:hover b { color: #fff; }
 .px-fold[open] { padding-bottom: 16px; }
-.px-fold[open] > :not(summary) { margin-left: 16px; margin-right: 16px; }
+.px-fold[open] > :not(summary) { margin-left: 24px; margin-right: 0; }
+/* what a fold holds sits on the page, not in a second box */
+.px-fold .px-hyp, .px-fold .px-conf { margin-top: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
 .px-chip-btn { cursor: pointer; }
 .px-chip-btn:hover { border-color: rgba(34,230,240,.4); color: #EEF3FA; }
 .px-top .pxd-card { min-height: 0; height: 560px; max-height: 560px; }

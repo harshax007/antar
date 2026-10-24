@@ -102,24 +102,35 @@ export default function MoneyTrail() {
     <section className="mt-page">
       <div className="mt-wrap">
         <header className="mt-head">
-          <div>
-            <span className="mt-eyebrow">{L("Financial crime", "ಆರ್ಥಿಕ ಅಪರಾಧ")}</span>
-            <h1 className="mt-title">{L("Money trail", "ಹಣದ ಜಾಡು")}</h1>
-            <p className="mt-lede">{L("Follow money from a complainant's account through the UPI IDs named in FIRs to where it ended up: who paid whom, how fast it moved on, and which cases each account appears in.",
-                                       "ದೂರುದಾರರ ಖಾತೆಯಿಂದ FIR ಗಳಲ್ಲಿ ಹೆಸರಿಸಿದ UPI ಐಡಿಗಳ ಮೂಲಕ ಹಣ ಎಲ್ಲಿಗೆ ತಲುಪಿತು ಎಂದು ಅನುಸರಿಸಿ.")}</p>
+          <span className="mt-eyebrow">{L("Financial crime", "ಆರ್ಥಿಕ ಅಪರಾಧ")}</span>
+          <h1 className="mt-title">{L("Follow the money behind an FIR", "FIR ಹಿಂದಿನ ಹಣವನ್ನು ಅನುಸರಿಸಿ")}</h1>
+          <p className="mt-lede">{L("For investigating officers and financial-crime units: where a complainant's money went after a UPI fraud, which accounts collected it and passed it on, and who it reached.",
+                                   "ತನಿಖಾಧಿಕಾರಿಗಳು ಮತ್ತು ಆರ್ಥಿಕ ಅಪರಾಧ ಘಟಕಗಳಿಗೆ: UPI ವಂಚನೆಯ ನಂತರ ದೂರುದಾರರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು, ಯಾವ ಖಾತೆಗಳು ಸಂಗ್ರಹಿಸಿ ಮುಂದೆ ಕಳುಹಿಸಿದವು, ಯಾರಿಗೆ ತಲುಪಿತು.")}</p>
+          <p className="mt-why">{L("Money leaves a mule account within hours, and a freeze request has to name the account and its transactions. Start with the account at the top of 01, read its warning signs in 03, then export its transactions for the bank.",
+                                  "ಹಣ ಕೆಲವೇ ಗಂಟೆಗಳಲ್ಲಿ ಖಾತೆಯಿಂದ ಹೊರಹೋಗುತ್ತದೆ; ತಡೆ ವಿನಂತಿಗೆ ಖಾತೆ ಮತ್ತು ವಹಿವಾಟುಗಳು ಬೇಕು. 01 ರ ಮೇಲಿನ ಖಾತೆಯಿಂದ ಆರಂಭಿಸಿ, 03 ರಲ್ಲಿ ಎಚ್ಚರಿಕೆಗಳನ್ನು ಓದಿ, ನಂತರ ಬ್ಯಾಂಕ್‌ಗಾಗಿ ರಫ್ತು ಮಾಡಿ.")}</p>
+          <div className="mt-cta">
+            <button type="button" className="ui-btn ui-btn--primary" disabled={!sel || exporting === true} onClick={() => sel && exportCsv(sel)}>
+              {exporting === true ? L("Preparing…", "ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…")
+                : exporting === "error" ? L("Export failed, try again", "ರಫ್ತು ವಿಫಲ, ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ")
+                : L("Export for a bank request", "ಬ್ಯಾಂಕ್ ವಿನಂತಿಗಾಗಿ ರಫ್ತು")}
+            </button>
+            {sel && <span className="mt-cta-note">{L(`${sel}: every transaction, as CSV`, `${sel}: ಎಲ್ಲ ವಹಿವಾಟುಗಳು, CSV`)}</span>}
           </div>
-          {ov && (
-            <dl className="mt-stats">
-              <div><dt>{L("Money traced", "ಪತ್ತೆಹಚ್ಚಿದ ಹಣ")}</dt><dd>{rupees(ov.amount)}</dd></div>
-              <div><dt>{L("Transactions", "ವಹಿವಾಟುಗಳು")}</dt><dd>{ov.transactions.toLocaleString("en-IN")}</dd></div>
-              <div><dt>{L("FIRs linked", "ಸಂಬಂಧಿತ FIR")}</dt><dd>{ov.firs.toLocaleString("en-IN")}</dd></div>
-              <div><dt>{L("Accounts flagged", "ಗುರುತಿಸಿದ ಖಾತೆಗಳು")}</dt><dd>{ov.flagged}</dd></div>
-            </dl>
-          )}
         </header>
 
+        {ov && (
+          <dl className="mt-stats">
+            <div><dt>{L("Money traced", "ಪತ್ತೆಹಚ್ಚಿದ ಹಣ")}</dt><dd>{rupees(ov.amount)}</dd></div>
+            <div><dt>{L("Transactions", "ವಹಿವಾಟುಗಳು")}</dt><dd>{ov.transactions.toLocaleString("en-IN")}</dd></div>
+            <div><dt>{L("FIRs linked", "ಸಂಬಂಧಿತ FIR")}</dt><dd>{ov.firs.toLocaleString("en-IN")}</dd></div>
+            <div><dt>{L("Accounts with warning signs", "ಎಚ್ಚರಿಕೆಯ ಖಾತೆಗಳು")}</dt><dd>{ov.flagged}</dd></div>
+          </dl>
+        )}
+
         <div className="mt-grid">
-          <aside className="mt-list">
+          <aside className="mt-list" aria-labelledby="mt-h-list">
+            <h2 className="mt-h" id="mt-h-list"><span>01</span>{L("Accounts worth a look", "ಗಮನಿಸಬೇಕಾದ ಖಾತೆಗಳು")}</h2>
+            <p className="mt-sub">{L("Most warning signs first, then the most money received.", "ಹೆಚ್ಚು ಎಚ್ಚರಿಕೆಗಳು ಮೊದಲು, ನಂತರ ಹೆಚ್ಚು ಹಣ ಪಡೆದವು.")}</p>
             <form className="mt-search" onSubmit={doSearch} role="search">
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={L("UPI ID, account, FIR or suspect id", "UPI ಐಡಿ, ಖಾತೆ, FIR ಅಥವಾ ಶಂಕಿತ ಐಡಿ")}
                      aria-label={L("Find an account", "ಖಾತೆ ಹುಡುಕಿ")} />
@@ -134,24 +145,26 @@ export default function MoneyTrail() {
                 ))}
               </div>
             )}
-            <h2>{L("Accounts worth a look", "ಗಮನಿಸಬೇಕಾದ ಖಾತೆಗಳು")}</h2>
-            <p className="mt-sub">{L("Most warning signs first, then the most money received.", "ಹೆಚ್ಚು ಎಚ್ಚರಿಕೆ ಸೂಚನೆಗಳು ಮೊದಲು.")}</p>
-            <ol>
+            <ol className="mt-accounts">
               {(ov?.top || []).map((a) => (
                 <li key={a.account_id} className={a.account_id === root ? "on" : ""}>
                   <button type="button" onClick={() => setRoot(a.account_id)}>
                     <span className="row"><b>{a.account_id}</b><em>{rupees(a.total_in)}</em></span>
                     <span className="meta">{[a.district, a.firs ? L(`${a.firs} FIRs`, `${a.firs} FIR`) : null, L(`${a.senders} senders`, `${a.senders} ಕಳುಹಿಸಿದವರು`)].filter(Boolean).join(" · ")}</span>
-                    {a.flag_titles.length > 0 && <span className="flags">{a.flag_titles.map((t) => <i key={t}>{t}</i>)}</span>}
+                    {a.flag_titles.length > 0 && (
+                      <span className="warn">{L(`${a.flag_titles.length} warning ${a.flag_titles.length === 1 ? "sign" : "signs"}`, `${a.flag_titles.length} ಎಚ್ಚರಿಕೆ`)}
+                        <span>{a.flag_titles.join(" · ")}</span></span>
+                    )}
                   </button>
                 </li>
               ))}
             </ol>
           </aside>
 
-          <section className="mt-graphwrap" aria-label={L("Money trail graph", "ಹಣದ ಜಾಡಿನ ಗ್ರಾಫ್")}>
+          <section className="mt-graphwrap" aria-labelledby="mt-h-graph">
+            <h2 className="mt-h" id="mt-h-graph"><span>02</span>{L("How the money moved", "ಹಣ ಹೇಗೆ ಸಾಗಿತು")}</h2>
             <div className="mt-graphbar">
-              <b>{root || "…"}</b>
+              <p className="mt-sub">{L("From", "ಇಂದ")} <b>{root || "…"}</b>. {L("Click an account to read it in 03.", "03 ರಲ್ಲಿ ಓದಲು ಖಾತೆ ಕ್ಲಿಕ್ ಮಾಡಿ.")}</p>
               <div className="mt-depth" role="group" aria-label={L("How far to follow", "ಎಷ್ಟು ದೂರ ಅನುಸರಿಸಬೇಕು")}>
                 {[1, 2, 3].map((d) => (
                   <button key={d} type="button" className={depth === d ? "on" : ""} aria-pressed={depth === d} onClick={() => setDepth(d)}>
@@ -168,11 +181,12 @@ export default function MoneyTrail() {
             {trail?.truncated && <p className="mt-sub">{L("Showing the 70 closest accounts. Pick one to follow it further.", "ಹತ್ತಿರದ 70 ಖಾತೆಗಳನ್ನು ತೋರಿಸಲಾಗಿದೆ.")}</p>}
           </section>
 
-          <aside className="mt-detail" aria-live="polite">
+          <aside className="mt-detail" aria-live="polite" aria-labelledby="mt-h-acct">
+            <h2 className="mt-h" id="mt-h-acct"><span>03</span>{L("The account", "ಖಾತೆ")}</h2>
             {!acct ? <p className="mt-sub">{L("Reading the account…", "ಖಾತೆ ಓದಲಾಗುತ್ತಿದೆ…")}</p> : acct.error ? <p className="mt-sub">{L("The account could not be read.", "ಖಾತೆಯನ್ನು ಓದಲಾಗಲಿಲ್ಲ.")}</p> : (
               <>
-                <span className="mt-kind" style={{ color: KIND[acct.account.kind]?.border }}>{L(KIND[acct.account.kind]?.en, KIND[acct.account.kind]?.kn)}</span>
-                <h2 className="mt-acct">{acct.account.account_id}</h2>
+                <span className="mt-kind"><i style={{ background: KIND[acct.account.kind]?.border }} />{L(KIND[acct.account.kind]?.en, KIND[acct.account.kind]?.kn)}</span>
+                <p className="mt-acct">{acct.account.account_id}</p>
                 <p className="mt-sub">{[acct.account.label !== acct.account.account_id ? acct.account.label : null, acct.account.district,
                   acct.account.bank && !/^(bank|upi)$/i.test(acct.account.bank) ? acct.account.bank : null].filter(Boolean).join(" · ")}</p>
                 {acct.suspect && <p className="mt-sus">{L("Held by", "ಹೊಂದಿರುವವರು")} <b>{acct.suspect.full_name || acct.suspect.suspect_id}</b> ({acct.suspect.suspect_id}){acct.suspect.prior_count != null ? L(`, ${acct.suspect.prior_count} prior cases`, `, ${acct.suspect.prior_count} ಹಿಂದಿನ ಪ್ರಕರಣಗಳು`) : ""}</p>}
@@ -184,7 +198,7 @@ export default function MoneyTrail() {
                 {acct.flags.length > 0 && (
                   <>
                     <h3>{L("Warning signs", "ಎಚ್ಚರಿಕೆ ಸೂಚನೆಗಳು")}</h3>
-                    <ul className="mt-flags">{acct.flags.map((f) => <li key={f.key}><b>{f.title}</b><span>{f.detail}</span></li>)}</ul>
+                    <ol className="mt-flags">{acct.flags.map((f, k) => <li key={f.key}><span className="n">{String(k + 1).padStart(2, "0")}</span><b>{f.title}</b><span className="d">{f.detail}</span></li>)}</ol>
                   </>
                 )}
                 {acct.firs.length > 0 && (
@@ -213,17 +227,13 @@ export default function MoneyTrail() {
                     );
                   })}
                 </ul>
-                <div className="mt-actions">
-                  {acct.account.account_id !== root && (
+                {acct.account.account_id !== root && (
+                  <div className="mt-actions">
                     <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={() => setRoot(acct.account.account_id)}>
                       {L("Follow the money from here", "ಇಲ್ಲಿಂದ ಹಣವನ್ನು ಅನುಸರಿಸಿ")}
                     </button>
-                  )}
-                  <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" disabled={exporting === true} onClick={() => exportCsv(acct.account.account_id)}
-                          title={L("All transactions of this account, for a bank or financial-intelligence request", "ಈ ಖಾತೆಯ ಎಲ್ಲ ವಹಿವಾಟುಗಳು")}>
-                    {exporting === true ? L("Preparing…", "ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…") : exporting === "error" ? L("Export failed, try again", "ರಫ್ತು ವಿಫಲ") : L("Export transactions (CSV)", "ವಹಿವಾಟು ರಫ್ತು (CSV)")}
-                  </button>
-                </div>
+                  </div>
+                )}
               </>
             )}
           </aside>

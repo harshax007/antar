@@ -607,6 +607,12 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
 
       {/* ── Top-Left · tools column (kept short so it never meets the calendar) ── */}
       <div className="bsx-tools">
+        {/* The first five seconds: what this screen is and who it is for, kept to three lines */}
+        <header className="bsx-intro">
+          <h1>{kn ? "ಬ್ರೈನ್ · ಪ್ರತಿ FIR, ಸಂಪರ್ಕಿತ" : "Brain · every FIR, linked"}</h1>
+          <p>{kn ? "ತನಿಖಾಧಿಕಾರಿಗಳಿಗೆ: ಯಾವ ಪ್ರಕರಣಗಳು ಆರೋಪಿ, ವಾಹನ, ಫೋನ್ ಅಥವಾ UPI ಹಂಚಿಕೊಳ್ಳುತ್ತವೆ. ಗುಂಪು ನೋಡಲು ಚುಕ್ಕೆ ಕ್ಲಿಕ್ ಮಾಡಿ."
+                 : "For investigators: which cases share an accused, vehicle, phone or UPI. Click a dot to see its group."}</p>
+        </header>
 
         {view === "net" && (
           <div className={`bs-search ${noHit ? "err" : ""}`}>

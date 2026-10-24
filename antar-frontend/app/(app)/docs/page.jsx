@@ -11,7 +11,7 @@ import AgentDoc from "@/components/AgentDoc";
 import { Mascot } from "page-mascot";
 import { ChevronDown } from "lucide-react";
 
-const ANTAR_ASCII = ` █████ ███   ██║███████ █████ ██████ 
+const ANTAR_ASCII = ` █████ ███   ██║███████ █████ ██████
 ██╔══██╗████║ ██║╔══██╔══╗██╔══██╗
 ███████║██╔██╗ ██║   ║   ███████║██████╝
 ██╔══██║██║╚██╗██║   ║   ██╔══██║██╔══██╗
@@ -21,20 +21,20 @@ const ANTAR_ASCII = ` █████ ███   ██║███████
 const ASCII_LABELS = {
   think: `████████╗██╗  ██╗██╗███╗   ██╗██╗  ██╗
 ╚══██╔══╝██║  ██║██║████╗  ██║██║ ██╔╝
-   ██║   ███████║██║██╔██╗ ██║█████╔╝ 
-   ██║   ██╔══██║██║██║╚██╗██║██╔═██╗ 
+   ██║   ███████║██║██╔██╗ ██║█████╔╝
+   ██║   ██╔══██║██║██║╚██╗██║██╔═██╗
    ██║   ██║  ██║██║██║ ╚████║██║  ██╗
    ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝`,
   connect: ` ██████╗ ██████╗ ███╗   ██╗███╗   ██╗███████╗ ██████╗████████╗
 ██╔════╝██╔═══██╗████╗  ██║████╗  ██║██╔════╝██╔════╝╚══██╔══╝
-██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██║        ██║   
-██║     ██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██║        ██║   
-╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║███████╗╚██████╗   ██║   
+██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██║        ██║
+██║     ██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██║        ██║
+╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║███████╗╚██████╗   ██║
  ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═╝   `,
   anticipate: ` █████╗ ███╗   ██╗████████╗██╗ ██████╗██╗██████╗  █████╗ ████████╗███████╗
 ██╔══██╗████╗  ██║╚══██╔══╝██║██╔════╝██║██╔══██╗██╔══██╗╚══██╔══╝██╔════╝
-███████║██╔██╗ ██║   ██║   ██║██║     ██║██████╔╝███████║   ██║   █████╗  
-██╔══██║██║╚██╗██║   ██║   ██║██║     ██║██╔═══╝ ██╔══██║   ██║   ██╔══╝  
+███████║██╔██╗ ██║   ██║   ██║██║     ██║██████╔╝███████║   ██║   █████╗
+██╔══██║██║╚██╗██║   ██║   ██║██║     ██║██╔═══╝ ██╔══██║   ██║   ██╔══╝
 ██║  ██║██║ ╚████║   ██║   ██║╚██████╗██║██║     ██║  ██║   ██║   ███████╗
 ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚═╝ ╚═════╝╚═╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚══════╝`,
 };
@@ -70,7 +70,7 @@ const clean = (s) => {
   // Apply typography cleanups globally to all streams
   str = str.replace(/\[(?:COMPUTED|VERIFIED|PATTERN|INFERRED)\]\s*/gi, '');
   str = str.replace(/PATTERNS/g, 'Patterns');
-  
+
   // Remove AI-generated "(--)" and standalone em-dashes "—"
   str = str.replace(/\(--\)/g, '');
   str = str.replace(/(^|\s)—(\s|$)/g, '$1$2');
@@ -133,7 +133,7 @@ function StageTerminal({ stage, run }) {
         <span style={{ color: status === "done" ? "#94A3B8" : statusColor, fontWeight: 500, fontSize: "9px", letterSpacing: "0.05em", padding: "2px 6px", borderRadius: "4px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", textTransform: "capitalize" }}>{statusLabel}</span>
       </div>
 
-      
+
 
       {/* Log */}
       <div style={{ padding: "10px 14px", background: "#02040A", fontFamily: "'JetBrains Mono', monospace", fontSize: "10.5px", lineHeight: 1.7, minHeight: "150px", overflowY: "auto", flex: 1 }}>
@@ -357,7 +357,7 @@ const RELEVANT_STAGE_RESPONSES = {
 
 function getOneLineAgentResponse(stage, qText, lang, fullText) {
   const q = String(qText || "").toLowerCase();
-  
+
   let key = null;
   if (q.includes("repeat offender") || q.includes("rajajinagar") || q.includes("ಪುನರಾವರ್ತಿತ")) {
     key = "repeat_offenders";
@@ -372,8 +372,8 @@ function getOneLineAgentResponse(stage, qText, lang, fullText) {
   }
 
   if (key && RELEVANT_STAGE_RESPONSES[key]?.[stage]) {
-    return lang === "kn" 
-      ? RELEVANT_STAGE_RESPONSES[key][stage].kn 
+    return lang === "kn"
+      ? RELEVANT_STAGE_RESPONSES[key][stage].kn
       : RELEVANT_STAGE_RESPONSES[key][stage].en;
   }
 
@@ -405,22 +405,22 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
   const { lang } = useLang();
   const cfg = STAGES.find((s) => s.key === stage);
   const status = run?.status || "waiting";
-  
+
   const activeQ = run?.msg?.question || question || (lang === "kn" ? "ರಾಜಾಜಿನಗರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧಿಗಳು ಯಾರು?" : "Who are the repeat offenders in Rajajinagar?");
   const oneLineAnswer = getOneLineAgentResponse(stage, activeQ, lang, run?.msg?.text);
-  
+
   const statusLabel = status === "done" ? (lang === "kn" ? "ಉತ್ತರವನ್ನು ತೋರಿಸು" : "Show Response") : status === "running" ? (lang === "kn" ? "ಕಾರ್ಯಗತಗೊಳ್ಳುತ್ತಿದೆ..." : "Running...") : status === "offline" ? (lang === "kn" ? "ಆಫ್‌ಲೈನ್" : "Offline") : (lang === "kn" ? "ಕ್ಯೂನಲ್ಲಿದೆ" : "Queued");
   const statusColor = status === "done" ? "#10B981" : status === "running" ? cfg.color : status === "offline" ? "#EF4444" : "#1E293B";
-  const statusMessage = status === "running" 
-    ? (lang === "kn" ? "ಗುಪ್ತಚರವನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..." : "Computing intelligence...") 
+  const statusMessage = status === "running"
+    ? (lang === "kn" ? "ಗುಪ್ತಚರವನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..." : "Computing intelligence...")
     : (lang === "kn" ? cfg.desc_kn : cfg.desc);
-  
+
   const actionVerb = cfg.key === 'think' ? (lang === "kn" ? 'ಯೋಚಿಸುತ್ತಿದೆ' : 'Thinking') : cfg.key === 'connect' ? (lang === "kn" ? 'ಸಂಪರ್ಕಿಸುತ್ತಿದೆ' : 'Connecting') : (lang === "kn" ? 'ಊಹಿಸುತ್ತಿದೆ' : 'Anticipating');
 
   return (
     <div style={{ marginBottom: "12px" }}>
       {/* Compressed Header */}
-      <motion.div 
+      <motion.div
         className="dc-qrow"
         onClick={onToggle}
         whileHover={{ backgroundColor: "rgba(10,15,26,0.96)" }}
@@ -437,12 +437,12 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
       >
         <div style={{ width: "150px", flexShrink: 0, display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>{cfg.num}</span>
-          <span style={{ 
-            margin: 0, 
-            fontFamily: "'Jersey 10', sans-serif", 
-            fontSize: "32px", 
-            fontWeight: 400, 
-            letterSpacing: "0.05em", 
+          <span style={{
+            margin: 0,
+            fontFamily: "'Jersey 10', sans-serif",
+            fontSize: "32px",
+            fontWeight: 400,
+            letterSpacing: "0.05em",
             color: cfg.color,
             textTransform: "uppercase",
             lineHeight: 1
@@ -452,24 +452,24 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
         </div>
         {/* Divider */}
         <span style={{ width: "1px", height: "14px", background: "rgba(255,255,255,0.1)" }} />
-        
+
         <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "10.5px", textTransform: "lowercase", color: status === "done" ? "#94A3B8" : "#475569" }}>
            {statusMessage}
         </span>
-        
+
         <div className="dc-qrow-status" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", minWidth: "120px", justifyContent: "flex-end" }}>
-          <motion.div 
-            animate={{ opacity: status === "running" ? [0.4, 1, 0.4] : 1 }} 
-            transition={{ repeat: status === "running" ? Infinity : 0, duration: 1.5 }} 
+          <motion.div
+            animate={{ opacity: status === "running" ? [0.4, 1, 0.4] : 1 }}
+            transition={{ repeat: status === "running" ? Infinity : 0, duration: 1.5 }}
             style={{ display: "flex", alignItems: "center", gap: "8px" }}
           >
             <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: statusColor, boxShadow: `0 0 10px ${statusColor}` }} />
-            <span style={{ 
-              fontFamily: "'Inter', sans-serif", 
-              fontSize: "11px", 
-              color: status === "done" ? "#FFFFFF" : (status === "running" ? "#64748B" : statusColor), 
-              fontWeight: 500, 
-              letterSpacing: "0.02em", 
+            <span style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: "11px",
+              color: status === "done" ? "#FFFFFF" : (status === "running" ? "#64748B" : statusColor),
+              fontWeight: 500,
+              letterSpacing: "0.02em",
               textTransform: status === "running" ? "capitalize" : "none",
               width: "100px",
               textAlign: "left"
@@ -477,8 +477,8 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
               {status === "running" ? `${actionVerb}...` : statusLabel}
             </span>
           </motion.div>
-          <motion.div 
-            animate={{ rotate: isExpanded ? 180 : 0 }} 
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
             style={{ color: "#475569", marginLeft: "6px", display: "flex", alignItems: "center" }}
           >
             <ChevronDown size={14} />
@@ -497,18 +497,18 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
             style={{ overflow: "hidden" }}
           >
             <div style={{ padding: "16px 0 8px 0", display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr", minHeight: "360px" }} className="antar-expanded-grid">
-              
+
               {/* Left: Terminal */}
               <StageTerminal stage={stage} run={run} />
-              
+
               {/* Right: 3D Slot + Response */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                  <AnimSlot stage={stage} isActive={status === "running"} isDone={status === "done" || status === "offline"} infoText={oneLineAnswer} />
-                 
+
                  {/* Specific Response directly from this agent */}
-                 <div style={{ 
+                 <div style={{
                     flex: 1,
-                    background: "rgba(3,5,12,0.9)", border: `1px solid ${cfg.color}35`, 
+                    background: "rgba(3,5,12,0.9)", border: `1px solid ${cfg.color}35`,
                     borderRadius: "10px", padding: "16px",
                     display: "flex", flexDirection: "column"
                  }}>
@@ -516,7 +516,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
                       <span style={{ fontWeight: 600 }}>{lang === "kn" ? "ಏಜೆಂಟ್ ಪ್ರತಿಕ್ರಿಯೆ" : "Agent Response"}</span>
                       <span style={{ fontSize: "8.5px", padding: "2px 6px", borderRadius: "4px", background: `${cfg.color}15`, border: `1px solid ${cfg.color}35`, color: cfg.color }}>{cfg.key.toUpperCase()} ENGINE</span>
                     </div>
-                    
+
                     {activeQ && (
                       <div style={{
                         background: "rgba(255,255,255,0.02)",
@@ -533,7 +533,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
                         "{activeQ}"
                       </div>
                     )}
-                    
+
                     {status === "done" && run?.msg?.text && (
                       <div style={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.6, overflowY: "auto", maxHeight: "180px", fontFamily: "'Inter', sans-serif", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "10px" }}>
                         <FormattedResponse text={clean(run.msg.text)} />
@@ -724,7 +724,7 @@ export default function DocsPage() {
 function DocsFull() {
   const router = useRouter();
   const { lang, toggleLang } = useLang();
-  
+
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
@@ -757,11 +757,11 @@ function DocsFull() {
   const [subTitleDone, setSubTitleDone] = useState(false);
   const [question, setQuestion] = useState("");
   const [customQ, setCustomQ] = useState("");
-  
+
   const [runs, setRuns] = useState({});
   const runsRef = useRef({});
   const inflightRef = useRef({});
-  
+
   // Accordion state
   const [expandedStage, setExpandedStage] = useState(null);
   const [expandedDetail, setExpandedDetail] = useState(null);
@@ -826,15 +826,15 @@ function DocsFull() {
       const cached = JSON.parse(sessionStorage.getItem(cKey) || "null");
       if (cached?.text) { setRun(s, { msg: { ...cached, question: q, streaming: false }, status: "done" }); return; }
     } catch {}
-    
+
     if (inflightRef.current[s]) return;
     inflightRef.current[s] = true;
     let msg = { ...newAssistantMsg(lang), question: q };
     setRun(s, { msg, status: "running" });
-    
-    streamChat({ text: `/${s} ${q}`, lang, onEvent: (evt) => { 
-      msg = { ...applyEvent(msg, evt), question: q }; 
-      setRun(s, { msg, status: msg.streaming ? "running" : "done" }); 
+
+    streamChat({ text: `/${s} ${q}`, lang, onEvent: (evt) => {
+      msg = { ...applyEvent(msg, evt), question: q };
+      setRun(s, { msg, status: msg.streaming ? "running" : "done" });
     }}).then(() => {
         inflightRef.current[s] = false;
         if (msg.text != null && msg.text !== undefined) { try { sessionStorage.setItem(cKey, JSON.stringify({ ...msg, streaming: false })); } catch {} setRun(s, { msg: { ...msg, streaming: false }, status: "done" }); }
@@ -880,8 +880,8 @@ function DocsFull() {
   const showRunning = ["running","results","tools"].includes(phase);
   const showTools   = phase === "tools";
   const doneCount   = STAGES.filter((s) => ["done","offline"].includes(runsRef.current[s.key]?.status)).length;
-  
-  const pct = phase === "brand" || phase === "need-input" ? 0 
+
+  const pct = phase === "brand" || phase === "need-input" ? 0
     : phase === "running" ? Math.round(4 + (doneCount/3)*70)
     : phase === "tools" ? 100 : 100;
 
@@ -913,9 +913,9 @@ function DocsFull() {
         <section style={{ marginBottom: "54px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", paddingTop: "8px" }}>
-              <motion.img 
-                src={asset("/brand/antar_final_logo.png")} 
-                alt="ANTAR Logo" 
+              <motion.img
+                src={asset("/brand/antar_final_logo.png")}
+                alt="ANTAR Logo"
                 style={{ width: "90px", height: "90px", objectFit: "contain", filter: "drop-shadow(0 0 16px rgba(34,230,240,0.3))" }}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -924,17 +924,17 @@ function DocsFull() {
               />
               {asciiDone && (
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <motion.span 
-                    initial={{ opacity: 0, x: -10 }} 
-                    animate={{ opacity: 1, x: 0 }} 
+                  <motion.h1
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5 }}
-                    style={{ fontFamily: lang === "kn" ? "'Anek Kannada', sans-serif" : "'Jersey 10', sans-serif", fontWeight: 600, fontSize: "42px", letterSpacing: lang === "kn" ? "0" : "0.06em", color: "#FFFFFF", textTransform: "uppercase", textShadow: "0.4px 0 0 currentColor", lineHeight: 1 }}
+                    style={{ margin: 0, fontFamily: lang === "kn" ? "'Anek Kannada', sans-serif" : "'Jersey 10', sans-serif", fontWeight: 600, fontSize: "42px", letterSpacing: lang === "kn" ? "0" : "0.06em", color: "#FFFFFF", textTransform: "uppercase", textShadow: "0.4px 0 0 currentColor", lineHeight: 1 }}
                   >
                     {lang === "kn" ? "ಅಂತರ" : "Antar"}
-                  </motion.span>
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.85 }} 
-                    animate={{ opacity: 1, scale: 1 }} 
+                  </motion.h1>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
                     onAnimationComplete={() => setTimeout(() => setTagDone(true), 200)}
                     style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", fontWeight: 400, color: "rgba(255,255,255,0.5)", letterSpacing: "0.02em", marginTop: "4px" }}
@@ -942,13 +942,13 @@ function DocsFull() {
                     Think. Connect. Anticipate.
                   </motion.div>
 
-                  <motion.div 
-                    initial={{ opacity: 0, y: 12 }} 
-                    animate={{ opacity: 1, y: 0 }} 
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     style={{ maxWidth: "780px", fontFamily: "'Inter', sans-serif" }}
                   >
-                    
+
                     <motion.div
                       initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
                       animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -960,7 +960,7 @@ function DocsFull() {
                         transition: "text-shadow 0.3s ease",
                       }}
                     >
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.5, duration: 0.8 }}
@@ -973,7 +973,7 @@ function DocsFull() {
                           color: "#94A3B8",
                         }}
                       >
-                        {lang === "kn" ? "ಡೆವಲಪರ್ ಟಿಪ್ಪಣಿ" : "Developer Note"}
+                        {lang === "kn" ? "ಅಂತರ ಏನು" : "What Antar is"}
                       </motion.div>
                       <p style={{
                         fontSize: "14.5px",
@@ -981,9 +981,9 @@ function DocsFull() {
                         margin: 0,
                         letterSpacing: "0.01em",
                       }}>
-                        {lang === "kn" 
-                          ? "ಅಂತರ ಎಂಬುದು ಬೃಹತ್ ಎಫ್‌ಐಆರ್‌ಗಳು ಮತ್ತು ಪೊಲೀಸ್ ದಾಖಲೆಗಳ ಮೇಲೆ ನಿರ್ಮಿಸಲಾದ ಬುದ್ಧಿವಂತ ಲೇಯರ್ ಆಗಿದೆ. ಇದು ಪ್ರತ್ಯೇಕವಾದ ಪ್ರಕರಣಗಳ ನಡುವಿನ ಚುಕ್ಕೆಗಳನ್ನು ತಕ್ಷಣವೇ ಸಂಪರ್ಕಿಸುವ ಮೂಲಕ, ಗುಪ್ತ ಅಪರಾಧ ಜಾಲಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವ ಮೂಲಕ ಮತ್ತು ಪರಿಶೀಲಿಸಿದ ಗುಪ್ತಚರವನ್ನು ತಲುಪಿಸುವ ಮೂಲಕ ಸುಪ್ತ ಡೇಟಾವನ್ನು ಜೀವಂತಗೊಳಿಸುತ್ತದೆ. ಕೇವಲ ಸರ್ಚ್ ಇಂಜಿನ್‌ಗಿಂತ ಹೆಚ್ಚಾಗಿ, ಇದು ಪೂರ್ವಭಾವಿ ಪಾಲುದಾರನಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ, ಅಭೂತಪೂರ್ವ ವೇಗದೊಂದಿಗೆ ಬೆದರಿಕೆಗಳನ್ನು ನಿರೀಕ್ಷಿಸಲು ಮತ್ತು ಪ್ರಕರಣಗಳನ್ನು ಪರಿಹರಿಸಲು ಅಧಿಕಾರಿಗಳಿಗೆ ಅಧಿಕಾರ ನೀಡುತ್ತದೆ."
-                          : "Antar is an intelligent layer built over vast archives of FIRs and police records. It brings dormant data to life by instantly connecting the dots between isolated cases, uncovering hidden crime networks, and delivering verified intelligence. More than just a search engine, it acts as a proactive partner, empowering officers to anticipate threats and solve cases with unprecedented speed."}
+                        {lang === "kn"
+                          ? "ಅಂತರ ಕರ್ನಾಟಕದ FIR ದಾಖಲೆಯ ಬಗ್ಗೆ ಕನ್ನಡ ಅಥವಾ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಉತ್ತರಿಸುತ್ತದೆ, ಆರೋಪಿ, ವಾಹನ, ಫೋನ್ ಅಥವಾ UPI ಹಂಚಿಕೊಳ್ಳುವ ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸುತ್ತದೆ, ಮತ್ತು ಅಪರಾಧ ಎಲ್ಲಿ ಹೆಚ್ಚಾಗಬಹುದು ಎಂದು ಮುನ್ಸೂಚಿಸುತ್ತದೆ. ಠಾಣಾ ಅಧಿಕಾರಿಗಳು, ತನಿಖಾಧಿಕಾರಿಗಳು ಮತ್ತು ಮೇಲ್ವಿಚಾರಕರಿಗಾಗಿ; ಪ್ರತಿ ಉತ್ತರವೂ ಅದರ FIR ಗಳನ್ನು ತೋರಿಸುತ್ತದೆ. ಕೆಳಗೆ ಒಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ ಪ್ರಯತ್ನಿಸಿ."
+                          : "Antar answers questions about Karnataka's FIR register in English or Kannada, links cases that share an accused, vehicle, phone or UPI ID, and forecasts where crime is likely to rise. It is built for station officers, investigators and supervisors, and every answer shows the FIRs it came from. Try it below: ask one question."}
                       </p>
                     </motion.div>
                   </motion.div>
@@ -1028,15 +1028,15 @@ function DocsFull() {
                 )}
               </AnimatePresence>
               <div style={{ display: "flex", alignItems: "center", height: "28px", padding: "0 12px", background: "rgba(10, 15, 26, 0.45)", borderRadius: "8px", backdropFilter: "blur(12px)", gap: "10px" }}>
-                <button 
-                  onClick={() => lang !== "en" && toggleLang()} 
+                <button
+                  onClick={() => lang !== "en" && toggleLang()}
                   style={{ background: "transparent", border: "none", color: lang === "en" ? "#FFFFFF" : "#64748B", cursor: lang === "en" ? "default" : "pointer", fontFamily: "'Inter', sans-serif", fontSize: "12px", fontWeight: lang === "en" ? 700 : 400, transition: "color 0.2s", padding: 0 }}
                 >
                   EN
                 </button>
                 <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "12px" }}>|</span>
-                <button 
-                  onClick={() => lang !== "kn" && toggleLang()} 
+                <button
+                  onClick={() => lang !== "kn" && toggleLang()}
                   style={{ background: "transparent", border: "none", color: lang === "kn" ? "#FFFFFF" : "#64748B", cursor: lang === "kn" ? "default" : "pointer", fontFamily: "'Inter', sans-serif", fontSize: "12px", fontWeight: lang === "kn" ? 700 : 400, transition: "color 0.2s", padding: 0 }}
                 >
                   ಕನ್ನಡ
@@ -1050,7 +1050,7 @@ function DocsFull() {
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }}>
                                     {/* Project Details Inline Row */}
                   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} style={{ marginTop: "20px", marginLeft: "114px" }}>
-                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
+                      <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginBottom: "16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
                         {[
                           { id: 'features', label: lang === "kn" ? 'ಪ್ರಮುಖ ಲಕ್ಷಣಗಳು' : 'Key Features & Functionalities' },
                           { id: 'impact', label: lang === "kn" ? 'ಪರಿಣಾಮ ಮತ್ತು ಬಳಕೆ' : 'Impact & Use Cases' },
@@ -1067,24 +1067,17 @@ function DocsFull() {
                             transition={{ ...SPRING, delay: 0.5 + (i * 0.06) }}
                             onClick={() => setExpandedDetail(expandedDetail === btn.id ? null : btn.id)}
                             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedDetail(expandedDetail === btn.id ? null : btn.id); } }}
-                            whileHover={{ backgroundColor: "rgba(10,15,26,0.96)" }}
                             style={{
-                              position: "relative", isolation: "isolate",
-                              background: "rgba(4,7,14,0.96)",
-                              border: `1px solid ${expandedDetail === btn.id ? "rgba(34,230,240,0.5)" : "rgba(34,230,240,0.12)"}`,
-                              borderRadius: "6px",
-                              padding: "6px 12px",
+                              position: "relative",
+                              background: "none", border: 0, borderRadius: 0,
+                              borderBottom: `2px solid ${expandedDetail === btn.id ? "#22E6F0" : "transparent"}`,
+                              padding: "6px 0",
                               cursor: "pointer",
                               display: "flex", alignItems: "center", gap: "6px",
-                              boxShadow: expandedDetail === btn.id ? `0 0 16px rgba(34,230,240,0.1)` : "0 0 8px rgba(0,0,0,0.2)",
-                              transition: "color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, transform 0.3s ease, scale 0.3s ease"
+                              transition: "color 0.2s ease, border-color 0.2s ease"
                             }}
                           >
-                            {expandedDetail === btn.id && (
-                              <motion.span layoutId="docs-detail-pill" transition={SPRING}
-                                style={{ position: "absolute", inset: -1, zIndex: -1, borderRadius: "6px", border: "1px solid rgba(34,230,240,0.5)", background: "rgba(34,230,240,0.06)" }} />
-                            )}
-                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: expandedDetail === btn.id ? "#22E6F0" : "#EEF3FA", fontWeight: 500, letterSpacing: "0.02em" }}>
+                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: expandedDetail === btn.id ? "#22E6F0" : "#EEF3FA", fontWeight: 500, letterSpacing: "0.02em" }}>
                               {btn.label}
                             </span>
                             <span style={{ color: expandedDetail === btn.id ? "#22E6F0" : "#94A3B8", fontSize: "12px", fontWeight: 300, transition: "transform 0.3s", transform: expandedDetail === btn.id ? "rotate(45deg)" : "rotate(0deg)" }}>
@@ -1246,20 +1239,20 @@ function DocsFull() {
         <AnimatePresence>
           {phase === "need-input" && (
             <motion.section key="ni" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -11 }} transition={{ duration: 0.38 }} style={{ marginBottom: "40px" }}>
-              <div style={{ background: "rgba(3,6,14,0.96)", border: "1px solid rgba(34,230,240,0.2)", borderRadius: "12px", padding: "22px 24px", boxShadow: "0 0 26px rgba(34,230,240,0.05)" }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "9px", color: "#22E6F0", letterSpacing: "0.13em", marginBottom: "7px" }}>{lang === "kn" ? "[ ಡೆಮೊ ಪ್ರಾರಂಭಿಸಿ ]" : "[ START THE DEMO ]"}</div>
-                <h2 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: "18px", color: "#F8FAFC", marginBottom: "5px" }}>{lang === "kn" ? "ಒಂದು ತನಿಖಾ ಪ್ರಶ್ನೆಯನ್ನು ಕೇಳಿ" : "Ask one investigation question"}</h2>
-                <p style={{ fontSize: "11.5px", color: "#475569", marginBottom: "14px", lineHeight: 1.5 }}>{lang === "kn" ? "ಅಂತರವು ಏಕಕಾಲದಲ್ಲಿ ಮೂರು ರೀತಿಯಲ್ಲಿ ಚಲಿಸುತ್ತದೆ - ಯೋಚಿಸಿ, ಸಂಪರ್ಕಿಸಿ, ನಿರೀಕ್ಷಿಸಿ - ನೈಜ FIR ದಾಖಲೆಗಳಲ್ಲಿ ಲೈವ್." : "Antar will run it three ways simultaneously - Think, Connect, Anticipate - live on real FIR records."}</p>
+              <div style={{ background: "none", border: 0, borderTop: "1px solid rgba(255,255,255,0.14)", borderRadius: 0, padding: "24px 0 0" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#22E6F0", letterSpacing: "0.1em", marginBottom: "8px" }}>{lang === "kn" ? "01 · ಪ್ರಯತ್ನಿಸಿ" : "01 · TRY IT"}</div>
+                <h2 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: "20px", color: "#F8FAFC", margin: "0 0 6px" }}>{lang === "kn" ? "ಒಂದು ತನಿಖಾ ಪ್ರಶ್ನೆಯನ್ನು ಕೇಳಿ" : "Ask one investigation question"}</h2>
+                <p style={{ fontSize: "13.5px", color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.55 }}>{lang === "kn" ? "ಅಂತರವು ಏಕಕಾಲದಲ್ಲಿ ಮೂರು ರೀತಿಯಲ್ಲಿ ಚಲಿಸುತ್ತದೆ - ಯೋಚಿಸಿ, ಸಂಪರ್ಕಿಸಿ, ನಿರೀಕ್ಷಿಸಿ - ನೈಜ FIR ದಾಖಲೆಗಳಲ್ಲಿ ಲೈವ್." : "Antar will run it three ways simultaneously - Think, Connect, Anticipate - live on real FIR records."}</p>
                 <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
                   <input value={customQ} onChange={(e) => setCustomQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") startWithQuestion(customQ); }}
                     placeholder={lang === "kn" ? "ಉದಾ. ರಾಜಾಜಿನಗರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧಿಗಳು ಯಾರು?" : "e.g. Who are the repeat offenders in Rajajinagar?"}
-                    style={{ flex: 1, background: "rgba(0,0,0,0.55)", border: "1px solid rgba(34,230,240,0.2)", borderRadius: "6px", padding: "8px 12px", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", fontSize: "12.5px", outline: "none" }} />
+                    style={{ flex: 1, minWidth: 0, background: "transparent", border: "1px solid rgba(255,255,255,0.14)", borderRadius: "6px", padding: "10px 12px", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", fontSize: "14px", outline: "none" }} />
                   <button onClick={() => startWithQuestion(customQ)}
                     style={{ background: "#22E6F0", color: "#03050C", border: "none", padding: "8px 17px", borderRadius: "6px", fontWeight: 800, fontSize: "11.5px", cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>
                     {lang === "kn" ? "ರನ್ →" : "RUN →"}
                   </button>
                 </div>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", marginTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                   {(suggestedQs.length > 0 ? suggestedQs : [
                     { verb: "think", question_en: "Who are the repeat offenders in Rajajinagar?", question_kn: "ರಾಜಾಜಿನಗರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧಿಗಳು ಯಾರು?" },
                     { verb: "connect", question_en: "Show robbery trends in Bengaluru North last 3 months", question_kn: "ಕಳೆದ 3 ತಿಂಗಳ ಬೆಂಗಳೂರು ಉತ್ತರ ದರೋಡೆ ಟ್ರೆಂಡ್ ತೋರಿಸಿ" },
@@ -1269,10 +1262,10 @@ function DocsFull() {
                     const verbColor = q.verb === "think" ? "#22E6F0" : q.verb === "connect" ? "#10B981" : "#A855F7";
                     return (
                       <button key={i} onClick={() => startWithQuestion(qText)}
-                        style={{ background: "rgba(3,6,14,0.96)", border: `1px solid ${verbColor}24`, borderRadius: "999px", padding: "5px 12px 5px 8px", color: "#94A3B8", fontSize: "10.5px", cursor: "pointer", fontFamily: "'Inter', sans-serif", display: "flex", alignItems: "center", gap: "6px", transition: "color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, transform 0.25s ease, scale 0.25s ease" }}
-                        onMouseOver={e => { e.currentTarget.style.borderColor = verbColor + "60"; e.currentTarget.style.color = "#F8FAFC"; e.currentTarget.style.boxShadow = `0 0 12px ${verbColor}15`; }}
-                        onMouseOut={e => { e.currentTarget.style.borderColor = verbColor + "24"; e.currentTarget.style.color = "#94A3B8"; e.currentTarget.style.boxShadow = "none"; }}>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "8px", fontWeight: 700, color: verbColor, letterSpacing: "0.08em", padding: "1px 5px", borderRadius: "3px", background: verbColor + "12", flexShrink: 0 }}>
+                        style={{ background: "none", border: 0, borderBottom: "1px solid rgba(255,255,255,0.08)", borderRadius: 0, padding: "10px 0", color: "#B4C2D6", fontSize: "13.5px", cursor: "pointer", fontFamily: "'Inter', sans-serif", display: "flex", alignItems: "baseline", gap: "12px", textAlign: "left", transition: "color 0.2s ease" }}
+                        onMouseOver={e => { e.currentTarget.style.color = "#F8FAFC"; }}
+                        onMouseOut={e => { e.currentTarget.style.color = "#B4C2D6"; }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10.5px", fontWeight: 600, color: verbColor, letterSpacing: "0.08em", width: "84px", flexShrink: 0 }}>
                           {q.verb?.toUpperCase() || "THINK"}
                         </span>
                         <span>{qText}</span>
@@ -1288,10 +1281,10 @@ function DocsFull() {
         {/* 3. Running State (Main Response + Accordion) */}
         {showRunning && (
           <section style={{ marginBottom: "58px" }}>
-            
+
             <motion.div initial={{ opacity: 0, y: 15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5, ease: "easeOut" }}
-              style={{ background: "rgba(10,15,30,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", marginBottom: "28px", overflow: "hidden", boxShadow: "0 8px 32px rgba(0,240,255,0.08)" }}>
-              
+              style={{ background: "none", border: 0, borderTop: "1px solid rgba(255,255,255,0.14)", borderRadius: 0, marginBottom: "28px", overflow: "hidden" }}>
+
               {/* Active Query Header (Now unified) */}
               <div style={{ background: "rgba(0,0,0,0.2)", borderBottom: hasMainText ? "1px solid rgba(255,255,255,0.05)" : "none", padding: "16px 24px", display: "flex", alignItems: "center", gap: "12px" }}>
                 <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "#94a3b8", fontWeight: 500, letterSpacing: "0.05em", flexShrink: 0, textTransform: "uppercase" }}>Active Query</span>
@@ -1326,10 +1319,10 @@ function DocsFull() {
             {/* The 3 Accordions */}
             <div style={{ display: "flex", flexDirection: "column" }}>
                {STAGES.map((stg) => (
-                 <AccordionStage 
-                   key={stg.key} 
-                   stage={stg.key} 
-                   run={runs[stg.key]} 
+                 <AccordionStage
+                   key={stg.key}
+                   stage={stg.key}
+                   run={runs[stg.key]}
                    question={question}
                    isExpanded={expandedStage === stg.key}
                    onToggle={() => setExpandedStage(expandedStage === stg.key ? null : stg.key)}
@@ -1343,7 +1336,7 @@ function DocsFull() {
         {/* 6. Headline + Tools + CTA */}
         {showTools && (
           <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-            <motion.div 
+            <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.6 }}
@@ -1365,13 +1358,13 @@ function DocsFull() {
                 { val: "2.8 s", label: "Typical answer time (median)" },
                 { val: "100%", label: "Answers with a full trace" },
               ]).map((s, i) => (
-                <motion.div 
+                <motion.div
                   key={s.label}
                   whileHover={{ scale: 1.03, y: -2 }}
                   transition={SPRING}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flex: "1 1 0" }}
                 >
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ ...SPRING, delay: 0.2 + (i * 0.06) }}
@@ -1379,7 +1372,7 @@ function DocsFull() {
                   >
                     {s.val}
                   </motion.div>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 + (i * 0.08) }}
@@ -1400,13 +1393,13 @@ function DocsFull() {
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
                 className="whitespace-normal md:whitespace-nowrap"
                 style={{ fontSize: "clamp(12.5px, 1vw, 14px)", color: "#94A3B8", maxWidth: "100%", margin: "0 auto", lineHeight: 1.6 }}>
-                {lang === "kn" 
-                  ? "ಅಧಿಕೃತ FIR ದಾಖಲೆಗಳನ್ನು ಸ್ಪಷ್ಟ, ಕಾರ್ಯಾಚರಣೆಯ ಗುಪ್ತಚರ ಮಾಹಿತಿಯಾಗಿ ಪರಿವರ್ತಿಸುವ ಆರು ವಿಶೇಷ ಪರಿಕರಗಳು, ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸಲು, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳನ್ನು ಗುರುತಿಸಲು ಮತ್ತು ಗಸ್ತು ಯೋಜಿಸಲು ನೆರವಾಗುತ್ತವೆ." 
+                {lang === "kn"
+                  ? "ಅಧಿಕೃತ FIR ದಾಖಲೆಗಳನ್ನು ಸ್ಪಷ್ಟ, ಕಾರ್ಯಾಚರಣೆಯ ಗುಪ್ತಚರ ಮಾಹಿತಿಯಾಗಿ ಪರಿವರ್ತಿಸುವ ಆರು ವಿಶೇಷ ಪರಿಕರಗಳು, ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸಲು, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳನ್ನು ಗುರುತಿಸಲು ಮತ್ತು ಗಸ್ತು ಯೋಜಿಸಲು ನೆರವಾಗುತ್ತವೆ."
                   : "Six specialized tools that turn official FIR records into clear, actionable intelligence, helping officers link cases, track hotspots, and plan patrols."}
               </motion.p>
             </div>
 
-            
+
             {/* Tools Grid (Imported from mockup) */}
             <div className="tools-grid">
               {/* 1 chat */}
@@ -1496,13 +1489,13 @@ function DocsFull() {
             </motion.div>
           </motion.section>
         )}
-              <motion.div 
-                    initial={{ opacity: 0, y: 12 }} 
-                    animate={{ opacity: 1, y: 0 }} 
+              <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 2.5, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                     style={{ textAlign: "center", width: "100%", justifyContent: "center", display: "flex",  fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#FFFFFF", letterSpacing: "0.1em", marginTop: "80px", marginBottom: "8px", opacity: 0.85 }}
                   >
-                    {lang === "kn" ? "ಅಭಿವೃದ್ಧಿಪಡಿಸಿದವರು" : "Developed by"} 
+                    {lang === "kn" ? "ಅಭಿವೃದ್ಧಿಪಡಿಸಿದವರು" : "Developed by"}
                     <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.7, duration: 1.2 }} style={{ color: "#22E6F0", textDecoration: "none", marginLeft: "6px", position: "relative", zIndex: 10 }}>
                       Team Vimaraksha
                     </motion.span>
@@ -1585,7 +1578,7 @@ function DocsFull() {
         @media(max-width:820px){
           .antar-expanded-grid { grid-template-columns:1fr !important; }
         }
-      
+
         /* Tools Grid CSS from Mockup */
         .tools-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-bottom: 48px; text-align: left; }
         .tools-card { border-radius:14px; padding:15px 16px 16px; display:flex; flex-direction:column; background: rgba(3,6,15,0.93); border: 1px solid rgba(255,255,255,0.06); transition:transform .35s var(--ease-spring, cubic-bezier(.22,1,.36,1)), border-color .25s ease; cursor: pointer;

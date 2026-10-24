@@ -1581,6 +1581,16 @@ export default function MapScreen() {
            role="separator"
            aria-orientation="vertical" />
       <div className="mx-leftrail">
+      {/* The first five seconds: what this screen is, who it is for, and the one thing to do */}
+      <header className="mx-intro mx-panel">
+        <span className="mx-intro-eyebrow">{kn ? "ನಕ್ಷೆ" : "Map"}</span>
+        <h1>{kn ? "ಅಪರಾಧ ಎಲ್ಲಿ ನಡೆಯುತ್ತಿದೆ" : "Where crime is happening"}</h1>
+        <p>{kn ? "ಠಾಣೆ ಮತ್ತು ಜಿಲ್ಲಾ ಅಧಿಕಾರಿಗಳಿಗೆ: ದಿನದ FIR ಗಳು, ದೃಢಪಟ್ಟ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಮತ್ತು ಮುಂದೆ ಎಲ್ಲಿ ಗಸ್ತು. ದಿನ ಅಥವಾ ಅಪರಾಧ ಆರಿಸಿ; ಪ್ರಕರಣಗಳಿಗಾಗಿ ಜಿಲ್ಲೆ ತೆರೆಯಿರಿ."
+               : "For station and district officers: the day's FIRs by district, confirmed hotspots, and where to patrol next. Pick a day or a crime; open a district for its cases."}</p>
+        <button type="button" className="ui-btn ui-btn--primary ui-btn--sm" onClick={() => setRightTab("where")}>
+          {kn ? "ಮುಂದೆ ಎಲ್ಲಿ ಗಸ್ತು ನೋಡಿ" : "See where to patrol next"}
+        </button>
+      </header>
       <div inert={reportOpen || showDossier ? "" : undefined} className="mx-cal mx-panel">
         <div className="mx-cal-h">
           <div className="my">{kn ? MONTHS_KN[calMonth] : MONTHS_EN[calMonth]} <b>{calYear}</b></div>

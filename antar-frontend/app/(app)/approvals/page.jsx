@@ -149,7 +149,7 @@ export default function ApprovalsPage() {
               ? (pendingN > 0
                   ? (kn ? <><em>{pendingN}</em> ಕ್ರಮ ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ.</> : <><em>{pendingN} {pendingN === 1 ? "action" : "actions"}</em> waiting for your decision.</>)
                   : (kn ? "ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕೆ ಏನೂ ಬಾಕಿ ಇಲ್ಲ." : "Nothing is waiting for your decision."))
-              : (kn ? <>ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿ <em>ಇನ್-ಲೂಪ್</em></> : <>Supervisor officer <em>in-loop</em></>)}</h1>
+              : (kn ? <>ಎರಡನೇ ಅಧಿಕಾರಿಗಾಗಿ <em>ಕಾಯುತ್ತಿರುವ ಕ್ರಮಗಳು</em></> : <>Actions waiting for <em>a second officer</em></>)}</h1>
             <p>{kn
               ? "ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆಯಿಲ್ಲದೆ ಏನೂ ಜಾರಿಯಾಗುವುದಿಲ್ಲ. ಗಸ್ತು ಮರುನಿಯೋಜನೆ ಮತ್ತು ವೀಕ್ಷಣಾ ಪಟ್ಟಿ ನವೀಕರಣಗಳಿಗೆ ಸ್ವತಂತ್ರ ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಲಿಖಿತ ಸಹಿ ಅಗತ್ಯ."
               : "Nothing executes without an officer's approval. Patrol redeployments and watchlist updates require written sign-off from an independent supervising officer."}</p>

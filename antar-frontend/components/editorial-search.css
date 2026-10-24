@@ -82,24 +82,29 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-page .sx-cases button:hover b { color: var(--accent); }
 .sx-page .sx-cases-all { margin-top: var(--sp-2); padding: 0; border: 0; background: none; color: var(--accent); font: 500 12.5px 'Inter', sans-serif; cursor: pointer; }
 
-/* the money trail around a person: one block per account, figures on a line, warning signs as tags */
-.sx-page .sx-money { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-3); }
-.sx-page .sx-money li { display: grid; gap: 6px; padding: var(--sp-3); border: 1px solid var(--rule-2); border-radius: var(--r-md); }
+/* the money trail around a person: one account per row on a hairline, warning signs as words */
+.sx-page .sx-money { list-style: none; margin: var(--sp-2) 0 0; padding: 0; border-top: 1px solid var(--rule-1); }
+.sx-page .sx-money li { display: grid; gap: 6px; padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule-1); }
 .sx-page .sx-money .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px var(--sp-3); }
 .sx-page .sx-money .top b { font: 600 13.5px 'JetBrains Mono', monospace; color: var(--text-1); word-break: break-all; }
 .sx-page .sx-money .top span { font-size: 12px; color: var(--text-3); }
 .sx-page .sx-money .nums { display: flex; flex-wrap: wrap; gap: 4px var(--sp-4); font: 600 13px 'JetBrains Mono', monospace; color: var(--text-1); }
 .sx-page .sx-money .nums em { margin-right: 4px; font: 400 12px 'Inter', sans-serif; font-style: normal; color: var(--text-3); }
 .sx-page .sx-money .nums small { font: 400 11.5px 'Inter', sans-serif; color: var(--text-3); }
-.sx-page .sx-money .flags { display: flex; flex-wrap: wrap; gap: 4px; }
-.sx-page .sx-money .flags i { padding: 1px 7px; border-radius: 999px; font: 500 11px/1.6 'Inter', sans-serif; font-style: normal; color: #FBBF24; background: rgba(251,191,36,.1); }
+.sx-page .sx-money .flags { display: flex; flex-wrap: wrap; gap: 0 var(--sp-2); font: 600 12px 'Inter', sans-serif; color: #FBBF24; }
+.sx-page .sx-money .flags i { font-style: normal; }
+.sx-page .sx-money .flags i + i::before { content: "·"; margin-right: var(--sp-2); color: var(--text-4); }
 .sx-page .sx-money .ui-btn { justify-self: start; }
 
-/* People | Money trail */
-.sx-views { display: inline-flex; gap: 2px; padding: 3px; margin-bottom: var(--sp-4); border-radius: var(--r-sm); border: 1px solid var(--rule-2); }
-.sx-views button { height: 30px; padding: 0 14px; border: 0; border-radius: 4px; background: none; color: var(--text-3); font: 500 13px 'Inter', sans-serif; cursor: pointer; }
+/* People | Money trail: two words with an underline, not a boxed switch */
+.sx-views { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-5); border-bottom: 1px solid var(--rule-1); }
+.sx-views button { padding: 0 0 var(--sp-2); margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: none;
+  color: var(--text-3); font: 500 var(--fs-body) 'Inter', sans-serif; cursor: pointer; }
 .sx-views button:hover { color: var(--text-1); }
-.sx-views button.on { background: rgba(255,255,255,.08); color: var(--text-1); font-weight: 600; }
+.sx-views button.on { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
 .sx-page--money { display: block; overflow-y: auto; }
-.sx-page--money > .sx-views { margin: 76px 0 0 max(16px, calc((100% - 1680px) / 2 + 16px)); }
-.sx-page--money .mt-page { padding-top: var(--sp-4); }
+.sx-page--money > .sx-views { max-width: 1680px; margin: 84px max(var(--sp-4), calc((100% - 1680px) / 2)) 0; }
+.sx-page--money .mt-page { padding-top: var(--sp-5); }
+
+/* the inferred-identity note: a ruled aside with its label, not a box */
+.sx-page .sx-hypbox { margin: var(--sp-2) 0; padding: var(--sp-2) 0 var(--sp-2) var(--sp-3); background: none; border: 0; border-left: 2px solid #C084FC; border-radius: 0; }

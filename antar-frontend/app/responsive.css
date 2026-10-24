@@ -87,3 +87,19 @@
 @media (min-width: 1800px) {
   .px-page { width: 100%; max-width: 1680px; margin-left: auto !important; margin-right: auto !important; align-self: center; }
 }
+
+/* About: side-by-side sections divide with a side rule; stacked, the rule moves to the top */
+@media (max-width: 900px) {
+  .ab-member { padding-right: 0; }
+  .ab-member + .ab-member { padding-left: 0; border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+  .ab-card { padding-right: 0; }
+  .ab-card + .ab-card { padding-left: 0; border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+}
+
+/* sign-in: one plain line on who it is for, under the tagline */
+.lg-who { margin: 6px 0 0; font: 400 12.5px/1.5 'Inter', sans-serif; color: #94A3B8; }
+
+/* Brain data overview: the table bar wraps on a phone so the pager stays on screen */
+@media (max-width: 640px) {
+  .ov-tablebar { flex-wrap: wrap; row-gap: 8px; }
+}

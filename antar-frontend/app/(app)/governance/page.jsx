@@ -97,6 +97,11 @@ export default function GovernancePage() {
           <span className="gv-eyebrow">{kn ? "ಮಾಹಿತಿ ಸಂರಕ್ಷಣೆ" : "Data protection"}</span>
           <h1>{kn ? "ಅಂತರ್ ಮಾಹಿತಿಯನ್ನು ಹೇಗೆ ನಿರ್ವಹಿಸುತ್ತದೆ" : "How Antar handles data"}</h1>
           <p>Antar reads police records about real people. This page says what it does with them: the law it follows, who can see what, what is kept and for how long, and how every step can be checked afterwards.</p>
+          <p className="gv-who">For officers who use it, supervisors who answer for it, and auditors who check it. Each claim names the part of the system that makes it true, so it can be verified rather than trusted.</p>
+          <div className="gv-cta">
+            <a className="ui-btn ui-btn--primary" href="/trace">See the audit trail</a>
+            <span>Every request, who made it, and the decision taken</span>
+          </div>
           {kn && <p className="gv-kn-note">ಈ ಪುಟದ ವಿವರಗಳು ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿವೆ.</p>}
         </header>
 

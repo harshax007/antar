@@ -63,6 +63,8 @@ export default function CasePage() {
   }
 
   const c = data.counts || {};
+  // the step the case is at, or, once it has closed, the last step it reached
+  const now = data.steps.find((s) => s.state === "current") || [...data.steps].reverse().find((s) => s.state === "done");
   const sim = data.similar;
   const same = data.same_accused;
   const vb = c.victims_by || {};
@@ -74,26 +76,32 @@ export default function CasePage() {
       <div className="cs-wrap">
         <div className="cs-top">
           <button type="button" className="cs-back" onClick={() => router.back()}>‹ {L("Back", "ಹಿಂದೆ")}</button>
-          <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm cs-print" onClick={() => window.print()}>
-            {L("Print or save as PDF", "ಮುದ್ರಿಸಿ ಅಥವಾ PDF ಉಳಿಸಿ")}
-          </button>
         </div>
 
         <header className="cs-head">
-          <span className="cs-eyebrow">{L("Case", "ಪ್ರಕರಣ")} · FIR {data.fir_id}{data.crime_no ? ` · ${L("Crime no.", "ಅಪರಾಧ ಸಂ.")} ${data.crime_no}` : ""}</span>
+          <span className="cs-eyebrow">{L("Case file", "ಪ್ರಕರಣ ಕಡತ")} · FIR {data.fir_id}{data.crime_no ? ` · ${L("Crime no.", "ಅಪರಾಧ ಸಂ.")} ${data.crime_no}` : ""}</span>
           <h1 className="cs-title">{data.crime_head}</h1>
-          <p className="cs-meta">{[data.station, data.district, `${L("registered", "ದಾಖಲು")} ${nice(data.registered)}`, data.stage].filter(Boolean).join(" · ")}</p>
-          {data.demonstration && <span className="cs-demo">{L("Demonstration record, not a registered FIR", "ಪ್ರದರ್ಶನ ದಾಖಲೆ, ನೋಂದಾಯಿತ FIR ಅಲ್ಲ")}</span>}
+          <p className="cs-meta">{[data.station, data.district, `${L("registered", "ದಾಖಲು")} ${nice(data.registered)}`].filter(Boolean).join(" · ")}</p>
+          {now && (
+            <p className="cs-now"><span>{L("Where it stands", "ಈಗಿನ ಸ್ಥಿತಿ")}</span><b>{now.title}</b>{now.detail ? <em>{now.detail}</em> : null}</p>
+          )}
+          <p className="cs-why">{L("For the investigating officer and their supervisor: where this case stands, what is overdue, who was affected, and how cases like it have ended.",
+                                   "ತನಿಖಾಧಿಕಾರಿ ಮತ್ತು ಮೇಲ್ವಿಚಾರಕರಿಗೆ: ಪ್ರಕರಣ ಎಲ್ಲಿದೆ, ಏನು ಬಾಕಿ, ಯಾರು ಬಾಧಿತರು, ಮತ್ತು ಇಂತಹ ಪ್ರಕರಣಗಳು ಹೇಗೆ ಮುಗಿದವು.")}</p>
+          <div className="cs-cta">
+            <button type="button" className="ui-btn ui-btn--primary" onClick={() => window.print()}>{L("Print the case sheet", "ಪ್ರಕರಣ ಹಾಳೆ ಮುದ್ರಿಸಿ")}</button>
+            <span>{L("or save it as PDF from the print dialog", "ಅಥವಾ ಮುದ್ರಣ ಸಂವಾದದಿಂದ PDF ಆಗಿ ಉಳಿಸಿ")}</span>
+          </div>
+          {data.demonstration && <p className="cs-note-inline">{L("Generated record, not a registered FIR.", "ರಚಿತ ದಾಖಲೆ, ನೋಂದಾಯಿತ FIR ಅಲ್ಲ.")}</p>}
         </header>
 
-        <section className="cs-summary" aria-label={L("Case summary", "ಪ್ರಕರಣ ಸಾರಾಂಶ")}>
-          <h2>{L("Case summary", "ಪ್ರಕರಣ ಸಾರಾಂಶ")}</h2>
+        <section className="cs-summary" aria-labelledby="cs-h-sum">
+          <h2 id="cs-h-sum"><span className="cs-n" aria-hidden="true" />{L("Summary", "ಸಾರಾಂಶ")}</h2>
           <p>{data.summary}</p>
         </section>
 
         <div className="cs-grid">
           <section className="cs-block">
-            <h2>{L("Investigation timeline", "ತನಿಖೆಯ ಕಾಲರೇಖೆ")}</h2>
+            <h2><span className="cs-n" aria-hidden="true" />{L("Investigation timeline", "ತನಿಖೆಯ ಕಾಲರೇಖೆ")}</h2>
             <ol className="cs-steps">
               {data.steps.map((s) => (
                 <li key={s.key} className={`cs-step ${s.state}`}>
@@ -114,7 +122,7 @@ export default function CasePage() {
 
           <div className="cs-side">
             <section className="cs-block">
-              <h2>{L("In this case", "ಈ ಪ್ರಕರಣದಲ್ಲಿ")}</h2>
+              <h2><span className="cs-n" aria-hidden="true" />{L("In this case", "ಈ ಪ್ರಕರಣದಲ್ಲಿ")}</h2>
               <dl className="cs-facts">
                 <div><dt>{L("Accused named", "ಹೆಸರಿಸಿದ ಆರೋಪಿಗಳು")}</dt><dd>{c.accused}</dd></div>
                 <div><dt>{L("Arrested", "ಬಂಧಿತರು")}</dt><dd>{c.arrested}</dd></div>
@@ -131,7 +139,7 @@ export default function CasePage() {
 
             {data.victims?.length > 0 && (
               <section className="cs-block">
-                <h2>{L("Victims", "ಸಂತ್ರಸ್ತರು")}</h2>
+                <h2><span className="cs-n" aria-hidden="true" />{L("Victims", "ಸಂತ್ರಸ್ತರು")}</h2>
                 <ul className="cs-victims">
                   {data.victims.map((v) => (
                     <li key={v.id}>
@@ -145,7 +153,7 @@ export default function CasePage() {
 
             {sim && (
               <section className="cs-block">
-                <h2>{L("How cases like this ended", "ಇಂತಹ ಪ್ರಕರಣಗಳು ಹೇಗೆ ಮುಗಿದವು")}</h2>
+                <h2><span className="cs-n" aria-hidden="true" />{L("How cases like this ended", "ಇಂತಹ ಪ್ರಕರಣಗಳು ಹೇಗೆ ಮುಗಿದವು")}</h2>
                 <p className="cs-sub">{L(`${sim.cases.toLocaleString("en-IN")} other ${sim.crime_head} cases ${sim.scope === "state" ? "across Karnataka" : `at ${sim.where}`}.`,
                                           `${sim.scope === "state" ? "ಕರ್ನಾಟಕದಾದ್ಯಂತ" : sim.where} ${sim.cases.toLocaleString("en-IN")} ಇತರ ${sim.crime_head} ಪ್ರಕರಣಗಳು.`)}</p>
                 <ul className="cs-bars">
@@ -166,7 +174,7 @@ export default function CasePage() {
 
             {same && same.count > 0 && (
               <section className="cs-block">
-                <h2>{L("The accused's other FIRs", "ಆರೋಪಿಯ ಇತರ FIR ಗಳು")}</h2>
+                <h2><span className="cs-n" aria-hidden="true" />{L("The accused's other FIRs", "ಆರೋಪಿಯ ಇತರ FIR ಗಳು")}</h2>
                 <p className="cs-sub">{L(`${same.accused_id} is named in ${same.count} other ${same.count === 1 ? "FIR" : "FIRs"}${same.districts?.length ? `, in ${same.districts.join(", ")}` : ""}.`,
                                           `${same.accused_id} ಅನ್ನು ${same.count} ಇತರ FIR ಗಳಲ್ಲಿ ಹೆಸರಿಸಲಾಗಿದೆ.`)}</p>
                 <ul className="cs-others">

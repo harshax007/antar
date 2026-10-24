@@ -1,88 +1,104 @@
-/* ── Case page (app/(app)/case/[id]) · editorial layer on design-tokens.css ──
-   A title and a quiet line of facts, the summary boxed, the timeline as a vertical rail
-   with one state word per step, figures as a short table, outcome rates as thin bars.
-   Colour only marks the current step. Prints as a case sheet. */
+/* ── Case file (app/(app)/case/[id]) · editorial layer on design-tokens.css ──
+   The first screen answers: which case, where it stands, who this is for, and one solid
+   button (print the sheet). Then numbered sections on thin rules - 01 summary, 02 timeline,
+   03 the figures, and whatever else this case has - numbered by CSS so a missing section
+   never leaves a gap. Colour only marks where the case is now. Prints as a case sheet. */
 
-.cs-page { min-height: 100vh; padding: 88px 16px 64px; color: var(--text-1); }
-.cs-wrap { max-width: 1120px; margin: 0 auto; }
-.cs-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-5); padding-right: 56px; }   /* clear of the guide button */
+.cs-page { min-height: 100vh; padding: 88px var(--sp-4) var(--sp-10); color: var(--text-1); }
+.cs-wrap { max-width: 1120px; margin: 0 auto; counter-reset: cs; }
+.cs-top { margin-bottom: var(--sp-4); }
 .cs-back { padding: 0; border: 0; background: none; color: var(--text-3); font: 500 var(--fs-label) 'Inter', sans-serif; cursor: pointer; }
 .cs-back:hover { color: var(--text-1); }
 
-.cs-head { padding-bottom: var(--sp-5); border-bottom: 1px solid var(--rule-2); }
+/* ── the first five seconds ── */
+.cs-head { padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule-2); }
 .cs-eyebrow { display: block; margin-bottom: var(--sp-2); font: 500 var(--fs-caption)/1.4 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
-html[lang="kn"] .cs-eyebrow { letter-spacing: normal; text-transform: none; }
-.cs-title { margin: 0; font: 700 clamp(26px, 3vw, 38px)/1.1 'Chakra Petch', sans-serif; letter-spacing: -.02em; text-wrap: balance; }
+html[lang="kn"] .cs-eyebrow { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
+.cs-title { margin: 0; font: 700 clamp(26px, 3vw, 36px)/1.12 'Chakra Petch', sans-serif; letter-spacing: -.02em; text-wrap: balance; }
 .cs-meta { margin: var(--sp-2) 0 0; font-size: var(--fs-body-sm); color: var(--text-2); }
-.cs-demo { display: inline-block; margin-top: var(--sp-3); padding: 2px 10px; border-radius: 999px; font: 600 11.5px/1.6 'Inter', sans-serif; color: #FBBF24; background: rgba(251,191,36,.1); }
-.cs-lede { margin: var(--sp-3) 0 0; font-size: var(--fs-body); line-height: 1.6; color: var(--text-2); }
+.cs-now { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: var(--sp-5) 0 0; padding: var(--sp-3) 0;
+  border-top: 1px solid var(--rule-1); border-bottom: 1px solid var(--rule-1); }
+.cs-now span { font: 500 var(--fs-caption) 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+html[lang="kn"] .cs-now span { letter-spacing: normal; text-transform: none; font-family: inherit; font-size: var(--fs-label); }
+.cs-now b { font: 600 var(--fs-h3) 'Inter', sans-serif; color: var(--text-1); }
+.cs-now em { font-style: normal; font-size: var(--fs-body); color: var(--text-2); }
+.cs-why { margin: var(--sp-4) 0 0; max-width: 74ch; font-size: var(--fs-body); line-height: 1.6; color: var(--text-2); }
+.cs-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); margin-top: var(--sp-5); }
+.cs-cta span { font-size: var(--fs-label); color: var(--text-3); }
+.cs-page .ui-btn { border-radius: var(--r-sm); box-shadow: none; }
+.cs-page .ui-btn--primary { background: var(--text-1); color: #050A12; border-color: transparent; }
+.cs-page .ui-btn--primary:hover { background: #fff; }
+.cs-note-inline { margin: var(--sp-3) 0 0; font-size: var(--fs-label); color: var(--text-3); }
 
-.cs-summary { margin-top: var(--sp-5); padding: var(--sp-4) var(--sp-5); border-radius: var(--r-md); border: 1px solid rgba(34,230,240,.22); background: rgba(34,230,240,.045); }
-.cs-summary h2, .cs-block h2 { margin: 0 0 var(--sp-2); font: 600 11px/1.3 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
-html[lang="kn"] .cs-summary h2, html[lang="kn"] .cs-block h2 { letter-spacing: normal; text-transform: none; font-size: 13px; }
-.cs-summary p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-1); max-width: 78ch; }
+/* ── numbered sections ── */
+.cs-summary { margin-top: var(--sp-6); }
+.cs-summary h2, .cs-block h2 { display: flex; align-items: baseline; gap: var(--sp-2); margin: 0 0 var(--sp-3);
+  font: 600 var(--fs-lead)/1.3 'Inter', sans-serif; color: var(--text-1); }
+.cs-n::before { counter-increment: cs; content: counter(cs, decimal-leading-zero);
+  font: 500 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .06em; color: var(--accent); }
+.cs-summary p { margin: 0; max-width: 78ch; font-size: var(--fs-lead); line-height: 1.6; color: var(--text-1); }
 
-.cs-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--sp-6) var(--sp-8); margin-top: var(--sp-6); }
-.cs-side { display: grid; gap: var(--sp-6); align-content: start; }
+.cs-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0; margin-top: var(--sp-8); padding-top: var(--sp-6); border-top: 1px solid var(--rule-1); }
+.cs-grid > :first-child { padding-right: var(--sp-8); }
+.cs-side { display: grid; gap: var(--sp-8); align-content: start; padding-left: var(--sp-8); border-left: 1px solid var(--rule-1); }
 .cs-block { min-width: 0; }
 .cs-sub { margin: 0 0 var(--sp-3); font-size: var(--fs-body-sm); line-height: 1.5; color: var(--text-2); }
 
 /* the timeline: a rail, a dot per step, the current one in the accent */
-.cs-steps { list-style: none; margin: var(--sp-2) 0 0; padding: 0; }
+.cs-steps { list-style: none; margin: var(--sp-1) 0 0; padding: 0; }
 .cs-step { position: relative; display: grid; grid-template-columns: 22px 1fr; gap: var(--sp-3); padding-bottom: var(--sp-5); }
 .cs-step:not(:last-child)::before { content: ""; position: absolute; left: 10px; top: 18px; bottom: 0; width: 2px; background: var(--rule-2); }
 .cs-step.done:not(:last-child)::before { background: rgba(148,163,184,.45); }
 .cs-step .dot { width: 12px; height: 12px; margin: 5px 0 0 5px; border-radius: 50%; border: 2px solid var(--text-4); background: var(--void, #060910); }
 .cs-step.done .dot { border-color: var(--text-2); background: var(--text-2); }
-.cs-step.current .dot { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 4px rgba(34,230,240,.15); }
+.cs-step.current .dot { border-color: var(--accent); background: var(--accent); }
 .cs-step .row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
-.cs-step b { font-size: 15px; font-weight: 600; color: var(--text-1); }
+.cs-step b { font-size: var(--fs-body); font-weight: 600; color: var(--text-1); }
 .cs-step.none b, .cs-step.pending b { color: var(--text-3); }
-.cs-state { flex: none; font: 600 11px/1.6 'Inter', sans-serif; color: var(--text-3); }
+.cs-state { flex: none; font: 600 var(--fs-caption)/1.6 'Inter', sans-serif; color: var(--text-3); }
 .cs-state.current { color: var(--accent); }
-.cs-step .when { display: block; margin-top: 2px; font: 500 12px 'JetBrains Mono', monospace; color: var(--text-3); }
-.cs-step p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-2); }
-.cs-step small { display: block; margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--text-3); }
+.cs-step .when { display: block; margin-top: 2px; font: 500 var(--fs-label) 'JetBrains Mono', monospace; color: var(--text-3); }
+.cs-step p { margin: var(--sp-1) 0 0; font-size: var(--fs-body-sm); line-height: 1.5; color: var(--text-2); }
+.cs-step small { display: block; margin-top: 6px; font-size: var(--fs-label); line-height: 1.5; color: var(--text-3); }
 
 /* figures as a short table */
-.cs-facts { margin: 0; display: grid; border-top: 1px solid var(--rule-1); }
-.cs-facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-4); padding: 9px 0; border-bottom: 1px solid var(--rule-1); }
-.cs-facts dt { font-size: 13.5px; color: var(--text-2); }
-.cs-facts dd { margin: 0; font: 600 14px 'JetBrains Mono', monospace; color: var(--text-1); text-align: right; }
-.cs-facts dd.wrap { font: 500 13px/1.45 'Inter', sans-serif; max-width: 60%; }
-.cs-facts dd small { display: block; font: 400 12px 'Inter', sans-serif; color: var(--text-3); }
+.cs-facts { margin: 0; display: grid; border-top: 1px solid var(--rule-2); }
+.cs-facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-4); padding: var(--sp-2) 0; border-bottom: 1px solid var(--rule-1); }
+.cs-facts dt { font-size: var(--fs-body-sm); color: var(--text-2); }
+.cs-facts dd { margin: 0; font: 600 var(--fs-body) 'JetBrains Mono', monospace; color: var(--text-1); text-align: right; font-variant-numeric: tabular-nums; }
+.cs-facts dd.wrap { font: 500 var(--fs-body-sm)/1.45 'Inter', sans-serif; max-width: 60%; }
+.cs-facts dd small { display: block; font: 400 var(--fs-label) 'Inter', sans-serif; color: var(--text-3); }
 
-/* outcome rates as thin bars */
+/* outcome rates: a thin track with a solid fill */
 .cs-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
-.cs-bars li { display: grid; grid-template-columns: minmax(0, 1fr) 52px; grid-template-rows: auto 6px; gap: 4px var(--sp-3); font-size: 13.5px; color: var(--text-2); }
-.cs-bars i { grid-column: 1; grid-row: 2; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--text-2) var(--w), rgba(148,163,184,.15) var(--w)); }
-.cs-bars b { grid-column: 2; grid-row: 1 / 3; align-self: center; text-align: right; font: 600 14px 'JetBrains Mono', monospace; color: var(--text-1); }
+.cs-bars li { display: grid; grid-template-columns: minmax(0, 1fr) 52px; grid-template-rows: auto 4px; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-body-sm); color: var(--text-2); }
+.cs-bars i { grid-column: 1; grid-row: 2; height: 4px; background: linear-gradient(90deg, var(--text-2) var(--w), var(--rule-2) var(--w)); }
+.cs-bars b { grid-column: 2; grid-row: 1 / 3; align-self: center; text-align: right; font: 600 var(--fs-body) 'JetBrains Mono', monospace; color: var(--text-1); }
+.cs-few { margin-top: var(--sp-3); }
 
-.cs-others { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-1); }
-.cs-others button { display: grid; gap: 2px; width: 100%; padding: 9px 0; border: 0; border-bottom: 1px solid var(--rule-1); background: none; text-align: left; font-family: inherit; cursor: pointer; }
-.cs-others b { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
-.cs-others span { font-size: 12.5px; color: var(--text-3); }
+.cs-victims, .cs-others { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-1); }
+.cs-victims li { display: grid; gap: 2px; padding: var(--sp-2) 0; border-bottom: 1px solid var(--rule-1); }
+.cs-victims b, .cs-others b { font-size: var(--fs-body-sm); font-weight: 600; color: var(--text-1); }
+.cs-victims span, .cs-others span { font-size: var(--fs-label); color: var(--text-3); }
+.cs-others button { display: grid; gap: 2px; width: 100%; padding: var(--sp-2) 0; border: 0; border-bottom: 1px solid var(--rule-1); background: none; text-align: left; font-family: inherit; cursor: pointer; }
 .cs-others button:hover b { color: var(--accent); }
+.cs-link { padding: 0; border: 0; background: none; color: var(--accent); font: 500 var(--fs-body-sm) 'Inter', sans-serif; cursor: pointer; text-align: right; }
 
-.cs-note { margin: var(--sp-8) 0 0; padding-top: var(--sp-4); border-top: 1px solid var(--rule-1); font-size: 12.5px; line-height: 1.55; color: var(--text-3); max-width: 90ch; }
+.cs-note { margin: var(--sp-10) 0 0; padding-top: var(--sp-4); border-top: 1px solid var(--rule-1); font-size: var(--fs-label); line-height: 1.55; color: var(--text-3); max-width: 90ch; }
 
 @media (max-width: 900px) {
   .cs-page { padding-top: 76px; }
-  .cs-grid { grid-template-columns: 1fr; gap: var(--sp-6); }
-  .cs-summary { padding: var(--sp-4); }
+  .cs-grid { grid-template-columns: minmax(0, 1fr); }
+  .cs-grid > :first-child { padding-right: 0; }
+  .cs-side { padding: var(--sp-6) 0 0; margin-top: var(--sp-6); border-left: 0; border-top: 1px solid var(--rule-1); }
 }
+
+[data-theme="light"] .cs-page .ui-btn--primary { background: #0F172A; color: #fff; }
 
 /* a case sheet on paper: no navigation, black on white */
 @media print {
-  .cx-pillnav, .cs-top, .gg-fab, .ax-guide { display: none !important; }
+  .cx-pillnav, .cs-top, .cs-cta, .gg-fab, .ax-guide { display: none !important; }
   .cs-page { padding: 0; color: #000; background: #fff; }
-  .cs-title, .cs-summary p, .cs-step b, .cs-facts dd, .cs-bars b, .cs-others b { color: #000 !important; }
-  .cs-summary { border-color: #999; background: none; }
+  .cs-title, .cs-summary p, .cs-now b, .cs-step b, .cs-facts dd, .cs-bars b, .cs-others b, .cs-victims b { color: #000 !important; }
   .cs-grid { grid-template-columns: 1fr 1fr; }
 }
-.cs-few { margin-top: var(--sp-3); }
-.cs-link { padding: 0; border: 0; background: none; color: var(--accent); font: 500 13px "Inter", sans-serif; cursor: pointer; text-align: right; }
-.cs-victims { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-1); }
-.cs-victims li { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--rule-1); }
-.cs-victims b { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
-.cs-victims span { font-size: 12.5px; color: var(--text-3); }

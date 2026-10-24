@@ -5,6 +5,7 @@
 // level rank correlation, shown with its number, with urbanisation held constant, and with
 // what it cannot say.
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { useLang } from "@/components/Providers";
 import "@/components/editorial-social.css";
@@ -32,7 +33,15 @@ function Dot(props) {
   return <circle cx={cx} cy={cy} r={big ? 6 : 4.5} fill={payload.hl ? "#22E6F0" : "rgba(148,163,184,.75)"} stroke={big ? "#fff" : "none"} />;
 }
 
+// What Chat is asked when an officer wants a link explained, by kind of crime
+const ASK = {
+  all: "Which social factors go with crime?", property: "Which social factors go with property crime?",
+  violent: "Which social factors go with violent crime?", women: "Is alcohol linked to crimes against women?",
+  fraud: "Which social factors go with fraud and cyber crime?", road: "Which social factors go with road accidents?",
+};
+
 export default function SocialInsights() {
+  const router = useRouter();
   const { lang } = useLang();
   const kn = lang === "kn";
   const L = (en, k) => (kn ? k : en);
@@ -80,9 +89,26 @@ export default function SocialInsights() {
         <header className="so-head">
           <span className="so-eyebrow">{L("Sociological crime insights", "ಸಾಮಾಜಿಕ ಅಪರಾಧ ಒಳನೋಟಗಳು")}</span>
           <h1 className="so-title">{L("What goes with crime, district by district", "ಜಿಲ್ಲೆಯಿಂದ ಜಿಲ್ಲೆಗೆ ಅಪರಾಧದ ಜೊತೆ ಏನು ಬರುತ್ತದೆ")}</h1>
-          <p className="so-lede">{L(`Crime rates in Karnataka's ${d.districts} districts set against urbanisation, population growth, education, child marriage, household amenities and alcohol use. Each link is a rank correlation across districts, with its number and whether it still holds once urbanisation is taken out.`,
+          <p className="so-lede">{L(`Crime rates in Karnataka's ${d.districts} districts set against urbanisation, population growth, education, child marriage, household amenities and alcohol use.`,
                                    `ಕರ್ನಾಟಕದ ${d.districts} ಜಿಲ್ಲೆಗಳ ಅಪರಾಧ ದರಗಳು ನಗರೀಕರಣ, ಜನಸಂಖ್ಯಾ ಬೆಳವಣಿಗೆ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯ ವಿವಾಹ, ಗೃಹ ಸೌಲಭ್ಯ ಮತ್ತು ಮದ್ಯಪಾನದ ಎದುರು.`)}</p>
-          <ul className="so-caveats">{d.caveats.map((c) => <li key={c}>{c}</li>)}</ul>
+          <p className="so-why">{L("For district SPs and planners deciding where prevention work goes: which social conditions travel with which crime. Pick a kind of crime below, read its clear links in 01, then check any district in 02.",
+                                   "ತಡೆಗಟ್ಟುವ ಕೆಲಸ ಎಲ್ಲಿ ಎಂದು ನಿರ್ಧರಿಸುವ ಜಿಲ್ಲಾ SP ಮತ್ತು ಯೋಜಕರಿಗೆ. ಕೆಳಗೆ ಅಪರಾಧದ ಪ್ರಕಾರ ಆರಿಸಿ, 01 ರಲ್ಲಿ ಸಂಬಂಧಗಳನ್ನು ಓದಿ, 02 ರಲ್ಲಿ ಜಿಲ್ಲೆ ಪರಿಶೀಲಿಸಿ.")}</p>
+          <div className="so-cta">
+            <button type="button" className="ui-btn ui-btn--primary" onClick={() => router.push(`/antar?q=${encodeURIComponent(ASK[cat] || ASK.all)}`)}>
+              {L("Ask Chat to explain these links", "ಈ ಸಂಬಂಧಗಳನ್ನು ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ")}
+            </button>
+            <span>{L(`“${ASK[cat] || ASK.all}”`, "")}</span>
+          </div>
+          <div className="so-caveats">
+            <h2>{L("What this cannot tell you", "ಇದು ಹೇಳಲಾಗದ್ದು")}</h2>
+            <p>{d.caveats[0]}</p>
+            {d.caveats.length > 1 && (
+              <details>
+                <summary>{L(`${d.caveats.length - 1} more limits`, `ಇನ್ನೂ ${d.caveats.length - 1} ಮಿತಿಗಳು`)}</summary>
+                <ul>{d.caveats.slice(1).map((c) => <li key={c}>{c}</li>)}</ul>
+              </details>
+            )}
+          </div>
         </header>
 
         <nav className="so-cats" role="tablist" aria-label={L("Kind of crime", "ಅಪರಾಧದ ಪ್ರಕಾರ")}>
@@ -93,7 +119,7 @@ export default function SocialInsights() {
 
         <div className="so-grid">
           <section className="so-block">
-            <h2>{L("Clear links", "ಸ್ಪಷ್ಟ ಸಂಬಂಧಗಳು")} <span>{clear.length}</span></h2>
+            <h2><span className="so-n">01</span>{L("Clear links", "ಸ್ಪಷ್ಟ ಸಂಬಂಧಗಳು")} <em>{clear.length}</em></h2>
             {clear.length === 0 && <p className="so-sub">{L("No indicator lines up clearly with this kind of crime across districts.", "ಯಾವುದೇ ಸೂಚಕ ಸ್ಪಷ್ಟವಾಗಿ ಹೊಂದುವುದಿಲ್ಲ.")}</p>}
             <ol className="so-links">
               {clear.map((l) => (
@@ -126,7 +152,7 @@ export default function SocialInsights() {
           </section>
 
           <section className="so-block">
-            <h2>{L("Each district", "ಪ್ರತಿ ಜಿಲ್ಲೆ")}</h2>
+            <h2><span className="so-n">02</span>{L("Each district", "ಪ್ರತಿ ಜಿಲ್ಲೆ")}</h2>
             <label className="so-pick">
               <span>{L("Indicator", "ಸೂಚಕ")}</span>
               <select value={indKey} onChange={(e) => setInd(e.target.value)}>
@@ -155,7 +181,7 @@ export default function SocialInsights() {
         </div>
 
         <section className="so-block so-tablewrap">
-          <h2>{L("Districts", "ಜಿಲ್ಲೆಗಳು")}</h2>
+          <h2><span className="so-n">03</span>{L("All districts", "ಎಲ್ಲ ಜಿಲ್ಲೆಗಳು")}</h2>
           <div className="so-scroll">
             <table className="so-table">
               <thead><tr>
@@ -180,7 +206,7 @@ export default function SocialInsights() {
 
         {vic && (
           <section className="so-block">
-            <h2>{L("Who the victims are", "ಸಂತ್ರಸ್ತರು ಯಾರು")}</h2>
+            <h2><span className="so-n">04</span>{L("Who the victims are", "ಸಂತ್ರಸ್ತರು ಯಾರು")}</h2>
             <p className="so-sub">{L(`${vTotal?.toLocaleString("en-IN")} victims recorded on FIRs.`, `FIR ಗಳಲ್ಲಿ ದಾಖಲಾದ ${vTotal?.toLocaleString("en-IN")} ಸಂತ್ರಸ್ತರು.`)}</p>
             <div className="so-vic">
               <div><h3>{L("Sex", "ಲಿಂಗ")}</h3><Bars rows={vic.gender} total={vTotal} /></div>

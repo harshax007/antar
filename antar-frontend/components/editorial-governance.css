@@ -11,6 +11,13 @@ html[lang="kn"] .gv-eyebrow { letter-spacing: normal; text-transform: none; }
 .gv-head h1 { margin: 0; font: 700 clamp(28px, 3.4vw, 42px)/1.1 'Chakra Petch', sans-serif; letter-spacing: -.02em; text-wrap: balance; }
 .gv-head p { margin: var(--sp-4) 0 0; max-width: 68ch; font-size: 16px; line-height: 1.65; color: var(--text-2); }
 .gv-head .gv-kn-note { font-size: 13px; color: var(--text-3); }
+.gv-head .gv-who { margin-top: var(--sp-2); font-size: var(--fs-body); color: var(--text-2); }
+.gv-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); margin-top: var(--sp-5); }
+.gv-cta span { font-size: var(--fs-label); color: var(--text-3); }
+.gv-page .ui-btn { border-radius: var(--r-sm); box-shadow: none; text-decoration: none; }
+.gv-page .ui-btn--primary { background: var(--text-1); color: #050A12; border-color: transparent; }
+.gv-page .ui-btn--primary:hover { background: #fff; }
+[data-theme="light"] .gv-page .ui-btn--primary { background: #0F172A; color: #fff; }
 
 .gv-toc { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); padding: var(--sp-4) 0; border-bottom: 1px solid var(--rule-1); }
 .gv-toc a { font: 500 13px 'Inter', sans-serif; color: var(--text-2); text-decoration: none; }
