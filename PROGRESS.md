@@ -137,6 +137,17 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Money trail, linked victims, district social indicators · 2026-10-24
+
+| Area | Added | Where |
+|---|---|---|
+| 7 · Financial crime | **Money trail** `/money`: 2,300 accounts and 6,164 transactions behind the UPI IDs on FIRs (`scripts/seed_money_trail.py`), from complainant to cash-out. Accounts ranked by counted warning signs (collects from many accounts, passes straight through within 48 h, amounts just under ₹50,000, named in several FIRs, cash taken out). Graph, ledger, FIRs one click away. Overview 83 s → 1.2 s cold / 56 ms warm. | `04c3b6f` |
+| 1, 2 · Victims | **Victims linked to FIRs**: 900,477 victims on 886,544 FIRs, matching every FIR's recorded men/women/boys/girls exactly. Chat's victim template takes the crime and place asked about, and two new dimensions (relation to the accused, adult/child). Case page lists the victims. Old unlinked table kept. | `92f0bb1` |
+| 4 · Sociological | **District social indicators** `/social`: Census 2011 + NFHS-5 for 30 districts against FIRs per lakh (2016-2022), Spearman with p, urbanisation held constant, a plain sentence and an honest reading for each link. | `906b3bb` |
+
+Generated rows carry `source='seeded'` in the database (not shown on screen). `main.db` is not in
+git: on a fresh database run `scripts/seed_money_trail.py` and `scripts/seed_victims.py`.
+
 ## Challenge gaps closed: case timeline, data protection · 2026-10-24
 
 Checked against the 10 areas of the problem statement; these three were the quick wins.
