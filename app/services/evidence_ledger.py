@@ -24,6 +24,7 @@ import csv
 import os
 import re
 import threading
+from datetime import date
 
 # ── alias_for: exact port of frontend lib/crimeGraph.js aliasFor() ──────────────
 # Same lists, same modular arithmetic → identical name for a given id on both sides.
@@ -50,6 +51,7 @@ _rows: list[dict] | None = None
 _by_accused: dict[str, list[dict]] | None = None
 _kidx: dict | None = None          # hard-key indexes for linkage (built lazily)
 _lock = threading.Lock()
+_loaded_on = ""             # the day _rows was loaded for
 
 
 def _load() -> tuple[list[dict], dict[str, list[dict]]]:
@@ -57,9 +59,14 @@ def _load() -> tuple[list[dict], dict[str, list[dict]]]:
     by: dict[str, list[dict]] = {}
     if not os.path.exists(_CSV_PATH):
         return rows, by
+    # A row dated after today is a seeded demo row that has not "happened" yet. Counting it
+    # gave corridors a last FIR in December and a recency measured back from it.
+    today = date.today().isoformat()
     with open(_CSV_PATH, encoding="utf-8-sig", newline="") as f:
         for i, r in enumerate(csv.DictReader(f)):
             r["_i"] = i
+            if _fir_date(r) > today:
+                continue
             rows.append(r)
             aid = (r.get("Accused_ID") or "").strip()
             if aid:
@@ -68,11 +75,15 @@ def _load() -> tuple[list[dict], dict[str, list[dict]]]:
 
 
 def _ensure() -> None:
-    global _rows, _by_accused
-    if _rows is None:
+    # Reloaded when the day changes: _load() leaves out rows dated after today, and those
+    # rows become part of the record at midnight.
+    global _rows, _by_accused, _loaded_on, _kidx
+    today = date.today().isoformat()
+    if _rows is None or _loaded_on != today:
         with _lock:
-            if _rows is None:
+            if _rows is None or _loaded_on != today:
                 _rows, _by_accused = _load()
+                _loaded_on, _kidx = today, None
 
 
 def refresh() -> dict:
@@ -80,7 +91,7 @@ def refresh() -> dict:
     global _rows, _by_accused, _kidx
     with _lock:
         _rows, _by_accused = _load()
-        _kidx = None
+        _kidx, _loaded_on = None, date.today().isoformat()
     return {"rows": len(_rows), "accused": len(_by_accused)}
 
 
@@ -330,7 +341,11 @@ def _row_by_ref(ref: str) -> dict | None:
         i = int(ref.split("-", 1)[1])
     except (ValueError, IndexError):
         return None
-    return _rows[i] if 0 <= i < len(_rows) else None
+    # 'EV-{i}' is the CSV row number, not a position in _rows: rows dated after today are
+    # left out, so positions shift. _rows stays in CSV order, so a bisect finds it.
+    from bisect import bisect_left
+    k = bisect_left(_rows, i, key=lambda r: r["_i"])
+    return _rows[k] if k < len(_rows) and _rows[k]["_i"] == i else None
 
 
 def _key_index() -> dict:

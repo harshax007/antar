@@ -135,3 +135,12 @@ def test_district_centroids_stay_in_karnataka():
     assert e._ka_point(28.6, 60.9) is None
     cent = e._district_centroids()
     assert cent and all(e._in_ka(c["lat"], c["lon"]) for c in cent.values())
+
+
+def test_rows_dated_after_today_are_not_in_the_ledger():
+    from datetime import date
+    from app.services import evidence_ledger as e
+    e.refresh()
+    today = date.today().isoformat()
+    assert all(e._fir_date(r) <= today for r in e._rows)
+    assert all(c["last_date"] <= today for c in e.corridors(50))
