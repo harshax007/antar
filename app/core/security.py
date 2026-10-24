@@ -287,3 +287,11 @@ def posture() -> dict:
     if "*" in settings.allowed_origins_list:
         warnings.append("ALLOWED_ORIGINS contains '*'")
     return {"production": prod, "auth_mode": auth_mode(), "warnings": warnings}
+
+
+def enforce_posture(p: dict) -> None:
+    """Start-up check. In production an unsigned identity is not a warning: any caller could
+    send X-Role: Admin, so the process refuses to start rather than serve case data."""
+    if p.get("production") and p.get("auth_mode") == "header":
+        raise RuntimeError("production without ANTAR_AUTH_SECRET: identity would be the unsigned "
+                           "X-Role/X-Officer header. Set ANTAR_AUTH_SECRET before starting.")

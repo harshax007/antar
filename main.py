@@ -330,6 +330,7 @@ async def lifespan(app: FastAPI):
           f"identity={_posture['auth_mode']}")
     for _w in _posture["warnings"]:
         print(f"  SECURITY: {_w}")
+    security.enforce_posture(_posture)
     # What runs must be what was reviewed: agent modules and system prompts against
     # agents.lock.json. A warning in development; in production a mismatch stops here.
     from app.agents import agent_lock

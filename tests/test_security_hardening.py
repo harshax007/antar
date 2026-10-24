@@ -279,3 +279,13 @@ class TestIngestionGates:
     def test_brain_seed_requires_admin(self):
         from main import app
         assert TestClient(app).post("/api/brain/seed", headers={"X-Role": "Inspector"}).status_code == 403
+
+
+class TestPostureEnforced:
+    def test_production_without_secret_refuses_to_start(self):
+        with pytest.raises(RuntimeError, match="ANTAR_AUTH_SECRET"):
+            security.enforce_posture({"production": True, "auth_mode": "header"})
+
+    def test_signed_production_and_header_development_start(self):
+        security.enforce_posture({"production": True, "auth_mode": "signed"})
+        security.enforce_posture({"production": False, "auth_mode": "header"})
