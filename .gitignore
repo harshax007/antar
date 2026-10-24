@@ -73,3 +73,6 @@ auth_local_credentials.txt
 *.gz
 data_sessions/
 app/seeds/data/
+
+# public downloads used to build data/district_indicators.csv (scripts/build_district_indicators.py)
+data/external/

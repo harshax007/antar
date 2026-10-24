@@ -1,0 +1,18 @@
+key,label,unit,source,year
+population_2011,Population,people,Census of India 2011,2011
+decadal_growth,Population growth 2001-11,%,Census of India 2011,2011
+density,Population density,per km2,Census of India 2011,2011
+sex_ratio_2011,Sex ratio,"women per 1,000 men",Census of India 2011,2011
+literacy_2011,Literacy,%,Census of India 2011,2011
+urban_pct,Living in urban areas,%,Census of India 2011,2011
+women_literate,Women who are literate,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+women_10y_school,Women with 10 or more years of schooling,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+child_marriage,Women 20-24 married before 18,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+teen_pregnancy,Women 15-19 already mothers or pregnant,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+electricity,Population in households with electricity,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+clean_fuel,Households using clean cooking fuel,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+sanitation,Population with improved sanitation,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+health_insurance,Households with health insurance,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+child_stunting,Children under 5 who are stunted,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+men_alcohol,Men 15+ who drink alcohol,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21
+men_tobacco,Men 15+ who use tobacco,%,"NFHS-5 district factsheets (IIPS, MoHFW)",2019-21

@@ -1815,6 +1815,9 @@ const avgConf = predictions?.length
                 {kn ? "ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ" : "How it works"}
               </button>
             )}
+            <a className="ui-btn ui-btn--ghost" href="/social">
+              {kn ? "ಜಿಲ್ಲಾ ಸಾಮಾಜಿಕ ಸೂಚಕಗಳು" : "District social indicators"}
+            </a>
           </div>
         </div>
         {/* provenance as one quiet line, not a row of pills */}

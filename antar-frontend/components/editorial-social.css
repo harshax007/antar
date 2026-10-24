@@ -1,0 +1,71 @@
+/* ── Social insights (app/(app)/social) · editorial layer on design-tokens.css ──
+   A reading page: the caveats up front, links as plain sentences with their numbers, a
+   scatter for the one selected, the districts as a sortable table. */
+
+.so-page { min-height: 100vh; padding: 88px 16px 64px; color: var(--text-1); }
+.so-wrap { max-width: 1320px; margin: 0 auto; }
+.so-head { padding-bottom: var(--sp-5); border-bottom: 1px solid var(--rule-2); }
+.so-eyebrow { display: block; margin-bottom: var(--sp-2); font: 500 var(--fs-caption)/1.4 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+html[lang="kn"] .so-eyebrow { letter-spacing: normal; text-transform: none; }
+.so-title { margin: 0; font: 700 clamp(26px, 3vw, 38px)/1.12 'Chakra Petch', sans-serif; letter-spacing: -.02em; text-wrap: balance; }
+.so-lede { margin: var(--sp-3) 0 0; max-width: 78ch; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+.so-caveats { margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4) var(--sp-3) calc(var(--sp-4) + 14px); border-radius: var(--r-md); border: 1px solid rgba(251,191,36,.25); background: rgba(251,191,36,.04); display: grid; gap: 4px; }
+.so-caveats li { font-size: 13px; line-height: 1.5; color: var(--text-2); }
+
+.so-cats { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); margin-top: var(--sp-5); border-bottom: 1px solid var(--rule-1); }
+.so-cats button { padding: var(--sp-2) 0; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--text-3); font: 500 var(--fs-label) 'Inter', sans-serif; cursor: pointer; }
+.so-cats button:hover { color: var(--text-1); }
+.so-cats button.on { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
+
+.so-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--sp-6); margin-top: var(--sp-5); }
+.so-block h2 { margin: 0 0 var(--sp-3); font: 600 11px/1.3 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+html[lang="kn"] .so-block h2 { letter-spacing: normal; text-transform: none; font-size: 13px; }
+.so-block h2 span { margin-left: 6px; color: var(--accent); }
+.so-block h3 { margin: 0 0 var(--sp-2); font: 600 13px 'Inter', sans-serif; color: var(--text-2); }
+.so-sub { margin: var(--sp-2) 0 0; font-size: 13px; line-height: 1.55; color: var(--text-3); }
+
+.so-links { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-1); }
+.so-links li { border-bottom: 1px solid var(--rule-1); border-left: 2px solid transparent; }
+.so-links li.on { border-left-color: var(--accent); background: rgba(34,230,240,.04); }
+.so-links button { display: grid; gap: 4px; width: 100%; padding: 12px 10px; border: 0; background: none; text-align: left; color: inherit; font-family: inherit; cursor: pointer; }
+.so-links .row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); }
+.so-links b { font-size: 14.5px; font-weight: 600; line-height: 1.45; color: var(--text-1); }
+.so-links em { flex: none; font: 600 13px 'JetBrains Mono', monospace; font-style: normal; }
+.so-links em.up { color: #FF8A5C; } .so-links em.down { color: #6FCFB4; }
+.so-links .meta { font-size: 12px; color: var(--text-3); }
+.so-links .reading { font-size: 12.5px; line-height: 1.5; color: var(--text-2); font-style: italic; }
+.so-more { margin-top: var(--sp-3); padding: 0; border: 0; background: none; color: var(--accent); font: 500 13px 'Inter', sans-serif; cursor: pointer; }
+.so-none { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: 2px; }
+.so-none li { display: flex; justify-content: space-between; gap: var(--sp-3); font-size: 12.5px; color: var(--text-3); }
+.so-none button { padding: 0; border: 0; background: none; color: var(--text-2); font: inherit; cursor: pointer; text-align: left; }
+
+.so-pick { display: grid; gap: 4px; margin-bottom: var(--sp-3); }
+.so-pick span { font-size: 12px; color: var(--text-3); }
+.so-pick select { height: 36px; padding: 0 10px; border-radius: var(--r-sm); border: 1px solid var(--rule-2); background: rgba(255,255,255,.03); color: var(--text-1); font: 500 13px 'Inter', sans-serif; }
+.so-pick option { background: #0B111C; }
+.so-chart { height: 380px; border-radius: var(--r-md); border: 1px solid var(--rule-2); background: rgba(255,255,255,.015); padding: 8px 4px 0; }
+.so-tip { display: grid; gap: 2px; padding: 8px 10px; border-radius: 6px; background: #0B111C; border: 1px solid var(--rule-2); font-size: 12px; color: var(--text-2); }
+.so-tip b { color: var(--text-1); }
+
+.so-tablewrap { margin-top: var(--sp-8); }
+.so-scroll { overflow-x: auto; }
+.so-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+.so-table th, .so-table td { padding: 8px 10px; border-bottom: 1px solid var(--rule-1); text-align: left; }
+.so-table thead th { border-bottom-color: var(--rule-2); }
+.so-table thead button { padding: 0; border: 0; background: none; color: var(--text-3); font: 600 11.5px 'Inter', sans-serif; cursor: pointer; text-align: left; }
+.so-table tbody th { font-weight: 600; color: var(--text-1); }
+.so-table td.n { font: 500 12.5px 'JetBrains Mono', monospace; color: var(--text-2); text-align: right; }
+.so-table tbody tr:hover { background: rgba(255,255,255,.02); }
+
+.so-vic { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-6); margin-top: var(--sp-3); }
+.so-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.so-bars li { display: grid; grid-template-columns: minmax(0, 1fr) 48px; grid-template-rows: auto 5px; gap: 3px 10px; font-size: 12.5px; color: var(--text-2); text-transform: capitalize; }
+.so-bars i { grid-column: 1; grid-row: 2; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--text-2) var(--w), rgba(148,163,184,.15) var(--w)); }
+.so-bars b { grid-column: 2; grid-row: 1 / 3; align-self: center; text-align: right; font: 600 12.5px 'JetBrains Mono', monospace; color: var(--text-1); }
+
+.so-foot { margin-top: var(--sp-8); padding-top: var(--sp-4); border-top: 1px solid var(--rule-1); font-size: 12px; line-height: 1.6; color: var(--text-3); }
+
+@media (max-width: 980px) {
+  .so-grid { grid-template-columns: 1fr; }
+  .so-vic { grid-template-columns: 1fr; }
+}
