@@ -87,7 +87,7 @@ whether the 2016-2023 sampling (one third per year) biases any district; data re
    must appear in the rows (G1), no-result honesty (G2), identifiers (G3), no filler (G4), length
    (G6), no concrete future date (`date_guard.py`).
 10. **Streaming.** Server-sent events: each agent's step, then the answer word by word, then
-    citations, evidence, visuals and next actions (`app/agents/chat_stream.py`, `app/core/sse.py`).
+    citations, evidence, visuals and next actions (`app/api/chat_stream.py`, `app/core/sse.py`).
 11. **Record.** Trace, reasoning trail, audit row (hash-chained), session checkpoint
     (`app/obs/trace.py`, `audit_store.py`, `checkpoint_store.py`).
 
