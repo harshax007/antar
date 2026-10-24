@@ -495,6 +495,8 @@ app.include_router(corridors.router,   prefix="/api/corridors", tags=["Corridor 
 app.include_router(linkage.router,     prefix="/api/linkage", tags=["MO Case-Matcher"])
 from app.api import case_api
 app.include_router(case_api.router,   prefix="/api/case", tags=["Case Timeline"], dependencies=[Depends(require_role("Constable"))])
+from app.api import money_api
+app.include_router(money_api.router,  prefix="/api/money", tags=["Money Trail"], dependencies=_inspector)
 app.include_router(vigil.router,       prefix="/api/vigil", tags=["Vigil Compliance Auditor"])
 app.include_router(hypothesis.router,  prefix="/api", tags=["Hypothesis Lifecycle"])
 app.include_router(ops.router,         prefix="/api/orchestrator", tags=["Orchestrator Ops"])

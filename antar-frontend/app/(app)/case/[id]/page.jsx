@@ -124,6 +124,8 @@ export default function CasePage() {
                 {data.sections?.length > 0 && <div><dt>{L("Sections", "ಸೆಕ್ಷನ್‌ಗಳು")}</dt><dd className="wrap">{data.sections.join(", ")}</dd></div>}
                 {data.place && <div><dt>{L("Place", "ಸ್ಥಳ")}</dt><dd className="wrap">{data.place}</dd></div>}
                 {data.io && <div><dt>{L("Investigating officer", "ತನಿಖಾಧಿಕಾರಿ")}</dt><dd className="wrap">{data.io}</dd></div>}
+                {data.upi && <div><dt>{L("UPI ID on the FIR", "FIR ನಲ್ಲಿನ UPI ಐಡಿ")}</dt><dd className="wrap">
+                  <button type="button" className="cs-link" onClick={() => router.push(`/money?account=${encodeURIComponent(data.upi)}`)}>{data.upi} · {L("Follow the money →", "ಹಣವನ್ನು ಅನುಸರಿಸಿ →")}</button></dd></div>}
               </dl>
             </section>
 

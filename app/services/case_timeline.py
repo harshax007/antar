@@ -38,7 +38,7 @@ MIN_DECIDED = 10                 # a conviction rate over fewer verdicts than th
 _COLS = ("fir_id, CrimeNo, date, zone, District_Name, district_norm, UnitName, station, FIR_Type, FIR_Stage, "
          "status, CrimeGroup_Name, CrimeHead_Name, crime_type, ActSection, Place_of_Offence, "
          "Village_Area_Name, Beat_Name, IOName, VICTIM_COUNT, Male, Female, Boy, Girl, Accused_Count, "
-         "Arrested_Count_No_, Accused_ChargeSheeted_Count, Conviction_Count, Accused_ID, MO_Details, "
+         "Arrested_Count_No_, Accused_ChargeSheeted_Count, Conviction_Count, Accused_ID, MO_Details, UPI_ID, "
          "is_synthetic_row")
 
 # How each recorded stage reads, and where it leaves the case.
@@ -272,6 +272,7 @@ def build(con: sqlite3.Connection, r: sqlite3.Row) -> dict:
                    "victims_by": {"men": _int(r["Male"]), "women": _int(r["Female"]),
                                   "boys": _int(r["Boy"]), "girls": _int(r["Girl"])}},
         "mo": r["MO_Details"],
+        "upi": (r["UPI_ID"] or "").strip() or None,
         "summary": " ".join(bits),
         "steps": steps,
         "similar": _similar(con, r),

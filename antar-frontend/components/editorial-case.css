@@ -81,3 +81,4 @@ html[lang="kn"] .cs-summary h2, html[lang="kn"] .cs-block h2 { letter-spacing: n
   .cs-grid { grid-template-columns: 1fr 1fr; }
 }
 .cs-few { margin-top: var(--sp-3); }
+.cs-link { padding: 0; border: 0; background: none; color: var(--accent); font: 500 13px "Inter", sans-serif; cursor: pointer; text-align: right; }

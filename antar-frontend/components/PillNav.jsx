@@ -139,6 +139,7 @@ export default function PillNav() {
     { en: "MAP", kn: "ನಕ್ಷೆ", href: "/map" },
     { en: "PREDICT", kn: "ಮುನ್ಸೂಚನೆ", href: "/predict" },
     { en: "SEARCH", kn: "ಹುಡುಕಾಟ", href: "/search" },
+    { en: "MONEY", kn: "ಹಣ", href: "/money" },
   ];
   // APPROVALS used to sit here. It now lives inside Account (the queue is personal to the
   // officer, not a screen of the investigation), and its pending count rides on ACCOUNT.
