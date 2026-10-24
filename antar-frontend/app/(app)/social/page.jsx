@@ -174,7 +174,8 @@ export default function SocialInsights() {
               </tbody>
             </table>
           </div>
-          <p className="so-sub">{L(`Rates are FIRs in the register per lakh people a year, ${d.years[0]}-${d.years[1]}, on 2011 population. Police districts are added into their revenue district (Bengaluru City into Bengaluru Urban, Hubballi-Dharwad City into Dharwad, and so on); statewide units (${d.excluded_units.join(", ")}) are left out. Ballari includes Vijayanagara, as both sources predate it.`, "")}</p>
+          <p className="so-sub">{L(`Rates are FIRs in the register per lakh people a year, ${d.years[0]}-${d.years[1]}, on 2011 population. Police districts are added into their revenue district (Bengaluru City into Bengaluru Urban, Hubballi-Dharwad City into Dharwad, and so on); statewide units (${d.excluded_units.join(", ")}) are left out. Ballari includes Vijayanagara, as both sources predate it.`,
+            `ದರ: ದಾಖಲೆಯಲ್ಲಿನ FIR ಗಳು, ವರ್ಷಕ್ಕೆ ಲಕ್ಷ ಜನರಿಗೆ, ${d.years[0]}-${d.years[1]}, 2011 ರ ಜನಸಂಖ್ಯೆಯ ಮೇಲೆ. ಪೊಲೀಸ್ ಜಿಲ್ಲೆಗಳನ್ನು ಕಂದಾಯ ಜಿಲ್ಲೆಗೆ ಸೇರಿಸಲಾಗಿದೆ; ರಾಜ್ಯವ್ಯಾಪಿ ಘಟಕಗಳನ್ನು (${d.excluded_units.join(", ")}) ಹೊರಗಿಡಲಾಗಿದೆ. ಬಳ್ಳಾರಿಯಲ್ಲಿ ವಿಜಯನಗರವೂ ಸೇರಿದೆ.`)}</p>
         </section>
 
         {vic && (
