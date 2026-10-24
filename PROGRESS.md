@@ -137,6 +137,20 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Geo intel: links between districts as next steps · 2026-10-24
+
+The Map's "Links between districts" dialog now answers "which district do I call about
+this person?". A "My district" filter turns every row into the other district to contact.
+Each open row leads with the next step, then shows the counts, then the accused, with
+Open in Search for S-ids and Copy id for the rest. Rows carry a freshness tag (Active
+within 90 days, This year, Older) worked out from today's date. The server's
+`recency_days` counts back from its newest row, which can be a future-dated demo row,
+so it called a link "Active" while showing no date. Plain `ACC-nnnnnn` corridor ids are
+not in the 10-lakh register (that uses `ACC-KA-nnnnnn`), so Chat can't answer them. The
+dialog says to quote the id rather than offering a Chat link that would come back empty.
+
+---
+
 ## Demo day set up: Thursday 29 Oct 2026 · 2026-10-23
 
 Plan, proof and run sheet: **`docs/DEMO_DAY_29OCT.md`**. Readiness, every morning:
