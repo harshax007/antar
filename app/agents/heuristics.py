@@ -653,6 +653,15 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
                                       "ವಯಸ್ಸು", "ಲಿಂಗ", "ಸಂತ್ರಸ್ತ", "ಜನಸಂಖ್ಯಾ"]):
         entity = "victims" if ("victim" in low or "ಸಂತ್ರಸ್ತ" in low) else "suspects"
         dim = "age_band" if (_age or "ವಯಸ್ಸು" in low) else "gender"
+        if entity == "victims":
+            if re.search(r"\b(relation|relationship|knew|known to|related|stranger)", low):
+                dim = "relation"
+            elif re.search(r"\b(occupation|job|profession|work)", low):
+                dim = "occupation"
+            elif re.search(r"\b(child|children|minor|minors|boys?|girls?)\b", low) and not _age:
+                dim = "age_group"
+            # victims are linked to FIRs, so the crime and the place asked about apply
+            return choice("T7", {"entity": entity, "dimension": dim, "crime_types": ct, "zones": zones})
         return choice("T7", {"entity": entity, "dimension": dim})
     # top suspects (MUST be checked before T11 so 'top suspects in Rajajinagar' routes to T4)
     if "top suspect" in low or ("suspect" in low and ("top" in low or "most" in low)) \

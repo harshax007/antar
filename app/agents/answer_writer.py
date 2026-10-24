@@ -560,10 +560,30 @@ def _w_split(rows, kn, params, template_id):
     else:
         ent = params.get("entity") or "victims"
         ent_kn = "ಸಂತ್ರಸ್ತರು" if ent == "victims" else "ಶಂಕಿತರು"
-        label = (f"{top} ವಯಸ್ಸಿನವರು" if (kn and is_age) else
-                 top if key == "gender" or kn else f"aged {top}")
+        # victims are linked to FIRs, so the crime and the place asked about are named
+        cts, zones = params.get("crime_types") or [], params.get("zones") or []
+        who = ent
+        if ent == "victims" and not kn and (cts or zones):
+            who = ((" / ".join(_crime_word(c, False) for c in cts) + " ") if cts else "") + "victims"                   + (f" in {', '.join(zones)}" if zones else "")
+        dim = params.get("dimension")
+        if kn:
+            label = f"{top} ವಯಸ್ಸಿನವರು" if is_age else top
+        elif key == "gender" or dim == "age_group":
+            label = {"adult": "adults", "child": "children"}.get(str(top), top)
+        elif dim == "relation":
+            label = f"{top} to the accused" if str(top) in ("family", "in-laws", "neighbour", "employee") else str(top)
+            if str(top) in ("stranger", "stranger, online"):
+                label = "strangers to the accused" if top == "stranger" else "strangers met online"
+            elif str(top) in ("acquaintance", "business contact"):
+                label = f"{top}s of the accused"
+            elif str(top) == "spouse":
+                label = "the accused's spouse"
+        elif dim == "occupation":
+            label = str(top)
+        else:
+            label = f"aged {top}"
         lead = (f"[COMPUTED] ಹೆಚ್ಚಿನ {ent_kn} **{label}** — {_fmt(total)} ರಲ್ಲಿ {_fmt(n)} ({p}%)." if kn else
-                f"[COMPUTED] Most {ent} are **{label}** — {_fmt(n)} of {_fmt(total)} ({p}%).")
+                f"[COMPUTED] Most {who} are **{label}** — {_fmt(n)} of {_fmt(total)} ({p}%).")
         head = "ವಿಭಜನೆ:" if kn else "Breakdown:"
     lines = [lead, head]
     for i, (lab, c) in enumerate(items[:8], 1):

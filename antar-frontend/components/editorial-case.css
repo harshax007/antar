@@ -82,3 +82,7 @@ html[lang="kn"] .cs-summary h2, html[lang="kn"] .cs-block h2 { letter-spacing: n
 }
 .cs-few { margin-top: var(--sp-3); }
 .cs-link { padding: 0; border: 0; background: none; color: var(--accent); font: 500 13px "Inter", sans-serif; cursor: pointer; text-align: right; }
+.cs-victims { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-1); }
+.cs-victims li { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--rule-1); }
+.cs-victims b { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
+.cs-victims span { font-size: 12.5px; color: var(--text-3); }

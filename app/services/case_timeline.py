@@ -157,6 +157,18 @@ def _similar(con: sqlite3.Connection, r: sqlite3.Row) -> dict | None:
     return None
 
 
+def _victims(con: sqlite3.Connection, fir_id: str) -> list[dict]:
+    """The FIR's victims, one row each (the victims table, matched to the FIR's counts)."""
+    try:
+        rows = con.execute("SELECT victim_id, gender, age_group, age_band, occupation, relation FROM victims "
+                           "WHERE fir_id = ? ORDER BY victim_id LIMIT 25", (fir_id,)).fetchall()
+    except sqlite3.OperationalError:            # an older database without the linked table
+        return []
+    sex = {"M": "Male", "F": "Female"}
+    return [{"id": v["victim_id"], "sex": sex.get(v["gender"], v["gender"]), "age_group": v["age_group"],
+             "age_band": v["age_band"], "occupation": v["occupation"], "relation": v["relation"]} for v in rows]
+
+
 def _other_firs(con: sqlite3.Connection, r: sqlite3.Row) -> dict | None:
     """Other FIRs that name the same accused id (indexed): the accused's record in brief."""
     aid = (r["Accused_ID"] or "").strip()
@@ -273,6 +285,7 @@ def build(con: sqlite3.Connection, r: sqlite3.Row) -> dict:
                                   "boys": _int(r["Boy"]), "girls": _int(r["Girl"])}},
         "mo": r["MO_Details"],
         "upi": (r["UPI_ID"] or "").strip() or None,
+        "victims": _victims(con, r["fir_id"]),
         "summary": " ".join(bits),
         "steps": steps,
         "similar": _similar(con, r),

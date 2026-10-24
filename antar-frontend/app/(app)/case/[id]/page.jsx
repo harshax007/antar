@@ -129,6 +129,20 @@ export default function CasePage() {
               </dl>
             </section>
 
+            {data.victims?.length > 0 && (
+              <section className="cs-block">
+                <h2>{L("Victims", "ಸಂತ್ರಸ್ತರು")}</h2>
+                <ul className="cs-victims">
+                  {data.victims.map((v) => (
+                    <li key={v.id}>
+                      <b>{v.sex}{v.age_group === "child" ? L(", child", ", ಮಗು") : ""} · {v.age_band}</b>
+                      <span>{[v.occupation, v.relation ? L(`${v.relation} to the accused`, `ಆರೋಪಿಗೆ ${v.relation}`) : null].filter(Boolean).join(" · ")}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {sim && (
               <section className="cs-block">
                 <h2>{L("How cases like this ended", "ಇಂತಹ ಪ್ರಕರಣಗಳು ಹೇಗೆ ಮುಗಿದವು")}</h2>

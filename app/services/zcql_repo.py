@@ -801,7 +801,8 @@ def ast_to_spec(ast: ZCQLQueryAST) -> QuerySpec:
         "crimes": {"crime_id", "fir_number", "crime_type", "act", "acts_sections", "cognizable", "station_code", "district", "zone", "lat", "lon", "occurred_at", "reported_at", "status", "severity", "complainant_name", "io_officer_id", "io_name", "io_rank", "narrative_doc_id", "lat_r", "lon_r", "month"},
         "suspects": {"suspect_id", "full_name", "father_name", "alias", "age", "gender", "nationality", "phone_hash", "address_zone", "occupation", "prior_count", "arrest_status"},
         "property": {"property_id", "crime_id", "fir_number", "property_type", "value_inr", "status"},
-        "victims": {"victim_id", "age_band", "gender", "occupation", "zone"},
+        "victims": {"victim_id", "fir_id", "age_band", "age_group", "gender", "occupation", "zone", "district",
+                    "crime_type", "relation"},
         "crime_suspects": {"id", "crime_id", "suspect_id", "role"},
         "relationships": {"rel_id", "suspect_a", "suspect_b", "rel_type", "strength", "source_crime_id"},
         "financial_links": {"link_id", "suspect_id", "counterparty", "txn_count", "amount_band", "flag_reason"},
@@ -1187,10 +1188,11 @@ def _t5(p: RepeatOffenders) -> QuerySpec:
     )
 
 
-_VALID_DIMS = {"age_band", "gender", "occupation", "zone", "address_zone"}
+_VALID_DIMS = {"age_band", "gender", "occupation", "zone", "address_zone", "relation", "age_group"}
 _DIM_SYNONYMS = {"age": "age_band", "sex": "gender", "job": "occupation",
                  "profession": "occupation", "area": "zone", "location": "zone",
-                 "region": "zone", "place": "zone"}
+                 "region": "zone", "place": "zone", "relationship": "relation",
+                 "relation_to_accused": "relation", "child": "age_group", "children": "age_group"}
 
 
 def _as_dimension(v: Any) -> str:
@@ -1200,13 +1202,16 @@ def _as_dimension(v: Any) -> str:
     return s if s in _VALID_DIMS else "gender"
 
 
-Dimension = Annotated[Literal["age_band", "gender", "occupation", "zone", "address_zone"],
+Dimension = Annotated[Literal["age_band", "gender", "occupation", "zone", "address_zone", "relation", "age_group"],
                       BeforeValidator(_as_dimension)]
 
 
 class DemographicBreakdown(BaseModel):
     entity: Literal["victims", "suspects"] = "victims"
     dimension: Dimension = "gender"
+    # victims only: each victim row carries its FIR's crime type and place
+    crime_types: CrimeTypeList = Field(default_factory=list)
+    zones: StrList = Field(default_factory=list)
 
 
 def _t7(p: DemographicBreakdown) -> QuerySpec:
@@ -1215,10 +1220,19 @@ def _t7(p: DemographicBreakdown) -> QuerySpec:
         dim = "age"  # suspects table has raw age
     if p.entity == "suspects" and dim == "zone":
         dim = "address_zone"
+    if p.entity == "suspects" and dim in ("relation", "age_group"):
+        dim = "gender"                       # a victim's attributes, not a suspect's
+    filters = []
+    if p.entity == "victims":
+        if p.crime_types:
+            filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+        zones = resolve_zones(p.zones)
+        if zones:
+            filters.append(Filter("zone", "in", zones))
     return QuerySpec(
         table=p.entity, select=[dim],
         aggregates=[Aggregate("count", f"{p.entity[:-1]}_id", "n")],
-        group_by=[dim], order_by=("n", "desc"), limit=50, olap=True,
+        filters=filters, group_by=[dim], order_by=("n", "desc"), limit=50, olap=True,
     )
 
 
