@@ -378,6 +378,7 @@ export function ForecastCard({ fc, kn, sessionRole }) {
   if (!fc.selected) return null;
   const f = d?.forecast?.[String(fc.horizon)] || d?.forecast?.["7"];
   const canPropose = sessionRole && sessionRole !== "Approver";
+  const say = (en, kan) => (kn ? kan : en);
 
   const evidence = f ? [
     { label: kn ? "ಮುನ್ಸೂಚನೆ (I)" : "Forecast (Inferred)", value: f.summary },
@@ -403,43 +404,108 @@ export function ForecastCard({ fc, kn, sessionRole }) {
       {d?.error && <p className="fx-note">{d.error}</p>}
       {!d && <p className="fx-muted">…</p>}
 
-      {f && (
+      {f && (() => {
+        const thin = f.history === "thin";
+        const days = fc.horizon === 7 ? t("next7", kn) : t("next28", kn);
+        const unitWord = d.category === "ALL" ? "FIRs" : d.category_label;
+        // against a usual period here, in words: within 10% reads as usual
+        const vs = typeof f.vs_usual === "number" ? f.vs_usual : null;
+        const pct = vs == null ? null : Math.round(Math.abs(vs) * 100);
+        const level = vs == null ? null : vs >= 0.1 ? "up" : vs <= -0.1 ? "down" : "same";
+        const levelText = level === "up" ? say(`${pct}% above usual`, `ಸಾಮಾನ್ಯಕ್ಕಿಂತ ${pct}% ಹೆಚ್ಚು`)
+          : level === "down" ? say(`${pct}% below usual`, `ಸಾಮಾನ್ಯಕ್ಕಿಂತ ${pct}% ಕಡಿಮೆ`)
+          : level === "same" ? say("About usual", "ಸುಮಾರು ಸಾಮಾನ್ಯ") : null;
+        // what the model weighed, largest effect first, when no single reason is notable
+        const steps = (f.why?.steps || []).slice().sort((p, q) => Math.abs(q.factor - 1) - Math.abs(p.factor - 1)).slice(0, 4);
+        // the 26 weeks, in one line
+        const hist = d.history || [];
+        const avg = hist.length ? hist.reduce((x, h) => x + h.firs, 0) / hist.length : null;
+        const peak = hist.reduce((m, h) => (!m || h.firs > m.firs ? h : m), null);
+        const byType = (d.by_category_7d || []).filter((c) => c.hi80 > 0);
+        const heads = (d.top_crime_heads || []).filter((h) => !/^other$/i.test(h.crime_head));
+        const tr = d.track_record;
+        const seeded = typeof d.as_of?.real_share === "number" && d.as_of.real_share < 1 ? Math.round((1 - d.as_of.real_share) * 100) : null;
+        return (
         <>
           <div className="fx-range">
-            <span className="fx-i">I</span>
-            {f.history === "thin" ? <p>{f.summary}</p> : (
+            <span className="fx-i" title={say("Inferred: a forecast, not a record", "ಅನುಮಾನಿತ: ಮುನ್ಸೂಚನೆ, ದಾಖಲೆಯಲ್ಲ")}>I</span>
+            {thin ? <p>{f.summary}</p> : (
               <>
-                <div className="big">{rangeText(f.band80.lo, f.band80.hi)}<small> {d.category === "ALL" ? "FIRs" : d.category_label}</small></div>
-                <p>{kn ? "ಸಂಭವನೀಯ" : "likely"} · {kn ? "ಬಹಳ ಸಂಭವನೀಯ" : "very likely"} {rangeText(f.band90.lo, f.band90.hi)} · {fc.horizon === 7 ? t("next7", kn) : t("next28", kn)}
-                  {f.usual > 0 && <> · {kn ? "ಸಾಮಾನ್ಯವಾಗಿ" : "usually"} {f.usual.toFixed(1)}</>}</p>
+                <span className="fx-when">{days}</span>
+                <div className="big">{rangeText(f.band80.lo, f.band80.hi)}<small> {unitWord}</small></div>
+                {levelText && <span className={`fx-level ${level}`}>{levelText}</span>}
+                <dl className="fx-bands">
+                  <div><dt>{say("Most likely", "ಹೆಚ್ಚು ಸಂಭವನೀಯ")}</dt><dd>{rangeText(f.band80.lo, f.band80.hi)}<small>{say("8 in 10 chance", "10 ರಲ್ಲಿ 8 ಅವಕಾಶ")}</small></dd></div>
+                  <div><dt>{say("Wider range", "ವಿಶಾಲ ಶ್ರೇಣಿ")}</dt><dd>{rangeText(f.band90.lo, f.band90.hi)}<small>{say("9 in 10 chance", "10 ರಲ್ಲಿ 9 ಅವಕಾಶ")}</small></dd></div>
+                  {f.usual > 0 && <div><dt>{fc.horizon === 7 ? say("A usual week", "ಸಾಮಾನ್ಯ ವಾರ") : say("A usual 28 days", "ಸಾಮಾನ್ಯ 28 ದಿನ")}</dt><dd>{Math.round(f.usual)}<small>{say("FIRs here", "ಇಲ್ಲಿ FIR")}</small></dd></div>}
+                </dl>
               </>
             )}
           </div>
 
-          <h6>{t("why", kn)}</h6>
+          <h6>{say("Why this number", "ಈ ಸಂಖ್ಯೆ ಏಕೆ")}</h6>
           {f.drivers.length ? (
             <ul className="fx-why">
               {f.drivers.slice(0, 4).map((r) => (
                 <li key={r.key} className={r.factor > 1 ? "up" : "down"}><b>{r.effect}</b><span>{r.text}</span></li>
               ))}
             </ul>
-          ) : <p className="fx-muted">{t("noReasons", kn)}</p>}
-
-          <h6>{t("weeks26", kn)}</h6>
-          <Weeks history={d.history} ahead={d.ahead} />
-
-          {d.top_crime_heads?.length > 0 && (
+          ) : (
             <>
-              <h6>{t("heads", kn)}</h6>
+              <p className="fx-plain">{say("Close to a usual period here. No single reason moves it by 10% or more.", t("noReasons", kn))}</p>
+              {steps.length > 0 && (
+                <ul className="fx-why fx-why-flat" aria-label={say("What the forecast weighed", "ಮುನ್ಸೂಚನೆ ಪರಿಗಣಿಸಿದ್ದು")}>
+                  {steps.map((r) => <li key={r.key}><b>{r.effect}</b><span>{r.label}</span></li>)}
+                </ul>
+              )}
+            </>
+          )}
+
+          <h6>{say("Last 26 weeks and the week ahead", t("weeks26", kn))}</h6>
+          <Weeks history={hist} ahead={d.ahead} />
+          <p className="fx-legend">
+            <span><i className="sw bar" />{say("FIRs each week", "ಪ್ರತಿ ವಾರದ FIR")}</span>
+            <span><i className="sw ahead" />{say("Week ahead, with its range", "ಮುಂದಿನ ವಾರ, ಶ್ರೇಣಿಯೊಂದಿಗೆ")}</span>
+          </p>
+          {avg != null && (
+            <p className="fx-small">{say(`Average ${avg.toFixed(1)} a week. Busiest: ${peak.firs} in the week of ${prettyIso(peak.week_start)}.`,
+                                       `ವಾರಕ್ಕೆ ಸರಾಸರಿ ${avg.toFixed(1)}. ಹೆಚ್ಚು: ${prettyIso(peak.week_start)} ವಾರದಲ್ಲಿ ${peak.firs}.`)}</p>
+          )}
+
+          {d.category === "ALL" && byType.length > 0 ? (
+            <>
+              <h6>{say("Next 7 days by type", "ಮುಂದಿನ 7 ದಿನ, ಪ್ರಕಾರದಂತೆ")}</h6>
               <ul className="fx-heads">
-                {d.top_crime_heads.map((h) => <li key={h.crime_head}><span>{h.crime_head}</span><b>{h.firs}</b></li>)}
+                {byType.map((c) => <li key={c.category}><span>{c.label}</span><b>{rangeText(c.lo80, c.hi80)}</b></li>)}
+              </ul>
+            </>
+          ) : heads.length > 0 && (
+            <>
+              <h6>{say("Most reported here, last 52 weeks", t("heads", kn))}</h6>
+              <ul className="fx-heads">
+                {heads.map((h) => <li key={h.crime_head}><span>{h.crime_head}</span><b>{h.firs}</b></li>)}
               </ul>
             </>
           )}
 
-          {d.track_record && (<><h6>{t("record", kn)}</h6><p className="fx-small">{d.track_record.text}</p></>)}
+          {tr && (
+            <>
+              <h6>{t("record", kn)}</h6>
+              <p className="fx-plain">{tr.weeks_flagged
+                ? say(`Flagged as a top-5% hotspot in ${tr.weeks_flagged} of the ${tr.weeks} weeks it was tested on.`,
+                    `ಪರೀಕ್ಷಿಸಿದ ${tr.weeks} ವಾರಗಳಲ್ಲಿ ${tr.weeks_flagged} ವಾರ ಮೇಲಿನ 5% ಹಾಟ್‌ಸ್ಪಾಟ್ ಆಗಿತ್ತು.`)
+                : say(`Not flagged as a top-5% hotspot in any of the ${tr.weeks} weeks it was tested on.`,
+                    `ಪರೀಕ್ಷಿಸಿದ ${tr.weeks} ವಾರಗಳಲ್ಲಿ ಒಮ್ಮೆಯೂ ಮೇಲಿನ 5% ಹಾಟ್‌ಸ್ಪಾಟ್ ಆಗಿರಲಿಲ್ಲ.`)}</p>
+            </>
+          )}
 
-          <p className="fx-small fx-basis-line">{d.as_of.basis} {d.limits?.[0]}</p>
+          <div className="fx-datanote">
+            {seeded != null && seeded > 0 && (
+              <p><b>{say("Demonstration data.", "ಪ್ರದರ್ಶನ ದತ್ತಾಂಶ.")}</b> {say(`${seeded}% of the last 13 weeks here is seeded, not the real record.`,
+                                                                          `ಇಲ್ಲಿನ ಕಳೆದ 13 ವಾರಗಳ ${seeded}% ಬೀಜ ದತ್ತಾಂಶ, ನೈಜ ದಾಖಲೆಯಲ್ಲ.`)}</p>
+            )}
+            {(d.limits || []).map((x, k) => <p key={k}>{x}</p>)}
+          </div>
 
           {canPropose && (
             <button className="mx-hitl-btn fx-propose" onClick={() => setPropose(true)}
@@ -454,7 +520,8 @@ export function ForecastCard({ fc, kn, sessionRole }) {
             }}
             evidence={evidence} />
         </>
-      )}
+        );
+      })()}
     </section>
   );
 }
