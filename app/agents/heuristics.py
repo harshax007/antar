@@ -370,11 +370,21 @@ def _volume_q(low: str) -> bool:
                 or "ಪ್ರಮಾಣದ ಪ್ರಕಾರ" in low)
 
 
+_DATA_MISSING_RE = re.compile(r"\bmissing\s+(?:gps\s+)?(?:coordinates?|gps|locations?|lat\w*|long\w*|fields?|data|values?|"
+                              r"sections?|dates?|entries|records?|information|info|details|columns?)\b")
+# A question that points back at the previous answer.
+_FOLLOW_UP_RE = re.compile(r"\b(those|these|them|that list|the same|same (?:district|place|zone|period|date range)|"
+                           r"narrow|filter (?:those|these|them|it)|from the cases|of them|previous (?:result|answer|list)|"
+                           r"preceding|you (?:just )?(?:listed|showed))\b")
+
+
 def extract_entities(text: str, history: list[dict] | None = None) -> dict:
     """Pull crime_types, zones (incl. regions), months hint, geo dimensions, limits, and date ranges from EN or KN text.
     Carries over missing entities from the immediate previous user turn if history is provided."""
     low = _norm(text)
-    crime_types = _match_crime_terms(low)
+    # "missing coordinates", "missing fields" is a data-quality question, not the
+    # Missing Person crime group: Q031 ("cases with missing coordinates") listed missing persons.
+    crime_types = _match_crime_terms(_DATA_MISSING_RE.sub(" ", low))
     if "snatch" in low and "chain_snatching" not in crime_types:
         crime_types.append("chain_snatching")
     # The word "vehicle" used to add vehicle theft to every question that contained it:
@@ -458,15 +468,23 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
     else:
         period = next((p for k, p in _PERIOD_WORDS if k in low), None)
 
-    # Contextual carry-over from history
+    # Contextual carry-over from history. The previous question fills what this one leaves
+    # out. A follow-up that points back ("those results", "the same district", "narrow
+    # that") looks further, up to three questions, and carries the period too: in "list
+    # crimes in Rajajinagar" -> "only the thefts" -> "narrow those to over 30 days old",
+    # the third question used to lose Rajajinagar, because the second never named it.
     if history and len(history) >= 2:
-        last_user = next((t for t in reversed(history[:-1]) if t.get("role") == "user"), None)
-        if last_user:
-            prev_ent = extract_entities(last_user["text"], history=None)
+        users = [t for t in reversed(history[:-1]) if t.get("role") == "user"]
+        back = users[:3] if _FOLLOW_UP_RE.search(low) else users[:1]
+        for prev in back:
+            prev_ent = extract_entities(prev.get("text") or "", history=None)
             if not crime_types and prev_ent.get("crime_types"):
                 crime_types = prev_ent["crime_types"]
             if not zones and prev_ent.get("zones"):
                 zones = prev_ent["zones"]
+            if back is not users[:1] and not (date_from or period) and (prev_ent.get("date_from") or prev_ent.get("period")):
+                date_from, date_to, period = prev_ent.get("date_from"), prev_ent.get("date_to"), prev_ent.get("period")
+                period_label, span_kind = prev_ent.get("period_label"), prev_ent.get("span_kind")
 
     # status words (unsolved/open/solved…) — word-boundary so 'solved' does not fire in 'unsolved'
     statuses = []
@@ -605,6 +623,31 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         return choice("T19", {"key_type": _kt, "min_districts": _min, "zones": zones,
                               "crime_types": _ct19, "limit": limit_val})
 
+    # "UPI ids shared across multiple cyber fraud cases", "accused appearing in multiple cases
+    # in Bagalkot": an identifier repeated across FIRs. The cross-district link table is the
+    # register's answer (an identifier on FIRs in two or more districts); these used to get a
+    # district ranking or a list of ten unrelated FIRs.
+    if _kt != "any" and re.search(
+            r"\b(shared|appear\w*|used|common|repeat\w*|recurring|linked)\b[^.?!]{0,40}"
+            r"\b(multiple|more than one|several|many|different|other|two or more)\s+(?:[a-z-]+\s+){0,2}(cases?|firs?|frauds?|complaints?|crimes?)\b",
+            low):
+        return choice("T19", {"key_type": _kt, "min_districts": 2, "zones": zones,
+                              "crime_types": [c for c in ct if c != "VEHICLE_THEFT"], "limit": limit_val})
+
+    # "List all police stations in Bagalkot": the stations, with their FIR counts.
+    if re.search(r"\b(list|all|which|show|name)\b[^.?!]{0,30}\bpolice stations?\b|\bpolice stations? (?:in|of|under)\b", low) \
+            and not ct and zones:
+        return choice("T11", {"dimension": "station_code", "zones": zones, "limit": 50,
+                              "date_from": date_from, "date_to": date_to, "period": period})
+
+    # "Most frequently recorded crime sub-heads in 2023": the register's sub-headings ranked.
+    if re.search(r"\bsub[- ]?heads?\b|\bsub[- ]?headings?\b|\bcrime heads?\b", low):
+        _nw = re.search(r"\b(\d{1,2}|three|five|ten)\s+(?:most|top|largest|biggest)\b|\btop\s+(\d{1,2})\b", low)
+        _n = {"three": 3, "five": 5, "ten": 10}.get(_nw.group(1), None) if _nw and _nw.group(1) else None
+        _lim = _n or (int(_nw.group(1) or _nw.group(2)) if _nw else 12)
+        return choice("T25", {"by": "head", "crime_types": ct, "zones": zones, "limit": max(1, min(_lim, 30)),
+                              "date_from": date_from, "date_to": date_to, "period": period})
+
     # Vehicle registration ("Check if vehicle KA-02-M-2093 has any pending challans or FIRs").
     # Checked first: words like "pending" otherwise routed it to the case-status breakdown.
     _plate = re.search(r"\b([A-Z]{2})[\s-]?(\d{1,2})[\s-]?([A-Z]{1,3})[\s-]?(\d{1,4})\b", (user_text or "").upper())
@@ -618,6 +661,18 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     _sid = re.search(r"\bS\d{3,}\b", user_text, re.IGNORECASE)
     if _sid:
         return choice("T9", {"suspect_id": _sid.group(0).upper()})
+
+    # "Compare those results with the preceding period of equal length": the previous
+    # question's filters (carried by extract_entities) against the period before. A year
+    # asked about compares with the year before it; otherwise the monthly trend, whose
+    # direction line is that comparison. It used to be turned away as off-topic.
+    if history and re.search(r"\b(compare|versus|vs\.?|against)\b", low) and re.search(
+            r"\b(preceding|previous|prior|earlier|before)\b[^.?!]{0,20}\b(period|months?|weeks?|years?|quarters?|window)\b"
+            r"|\b(equal|same) length\b|\bperiod before\b", low):
+        if span_kind == "year" and date_from:
+            y = int(str(date_from)[:4])
+            return choice("T27", {"dimension": "year", "years": [y - 1, y], "crime_types": ct, "zones": zones})
+        return choice("T3", {"crime_types": ct, "zones": zones, "months": 12})
 
     # deep research / KUL
     if any(w in low for w in ["deep research", "investigate", "everything about", "who could be behind", "research", "kul", "dossier"]):
@@ -905,6 +960,11 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     # "find burglary cases involving …" names a crime, not a person
     if name and ct and "who is" not in low and any(
             w in name.lower() for w in ("case", "crime", "fir", "theft", "burglar", "robber", "murder", "fraud", "cheat")):
+        name = None
+    # "complainant Raju reported a phone theft" names the complainant: looking that name up
+    # among suspects puts a member of the public beside 25 accused who share it.
+    if name and re.search(r"\b(complainant|victim|witness|informant|reported by|filed by)\s+(?:named\s+|called\s+)?"
+                          + re.escape(name.split()[0]), user_text or "", re.I):
         name = None
     if any(w in low for w in ["who is", "find suspect", "find name", "find -name", "find", "look up", "details of"]) or name:
         if name:

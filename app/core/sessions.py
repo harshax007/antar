@@ -159,8 +159,12 @@ def all_turns(session_id: str) -> list[dict]:
     return list(_session(session_id)["turns"])
 
 
-def recent_turns(session_id: str, n: int = 6) -> list[dict]:
-    """Last n turns as lightweight context for the LLM (role + text only)."""
+def recent_turns(session_id: str, n: int = 8) -> list[dict]:
+    """Last n turns as lightweight context for the LLM (role + text only).
+
+    8, not 6: the list includes the question being asked, and a follow-up that points
+    back ("compare those results") may lean on the question three turns up. With 6 that
+    question had already dropped off, and its place was lost."""
     return [{"role": t["role"], "text": t["text"]} for t in _session(session_id)["turns"][-n:]]
 
 

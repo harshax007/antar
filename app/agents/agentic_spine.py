@@ -169,6 +169,18 @@ async def run_agentic_spine(
     }
 
 
+def _has_any(low: str, words) -> bool:
+    """Whole words, with plain plural/verb endings: "age" must not fire on "damage" or
+    "village", which sent property-damage questions to the demographic agent."""
+    for w in words:
+        if not w.isascii():
+            if w in low:
+                return True
+        elif re.search(r"(?<![a-z0-9])" + re.escape(w) + r"(?:s|es|ed|ing)?(?![a-z0-9])", low):
+            return True
+    return False
+
+
 def _route(text: str, command: str | None = None, mode: str | None = None) -> tuple[list[str], float]:
     from app.agents.agent_modes import get_mode_spec
     low = text.casefold()
@@ -188,22 +200,22 @@ def _route(text: str, command: str | None = None, mode: str | None = None) -> tu
             routes.append("predict")
             routes.append("alert_suggest")
 
-    if any(w in low for w in ("network", "graph", "link", "links", "contacts", "associates", "second brain", "second-brain", "brain", "cross case", "cross-case", "overlap", "institutional memory")):
+    if _has_any(low, ("network", "graph", "link", "links", "contacts", "associates", "second brain", "second-brain", "brain", "cross case", "cross-case", "overlap", "institutional memory")):
         routes.append("network")
-    if any(w in low for w in ("profile", "risk", "modus", "who is", "find suspect", "look up", "second brain", "second-brain", "brain")):
+    if _has_any(low, ("profile", "risk", "modus", "who is", "find suspect", "look up", "second brain", "second-brain", "brain")):
         routes.append("profile")
-    if any(w in low for w in ("alert", "alerts", "patrol", "spike", "anomaly", "suggest", "deployment", "action",
+    if _has_any(low, ("alert", "alerts", "patrol", "spike", "anomaly", "suggest", "suggestion", "suggestions", "deployment", "action",
                               "warning", "warnings", "ಎಚ್ಚರಿಕೆ")):
         routes.append("alert_suggest")
-    if any(w in low for w in ("predict", "prediction", "forecast", "next month", "next week", "ಮುನ್ಸೂಚನೆ")):
+    if _has_any(low, ("predict", "prediction", "forecast", "next month", "next week", "ಮುನ್ಸೂಚನೆ")):
         routes.append("predict")
-    if any(w in low for w in ("social", "demographic", "gender", "age", "occupation")):
+    if _has_any(low, ("social", "demographic", "gender", "age", "occupation")):
         routes.append("social")
-    if any(w in low for w in ("map", "heat", "flow", "hotspot", "geo", "where", "city", "cities", "district", "districts", "zone", "zones", "top")):
+    if _has_any(low, ("map", "heat", "flow", "hotspot", "geo", "heatmap", "geospatial", "where", "city", "cities", "district", "districts", "zone", "zones", "top")):
         routes.append("geo")
-    if any(w in low for w in ("pattern", "patterns", "cluster", "signature")):
+    if _has_any(low, ("pattern", "patterns", "cluster", "signature")):
         routes.append("pattern")
-    if any(w in low for w in ("research", "kul", "dossier", "investigate", "deep research", "everything about", "who could be behind")):
+    if _has_any(low, ("research", "kul", "dossier", "investigate", "deep research", "everything about", "who could be behind")):
         routes.append("research")
 
     # OSINT is never routed from a question. It is a separate branch, out of the FIR path,
@@ -214,7 +226,7 @@ def _route(text: str, command: str | None = None, mode: str | None = None) -> tu
     routes_dedup = list(dict.fromkeys(routes))
     if len(routes_dedup) > 1:
         confidence = 0.95
-    elif any(w in low for w in ("crime", "crimes", "top", "cities", "district", "zone", "how many", "list", "count", "trend", "status", "fir", "recent")):
+    elif _has_any(low, ("crime", "crimes", "top", "cities", "district", "zone", "how many", "list", "count", "trend", "status", "fir", "recent")):
         confidence = 0.96
     else:
         confidence = 0.86
@@ -234,10 +246,13 @@ def _suspect_id_from_text(text: str) -> str | None:
         values = (s.get("suspect_id", ""), s.get("full_name", ""), s.get("alias", ""))
         if any(v and len(v.strip()) > 2 and re.search(r"\b" + re.escape(v.strip().casefold()) + r"\b", low) for v in values):
             return s["suspect_id"]
-    # Common shorthand in the planted demo.
-    if re.search(r"\braju\b", low):
-        return "S0001"
-    if re.search(r"\byellappa\b", low):
+    # "Raju" alone is the planted demo suspect (S0001, alias Yellappa, matched above), but it
+    # is also a common first name: "complainant Raju reported a phone theft" is not about
+    # S0001. Only a question about a suspect gets the shortcut, never one naming a
+    # complainant, victim or witness.
+    if re.search(r"\braju\b", low) and not re.search(r"\b(complainant|victim|witness|informant|reported by)\b", low) \
+            and re.search(r"\b(suspect|accused|offender|profile|network|links?|associates|who is|history|record|"
+                          r"research|dossier|investigate|background|everything about)\b", low):
         return "S0001"
     return None
 
