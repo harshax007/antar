@@ -89,8 +89,8 @@ export default function MoneyTrail() {
         <header className="mt-head mt-head--split">
           <div className="mt-head-l">
           <h1 className="mt-title">{L(<>Search · <em>Money Trail</em></>, <>ಹುಡುಕಾಟ · <em>ಹಣದ ಜಾಡು</em></>)}</h1>
-          <p className="mt-lede">{L("Trace where money went after a UPI fraud: which accounts received it, where they sent it, and the FIRs they appear in.",
-                                   "UPI ವಂಚನೆಯ ನಂತರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು ಎಂದು ಪತ್ತೆಹಚ್ಚಿ: ಯಾವ ಖಾತೆಗಳು ಪಡೆದವು, ಎಲ್ಲಿಗೆ ಕಳುಹಿಸಿದವು, ಯಾವ FIR ಗಳಲ್ಲಿವೆ.")}</p>
+          <p className="mt-lede">{L(<>Trace where money went after a UPI fraud:<br />which accounts received it, where they sent it, and the FIRs they appear in.</>,
+                                   <>UPI ವಂಚನೆಯ ನಂತರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು ಎಂದು ಪತ್ತೆಹಚ್ಚಿ:<br />ಯಾವ ಖಾತೆಗಳು ಪಡೆದವು, ಎಲ್ಲಿಗೆ ಕಳುಹಿಸಿದವು, ಯಾವ FIR ಗಳಲ್ಲಿವೆ.</>)}</p>
           </div>
           {ov && (
             <dl className="mt-stats">
