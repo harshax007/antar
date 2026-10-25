@@ -449,7 +449,8 @@ function SearchContent() {
         {/* LEFT: search + results list */}
         <div className="sx-listpanel">
           <div className="sx-searchwrap">
-            <SearchViews view={view} onChange={setView} kn={kn} />
+            <SearchViews view={view} onChange={setView} kn={kn}
+              osint={osintAllowed ? { on: profileTab === "osint", toggle: () => setProfileTab(profileTab === "osint" ? "details" : "osint") } : null} />
             <header className="sx-intro">
               <h1>{kn ? <>ಹುಡುಕಾಟ · <em>ಅಪರಾಧ ದಾಖಲೆ</em></> : <>Search · <em>Criminal Record</em></>}</h1>
               <p>{kn
@@ -475,23 +476,6 @@ function SearchContent() {
                   {kn ? f.kn : f.en}
                 </button>
               ))}
-              {osintAllowed && (
-                <button type="button"
-                  className={profileTab === "osint" ? "on" : ""}
-                  onClick={() => {
-                    if (profileTab === "osint") {
-                      setProfileTab("details");
-                      return;
-                    }
-                    setProfileTab("osint");
-                  }}
-                  title={kn ? "ಸ್ವತಂತ್ರ ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ ಘಟಕ (FIR ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕವಿಲ್ಲ)" : "Open-source checks: only the identifier leaves; the FIR record is never read"}
-                  style={{ marginLeft: "auto" }}>
-                  {profileTab === "osint"
-                    ? (kn ? "OSINT ಮುಚ್ಚಿ" : "Close OSINT")
-                    : (kn ? "ಇಂಟರ್ನೆಟ್ ಹುಡುಕಾಟ (OSINT)" : "OSINT Workbench")}
-                </button>
-              )}
             </div>
             <div className="sx-enginehint">
               {kn ? "ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ ಹೆಸರು ಸಿಗುತ್ತದೆ (Yellappa ≈ Yellapa)" : "Matches close spellings and phonetic variants (Yellappa ≈ Yellapa ≈ Ylappa)"}
@@ -1172,7 +1156,7 @@ const MoneyTrail = dynamic(() => import("@/components/MoneyTrail"), { ssr: false
 const SocialInsights = dynamic(() => import("@/components/SocialInsights"), { ssr: false });
 
 // People | Money trail: the two ways into a case from Search.
-function SearchViews({ view, onChange, kn }) {
+function SearchViews({ view, onChange, kn, osint = null }) {
   const tabs = [["people", kn ? "ವ್ಯಕ್ತಿಗಳು" : "People"], ["money", kn ? "ಹಣದ ಜಾಡು" : "Money trail"], ["social", kn ? "ಸಾಮಾಜಿಕ ಒಳನೋಟ" : "Social insights"]];
   return (
     <nav className="sx-views" role="tablist" aria-label={kn ? "ಹುಡುಕಾಟ ನೋಟ" : "Search view"}>
@@ -1180,6 +1164,13 @@ function SearchViews({ view, onChange, kn }) {
         <button key={k} type="button" role="tab" aria-selected={view === k} className={view === k ? "on" : ""}
                 onClick={() => view !== k && onChange(k)}>{label}</button>
       ))}
+      {/* Open-source checks open in the People view's right panel; only the identifier leaves */}
+      {osint && (
+        <button type="button" className={osint.on ? "on" : ""} aria-pressed={osint.on} onClick={osint.toggle}
+                title={kn ? "ಸ್ವತಂತ್ರ ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ ಘಟಕ (FIR ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕವಿಲ್ಲ)" : "Open-source checks: only the identifier leaves; the FIR record is never read"}>
+          {kn ? "OSINT ವರ್ಕ್‌ಬೆಂಚ್" : "OSINT Workbench"}
+        </button>
+      )}
     </nav>
   );
 }
