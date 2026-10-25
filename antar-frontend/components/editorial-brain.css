@@ -176,3 +176,26 @@ html[lang="kn"] .bsx-eyebrow { letter-spacing: normal; text-transform: none; fon
 .bsx-intro p { margin: var(--sp-1) 0 0; font-size: var(--fs-caption); line-height: 1.45; color: var(--text-3); }
 /* the page behind the graph is flat, not a gradient */
 .bsx-wrap { background-image: none !important; }
+
+/* Fast Run while it works: the Brain blurs a little, a mid-size card sits in the centre */
+.bsx-frload { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; padding: var(--sp-4);
+  background: rgba(6,9,16,.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.bsx-frcard { width: min(440px, 100%); padding: var(--sp-5); border-radius: var(--r-md); background: rgba(8,12,20,.94);
+  border: 1px solid var(--rule-2); box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+.bsx-frcard .hd { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--sp-3); }
+.bsx-frcard .eyebrow { display: block; font: 500 var(--fs-caption)/1.4 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.bsx-frcard .hd b { display: block; margin-top: 2px; font: 600 var(--fs-body)/1.35 'Inter', sans-serif; color: var(--text-1); }
+.bsx-frcard .ct { font: 500 var(--fs-label) 'JetBrains Mono', monospace; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.bsx-frcard .bar { height: 3px; margin: var(--sp-4) 0; background: var(--rule-1); border-radius: 2px; overflow: hidden; }
+.bsx-frcard .bar b { display: block; height: 100%; background: var(--accent); transition: width .32s cubic-bezier(.16,1,.3,1); }
+.bsx-frcard .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px var(--sp-4); }
+.bsx-frcard .steps li { display: flex; align-items: center; gap: 8px; font-size: var(--fs-label); color: var(--text-4); transition: color .2s; }
+.bsx-frcard .steps li i { width: 14px; height: 14px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--rule-2); font-style: normal; font-size: 9px; color: #050A12; }
+.bsx-frcard .steps li.done { color: var(--text-2); }
+.bsx-frcard .steps li.done i { background: var(--text-2); border-color: var(--text-2); }
+.bsx-frcard .steps li.now { color: var(--text-1); font-weight: 600; }
+.bsx-frcard .steps li.now i { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(34,230,240,.15); animation: frPulse 1s ease-in-out infinite; }
+@keyframes frPulse { 50% { box-shadow: 0 0 0 5px rgba(34,230,240,.05); } }
+html[lang="kn"] .bsx-frcard .eyebrow { letter-spacing: normal; text-transform: none; font-family: inherit; }
+@media (prefers-reduced-motion: reduce) { .bsx-frcard .steps li.now i { animation: none; } }
+[data-theme="light"] .bsx-frcard { background: rgba(255,255,255,.96); }

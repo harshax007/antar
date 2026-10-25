@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/components/Providers";
 import { buildCrimeGraph, filterRecords, isFutureRecord, dayGrid, aliasFor, CATEGORIES, LINK_COLORS, soften } from "@/lib/crimeGraph";
 import { fastRun } from "@/lib/fastRun";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { MaterialBackdrop, MaterialPanel } from "@/components/ui/MaterialPanel";
 import Constellation from "@/components/Constellation";
 import Constellation3D from "@/components/Constellation3D";
@@ -430,10 +430,10 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
       });
     }).catch(() => {});
 
-    // Fast, crisp agent scan reveal stagger (120ms instead of sluggish 300ms)
+    // One step per agent, slow enough to read on the centred loading card (~2.5 s in all)
     for (let i = 0; i < AGENTS.length; i++) {
       setThink({ phase: "run", at: i });
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 350));
     }
     await live;
 
@@ -841,16 +841,41 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
         </button>
       )}
 
-      {/* While it runs: one line, so the brain stays visible. */}
-      {view === "net" && think?.phase === "run" && (
-        <div className="bsx-thinkdock" role="status" aria-live="polite">
-          <div className="top">
-            <span className="ttl"><Orb agent={AGENTS[Math.min(think.at, AGENTS.length - 1)].id} label={AGENTS[Math.min(think.at, AGENTS.length - 1)].name} />{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"} · {AGENTS[Math.min(think.at, AGENTS.length - 1)].name}</span>
-            <span className="ct">{Math.min(think.at + 1, AGENTS.length)} / {AGENTS.length}</span>
-          </div>
-          <div className="bar"><b style={{ width: `${((think.at + 1) / AGENTS.length) * 100}%` }} /></div>
-        </div>
-      )}
+      {/* While it runs: the Brain softly blurs and a centred card shows each agent at work */}
+      <AnimatePresence>
+      {view === "net" && think?.phase === "run" && (() => {
+        const at = Math.min(think.at, AGENTS.length - 1);
+        const cur = AGENTS[at];
+        return (
+          <motion.div key="fr-load" className="bsx-frload" role="status" aria-live="polite"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            <motion.div className="bsx-frcard" initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.98 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}>
+              <div className="hd">
+                <Orb agent={cur.id} label={cur.name} />
+                <div>
+                  <span className="eyebrow">{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"} · {filtered.length.toLocaleString()} {kn ? "FIR" : "FIRs"}</span>
+                  <AnimatePresence mode="wait">
+                    <motion.b key={cur.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18 }}>
+                      {cur.name} · {cur.ask}
+                    </motion.b>
+                  </AnimatePresence>
+                </div>
+                <span className="ct">{at + 1} / {AGENTS.length}</span>
+              </div>
+              <div className="bar"><b style={{ width: `${((at + 1) / AGENTS.length) * 100}%` }} /></div>
+              <ol className="steps">
+                {AGENTS.map((a, i) => (
+                  <li key={a.id} className={i < at ? "done" : i === at ? "now" : ""}>
+                    <i aria-hidden="true">{i < at ? "✓" : ""}</i>{a.name}
+                  </li>
+                ))}
+              </ol>
+            </motion.div>
+          </motion.div>
+        );
+      })()}
+      </AnimatePresence>
 
       {/* The results: one line per finding, worst first. The headline and its number are
           all that shows; the records behind it and the next step open on demand. */}
