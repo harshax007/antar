@@ -8,16 +8,35 @@ unrecognised and the question fell through to a statewide count (every case by s
 list of ten unrelated FIRs.
 
 Two FIR ids in one question are left to T29 ("what links two FIRs").
+
+A crime number (18 digits, 100011245202300001) is also one case, but it repeats across
+stations, and some register ids are carried by two rows; every match is named and the first
+is answered, rather than one being picked silently. What an officer asks about a case that
+the register does not hold (witness statements, CDRs, seized property, bank accounts, the
+complainant's name) is named as not held, not skipped.
 """
 from __future__ import annotations
 
 import re
+import sqlite3
 
 from app.services import case_timeline
 
-# every shape of fir_id in the register (sampled), plus the official FIR-YYYY-... form
+# every shape of fir_id in the register (sampled), the official FIR-YYYY-... form, and the
+# 18-digit crime number
 _FIR = re.compile(r"\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}"
-                  r"|FIR-20\d\d-[\w-]{4,40})\b", re.I)
+                  r"|FIR-20\d\d-[\w-]{4,40}|\d{18})\b", re.I)
+
+# Asked about one case, not held in the FIR register: said so, by name.
+_NOT_HELD = (
+    (r"\bwitness", "witness statements"),
+    (r"\b(cdr|call detail|call records?|tower dump)", "call detail records (CDR)"),
+    (r"\b(locker|seized|seizure|property room|malkhana)", "seized-property and locker records"),
+    (r"\b(bank account|account numbers?|transactions?|money trail)", "bank accounts and transactions"),
+    (r"\bcomplainant", "the complainant's name, address and occupation"),
+    (r"\b(court|hearing|judge)\b", "the court and hearing dates"),
+    (r"\b(arrest|surrender)\w*\b.*\bdates?\b|\bdates?\b.*\b(arrest|surrender)", "arrest and surrender dates"),
+)
 
 
 def fir_ids(text: str) -> list[str]:
@@ -34,43 +53,139 @@ def wants_case(text: str) -> bool:
     return len(fir_ids(text)) == 1
 
 
+# "summary of this case", "status of that FIR": one case, but not named here.
+_BACK_REF = re.compile(r"\b(this|that|the same|the above|the said)\s+(case|fir)\b", re.I)
+
+
+def refers_back(text: str) -> bool:
+    return not fir_ids(text) and bool(_BACK_REF.search(text or ""))
+
+
+def fir_from_history(history: list[dict] | None) -> str | None:
+    """The FIR the officer last named, from their own questions only: an answer lists ten
+    FIRs, and "this case" after a list is not any one of them."""
+    for t in reversed(history or []):
+        if t.get("role") == "user":
+            ids = fir_ids(t.get("text") or "")
+            if len(ids) == 1:
+                return ids[0]
+    return None
+
+
+def _matches(fir: str) -> list[dict]:
+    """Every register row carrying this id, or this crime number."""
+    from datetime import date
+    from app.core.db_path import DB_PATH, registry_connect
+    con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    today = date.today().isoformat()
+    cols = case_timeline._COLS
+    try:
+        rows = con.execute(f"SELECT {cols} FROM FIRs WHERE fir_id = ? AND date <= ? LIMIT 5", (fir, today)).fetchall()
+        if not rows and fir.isdigit():
+            rows = con.execute(f"SELECT {cols} FROM FIRs WHERE CrimeNo = ? AND date <= ? LIMIT 5", (fir, today)).fetchall()
+        return [case_timeline.build(con, r) for r in rows]
+    finally:
+        con.close()
+
+
 def answer(text: str, lang: str = "en") -> dict:
     fir = fir_ids(text)[0]
-    d = case_timeline.timeline(fir)
+    found = _matches(fir)
     base = {"citations": [], "agent": "query", "llm_answer": False, "params": {"fir_id": fir},
             "suggested_followups": [], "rows": []}
-    if d is None:
+    if not found:
         return {**base, "template_id": "UNRESOLVED",
                 "answer": f"No FIR {fir} in the register. Check the id, or search by crime number in Search.",
                 "reasoning": [{"step": "route", "detail": f"A question about one FIR ({fir}); it is not in the register."}]}
     # the same need-to-know rule as the case page: below Analyst, cases of one's own posting
     from app.services.zcql_repo import scoped_posting
     posting = scoped_posting()
-    if posting and posting.strip().upper() not in {str(d.get("zone") or "").upper(), str(d.get("district") or "").upper()}:
-        return {**base, "template_id": "UNRESOLVED",
-                "answer": f"FIR {fir} is outside your posting ({posting}).",
-                "reasoning": [{"step": "policy", "detail": "Case rows below Analyst are limited to the officer's posting."}]}
+    if posting:
+        mine = [d for d in found
+                if posting.strip().upper() in {str(d.get("zone") or "").upper(), str(d.get("district") or "").upper()}]
+        if not mine:
+            return {**base, "template_id": "UNRESOLVED",
+                    "answer": f"FIR {fir} is outside your posting ({posting}).",
+                    "reasoning": [{"step": "policy", "detail": "Case rows below Analyst are limited to the officer's posting."}]}
+        found = mine
+    d = found[0]
+    low = (text or "").lower()
     # where the case is: the step it is at, or, once it has closed, the last step it reached
-    now = next((s for s in d["steps"] if s["state"] == "current"), None)         or next((s for s in reversed(d["steps"]) if s["state"] == "done"), d["steps"][-1])
-    lines = [d["summary"], "", f"**Where it is now:** {now['title']}" + (f" — {now['detail']}" if now.get("detail") else "")]
+    now = next((s for s in d["steps"] if s["state"] == "current"), None) \
+        or next((s for s in reversed(d["steps"]) if s["state"] == "done"), d["steps"][-1])
+    lines = []
+    if len(found) > 1:
+        lines.append(f"{len(found)} FIRs carry {fir}: "
+                     + "; ".join(f"{x['fir_id']} at {x['station']}, {x['registered']}" for x in found)
+                     + ". The first is shown; open the others from Search.\n")
+    lines.append(d["summary"])
+    if d.get("demonstration"):
+        lines.append("This is a demonstration record, not a registered FIR.")
+    lines += ["", f"**Where it is now:** {now['title']}" + (f" — {now['detail']}" if now.get("detail") else "")]
     for s in d["steps"]:
         mark = {"done": "✓", "current": "●", "pending": "○", "none": "–"}.get(s["state"], "·")
-        when = f" ({s['date']})" if s.get("date") else ""
+        when = f" ({s['date']})" if s.get("date") else (" (date not recorded)" if s.get("date_missing") else "")
         lines.append(f"{mark} {s['title']}{when}: {s.get('detail') or ''}".rstrip(": "))
+
+    c = d["counts"]
+    same = d.get("same_accused")
+    rec = [f"**Acts and sections:** {', '.join(d['sections']) if d['sections'] else 'none recorded'}"]
+    if d.get("crime_no"):
+        rec.append(f"**Crime number:** {d['crime_no']} (register id {d['fir_id']})")
+    if d.get("place"):
+        rec.append(f"**Place:** {d['place']}")
+    if d.get("io"):
+        rec.append(f"**Investigating officer:** {' '.join(str(d['io']).split())}")
+    if c.get("accused"):
+        rec.append(f"**Accused:** {c['accused']} named, {c['arrested']} arrested, {c['chargesheeted']} charge-sheeted, "
+                   f"{c['convicted']} convicted" + (f"; accused id {same['accused_id']}" if same else ""))
+    if c.get("victims"):
+        vb = c.get("victims_by") or {}
+        one = {"men": "man", "women": "woman", "boys": "boy", "girls": "girl"}
+        parts = [f"{vb[k]} {one[k] if vb[k] == 1 else k}" for k in ("men", "women", "boys", "girls") if vb.get(k)]
+        rec.append(f"**Victims:** {c['victims']}" + (f" ({', '.join(parts)})" if parts else "")
+                   + ", recorded by sex and age group; no names or addresses")
+    if d.get("mo"):
+        rec.append(f"**Modus operandi:** {' '.join(str(d['mo']).split())[:200]}")
+    if d.get("upi"):
+        rec.append(f"**UPI id:** {d['upi']}")
+    lines.append("")
+    lines += [f"• {x}" for x in rec]
+    if same and same.get("count"):
+        lines.append(f"• The same accused id is on {same['count']} other FIR{'s' if same['count'] != 1 else ''}"
+                     + (f" ({', '.join(same['districts'])})" if same.get("districts") else "")
+                     + ": " + ", ".join(f["fir_id"] for f in same["firs"][:4]) + ".")
     sim = d.get("similar")
     if sim and sim.get("reached_court") is not None:
         lines.append(f"\nOf {sim['cases']:,} other {sim['crime_head']} cases "
                      f"{'across Karnataka' if sim['scope'] == 'state' else 'at ' + str(sim['where'])}, "
-                     f"{sim['reached_court']}% reached court and {sim['undetected']}% were closed as undetected.")
+                     f"{sim['reached_court']}% reached court and {sim['undetected']}% were closed as undetected"
+                     + (f"; {sim['convicted_of_decided']}% of those decided ended in conviction"
+                        if sim.get("convicted_of_decided") is not None else "")
+                     + ".")
+    not_held = [label for rx, label in _NOT_HELD if re.search(rx, low)]
+    if not_held:
+        lines.append("\n**Not held in the FIR register:** " + "; ".join(not_held)
+                     + ". Only the case file or the investigating officer has these.")
+
     actions = [{"type": "navigate", "payload": f"/case/{d['fir_id']}", "label": "Open case timeline"}]
     if d.get("upi"):
         actions.append({"type": "navigate", "payload": f"/search?view=money&account={d['upi']}", "label": "Follow the money"})
-    row = {"fir_id": d["fir_id"], "crime_no": d["crime_no"], "registered": d["registered"], "station": d["station"],
-           "district": d["district"], "stage": d["stage"], **{k: v for k, v in d["counts"].items() if k != "victims_by"}}
-    return {**base, "template_id": "CASE", "answer": "\n".join(lines), "rows": [row],
-            "citations": [{"fir": d["crime_no"] or d["fir_id"], "id": d["fir_id"], "station": d["station"],
-                           "date": d["registered"], "section": ", ".join(d["sections"][:3])}],
+    rows = [{"fir_id": x["fir_id"], "crime_no": x["crime_no"], "registered": x["registered"], "station": x["station"],
+             "district": x["district"], "stage": x["stage"], **{k: v for k, v in x["counts"].items() if k != "victims_by"}}
+            for x in found]
+    follow = []
+    if same and same.get("count"):
+        follow.append(f"cases for accused {same['accused_id']}")
+    if d.get("crime_group") and d.get("district"):
+        follow.append(f"Conviction rate for {str(d['crime_group']).replace('_', ' ').lower()} in {d['district']}")
+    return {**base, "template_id": "CASE", "answer": "\n".join(lines), "rows": rows,
+            "citations": [{"fir": x["crime_no"] or x["fir_id"], "id": x["fir_id"], "station": x["station"],
+                           "date": x["registered"], "section": ", ".join(x["sections"][:3])} for x in found],
             "actions": actions,
-            "suggested_followups": [f"What links FIR {d['fir_id']} to other cases?"] if d.get("same_accused", {}) and d["same_accused"].get("count") else [],
-            "reasoning": [{"step": "route", "detail": f"A question about one FIR ({d['fir_id']}): answered from that case."},
-                          {"step": "recorded", "detail": d["recorded"]}]}
+            "suggested_followups": follow[:3],
+            "reasoning": [{"step": "route", "detail": f"A question about one FIR ({d['fir_id']}): answered from that case."}]
+                         + ([{"step": "match", "detail": f"{len(found)} register rows carry {fir}; all are named."}]
+                            if len(found) > 1 else [])
+                         + [{"step": "recorded", "detail": d["recorded"]}]}

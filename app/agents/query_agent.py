@@ -1101,14 +1101,29 @@ async def query_agent_run(
     # One FIR named ("status of FIR C00026"): answered from that case, with its timeline
     # (app/agents/case_answer.py). It used to fall through to a statewide count.
     from app.agents import case_answer as _case
-    if _case.wants_case(user_text):
+    _case_text = user_text
+    if _case.refers_back(user_text):
+        # "What is the summary of this case?" with no FIR named: the FIR named earlier in
+        # this conversation, or ask. It used to list the ten newest FIRs in the state.
+        _prev = _case.fir_from_history((history or [])[:-1])
+        if not _prev:
+            return {"answer": ("ಯಾವ ಪ್ರಕರಣ? FIR ಸಂಖ್ಯೆ ಅಥವಾ ಅಪರಾಧ ಸಂಖ್ಯೆ ನೀಡಿ (ಉದಾ: FIR C00026)." if lang == "kn" else
+                               "Which case? Give its FIR id or crime number, for example \"summary of FIR C00026\" or "
+                               "\"status of 100011245202300026\"."),
+                    "rows": [], "citations": [], "template_id": "CLARIFY", "params": {"missing": "fir"},
+                    "agent": "query", "suggested_followups": [], "llm_answer": False,
+                    "reasoning": [{"step": "route", "detail": "A question about one case, but no FIR was named in it or earlier."}]}
+        _case_text = f"{user_text} (FIR {_prev})"
+    if _case.wants_case(_case_text):
         try:
-            res = _case.answer(user_text, lang or "en")
+            res = _case.answer(_case_text, lang or "en")
         except Exception as e:
             import structlog
             structlog.get_logger(__name__).warning("case_answer_failed", error=str(e)[:200])
             res = None
         if res is not None:
+            from app.agents.boundaries import prefix as _bprefix
+            res["answer"] = _bprefix(res["answer"], user_text, lang or "en")
             log_step(session_id, "query", res["template_id"], user_text[:80], res["params"].get("fir_id", ""),
                      int((time.time() - t0) * 1000))
             return res
@@ -1128,6 +1143,23 @@ async def query_agent_run(
                      int((time.time() - t0) * 1000))
             _set_cached_query(cache_key, res)
             return res
+
+    # A field the register does not hold (incident date, UDR / Zero FIR category): say so,
+    # rather than answer the nearest keyword's template as if it were the question.
+    try:
+        from app.agents.register_gaps import check as _gap_check
+        from app.agents.heuristics import extract_entities as _ee
+        _gap = None if _case.wants_case(user_text) else _gap_check(user_text, _ee(user_text).get("zones") or [], lang or "en")
+    except Exception as e:
+        import structlog
+        structlog.get_logger(__name__).warning("register_gap_failed", error=str(e)[:200])
+        _gap = None
+    if _gap:
+        msg, again, why = _gap
+        log_step(session_id, "query", "register_gap", user_text[:80], why, int((time.time() - t0) * 1000))
+        return {"answer": msg, "rows": [], "citations": [], "template_id": "UNRESOLVED",
+                "params": {}, "agent": "query", "suggested_followups": again,
+                "reasoning": [{"step": "register", "detail": why}], "llm_answer": False}
 
     # A year the register does not hold: say so, before any template can widen the question.
     beyond = outside_record(user_text, lang or "en")
@@ -1402,6 +1434,13 @@ async def query_agent_run(
                  + ". Statewide totals, trends and rankings are not limited; individual FIRs elsewhere need Analyst or above.")
         answer = f"{_line}\n\n{answer}"
         reasoning.append({"step": "need_to_know", "detail": _line})
+    # A boundary the question runs into (guilt, a child victim's identity) is said first,
+    # so the rows below are not read as having done the forbidden part (app/agents/boundaries.py).
+    from app.agents.boundaries import notes as _bnotes
+    _bn = _bnotes(user_text, answer_lang)
+    if _bn:
+        answer = "\n".join(_bn) + "\n\n" + answer
+        reasoning.append({"step": "boundary", "detail": " ".join(_bn)})
 
     res = {
         "answer": answer, "rows": rows, "citations": citations,
