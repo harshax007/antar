@@ -6,7 +6,8 @@
 // what it cannot say.
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import { CartesianGrid, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import BrainLoader from "@/components/BrainLoader";
 import { useLang } from "@/components/Providers";
 import "@/components/editorial-social.css";
 
@@ -27,10 +28,45 @@ function Bars({ rows, total }) {
   );
 }
 
+// The loader the Map uses, with this screen's own steps
+const SOCIAL_STEPS = {
+  en: ["Reading the district figures", "Matching crime to each district", "Measuring the links", "Almost ready"],
+  kn: ["ಜಿಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ", "ಅಪರಾಧವನ್ನು ಜಿಲ್ಲೆಗೆ ಹೊಂದಿಸಲಾಗುತ್ತಿದೆ", "ಸಂಬಂಧಗಳನ್ನು ಅಳೆಯಲಾಗುತ್ತಿದೆ", "ಬಹುತೇಕ ಸಿದ್ಧ"],
+};
+const SOCIAL_ORBS = ["searching", "connecting", "solving", "working"];
+
+const median = (a) => { const v = a.filter((x) => x != null).sort((p, q) => p - q); const n = v.length; return n ? (n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2) : null; };
+// A round axis that starts near the data, not at a tick far below it
+const niceDomain = (vals) => {
+  const v = vals.filter((x) => x != null); if (!v.length) return ["auto", "auto"];
+  const lo = Math.min(...v), hi = Math.max(...v), pad = (hi - lo || 1) * 0.08;
+  const step = Math.pow(10, Math.floor(Math.log10(hi - lo || 1))) / 2;
+  return [Math.floor((lo - pad) / step) * step, Math.ceil((hi + pad) / step) * step];
+};
+// Straight-line fit, drawn as a guide to the direction, not as a forecast
+const fit = (pts) => {
+  const v = pts.filter((p) => p.x != null && p.y != null); const n = v.length; if (n < 3) return null;
+  const mx = v.reduce((a, p) => a + p.x, 0) / n, my = v.reduce((a, p) => a + p.y, 0) / n;
+  const sxx = v.reduce((a, p) => a + (p.x - mx) ** 2, 0); if (!sxx) return null;
+  const b = v.reduce((a, p) => a + (p.x - mx) * (p.y - my), 0) / sxx;
+  return { b, a: my - b * mx };
+};
+// How strong a rank correlation reads, in plain words
+const strength = (r, kn) => { const a = Math.abs(r); return a >= 0.5 ? (kn ? "ಬಲವಾದ" : "Strong") : a >= 0.3 ? (kn ? "ಮಧ್ಯಮ" : "Moderate") : (kn ? "ದುರ್ಬಲ" : "Weak"); };
+
 function Dot(props) {
   const { cx, cy, payload } = props;
-  const big = payload.district === "Bengaluru Urban";
-  return <circle cx={cx} cy={cy} r={big ? 6 : 4.5} fill={payload.hl ? "#22E6F0" : "rgba(148,163,184,.75)"} stroke={big ? "#fff" : "none"} />;
+  if (cx == null || cy == null) return null;
+  const tone = payload.tag === "high" ? "#22E6F0" : payload.tag === "low" ? "#A78BFA" : "rgba(148,163,184,.55)";
+  return (
+    <g className="so-dot">
+      {payload.tag === "high" && <circle cx={cx} cy={cy} r={11} fill="#22E6F0" opacity={0.12} />}
+      <circle cx={cx} cy={cy} r={payload.tag ? 6 : 4.5} fill={tone} stroke={payload.hl ? "#fff" : "#060910"} strokeWidth={payload.hl ? 1.5 : 1} />
+      {payload.name && <text x={cx + (payload.lpos === "left" ? -10 : payload.edge ? 6 : payload.lpos === "below" ? 0 : 10)} y={cy + (payload.lpos === "below" ? 16 : payload.lpos === "above" ? -10 : 4)}
+        textAnchor={payload.lpos === "left" || payload.edge ? "end" : payload.lpos === "below" || payload.lpos === "above" ? "middle" : "start"}
+        fill="#CBD5E1" fontSize={11} fontWeight={500} style={{ paintOrder: "stroke", stroke: "#060910", strokeWidth: 3 }}>{payload.name}</text>}
+    </g>
+  );
 }
 
 // What Chat is asked when an officer wants a link explained, by kind of crime
@@ -65,7 +101,35 @@ export default function SocialInsights() {
   const indKey = ind || clear[0]?.key || "urban_pct";
   const link = links.find((l) => l.key === indKey);
 
-  const points = useMemo(() => (d?.table || []).map((r) => ({ district: r.district, x: r[indKey], y: r.rates[cat], hl: r.district === "Bengaluru Urban" })), [d, indKey, cat]);
+  const points = useMemo(() => {
+    const ps = (d?.table || []).map((r) => ({ district: r.district, x: r[indKey], y: r.rates[cat], hl: r.district === "Bengaluru Urban" })).filter((p) => p.x != null && p.y != null);
+    // name the three highest rates and the lowest, so the eye knows where to look
+    const byY = [...ps].sort((a, b) => b.y - a.y);
+    byY.slice(0, 3).forEach((p) => { p.tag = "high"; });
+    if (byY.length > 4) byY[byY.length - 1].tag = "low";
+    ps.forEach((p) => { p.name = p.tag ? p.district : ""; p.y = Math.round(p.y * 10) / 10; });
+    // names that would sit on top of each other: the lower one goes beneath its dot
+    const xs = ps.map((p) => p.x), ys = ps.map((p) => p.y);
+    const xr = (Math.max(...xs) - Math.min(...xs)) || 1, yr = (Math.max(...ys) - Math.min(...ys)) || 1;
+    const named = ps.filter((p) => p.name).sort((a, b) => b.y - a.y);
+    named.forEach((p, i) => {
+      if (named.slice(0, i).some((q) => Math.abs(q.x - p.x) / xr < 0.25 && Math.abs(q.y - p.y) / yr < 0.08)) p.lpos = "below";
+      p.edge = (p.x - Math.min(...xs)) / xr > 0.8;
+      if (p.edge && !p.lpos) p.lpos = "left";
+    });
+    return ps;
+  }, [d, indKey, cat]);
+  const chart = useMemo(() => {
+    const mx = median(points.map((p) => p.x)), my = median(points.map((p) => p.y));
+    const unit = meta[indKey]?.unit;
+    let xd = niceDomain(points.map((p) => p.x));
+    if (unit === "%") xd = [Math.max(0, xd[0]), Math.min(100, xd[1])];
+    const yd = [0, niceDomain(points.map((p) => p.y))[1]];
+    const f = fit(points);
+    const line = f ? [{ x: xd[0], y: f.a + f.b * xd[0] }, { x: xd[1], y: f.a + f.b * xd[1] }] : null;
+    const top = [...points].sort((a, b) => b.y - a.y)[0];
+    return { mx, my, xd, yd, line, top };
+  }, [points, meta, indKey]);
   const table = useMemo(() => {
     const rows = [...(d?.table || [])];
     const val = (r) => (sort.key === "rate" ? r.rates[cat] : sort.key === "district" ? r.district : r[sort.key]);
@@ -74,7 +138,7 @@ export default function SocialInsights() {
   }, [d, cat, sort]);
 
   if (err) return <main className="so-page"><div className="so-wrap"><h1 className="so-title">{L("Social insights", "ಸಾಮಾಜಿಕ ಒಳನೋಟಗಳು")}</h1><p className="so-lede">{L("The district figures could not be read just now.", "ಜಿಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ.")}</p></div></main>;
-  if (!d) return <main className="so-page"><div className="so-wrap"><p className="so-lede">{L("Reading district figures…", "ಜಿಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ…")}</p></div></main>;
+  if (!d) return <main className="so-page" style={{ position: "relative" }}><BrainLoader kn={kn} steps={SOCIAL_STEPS} orbs={SOCIAL_ORBS} /></main>;
 
   const head = (key, label) => (
     <th scope="col"><button type="button" onClick={() => setSort((s) => ({ key, dir: s.key === key ? -s.dir : -1 }))} aria-sort={sort.key === key ? (sort.dir < 0 ? "descending" : "ascending") : "none"}>
@@ -159,24 +223,59 @@ export default function SocialInsights() {
                 {d.indicators.filter((m) => m.key !== "population_2011").map((m) => <option key={m.key} value={m.key}>{m.label} ({m.year})</option>)}
               </select>
             </label>
-            <div className="so-chart" aria-label={L("Scatter of districts", "ಜಿಲ್ಲೆಗಳ ಚದುರು ಚಿತ್ರ")}>
+            {link && (() => {
+              const up = link.spearman > 0;
+              const indL = meta[indKey]?.label || "";
+              const crime = kn ? (CAT_KN[cat] || cat) : cat === "all" ? "crime" : (d.correlations?.[cat]?.label || cat).toLowerCase();
+              const t = chart.top;
+              const times = t && chart.my ? t.y / chart.my : null;
+              return (
+                <div className="so-finding">
+                  <span className={`so-verdict ${link.significant ? "on" : ""}`}>
+                    {link.significant ? `${strength(link.spearman, kn)} ${L("link", "ಸಂಬಂಧ")}` : L("No clear link", "ಸ್ಪಷ್ಟ ಸಂಬಂಧವಿಲ್ಲ")}
+                  </span>
+                  <p className="so-headline">
+                    {link.significant
+                      ? L(`Where ${indL.charAt(0).toLowerCase() + indL.slice(1)} is ${up ? "higher" : "lower"}, districts record more ${crime}.`, `${indL} ${up ? "ಹೆಚ್ಚು" : "ಕಡಿಮೆ"} ಇರುವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ${crime} ಹೆಚ್ಚು.`)
+                      : L(`${indL} does not explain where ${crime} is higher.`, `${crime} ಎಲ್ಲಿ ಹೆಚ್ಚು ಎಂಬುದನ್ನು ${indL} ವಿವರಿಸುವುದಿಲ್ಲ.`)}
+                    {t && times >= 1.5 && <> {L(`${t.district} stands apart at ${t.y} per lakh, ${times.toFixed(1)}× the state median.`, `${t.district} ಲಕ್ಷಕ್ಕೆ ${t.y}, ರಾಜ್ಯ ಮಧ್ಯಮದ ${times.toFixed(1)}×.`)}</>}
+                  </p>
+                  {Math.abs(link.pearson - link.spearman) > 0.35 && (
+                    <p className="so-caveat">{L("One or two districts pull the straight-line figure; the rank figure, which they cannot sway, is the one to trust.", "ಒಂದೆರಡು ಜಿಲ್ಲೆಗಳು ನೇರ-ರೇಖೆಯ ಅಂಕಿಯನ್ನು ಎಳೆಯುತ್ತವೆ; ಶ್ರೇಣಿ ಅಂಕಿಯನ್ನು ನಂಬಿ.")}</p>
+                  )}
+                </div>
+              );
+            })()}
+            <div className="so-chart" key={`${indKey}-${cat}`} aria-label={L("Scatter of districts", "ಜಿಲ್ಲೆಗಳ ಚದುರು ಚಿತ್ರ")}>
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 10, right: 16, bottom: 34, left: 8 }}>
-                  <CartesianGrid stroke="rgba(148,163,184,.12)" />
-                  <XAxis type="number" dataKey="x" name={meta[indKey]?.label} tick={{ fill: "#8492A6", fontSize: 11 }} domain={["auto", "auto"]}
+                <ScatterChart margin={{ top: 18, right: 24, bottom: 34, left: 8 }}>
+                  <CartesianGrid stroke="rgba(148,163,184,.08)" vertical={false} />
+                  <XAxis type="number" dataKey="x" name={meta[indKey]?.label} tick={{ fill: "#8492A6", fontSize: 11 }} domain={chart.xd} allowDataOverflow tickLine={false} axisLine={{ stroke: "rgba(148,163,184,.25)" }}
                          label={{ value: `${meta[indKey]?.label} (${meta[indKey]?.unit})`, position: "insideBottom", offset: -22, fill: "#8492A6", fontSize: 12 }} />
-                  <YAxis type="number" dataKey="y" tick={{ fill: "#8492A6", fontSize: 11 }} width={44}
+                  <YAxis type="number" dataKey="y" tick={{ fill: "#8492A6", fontSize: 11 }} width={44} domain={chart.yd} tickLine={false} axisLine={false}
                          label={{ value: L("FIRs per lakh a year", "ವರ್ಷಕ್ಕೆ ಲಕ್ಷಕ್ಕೆ FIR"), angle: -90, position: "insideLeft", fill: "#8492A6", fontSize: 12 }} />
                   <ZAxis range={[60, 60]} />
-                  <Tooltip cursor={{ strokeDasharray: "3 3" }} content={({ payload }) => {
+                  {chart.mx != null && <ReferenceLine x={chart.mx} stroke="rgba(148,163,184,.3)" strokeDasharray="2 4" label={{ value: L("median", "ಮಧ್ಯಮ"), position: "top", fill: "#64748B", fontSize: 10 }} />}
+                  {chart.my != null && <ReferenceLine y={chart.my} stroke="rgba(148,163,184,.3)" strokeDasharray="2 4" label={{ value: L("state median", "ರಾಜ್ಯ ಮಧ್ಯಮ"), position: "insideTopRight", fill: "#64748B", fontSize: 10 }} />}
+                  {chart.line && link?.significant && <ReferenceLine segment={chart.line} stroke="#22E6F0" strokeOpacity={0.55} strokeWidth={1.5} strokeDasharray="6 4" ifOverflow="hidden" />}
+                  <Tooltip cursor={{ strokeDasharray: "3 3", stroke: "rgba(148,163,184,.3)" }} content={({ payload }) => {
                     const p = payload?.[0]?.payload;
-                    return p ? <div className="so-tip"><b>{p.district}</b><span>{fmt(p.x, meta[indKey]?.unit)} · {p.y} {L("FIRs per lakh", "ಲಕ್ಷಕ್ಕೆ FIR")}</span></div> : null;
+                    if (!p) return null;
+                    const vs = chart.my ? p.y / chart.my : null;
+                    return <div className="so-tip"><b>{p.district}</b><span>{p.y} {L("FIRs per lakh a year", "ವರ್ಷಕ್ಕೆ ಲಕ್ಷಕ್ಕೆ FIR")}{vs ? ` · ${vs >= 1 ? vs.toFixed(1) + "×" : Math.round(vs * 100) + "%"} ${L("of the state median", "ರಾಜ್ಯ ಮಧ್ಯಮದ")}` : ""}</span><span>{meta[indKey]?.label}: {fmt(p.x, meta[indKey]?.unit)}</span></div>;
                   }} />
-                  <Scatter data={points} shape={<Dot />} />
+                  <Scatter data={points} shape={<Dot />} isAnimationActive animationBegin={150} animationDuration={900} animationEasing="ease-out">
+                  </Scatter>
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
-            {link && <p className="so-sub">{link.sentence} ρ {link.spearman.toFixed(2)}, p {link.p < 0.001 ? "< 0.001" : link.p.toFixed(3)}; {L("Pearson", "ಪಿಯರ್ಸನ್")} r {link.pearson.toFixed(2)}. {L("Bengaluru Urban is outlined.", "ಬೆಂಗಳೂರು ನಗರವನ್ನು ಗುರುತಿಸಲಾಗಿದೆ.")}</p>}
+            <p className="so-legend">
+              <span><i style={{ background: "#22E6F0" }} />{L("Highest three", "ಹೆಚ್ಚಿನ ಮೂರು")}</span>
+              <span><i style={{ background: "#A78BFA" }} />{L("Lowest", "ಕಡಿಮೆ")}</span>
+              <span><i className="ring" />{L("Bengaluru Urban", "ಬೆಂಗಳೂರು ನಗರ")}</span>
+              {link?.significant && <span><i className="dash" />{L("Trend", "ಪ್ರವೃತ್ತಿ")}</span>}
+            </p>
+            {link && <p className="so-sub">{L("Rank correlation", "ಶ್ರೇಣಿ ಸಹಸಂಬಂಧ")} ρ {link.spearman.toFixed(2)} · p {link.p < 0.001 ? "< 0.001" : link.p.toFixed(3)} · Pearson r {link.pearson.toFixed(2)} · {L(`${points.length} districts. A link between districts is not a cause, and says nothing about any one person.`, `${points.length} ಜಿಲ್ಲೆಗಳು. ಜಿಲ್ಲೆಗಳ ನಡುವಿನ ಸಂಬಂಧ ಕಾರಣವಲ್ಲ, ಯಾವುದೇ ವ್ಯಕ್ತಿಯ ಬಗ್ಗೆ ಏನೂ ಹೇಳುವುದಿಲ್ಲ.`)}</p>}
           </section>
         </div>
 
