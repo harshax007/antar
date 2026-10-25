@@ -65,22 +65,6 @@ export default function MoneyTrail() {
     get(`/api/money/account/${encodeURIComponent(sel)}`).then(setAcct).catch(() => setAcct({ error: true }));
   }, [sel]);
 
-  // the account's full ledger as CSV, for a bank or financial-intelligence request
-  const [exporting, setExporting] = useState(false);
-  const exportCsv = async (id) => {
-    setExporting(true);
-    try {
-      const r = await fetch(`${API}/api/money/export?account=${encodeURIComponent(id)}`);
-      if (!r.ok) throw new Error(String(r.status));
-      const url = URL.createObjectURL(await r.blob());
-      const a = document.createElement("a");
-      a.href = url; a.download = `money-trail-${id.replace(/[^A-Za-z0-9._-]+/g, "_")}.csv`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch { /* the button says so below */ setExporting("error"); return; }
-    setExporting(false);
-  };
-
   const doSearch = (e) => {
     e?.preventDefault();
     if (q.trim().length < 2) return;
@@ -101,28 +85,23 @@ export default function MoneyTrail() {
   return (
     <section className="mt-page">
       <div className="mt-wrap">
-        <header className="mt-head">
+        {/* heading on the left, the four figures on the right: the width is used */}
+        <header className="mt-head mt-head--split">
+          <div className="mt-head-l">
           <h1 className="mt-title">{L(<>Search · <em>Money Trail</em></>, <>ಹುಡುಕಾಟ · <em>ಹಣದ ಜಾಡು</em></>)}</h1>
-          <p className="mt-lede">{L("Trace where money went after a UPI fraud: which accounts received it, where they sent it, and the FIRs they appear in. Export an account's transactions for a freeze request.",
-                                   "UPI ವಂಚನೆಯ ನಂತರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು ಎಂದು ಪತ್ತೆಹಚ್ಚಿ: ಯಾವ ಖಾತೆಗಳು ಪಡೆದವು, ಎಲ್ಲಿಗೆ ಕಳುಹಿಸಿದವು, ಯಾವ FIR ಗಳಲ್ಲಿವೆ. ತಡೆ ವಿನಂತಿಗಾಗಿ ಖಾತೆಯ ವಹಿವಾಟುಗಳನ್ನು ರಫ್ತು ಮಾಡಿ.")}</p>
-          <div className="mt-cta">
-            <button type="button" className="ui-btn ui-btn--primary" disabled={!sel || exporting === true} onClick={() => sel && exportCsv(sel)}>
-              {exporting === true ? L("Preparing…", "ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…")
-                : exporting === "error" ? L("Export failed, try again", "ರಫ್ತು ವಿಫಲ, ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ")
-                : L("Export for a bank request", "ಬ್ಯಾಂಕ್ ವಿನಂತಿಗಾಗಿ ರಫ್ತು")}
-            </button>
-            {sel && <span className="mt-cta-note">{L(`${sel}: every transaction, as CSV`, `${sel}: ಎಲ್ಲ ವಹಿವಾಟುಗಳು, CSV`)}</span>}
+          <p className="mt-lede">{L("Trace where money went after a UPI fraud: which accounts received it, where they sent it, and the FIRs they appear in.",
+                                   "UPI ವಂಚನೆಯ ನಂತರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು ಎಂದು ಪತ್ತೆಹಚ್ಚಿ: ಯಾವ ಖಾತೆಗಳು ಪಡೆದವು, ಎಲ್ಲಿಗೆ ಕಳುಹಿಸಿದವು, ಯಾವ FIR ಗಳಲ್ಲಿವೆ.")}</p>
           </div>
+          {ov && (
+            <dl className="mt-stats">
+              <div><dt>{L("Money traced", "ಪತ್ತೆಹಚ್ಚಿದ ಹಣ")}</dt><dd>{rupees(ov.amount)}</dd></div>
+              <div><dt>{L("Transactions", "ವಹಿವಾಟುಗಳು")}</dt><dd>{ov.transactions.toLocaleString("en-IN")}</dd></div>
+              <div><dt>{L("FIRs linked", "ಸಂಬಂಧಿತ FIR")}</dt><dd>{ov.firs.toLocaleString("en-IN")}</dd></div>
+              <div><dt>{L("Accounts with warning signs", "ಎಚ್ಚರಿಕೆಯ ಖಾತೆಗಳು")}</dt><dd>{ov.flagged}</dd></div>
+            </dl>
+          )}
         </header>
 
-        {ov && (
-          <dl className="mt-stats">
-            <div><dt>{L("Money traced", "ಪತ್ತೆಹಚ್ಚಿದ ಹಣ")}</dt><dd>{rupees(ov.amount)}</dd></div>
-            <div><dt>{L("Transactions", "ವಹಿವಾಟುಗಳು")}</dt><dd>{ov.transactions.toLocaleString("en-IN")}</dd></div>
-            <div><dt>{L("FIRs linked", "ಸಂಬಂಧಿತ FIR")}</dt><dd>{ov.firs.toLocaleString("en-IN")}</dd></div>
-            <div><dt>{L("Accounts with warning signs", "ಎಚ್ಚರಿಕೆಯ ಖಾತೆಗಳು")}</dt><dd>{ov.flagged}</dd></div>
-          </dl>
-        )}
 
         <div className="mt-grid">
           <aside className="mt-list" aria-labelledby="mt-h-list">

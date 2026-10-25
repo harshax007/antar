@@ -150,15 +150,12 @@ export default function SocialInsights() {
   return (
     <main className="so-page">
       <div className="so-wrap">
-        <header className="so-head">
+        {/* heading on the left, its limits on the right */}
+        <header className="so-head so-head--split">
+          <div className="so-head-l">
           <h1 className="so-title">{L(<>Search · <em>Social Insights</em></>, <>ಹುಡುಕಾಟ · <em>ಸಾಮಾಜಿಕ ಒಳನೋಟಗಳು</em></>)}</h1>
           <p className="so-lede">{L(`How crime rates in Karnataka's ${d.districts} districts move with urbanisation, education, child marriage, household amenities and alcohol use. These are links between districts, not causes, and never a reason to target a group.`,
                                    `ಕರ್ನಾಟಕದ ${d.districts} ಜಿಲ್ಲೆಗಳ ಅಪರಾಧ ದರಗಳು ನಗರೀಕರಣ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯ ವಿವಾಹ, ಗೃಹ ಸೌಲಭ್ಯ ಮತ್ತು ಮದ್ಯಪಾನದೊಂದಿಗೆ ಹೇಗೆ ಬದಲಾಗುತ್ತವೆ. ಇವು ಸಂಬಂಧಗಳು, ಕಾರಣಗಳಲ್ಲ; ಯಾವುದೇ ಗುಂಪನ್ನು ಗುರಿಯಾಗಿಸಲು ಆಧಾರವಲ್ಲ.`)}</p>
-          <div className="so-cta">
-            <button type="button" className="ui-btn ui-btn--primary" onClick={() => router.push(`/antar?q=${encodeURIComponent(ASK[cat] || ASK.all)}`)}>
-              {L("Ask Chat to explain these links", "ಈ ಸಂಬಂಧಗಳನ್ನು ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ")}
-            </button>
-            <span>{L(`“${ASK[cat] || ASK.all}”`, "")}</span>
           </div>
           <div className="so-caveats">
             <h2>{L("What this cannot tell you", "ಇದು ಹೇಳಲಾಗದ್ದು")}</h2>

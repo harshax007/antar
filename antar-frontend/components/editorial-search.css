@@ -125,3 +125,16 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 
 /* the inferred-identity note: a ruled aside with its label, not a box */
 .sx-page .sx-hypbox { margin: var(--sp-2) 0; padding: var(--sp-2) 0 var(--sp-2) var(--sp-3); background: none; border: 0; border-left: 2px solid #C084FC; border-radius: 0; }
+
+/* Money trail / Social insights: heading left, figures or limits right, full width */
+.sx-page .mt-wrap, .sx-page .so-wrap { max-width: none; }
+.sx-page .mt-head--split, .sx-page .so-head--split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-5) var(--sp-8); align-items: end; }
+.sx-page .mt-head--split { margin-bottom: var(--sp-6); }
+.sx-page .mt-head--split .mt-stats { margin: 0; justify-self: end; }
+.sx-page .so-head--split .so-caveats { margin: 0; padding: var(--sp-3) 0 0 var(--sp-5); border-top: 0; border-left: 1px solid var(--rule-1); max-width: 70ch; align-self: start; }
+.sx-page .so-caveats h2 { font: 600 12.5px/1.4 'Inter', sans-serif; letter-spacing: 0; text-transform: none; color: #F5C451; }
+@media (max-width: 1100px) {
+  .sx-page .mt-head--split, .sx-page .so-head--split { grid-template-columns: 1fr; }
+  .sx-page .mt-head--split .mt-stats { justify-self: start; }
+  .sx-page .so-head--split .so-caveats { padding-left: 0; border-left: 0; }
+}
