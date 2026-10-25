@@ -559,34 +559,6 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
     openReport(`/report/${sessionId}`);
   }
 
-  // Copy is the AUDITED answer, word for word: the backend reads this answer's audit log
-  // entry, checks its digest, builds the brief from that text and records the copy on the
-  // chain (POST /api/answer-record/{hash}/copy). Nothing on screen is copied, so an edited
-  // or re-rendered brief can never be pasted as if it were the record. No entry, no copy.
-  const [copyState, setCopyState] = useState("idle");      // idle | busy | done | err
-  const [copyMsg, setCopyMsg] = useState("");
-  const copyTimer = useRef(null);
-  async function copyForReport() {
-    clearTimeout(copyTimer.current);
-    if (!meta?.hash) {
-      setCopyState("err");
-      setCopyMsg(kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆ ಇಲ್ಲ, ಆದ್ದರಿಂದ ನಕಲಿಸಲಾಗಿಲ್ಲ." : "Not copied: this answer has no audit log entry.");
-    } else {
-      setCopyState("busy");
-      try {
-        const d = await fetchAPI(`/api/answer-record/${encodeURIComponent(meta.hash)}/copy`, { method: "POST" });
-        await navigator.clipboard.writeText(d.text);
-        setCopyState("done");
-        setCopyMsg(kn ? `ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆಯಿಂದ ಯಥಾವತ್ ನಕಲಿಸಲಾಗಿದೆ · ನಕಲು ದಾಖಲಾಗಿದೆ ${String(d.copy_event_hash).slice(0, 8)}`
-                      : `Copied word for word from the audit log · copy logged ${String(d.copy_event_hash).slice(0, 8)}`);
-      } catch (e) {
-        setCopyState("err");
-        setCopyMsg(e?.message || (kn ? "ನಕಲಿಸಲಾಗಲಿಲ್ಲ." : "Not copied. Please retry."));
-      }
-    }
-    copyTimer.current = setTimeout(() => { setCopyState("idle"); setCopyMsg(""); }, 5000);
-  }
-  useEffect(() => () => clearTimeout(copyTimer.current), []);
 
   const [ins, setIns] = useState({ status: "idle", data: null, error: "" });
   useEffect(() => {
@@ -704,15 +676,13 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                       title={kn ? "ಈ ಉತ್ತರ ಹೇಗೆ ಬಂತು" : "How this was answered: method, agents, audit id"}>
                 <HelpCircle size={13} aria-hidden="true" /><span>{kn ? "ಹೇಗೆ?" : "How?"}</span>
               </button>
-              <button type="button" className={`c2-quick-copy ${copyState}`} onClick={copyForReport} disabled={copyState === "busy"}
-                      title={copyMsg || (kn ? "ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆಯಿಂದ ಯಥಾವತ್ ನಕಲಿಸಿ" : "Copy the answer exactly as recorded in the audit log")}>
-                {copyState === "done" ? <Check size={13} aria-hidden="true" /> : copyState === "err" ? <AlertTriangle size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
-                <span>{copyState === "busy" ? (kn ? "ನಕಲಿಸುತ್ತಿದೆ…" : "Copying…") : copyState === "done" ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ನಕಲಿಸಿ" : "Copy")}</span>
+              <button type="button" className="c2-quick-copy" onClick={exportReport} disabled={!sessionId}
+                      title={sessionId ? (kn ? "PDF ವರದಿ ಡೌನ್‌ಲೋಡ್" : "Download the PDF report") : (kn ? "ವರದಿಗಾಗಿ ಮೊದಲು ಒಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ" : "Ask a question first: the report is built from the conversation")}>
+                <Download size={12} aria-hidden="true" /><span>PDF</span>
               </button>
             </div>
           )}
         </div>
-        {copyMsg && <div className={`c2-toast ${copyState}`} role="status">{copyMsg}</div>}
         <div className="c2-leds" role="status" aria-live="polite">
           <span className={`c2-led ${link}`} title={lastSync ? `Last sync ${Math.round((now - lastSync) / 1000)}s ago` : "Waiting for first sync"}>
             <i /> {linkLabel}
@@ -724,10 +694,6 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
           )}
         </div>
         <div className="c2-actions">
-          <button onClick={exportReport} disabled={!sessionId}
-                  title={sessionId ? (kn ? "ಗುಪ್ತಚರ ವರದಿ ರಫ್ತು ಮಾಡಿ" : "Export intelligence report")
-                                   : (kn ? "ವರದಿಗಾಗಿ ಮೊದಲು ಒಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ" : "Ask a question first: the report is built from the conversation")}
-                  aria-label={kn ? "ಗುಪ್ತಚರ ವರದಿ ರಫ್ತು ಮಾಡಿ" : "Export intelligence report"}><Download size={13} /></button>
           <button onClick={toggleExpand} title={expanded ? "Restore width" : "Expand console"}>
             {expanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
           </button>
@@ -916,15 +882,9 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
 
                 {parsed.summary && (
                   <div className="c2-report">
-                    <button type="button" className="c2-report-main" onClick={copyForReport} disabled={copyState === "busy"}>
-                      {copyState === "done" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-                      {copyState === "done" ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ವರದಿಗಾಗಿ ನಕಲಿಸಿ" : "Copy for report")}
-                    </button>
                     {sessionId && (
-                      <button type="button" onClick={exportReport}><FileText size={14} aria-hidden="true" /> {kn ? "PDF ವರದಿ" : "PDF report"}</button>
+                      <button type="button" className="c2-report-main" onClick={exportReport}><Download size={14} aria-hidden="true" /> {kn ? "PDF ವರದಿ ಡೌನ್‌ಲೋಡ್" : "Download PDF report"}</button>
                     )}
-                    <span>{copyMsg || (kn ? "ಪ್ರಶ್ನೆ, ಉತ್ತರ, ಉಲ್ಲೇಖಿತ FIR ಮತ್ತು ಲೆಕ್ಕಪತ್ರ ಐಡಿ - ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆಯಿಂದ ಯಥಾವತ್, ನಕಲು ಕೂಡ ದಾಖಲಾಗುತ್ತದೆ."
-                              : "Question, answer, cited FIRs and audit id, taken word for word from the audit log. The copy is logged too.")}</span>
                   </div>
                 )}
               </div>

@@ -5834,3 +5834,10 @@ html[lang="kn"] .ov-use-tag { letter-spacing: normal; text-transform: none; }
 @keyframes c2-skel { 50% { opacity: .45; } }
 .xw-c2 .c2-quick .c2-quick-n { font-style: normal; font-size: 11px; padding: 0 6px; border-radius: 999px; background: rgba(34,230,240,.14); color: var(--cyan); }
 @media (prefers-reduced-motion: reduce) { .xw-c2 .c2-ins-skel i { animation: none; } }
+
+/* Workspace header: a clear white title, smaller shortcut buttons */
+.xw-c2 .c2-callsign > span:first-child { font-size: 15.5px; font-weight: 600; color: #fff; letter-spacing: -0.005em; }
+.xw-c2 .c2-quick { gap: 5px; }
+.xw-c2 .c2-quick button { height: 24px; padding: 0 8px; gap: 5px; border-radius: 7px; font-size: 11.5px; }
+.xw-c2 .c2-quick button svg { width: 12px; height: 12px; }
+.xw-c2 .c2-report > span:empty { display: none; }
