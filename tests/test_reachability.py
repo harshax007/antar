@@ -81,9 +81,9 @@ class TestOneFir:
         assert not case_answer.wants_case("what links FIR C00026 and FIR C00507")   # two: T29's question
 
     def test_a_question_about_one_fir_is_answered_from_that_case(self):
-        r = _ask("status of FIR C00026")
+        r = _ask("status of FIR C273697")             # Amengad PS; was C00026 before the ids were made unique
         assert r["template_id"] == "CASE" and "Amengad PS" in r["answer"] and "Where it is now" in r["answer"]
-        assert r["actions"][0] == {"type": "navigate", "payload": "/case/C00026", "label": "Open case timeline"}
+        assert r["actions"][0] == {"type": "navigate", "payload": "/case/C273697", "label": "Open case timeline"}
 
     def test_a_closed_case_says_where_it_ended(self):
         r = _ask("show FIR K1026329")

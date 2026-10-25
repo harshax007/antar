@@ -133,6 +133,8 @@ def answer(text: str, lang: str = "en") -> dict:
     rec = [f"**Acts and sections:** {', '.join(d['sections']) if d['sections'] else 'none recorded'}"]
     if d.get("crime_no"):
         rec.append(f"**Crime number:** {d['crime_no']} (register id {d['fir_id']})")
+    else:
+        rec.append(f"**Register id:** {d['fir_id']}")      # no crime number: the id is the only name it has
     if d.get("place"):
         rec.append(f"**Place:** {d['place']}")
     if d.get("io"):
