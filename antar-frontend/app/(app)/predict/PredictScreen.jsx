@@ -1803,8 +1803,8 @@ const avgConf = predictions?.length
               : <>Where crime is likely to <em>rise</em> in coming days.</>}
           </h1>
           <p className="px-sub">
-            {kn ? "ಪ್ರಕರಣಗಳು ಬರುವ ಮೊದಲೇ ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ಯೋಜಿಸಿ. ಪ್ರತಿ ಮುನ್ಸೂಚನೆಗೂ ನಿರೀಕ್ಷಿತ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಅದನ್ನು ಲೆಕ್ಕ ಹಾಕಿದ FIR ಗಳು."
-                : "Plan patrols and bandobast before the cases come in. Every forecast gives an expected range and the FIRs it was worked out from."}
+            {kn ? <>ಪ್ರಕರಣಗಳು ಬರುವ ಮೊದಲೇ ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ಯೋಜಿಸಿ.<br />ಪ್ರತಿ ಮುನ್ಸೂಚನೆಗೂ ನಿರೀಕ್ಷಿತ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಅದನ್ನು ಲೆಕ್ಕ ಹಾಕಿದ FIR ಗಳು.</>
+                : <>Plan patrols and bandobast before the cases come in.<br />Every forecast gives an expected range and the FIRs it was worked out from.</>}
           </p>
           <div className="px-hero-cta">
             <button type="button" className="ui-btn ui-btn--primary" onClick={toPlan}>
