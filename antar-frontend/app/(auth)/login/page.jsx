@@ -9,7 +9,7 @@ import { raiseCurtain } from "@/lib/curtain";
 
 const COPY = {
   en: {
-    tag: "Think. Connect. Anticipate.", who: "Crime intelligence for Karnataka State Police officers. Sign in with your user ID.", badge: "User ID", pw: "Password", auth: "Authenticate",
+    tag: "Think. Connect. Anticipate.", badge: "User ID", pw: "Password", auth: "Authenticate",
     verifying: "Verifying credentials…", granted: "Access granted", empty: "Enter your User ID and password to continue.",
     demoT: "Demo credentials", officer: "Officer", admin: "Admin", anyPw: "any password",
     bad: "User ID or password is incorrect.",
@@ -18,7 +18,7 @@ const COPY = {
     off: "Sign-in is not set up on this server yet.",
   },
   kn: {
-    tag: "ಯೋಚಿಸಿ. ಸಂಪರ್ಕಿಸಿ. ನಿರೀಕ್ಷಿಸಿ.", who: "ಕರ್ನಾಟಕ ರಾಜ್ಯ ಪೊಲೀಸ್ ಅಧಿಕಾರಿಗಳಿಗೆ ಅಪರಾಧ ಗುಪ್ತಚರ. ನಿಮ್ಮ ಬಳಕೆದಾರ ID ಯೊಂದಿಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ.", badge: "ಬಳಕೆದಾರ ID", pw: "ಗುಪ್ತಪದ", auth: "ದೃಢೀಕರಿಸಿ",
+    tag: "ಯೋಚಿಸಿ. ಸಂಪರ್ಕಿಸಿ. ನಿರೀಕ್ಷಿಸಿ.", badge: "ಬಳಕೆದಾರ ID", pw: "ಗುಪ್ತಪದ", auth: "ದೃಢೀಕರಿಸಿ",
     verifying: "ರುಜುವಾತುಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…", granted: "ಪ್ರವೇಶ ನೀಡಲಾಗಿದೆ", empty: "ಮುಂದುವರಿಯಲು ನಿಮ್ಮ ಬಳಕೆದಾರರ ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ.",
     demoT: "ಡೆಮೊ ರುಜುವಾತುಗಳು", officer: "ಅಧಿಕಾರಿ", admin: "ನಿರ್ವಾಹಕ", anyPw: "ಯಾವುದೇ ಪಾಸ್‌ವರ್ಡ್",
     bad: "ಬಳಕೆದಾರ ID ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ.",
@@ -137,7 +137,6 @@ export default function LoginPage() {
           <span className="lg-wordmark">Antar</span>
         </div>
         <div className={`lg-tagline ${kn ? "kn" : ""}`}>{t.tag}</div>
-        <p className="lg-who">{t.who}</p>
 
         <form onSubmit={handleSubmit}>
           <div className="lg-field">
