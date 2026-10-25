@@ -902,7 +902,7 @@ function DocsFull() {
     <>
 
 
-      <div id="docs-top" style={{ minHeight: "100vh", background: "#03050C", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", overflowX: "clip", position: "relative", zoom: 1.1 }}>
+      <div id="docs-top" style={{ minHeight: "100vh", flexShrink: 0, background: "#03050C", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", overflowX: "clip", position: "relative", zoom: 1.1 }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />
 
 
