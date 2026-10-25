@@ -1253,7 +1253,7 @@ html[lang="kn"] .px-panel-hd > span:first-child { letter-spacing: normal; text-t
 .px-page { gap: var(--sp-8); }
 
 /* hero */
-.px-hero { display: grid; gap: var(--sp-5); padding-bottom: var(--sp-6); border-bottom: 1px solid var(--rule-2); }
+.px-hero { display: grid; gap: var(--sp-5); padding-bottom: var(--sp-2); }
 .px-hero-main { max-width: 860px; }
 .px-eyebrow { display: block; margin-bottom: var(--sp-3); font: 500 var(--fs-label)/1.3 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
 html[lang="kn"] .px-eyebrow { letter-spacing: normal; text-transform: none; font-family: inherit; }
@@ -1275,7 +1275,7 @@ html[lang="kn"] .px-eyebrow { letter-spacing: normal; text-transform: none; font
 .px-actbtn.ui-btn--primary:hover { background: #fff; color: #050A12; }
 
 /* the week: figures on a rule, divided by hairlines (no boxes) */
-.px-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--rule-2); border-bottom: 1px solid var(--rule-1); }
+.px-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .px-stat { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-4) var(--sp-5) var(--sp-5); text-align: left; background: none; border: 0; border-left: 1px solid var(--rule-1); color: var(--text-1); cursor: pointer; transition: background-color .18s ease; }
 .px-stat:first-child { border-left: 0; padding-left: 0; }
 .px-stat:hover { background: rgba(255,255,255,.025); }
@@ -1288,8 +1288,8 @@ html[lang="kn"] .px-eyebrow { letter-spacing: normal; text-transform: none; font
 .px-stat.zero b { color: var(--text-4); } .px-stat.zero span { color: var(--text-3); font-weight: 500; }
 
 /* numbered sections: a number, a title, a rule */
-.px-secnum { margin-right: var(--sp-3); font: 500 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .06em; color: var(--accent); vertical-align: .2em; }
-.px-plan { padding: var(--sp-6) 0 0; border: 0; border-top: 1px solid var(--rule-2); border-radius: 0; background: none; }
+.px-secnum, .px-evs-hd h2 .px-secnum { margin-right: var(--sp-3); font: 500 var(--fs-label) 'JetBrains Mono', monospace; letter-spacing: .06em; color: var(--accent); vertical-align: .2em; max-width: none; }
+.px-plan { padding: var(--sp-6) 0 0; border: 0; border-radius: 0; background: none; }
 .px-plan .ui-eyebrow { display: none; }
 .px-plan-hd h2, .px-evs-hd h2 { font-size: 24px; letter-spacing: -.01em; }
 .px-act { border-radius: 0; background: none; border: 0; border-bottom: 1px solid var(--rule-1); border-left: 0; }
@@ -1822,7 +1822,6 @@ const avgConf = predictions?.length
         </div>
         {/* provenance as one quiet line, not a row of pills */}
         <p className="px-meta">
-          {boardMeta && <span>{kn ? "ಮೌಲ್ಯಮಾಪನ" : "Assessed"} <b>{dayOf(boardMeta.as_of)}</b></span>}
           {predictions?.length > 0 && <span><b>{A.length}</b> {kn ? "ವಲಯ" : "areas"}{unitCards.length ? <> · <b>{unitCards.length}</b> {kn ? "ಘಟಕ" : "statewide units"}</> : null}</span>}
           {trackPct && (
             // the forecast's own track record, up front: opens the details
