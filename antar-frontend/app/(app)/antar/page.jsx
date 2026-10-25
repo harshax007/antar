@@ -1435,6 +1435,18 @@ const MessageRow = memo(({
          prev.deepThink === next.deepThink;
 });
 
+// Expert mode lives in the composer's toolbar, beside the mic and send, never over the text.
+function ExpertSwitch({ on, onToggle, kn }) {
+  return (
+    <button type="button" className={`cx-expert-switch ${on ? "on" : ""}`} role="switch" aria-checked={on}
+            title={kn ? "ತಜ್ಞ: ಆಳವಾದ ಬಹು-ಏಜೆಂಟ್ ತನಿಖೆ" : "Expert: deep multi-agent investigation and workspace"}
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+      <span className="track" aria-hidden="true"><span className="knob" /></span>
+      {kn ? "ತಜ್ಞ" : "Expert"}
+    </button>
+  );
+}
+
 export default function ChatPage() {
   const router = useRouter();
   const liveTriggeredRef = useRef(false);
@@ -2310,26 +2322,6 @@ export default function ChatPage() {
             <WhisperWaveform kn={kn} onStop={toggleVoice} onClear={() => { committedTextRef.current = ""; setInput(""); }} />
           </div>
         )}
-        {canUseExpert && (
-          <div style={{ position: "absolute", top: "8px", right: "8px", zIndex: 10 }}>
-            <button
-              type="button"
-              className={`cx-expert-toggle ${deepThink ? "on" : ""}`}
-              aria-pressed={deepThink}
-              title="Expert - deep multi-agent investigation + workspace"
-              onClick={(e) => {
-                e.stopPropagation();
-                const next = !deepThink;
-                setDeepThink(next);
-                try { localStorage.setItem("antar_expert", next ? "1" : "0"); } catch {}
-                window.dispatchEvent(new CustomEvent("antar-expert", { detail: { on: next } }));
-              }}
-              style={{ padding: "4px 10px", fontSize: "11px" }}
-            >
-              {kn ? "ತಜ್ಞ" : "Expert"}
-            </button>
-          </div>
-        )}
         <textarea
           ref={inputRef}
           className={`cx-input ${kn ? "kn" : ""}`}
@@ -2371,7 +2363,14 @@ export default function ChatPage() {
         borderTop: "1px solid rgba(255, 255, 255, 0.06)"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", fontFamily: "'Inter', sans-serif", flexWrap: "wrap", color: "rgba(255,255,255,0.4)" }}>
-          {kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್" : "Antar System"}
+          {canUseExpert
+            ? <ExpertSwitch on={deepThink} kn={kn} onToggle={() => {
+                const next = !deepThink;
+                setDeepThink(next);
+                try { localStorage.setItem("antar_expert", next ? "1" : "0"); } catch {}
+                window.dispatchEvent(new CustomEvent("antar-expert", { detail: { on: next } }));
+              }} />
+            : (kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್" : "Antar System")}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <WhisperMicButton recording={recording} onClick={toggleVoice} kn={kn} />
@@ -2661,26 +2660,6 @@ export default function ChatPage() {
 
               {/* Prompt Field Wrapper with Typewriter Overlay */}
               <div style={{ position: "relative", width: "100%" }}>
-                {canUseExpert && (
-                  <div style={{ position: "absolute", top: "8px", right: "8px", zIndex: 10 }}>
-                    <button
-                      type="button"
-                      className={`cx-expert-toggle ${deepThink ? "on" : ""}`}
-                      aria-pressed={deepThink}
-                      title="Expert - deep multi-agent investigation + workspace"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const next = !deepThink;
-                        setDeepThink(next);
-                        try { localStorage.setItem("antar_expert", next ? "1" : "0"); } catch {}
-                        window.dispatchEvent(new CustomEvent("antar-expert", { detail: { on: next } }));
-                      }}
-                      style={{ padding: "4px 10px", fontSize: "11px" }}
-                    >
-                      {kn ? "ತಜ್ಞ" : "Expert"}
-                    </button>
-                  </div>
-                )}
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -2700,7 +2679,6 @@ export default function ChatPage() {
                   className="cx-land-input"
                   style={{
                     width: "100%",
-                    paddingRight: canUseExpert ? "88px" : 0,   // keep typed text clear of the Expert button
                     minHeight: "72px",
                     maxHeight: "220px",
                     background: "transparent",
@@ -2779,7 +2757,14 @@ export default function ChatPage() {
               }}>
                 {/* Left: Model Pill */}
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12.5px", fontFamily: "'Inter', sans-serif", flexWrap: "wrap", color: "rgba(255,255,255,0.4)" }}>
-                  {kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್" : "Antar System"}
+                  {canUseExpert
+                    ? <ExpertSwitch on={deepThink} kn={kn} onToggle={() => {
+                        const next = !deepThink;
+                        setDeepThink(next);
+                        try { localStorage.setItem("antar_expert", next ? "1" : "0"); } catch {}
+                        window.dispatchEvent(new CustomEvent("antar-expert", { detail: { on: next } }));
+                      }} />
+                    : (kn ? "ಅಂತರ್ ಸಿಸ್ಟಮ್" : "Antar System")}
                 </div>
 
                 {/* Right controls: Mic + Paperclip + Blue Rounded Square Send Button */}
