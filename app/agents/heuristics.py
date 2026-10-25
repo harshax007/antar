@@ -372,6 +372,14 @@ def _volume_q(low: str) -> bool:
 
 _DATA_MISSING_RE = re.compile(r"\bmissing\s+(?:gps\s+)?(?:coordinates?|gps|locations?|lat\w*|long\w*|fields?|data|values?|"
                               r"sections?|dates?|entries|records?|information|info|details|columns?)\b")
+# Questions about something other than crime, and the words that make one a crime question
+# after all ("does rain affect theft?", "traffic accident cases").
+_OFF_TOPIC_RE = re.compile(r"\b(weather|temperature|rain(?:fall|ing)?|humidity|cricket|ipl|match score|movies?|films?|"
+                           r"songs?|recipes?|cook\w*|stock (?:price|market)|share price|sensex|joke|poem|horoscope|"
+                           r"restaurants?|hotel booking|train timings?|bus timings?|tourist|sightseeing)\b")
+_CRIME_WORD_RE = re.compile(r"\b(crimes?|criminal\w*|firs?|cases?|police|suspects?|accused|offen\w+|theft|thefts|"
+                            r"murders?|robber\w*|burglar\w*|assault\w*|fraud\w*|accidents?|victims?|arrest\w*|"
+                            r"complaints?|station|beat|patrol\w*|incidents?|registered)\b")
 # A question that points back at the previous answer.
 _FOLLOW_UP_RE = re.compile(r"\b(those|these|them|that list|the same|same (?:district|place|zone|period|date range)|"
                            r"narrow|filter (?:those|these|them|it)|from the cases|of them|previous (?:result|answer|list)|"
@@ -579,6 +587,12 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         if tid == "T11" and zones and params.get("dimension") == "station_code":
             params = {**params, "zones": zones}
         return {"template_id": tid, "params": params, "answer_lang": answer_lang}
+
+    # Not a crime question at all ("what's the weather in Mysuru?", "cricket score today"):
+    # a place in it used to make it a list of that place's FIRs. With no crime, case or
+    # police word, it is off-topic and the surface says so.
+    if _OFF_TOPIC_RE.search(low) and not ct and not _CRIME_WORD_RE.search(low):
+        return {"template_id": "NONE", "reason": "off-topic", "answer_lang": answer_lang}
 
     # suspect linkage: "what crimes is S0005 linked to" → T9 (deterministic reroute, WI-4)
     # Any suspect id ("profile of S0005", "show network of S0005") is a question about THAT

@@ -320,7 +320,10 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     from app.agents.case_answer import wants_case as _wants_case, refers_back as _refers_back
     from app.agents.briefing import wants_briefing as _wants_briefing
     # ...and a brief of the previous answer ("a memo summarising the above") names no crime either
-    _is_case = _wants_case(query_text) or _refers_back(query_text) or _wants_briefing(query_text)
+    from app.agents.spikes_answer import wants_spikes as _wants_spikes
+    from app.agents.period_compare import wants_compare as _wants_compare
+    _is_case = (_wants_case(query_text) or _refers_back(query_text) or _wants_briefing(query_text)
+                or _wants_spikes(query_text) or bool(_wants_compare(query_text)))
     if hs_res.get("template_id") == "NONE" and not command and not req.deep_think and not _agent_ask and not _is_forecast and not _is_case:
         answer = ("I'm built for crime-data questions, so I can't answer that one.\n"
                   "Try asking:\n• most crimes?\n• theft trend in Bengaluru City\n"
@@ -506,10 +509,15 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         # pattern / alert / geo agents would append unmeasured "risk" sections beneath it that
         # can contradict it, so they don't run for a forecast question.
         routes = [r for r in routes if r not in ("predict", "pattern", "alert_suggest", "geo")]
-    if template_id in ("BRIEFING", "CLARIFY") and not command:
-        # A brief of the last answer, or a question back to the officer, is the whole turn:
-        # "briefing for the district superintendent" set off the geo agent on "district".
+    if not command and (template_id == "BRIEFING" or (template_id == "CLARIFY" and
+                                                      (query.get("params") or {}).get("missing") in ("fir", "answer"))):
+        # A brief of the last answer, or "which case?", is the whole turn: "briefing for the
+        # district superintendent" set off the geo agent on "district". (Any other CLARIFY
+        # keeps its agents: "any early warnings?" is answered by the alert agent.)
         routes = []
+    if template_id == "ALERTS":
+        # answered from the anomaly scan; the alert agent would list the same flags again
+        routes = [r for r in routes if r != "alert_suggest"]
     params = query.get("params", {})
     tasks = []
 
@@ -608,6 +616,24 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         actions.append({"type": "open_alerts", "label": "View active alerts", "params": {}})
         await q.emit("step", agent="alerts", status="done", label=sugg.get("summary", "Recommendations ready"))
 
+    async def run_research_task():
+        # The graph's research node, unchanged: anchor resolution (None rather than a guess),
+        # the K/D/I/U dossier and the adversarial review in one step. This surface used to
+        # route "deep research on X" and run nothing for it.
+        await q.emit("step", agent="research", status="running",
+                     label=_L(lang, "Building the research dossier…", "ಸಂಶೋಧನಾ ದಾಖಲೆ ರಚಿಸಲಾಗುತ್ತಿದೆ…"))
+        from app.agents.graph import research_node
+        out = await research_node(_research_state)
+        for k, v in (out.get("results") or {}).items():
+            results[k] = v
+        visuals.update(out.get("visuals") or {})
+        actions.extend(out.get("actions") or [])
+        extra_reasoning.extend(out.get("reasoning") or [])
+        done = bool((out.get("results") or {}).get("research"))
+        await q.emit("step", agent="research", status="done" if done else "degraded",
+                     label=_L(lang, "Dossier ready" if done else "No researchable subject named",
+                              "ದಾಖಲೆ ಸಿದ್ಧ" if done else "ಸಂಶೋಧನೆಗೆ ವಿಷಯ ಸಿಗಲಿಲ್ಲ"))
+
     if command == "connect" and not suspect_id:
         # Honest: /connect forced linkage agents but no entity resolved from the query.
         await q.emit("step", agent="network", status="done",
@@ -628,6 +654,16 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         tasks.append(run_predict_task()); ran.append("predict")
     if "alert_suggest" in routes:
         tasks.append(run_alerts_task()); ran.append("alert_suggest")
+    if "research" in routes or template_id == "RESEARCH":
+        # Only with a subject, a named suspect or a place: "deep research on gender
+        # demographics of theft" names nobody, and the free-text anchor would build a
+        # dossier with no known fact in it and record research as having run.
+        from app.agents.heuristics import extract_entities
+        _ents = extract_entities(query_text)
+        _research_state = {"user_text": query_text, "results": {"query": query},
+                           "entities": _ents, "lang": lang}
+        if suspect_id or _ents.get("zones"):
+            tasks.append(run_research_task()); ran.append("research")
     _skipped = [r for r in routes if r not in ran]
     if _skipped:
         extra_reasoning.append({"agent": "router", "step": "skipped",
@@ -676,6 +712,10 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     if template_id in ("NONE", "CLARIFY") and any(k in text_results for k in
                                                    ("alert_suggest", "network", "profile", "predict", "pattern", "geo")):
         base = ""
+    # a research question: the dossier is the answer; the query's "who should be researched?"
+    # stands only when no dossier was built
+    if template_id == "RESEARCH" and "research" in text_results:
+        base = ""
     answer  = _synthesize(base, text_results, claims, lang=lang)
 
     # If the LLM compose path is available, use it for a richer answer — but only for
@@ -689,6 +729,12 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
             _has_writer = bool(write_answer(rows, template_id, lang, params, query_text))
         except Exception:
             _has_writer = False
+    # Answers written whole by their own module (one case, a comparison, the anomaly flags, a
+    # brief, a dossier, a forecast, the social analysis) are already the verified text; a
+    # rewrite only waits on the model and risks drifting from the counts.
+    if template_id in ("CASE", "COMPARE", "ALERTS", "BRIEFING", "RESEARCH", "FORECAST", "SOCIAL",
+                       "UNRESOLVED", "REFUSED", "CLARIFY"):
+        _has_writer = True
     if use_llm and rows and not _has_writer:
         from app.agents.query_agent import compose_answer
         try:

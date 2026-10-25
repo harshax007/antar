@@ -1144,6 +1144,27 @@ async def query_agent_run(
                      int((time.time() - t0) * 1000))
             return res
 
+    # "Are there any unusual spikes right now?": the anomaly scan the Predict screen uses
+    # (spikes_answer.py). "Is crime rising in Bengaluru City this week?", "this week against
+    # last week": one window against the one before (period_compare.py). Both used to fall
+    # to a list of the newest FIRs in the state, the place and the comparison dropped.
+    from app.agents import spikes_answer as _spikes, period_compare as _cmp
+    _unit = _cmp.wants_compare(user_text)
+    if _unit or _spikes.wants_spikes(user_text):
+        from app.agents.heuristics import extract_entities as _ents
+        try:
+            _e = _ents(user_text, history=history)
+            res = (_cmp.answer(user_text, _unit, _e, lang or "en") if _unit
+                   else _spikes.answer(user_text, _e, lang or "en"))
+        except Exception as e:
+            import structlog
+            structlog.get_logger(__name__).warning("compare_or_spikes_failed", error=str(e)[:200])
+            res = None
+        if res is not None:
+            log_step(session_id, "query", res["template_id"], user_text[:80], f"{len(res['rows'])} rows",
+                     int((time.time() - t0) * 1000))
+            return res
+
     # "Is alcohol linked to crimes against women?" is a question about districts, answered from
     # the social indicator analysis (app/agents/social_answer.py), not from a FIR template.
     from app.agents import social_answer as _social
@@ -1208,6 +1229,18 @@ async def query_agent_run(
     # asking in English with Kannada selected still yields a native Kannada answer.
     answer_lang = lang or choice.get("answer_lang", "en")
     params = choice.get("params", {})
+
+    # "Deep research on Raju K": the dossier is the research agent's answer (graph research
+    # node, or the stream's research task). The query step used to fall through to
+    # self-heal and print the ten newest FIRs in the state above it. Its own answer is only
+    # what the officer sees when no subject can be researched.
+    if template_id == "RESEARCH":
+        return {"answer": ("ಯಾರ ಬಗ್ಗೆ ಸಂಶೋಧನೆ? ಶಂಕಿತರ ಹೆಸರು ಅಥವಾ ID (S0001), FIR ಅಥವಾ ಸ್ಥಳ ನೀಡಿ." if answer_lang == "kn" else
+                           "Who should be researched? Name a suspect (a name or an id like S0001), an FIR or a place."),
+                "rows": [], "citations": [], "template_id": "RESEARCH", "params": params, "agent": "query",
+                "suggested_followups": [], "llm_answer": False,
+                "reasoning": [{"step": "route", "detail": f"Research question; the dossier is built by the research "
+                                                          f"agent (anchor: {params.get('anchor') or 'none'})."}]}
 
     # Absconding — applied from the question text, never left to the router to remember.
     if wants_absconding(user_text):
@@ -1290,7 +1323,9 @@ async def query_agent_run(
         # or Kannada the offline heuristic missed). Try the self-healing path from the raw
         # text — but for a CLARIFY only override when we actually extracted something
         # substantive (otherwise a genuine clarification is the right response).
-        substantive = True
+        # The router judged it not a crime question ("weather in Mysuru"): no healing, or the
+        # place alone turns it into a list of that place's FIRs.
+        substantive = choice.get("reason") != "off-topic"
         if template_id == "CLARIFY":
             try:
                 from app.agents.intent_parser import parse_intent as _parse_intent
@@ -1316,6 +1351,10 @@ async def query_agent_run(
             if not any(_hp.get(k) for k in ("crime_types", "zones", "statuses", "suspect_id",
                                             "fir_number", "period", "year")):
                 heal = None
+        if heal and heal.rows:
+            # The healing stages query outside _execute, so nothing bounded them to today:
+            # "the closest related records" listed FIRs dated 31 Dec 2026.
+            heal.rows = drop_future_rows(heal.rows)
         if heal and heal.rows:
             rows = heal.rows
             citations = heal.citations or extract_citations(rows)

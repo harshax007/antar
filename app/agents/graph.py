@@ -382,7 +382,15 @@ async def synthesize_node(state: AgentState) -> dict:
 
     claims = verify_claims(_claims(results))
     base_answer = query.get("answer", "")
-    
+    # A research question: the dossier is the answer, and the query step's "who should be
+    # researched?" line stands only when no dossier was built.
+    if query.get("template_id") == "RESEARCH" and results.get("research"):
+        base_answer = ""
+    # A spike question answered from the anomaly scan: the alert agent's section would
+    # repeat the same flags beneath it.
+    if query.get("template_id") == "ALERTS":
+        results = {k: v for k, v in results.items() if k != "alert_suggest"}
+
     # Only pay for LLM synthesis when there is genuinely MORE THAN ONE agent result to
     # reconcile. With just `query`, compose_answer has already written the answer from
     # exactly these rows — a second LLM pass measured ~4.9s (30% of a 16s /api/chat turn)
