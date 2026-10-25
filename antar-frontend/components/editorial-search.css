@@ -97,9 +97,11 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-page .sx-money .ui-btn { justify-self: start; }
 
 /* People | Money trail: two words with an underline, not a boxed switch */
-.sx-views { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-5); border-bottom: 1px solid var(--rule-1); }
-.sx-views button { padding: 0 0 var(--sp-2); margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: none;
-  color: var(--text-3); font: 500 var(--fs-body) 'Inter', sans-serif; cursor: pointer; }
+.sx-views { display: flex; gap: var(--sp-4); margin-bottom: var(--sp-5); border-bottom: 1px solid var(--rule-1);
+  overflow-x: auto; scrollbar-width: none; }
+.sx-views::-webkit-scrollbar { display: none; }
+.sx-views button { flex: none; padding: 0 0 var(--sp-2); margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: none;
+  color: var(--text-3); font: 500 14.5px/1.3 'Inter', sans-serif; white-space: nowrap; cursor: pointer; transition: color .15s, border-color .15s; }
 .sx-views button:hover { color: var(--text-1); }
 .sx-views button.on { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
 /* OSINT is a tool, not a view: quieter grey until hovered or open */
@@ -107,10 +109,18 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-views button[data-tool="osint"]:hover { color: var(--text-2); }
 .sx-views button[data-tool="osint"].on { color: var(--text-2); border-bottom-color: var(--text-3); }
 .sx-page--money { display: block; overflow-y: auto; }
-.sx-page--money > .sx-views { max-width: 1680px; margin: 84px max(var(--sp-4), calc((100% - 1680px) / 2)) 0; }
-.sx-page--money .mt-page { padding-top: var(--sp-5); }
-.sx-page--social .so-page { min-height: 0; padding-top: var(--sp-5); }
-.sx-page--social > .sx-views { max-width: 1320px; margin: 84px auto 0; padding: 0 16px; box-sizing: content-box; }
+/* Money trail and Social insights: the tabs sit exactly where they sit on People (same
+   inset from the top and the left), and the page under them starts on the same edge. */
+.sx-page--social { display: block; overflow-y: auto; }
+.sx-page--money > .sx-views, .sx-page--social > .sx-views { margin: var(--sp-5) var(--sp-5) 0; }
+.sx-page--money .mt-page, .sx-page--social .so-page { min-height: 0; padding: var(--sp-5) var(--sp-5) var(--sp-10); }
+.sx-page--money .mt-wrap, .sx-page--social .so-wrap { margin: 0; }
+/* one heading style for all three: "Search · <em>View</em>", then a plain paragraph */
+.sx-page .mt-title, .sx-page .so-title { margin: 0 0 var(--sp-2); font: 700 22px/1.2 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); }
+.sx-page .mt-title em, .sx-page .so-title em { font-style: normal; color: var(--accent); }
+.sx-page .mt-lede, .sx-page .so-lede { margin: var(--sp-2) 0 0; max-width: 78ch; font-size: var(--fs-body-sm); line-height: 1.55; color: var(--text-2); }
+.sx-page .mt-why, .sx-page .so-why { margin: var(--sp-2) 0 0; max-width: 78ch; font-size: var(--fs-body-sm); line-height: 1.55; color: var(--text-3); }
+.sx-page .so-head { border-bottom: 0; }
 
 /* the inferred-identity note: a ruled aside with its label, not a box */
 .sx-page .sx-hypbox { margin: var(--sp-2) 0; padding: var(--sp-2) 0 var(--sp-2) var(--sp-3); background: none; border: 0; border-left: 2px solid #C084FC; border-radius: 0; }

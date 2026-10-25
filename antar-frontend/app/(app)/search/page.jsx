@@ -426,7 +426,9 @@ function SearchContent() {
   if (view === "money" || view === "social") {
     return (
       <div className={`sx-page sx-page--money sx-page--${view}`}>
-        <SearchViews view={view} onChange={setView} kn={kn} />
+        {/* the same four tabs, in the same place, as the People view */}
+        <SearchViews view={view} onChange={setView} kn={kn}
+          osint={osintAllowed ? { on: false, toggle: () => { setProfileTab("osint"); setView("people"); } } : null} />
         {view === "money" ? <MoneyTrail /> : <SocialInsights />}
       </div>
     );

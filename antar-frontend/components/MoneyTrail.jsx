@@ -92,7 +92,7 @@ export default function MoneyTrail() {
   if (err && !ov) {
     return (
       <section className="mt-page"><div className="mt-wrap">
-        <h1 className="mt-title">{L("Money trail", "ಹಣದ ಜಾಡು")}</h1>
+        <h1 className="mt-title">{L(<>Search · <em>Money Trail</em></>, <>ಹುಡುಕಾಟ · <em>ಹಣದ ಜಾಡು</em></>)}</h1>
         <p className="mt-lede">{err.status === 403 ? L("The money trail needs Inspector access or above.", "ಹಣದ ಜಾಡಿಗೆ ಇನ್ಸ್‌ಪೆಕ್ಟರ್ ಅಥವಾ ಮೇಲಿನ ಪ್ರವೇಶ ಬೇಕು.") : err.message}</p>
       </div></section>
     );
@@ -102,10 +102,9 @@ export default function MoneyTrail() {
     <section className="mt-page">
       <div className="mt-wrap">
         <header className="mt-head">
-          <span className="mt-eyebrow">{L("Financial crime", "ಆರ್ಥಿಕ ಅಪರಾಧ")}</span>
-          <h1 className="mt-title">{L("Follow the money behind an FIR", "FIR ಹಿಂದಿನ ಹಣವನ್ನು ಅನುಸರಿಸಿ")}</h1>
-          <p className="mt-lede">{L("For investigating officers and financial-crime units: where a complainant's money went after a UPI fraud, which accounts collected it and passed it on, and who it reached.",
-                                   "ತನಿಖಾಧಿಕಾರಿಗಳು ಮತ್ತು ಆರ್ಥಿಕ ಅಪರಾಧ ಘಟಕಗಳಿಗೆ: UPI ವಂಚನೆಯ ನಂತರ ದೂರುದಾರರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು, ಯಾವ ಖಾತೆಗಳು ಸಂಗ್ರಹಿಸಿ ಮುಂದೆ ಕಳುಹಿಸಿದವು, ಯಾರಿಗೆ ತಲುಪಿತು.")}</p>
+          <h1 className="mt-title">{L(<>Search · <em>Money Trail</em></>, <>ಹುಡುಕಾಟ · <em>ಹಣದ ಜಾಡು</em></>)}</h1>
+          <p className="mt-lede">{L("For investigating officers and financial-crime units: follow the money behind an FIR. Where a complainant's money went after a UPI fraud, which accounts collected it and passed it on, and who it reached.",
+                                   "ತನಿಖಾಧಿಕಾರಿಗಳು ಮತ್ತು ಆರ್ಥಿಕ ಅಪರಾಧ ಘಟಕಗಳಿಗೆ: FIR ಹಿಂದಿನ ಹಣವನ್ನು ಅನುಸರಿಸಿ. UPI ವಂಚನೆಯ ನಂತರ ದೂರುದಾರರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು, ಯಾವ ಖಾತೆಗಳು ಸಂಗ್ರಹಿಸಿ ಮುಂದೆ ಕಳುಹಿಸಿದವು, ಯಾರಿಗೆ ತಲುಪಿತು.")}</p>
           <p className="mt-why">{L("Money leaves a mule account within hours, and a freeze request has to name the account and its transactions. Start with the account at the top of 01, read its warning signs in 03, then export its transactions for the bank.",
                                   "ಹಣ ಕೆಲವೇ ಗಂಟೆಗಳಲ್ಲಿ ಖಾತೆಯಿಂದ ಹೊರಹೋಗುತ್ತದೆ; ತಡೆ ವಿನಂತಿಗೆ ಖಾತೆ ಮತ್ತು ವಹಿವಾಟುಗಳು ಬೇಕು. 01 ರ ಮೇಲಿನ ಖಾತೆಯಿಂದ ಆರಂಭಿಸಿ, 03 ರಲ್ಲಿ ಎಚ್ಚರಿಕೆಗಳನ್ನು ಓದಿ, ನಂತರ ಬ್ಯಾಂಕ್‌ಗಾಗಿ ರಫ್ತು ಮಾಡಿ.")}</p>
           <div className="mt-cta">

@@ -137,7 +137,7 @@ export default function SocialInsights() {
     return rows;
   }, [d, cat, sort]);
 
-  if (err) return <main className="so-page"><div className="so-wrap"><h1 className="so-title">{L("Social insights", "ಸಾಮಾಜಿಕ ಒಳನೋಟಗಳು")}</h1><p className="so-lede">{L("The district figures could not be read just now.", "ಜಿಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ.")}</p></div></main>;
+  if (err) return <main className="so-page"><div className="so-wrap"><h1 className="so-title">{L(<>Search · <em>Social Insights</em></>, <>ಹುಡುಕಾಟ · <em>ಸಾಮಾಜಿಕ ಒಳನೋಟಗಳು</em></>)}</h1><p className="so-lede">{L("The district figures could not be read just now.", "ಜಿಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ.")}</p></div></main>;
   if (!d) return <main className="so-page" style={{ position: "relative" }}><BrainLoader kn={kn} steps={SOCIAL_STEPS} orbs={SOCIAL_ORBS} /></main>;
 
   const head = (key, label) => (
@@ -151,10 +151,9 @@ export default function SocialInsights() {
     <main className="so-page">
       <div className="so-wrap">
         <header className="so-head">
-          <span className="so-eyebrow">{L("Sociological crime insights", "ಸಾಮಾಜಿಕ ಅಪರಾಧ ಒಳನೋಟಗಳು")}</span>
-          <h1 className="so-title">{L("What goes with crime, district by district", "ಜಿಲ್ಲೆಯಿಂದ ಜಿಲ್ಲೆಗೆ ಅಪರಾಧದ ಜೊತೆ ಏನು ಬರುತ್ತದೆ")}</h1>
-          <p className="so-lede">{L(`Crime rates in Karnataka's ${d.districts} districts set against urbanisation, population growth, education, child marriage, household amenities and alcohol use.`,
-                                   `ಕರ್ನಾಟಕದ ${d.districts} ಜಿಲ್ಲೆಗಳ ಅಪರಾಧ ದರಗಳು ನಗರೀಕರಣ, ಜನಸಂಖ್ಯಾ ಬೆಳವಣಿಗೆ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯ ವಿವಾಹ, ಗೃಹ ಸೌಲಭ್ಯ ಮತ್ತು ಮದ್ಯಪಾನದ ಎದುರು.`)}</p>
+          <h1 className="so-title">{L(<>Search · <em>Social Insights</em></>, <>ಹುಡುಕಾಟ · <em>ಸಾಮಾಜಿಕ ಒಳನೋಟಗಳು</em></>)}</h1>
+          <p className="so-lede">{L(`What goes with crime, district by district: crime rates in Karnataka's ${d.districts} districts set against urbanisation, population growth, education, child marriage, household amenities and alcohol use.`,
+                                   `ಜಿಲ್ಲೆಯಿಂದ ಜಿಲ್ಲೆಗೆ ಅಪರಾಧದ ಜೊತೆ ಏನು ಬರುತ್ತದೆ: ಕರ್ನಾಟಕದ ${d.districts} ಜಿಲ್ಲೆಗಳ ಅಪರಾಧ ದರಗಳು ನಗರೀಕರಣ, ಜನಸಂಖ್ಯಾ ಬೆಳವಣಿಗೆ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯ ವಿವಾಹ, ಗೃಹ ಸೌಲಭ್ಯ ಮತ್ತು ಮದ್ಯಪಾನದ ಎದುರು.`)}</p>
           <p className="so-why">{L("For district SPs and planners deciding where prevention work goes: which social conditions travel with which crime. Pick a kind of crime below, read its clear links in 01, then check any district in 02.",
                                    "ತಡೆಗಟ್ಟುವ ಕೆಲಸ ಎಲ್ಲಿ ಎಂದು ನಿರ್ಧರಿಸುವ ಜಿಲ್ಲಾ SP ಮತ್ತು ಯೋಜಕರಿಗೆ. ಕೆಳಗೆ ಅಪರಾಧದ ಪ್ರಕಾರ ಆರಿಸಿ, 01 ರಲ್ಲಿ ಸಂಬಂಧಗಳನ್ನು ಓದಿ, 02 ರಲ್ಲಿ ಜಿಲ್ಲೆ ಪರಿಶೀಲಿಸಿ.")}</p>
           <div className="so-cta">
