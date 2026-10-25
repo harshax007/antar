@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLang, useTheme } from "@/components/Providers";
@@ -8,6 +8,7 @@ import DemoOverlay, { toggleDemoMode } from "@/components/DemoOverlay";
 import ScreenTransition3D from "@/components/ScreenTransition3D";
 import PillNav from "@/components/PillNav";
 import GlobalGuide from "@/components/GlobalGuide";
+import ServerWaking from "@/components/ServerWaking";
 import { Menu, X, Sun, Moon, User } from "lucide-react";
 import { readSession, isValidSession, clearSession } from "@/lib/auth";
 import { lowerCurtain } from "@/lib/curtain";
@@ -41,6 +42,14 @@ export default function AppShell({ children }) {
   const [expert, setExpert] = useState(false);
   const [menu, setMenu] = useState(false);
   const [navigatingTo, setNavigatingTo] = useState(null);
+  // one pending screen switch at a time: tapping Map then Search quickly goes to Search,
+  // instead of queueing two navigations and flashing the overlay twice
+  const switchTimer = useRef(null);
+  const queueSwitch = (href) => {
+    clearTimeout(switchTimer.current);
+    setNavigatingTo(href);
+    switchTimer.current = setTimeout(() => router.push(href), 200);
+  };
 
   useEffect(() => {
     function checkSession() {
@@ -99,11 +108,8 @@ export default function AppShell({ children }) {
     const fn = (e) => {
       const targetHref = e.detail;
       if (path === targetHref) return;
-      setNavigatingTo(targetHref);
       // The overlay takes 180 ms to cover the screen; waiting 600 made every switch feel slow.
-      setTimeout(() => {
-        router.push(targetHref);
-      }, 200);
+      queueSwitch(targetHref);
     };
     window.addEventListener("screen-switch", fn);
     return () => window.removeEventListener("screen-switch", fn);
@@ -112,10 +118,7 @@ export default function AppShell({ children }) {
   function handleScreenSwitch(e, targetHref) {
     if (path === targetHref) return;
     e.preventDefault();
-    setNavigatingTo(targetHref);
-    setTimeout(() => {
-      router.push(targetHref);
-    }, 200);
+    queueSwitch(targetHref);
   }
 
   const isAdmin = session?.role === "Admin";
@@ -136,6 +139,9 @@ export default function AppShell({ children }) {
 
       {/* Global Contextual Help/Guide Button */}
       <GlobalGuide />
+
+      {/* "Antar is waking up on the server", while it warms up - never "offline" */}
+      <ServerWaking kn={kn} />
 
       {/* 3D Glassmorphic Screen Switching Overlay */}
       <ScreenTransition3D targetPath={navigatingTo} lang={lang} />

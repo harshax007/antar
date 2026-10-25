@@ -17,6 +17,8 @@ import { WhisperMicButton, WhisperWaveform } from "@/components/WhisperMic";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { asset } from "@/lib/assets";
 import { openReport, readSession } from "@/lib/auth";
+import { fetchAPI } from "@/lib/api";
+import { isWakingFailure, waitForServer } from "@/lib/serverStatus";
 import AgentStrip, { AGENTS as STRIP_AGENTS, LENS } from "@/components/AgentStrip";
 import YearQuestions, { yearQuestions } from "@/components/YearQuestions";
 import { FACE as AGENT_FACE } from "@/components/WorkspaceAgents";
@@ -1492,6 +1494,10 @@ export default function ChatPage() {
   // and (b) worse, re-sent the very request the officer just cancelled via the
   // non-stream fallback. A stop must preserve partial output and stop, full stop.
   const abortedRef = useRef(false);
+  // Set the moment a question is sent, cleared when its answer ends. `loading` is React
+  // state and lags a click: two taps in one frame (a chip and Enter, or Regenerate twice)
+  // both saw it false and started two answers into the same reply.
+  const sendingRef = useRef(false);
   const stopChat = () => {
     abortedRef.current = true;
     if (abortControllerRef.current) {
@@ -1936,7 +1942,8 @@ export default function ChatPage() {
 
   async function send(text, skipDocs = false) {
     const q = (text ?? input).trim();
-    if (!q || loading) return;
+    if (!q || loading || sendingRef.current) return;
+    sendingRef.current = true;
     const spokenTurn = voiceTurnRef.current;
     voiceTurnRef.current = false;
     setInput("");
@@ -1953,6 +1960,7 @@ export default function ChatPage() {
         setTimeout(() => {
           router.push("/docs");
         }, 2050);
+        setTimeout(() => { sendingRef.current = false; }, 2100);
         return;
       }
     } catch {}
@@ -2035,34 +2043,47 @@ export default function ChatPage() {
         try {
           await sendNonStream(q);
         } catch (e2) {
-          // Both stream and non-stream failed → backend unreachable. Honest
-          // state only: no fabricated report, no fake citations/confidence.
-          patchLast(() => ({
+          // Neither path answered. If the server is still warming up, say so, wait for
+          // it (the banner at the top says the same) and ask once more on our own.
+          // Honest state only: no fabricated report, no fake citations/confidence.
+          let answered = false;
+          if (isWakingFailure(e) || isWakingFailure(e2) || /HTTP 50[234]/.test(String(e2?.message))) {
+            patchLast((msg) => ({ ...msg, streaming: true, waking: true }));
+            if (await waitForServer() && !abortedRef.current) {
+              try { await sendNonStream(q); answered = true; } catch {}
+            }
+          }
+          if (!answered && !abortedRef.current) patchLast(() => ({
             ...newAssistantMsg(lang),
             streaming: false,
             error: true,
             retryText: q,
             noResults: true,
             text: kn
-              ? `ಬ್ಯಾಕೆಂಡ್ ತಲುಪಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ (${API}). ಸರ್ವರ್ ಚಾಲನೆಯಲ್ಲಿದೆಯೇ ಎಂದು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮರುಪ್ರಯತ್ನಿಸಿ.`
-              : `Backend unreachable - the Antar API at ${API} did not respond, so this question was not answered. Check that the server is running, then retry.`,
+              ? "ಅಂತರ್ ಇನ್ನೂ ಸರ್ವರ್‌ನಲ್ಲಿ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ, ಆದ್ದರಿಂದ ಈ ಪ್ರಶ್ನೆಗೆ ಇನ್ನೂ ಉತ್ತರಿಸಿಲ್ಲ. ಒಂದು ಕ್ಷಣದಲ್ಲಿ ಮರುಪ್ರಯತ್ನಿಸಿ."
+              : "Antar is still waking up on the server, so this question has not been answered yet. Retry in a moment.",
           }));
         }
       }
     } finally {
       LIVE.inflight = false;
+      sendingRef.current = false;
       (LIVE.setLoading || setLoading)(false);
     }
   }
 
+  // Opening two graphs quickly: the later click wins, whichever answer arrives first.
+  const graphReqRef = useRef(0);
   async function showNetwork(id, name, cachedGraph) {
+    const req = ++graphReqRef.current;
     if (cachedGraph) { setGraph({ data: cachedGraph, name, loading: false }); return; }
     setGraph({ data: null, name, loading: true });
     try {
-      const res = await fetch(`${API}/api/graph/${id}`);
-      const d = await res.json();
+      const d = await fetchAPI(`/api/graph/${id}`);
+      if (req !== graphReqRef.current) return;
       setGraph({ data: d, name, loading: false });
     } catch (e) {
+      if (req !== graphReqRef.current) return;
       // Honest failure: no fabricated graph - say the backend is unreachable.
       setGraph({ data: null, name, loading: false, error: true });
     }
@@ -2086,7 +2107,11 @@ export default function ChatPage() {
     } catch {}
   }
 
+  const ratedRef = useRef(new Set());       // one rating per answer, however fast the taps
   async function rateAnswer(idx, rating) {
+    const key = messages[idx]?.reasoningId || messages[idx]?.ts || idx;
+    if (messages[idx]?.rated || ratedRef.current.has(key)) return;
+    ratedRef.current.add(key);
     const question = messages[idx - 1]?.role === "user" ? messages[idx - 1].text : "";
     setMessages((ms) => ms.map((x, j) => (j === idx ? { ...x, rated: rating } : x)));
     try {
@@ -2109,7 +2134,7 @@ export default function ChatPage() {
   // Per-message native translate flip (View in Kannada / English).
   async function translateAnswer(idx) {
     const m = messages[idx];
-    if (!m) return;
+    if (!m || m.translating) return;                   // a second tap while it fetches is ignored
     if (m.altText) {                                   // already fetched → just toggle
       setMessages((ms) => ms.map((x, j) => (j === idx ? { ...x, showAlt: !x.showAlt } : x)));
       return;
@@ -3029,7 +3054,7 @@ export default function ChatPage() {
             <div className="cx-searchwrap">{searchBar}</div>
             <div className="cx-hint">
               {kn ? "ಕಳುಹಿಸಲು Enter · ಮಾತನಾಡಲು ಮೈಕ್" : "Enter to send · Shift+Enter = new line · tap the mic to speak"}
-              {mode ? `  ·  ${mode === "llm" ? "Catalyst LLM" : "offline"}` : ""}
+              {mode ? `  ·  ${mode === "llm" ? "Catalyst LLM" : (kn ? "ದಾಖಲೆಗಳಿಂದ" : "from the records")}` : ""}
               {ops && (
                 <span title={kn
                   ? "ಲೈವ್ ಆರ್ಕೆಸ್ಟ್ರೇಟರ್ ಟೆಲಿಮೆಟ್ರಿ - ನೈಜ ಏಜೆಂಟ್ ಕರೆಗಳು"

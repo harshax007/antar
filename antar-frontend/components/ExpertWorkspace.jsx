@@ -608,7 +608,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
 
   const stale = lastSync && now - lastSync > (running > 0 ? 8000 : 25000);   // idle poll is 15 s
   const link = linkOk === null ? "wait" : !linkOk ? "down" : stale ? "stale" : "up";
-  const linkLabel = { wait: "Syncing", up: "Live", stale: "Stale", down: "Offline" }[link];
+  const linkLabel = { wait: "Syncing", up: "Live", stale: "Stale", down: "Waking up" }[link];
   const elapsedS = meta?.elapsed_ms != null ? (meta.elapsed_ms / 1000).toFixed(1) : null;
   const tPlus = (sec) => {
     if (!sec) return "";

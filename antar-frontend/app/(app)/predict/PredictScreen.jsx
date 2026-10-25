@@ -1830,7 +1830,7 @@ const avgConf = predictions?.length
               {kn ? "ದಾಖಲೆ" : "Range held in"} <b>{trackPct}</b> {kn ? "ವಾರಗಳಲ್ಲಿ" : "of tested weeks"}
             </button>
           )}
-          {offlineSample && <span className="px-offline">{kn ? "ಆಫ್‌ಲೈನ್ · ಮಾದರಿ" : "Offline: sample data"}</span>}
+          {offlineSample && <span className="px-offline">{kn ? "ಸರ್ವರ್ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ · ಮಾದರಿ" : "Sample data while Antar wakes up"}</span>}
         </p>
       </header>
 
@@ -2413,7 +2413,7 @@ const avgConf = predictions?.length
             </div>
             {dash && dash !== "offline"
               ? <VolumeTrend volume={dash.volume} kn={kn} />
-              : <div className="pxd-empty">{kn ? "ಬ್ಯಾಕೆಂಡ್ ಆಫ್‌ಲೈನ್" : "The server is not answering."}</div>}
+              : <div className="pxd-empty">{kn ? "ಅಂತರ್ ಸರ್ವರ್‌ನಲ್ಲಿ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ…" : "Antar is waking up on the server…"}</div>}
           </div>
           <InternetData eng={eng} onEvents={toEvents} />
         </div>

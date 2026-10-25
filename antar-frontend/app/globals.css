@@ -5907,3 +5907,16 @@ html[lang="kn"] .ov-use-tag { letter-spacing: normal; text-transform: none; }
 .sx-osint-facts dt { font: 600 11.5px 'Inter', sans-serif; color: #CBD5E1; }
 .sx-osint-facts dd { margin: 0; font-size: 12px; line-height: 1.5; color: #94A3B8; }
 @media (max-width: 560px) { .sx-osint-facts > div { grid-template-columns: 1fr; gap: 2px; } }
+
+/* Server warming up: one quiet line under the nav, on every screen (2026-10-26) */
+.ax-waking { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 9000;
+  display: flex; align-items: flex-start; gap: 10px; max-width: min(640px, calc(100vw - 32px));
+  padding: 9px 14px; border-radius: 10px; border: 1px solid rgba(34,211,238,.28);
+  background: rgba(8,15,28,.92); color: #E2E8F0; font: 500 13px/1.45 'Inter', sans-serif;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35); backdrop-filter: blur(8px); }
+.ax-waking .sub { color: #94A3B8; font-weight: 400; }
+.ax-waking .dot { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: #22D3EE;
+  animation: ax-waking-pulse 1.4s ease-in-out infinite; }
+@keyframes ax-waking-pulse { 0%, 100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .ax-waking .dot { animation: none; } }
+@media (max-width: 560px) { .ax-waking { top: 56px; font-size: 12px; } }

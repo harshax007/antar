@@ -1,4 +1,5 @@
 import { ADMIN_ID, ADMIN_ROLE } from "./auth";
+import { isWakingFailure, markUp, waitForServer } from "./serverStatus";
 
 // Hardcoded for production to prevent local environment variables from overriding it
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -34,10 +35,19 @@ export async function fetchAPI(endpoint, options = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  // A server still warming up fails with a network error or a 502/503/504. Wait for it
+  // (one shared poll, see lib/serverStatus.js) and ask once more, instead of failing.
+  const go = () => fetch(`${API_URL}${endpoint}`, { ...options, headers });
+  let response;
+  try {
+    response = await go();
+    if (isWakingFailure(response) && !options.signal?.aborted && await waitForServer()) response = await go();
+  } catch (e) {
+    if (!isWakingFailure(e) || options.signal?.aborted || !(await waitForServer())) throw wakingError(e);
+    try { response = await go(); } catch (e2) { throw wakingError(e2); }
+  }
+  if (isWakingFailure(response)) throw wakingError(null, response.status);
+  markUp();
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -63,3 +73,12 @@ export async function fetchAPI(endpoint, options = {}) {
   return response.json();
 }
 
+
+// What a caller sees when the server never came up: said as waking, never as "offline".
+function wakingError(cause, status) {
+  if (cause && !isWakingFailure(cause)) return cause;
+  const err = new Error("Antar is still waking up on the server. Try again in a moment.");
+  err.waking = true;
+  if (status) err.status = status;
+  return err;
+}

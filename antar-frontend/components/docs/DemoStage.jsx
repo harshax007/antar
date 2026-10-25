@@ -29,7 +29,7 @@ export default function DemoStage({ stage, accent, eyebrow, title, desc, msg, st
           <span className="st">
             {status === "running" ? (kn ? "[ ಲೈವ್ ]" : "[ RUNNING LIVE ]")
               : status === "done" ? (kn ? "[ ಪೂರ್ಣ ]" : "[ COMPLETE ]")
-              : status === "offline" ? "[ OFFLINE ]" : "[ QUEUED ]"}
+              : status === "offline" ? "[ WAKING UP ]" : "[ QUEUED ]"}
           </span>
         </div>
         <div className="dmo-term-bd" role="log" aria-live="polite">
@@ -47,7 +47,7 @@ export default function DemoStage({ stage, accent, eyebrow, title, desc, msg, st
           )}
           {status === "offline" && (
             <div className="stp degraded">
-              {kn ? "ಬ್ಯಾಕೆಂಡ್ ತಲುಪಲು ಆಗಲಿಲ್ಲ - ಈ ಹಂತವನ್ನು ಬಿಟ್ಟುಬಿಡಲಾಗಿದೆ." : "Backend unreachable - stage skipped, nothing simulated."}
+              {kn ? "ಸರ್ವರ್ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ - ಈ ಹಂತವನ್ನು ಬಿಟ್ಟುಬಿಡಲಾಗಿದೆ." : "Antar was still waking up on the server - stage skipped, nothing simulated."}
             </div>
           )}
           {status === "done" && msg && (

@@ -681,7 +681,7 @@ function Failed({ kn, error, onRetry }) {
       <p className="big">
         {disabled
           ? (kn ? "ಆಬ್ಸರ್ವಬಿಲಿಟಿ ಆಫ್ ಆಗಿದೆ." : "Recording is switched off on this server.")
-          : (kn ? "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಆಫ್‌ಲೈನ್." : "This page could not reach the server.")}
+          : (kn ? "ಅಂತರ್ ಸರ್ವರ್‌ನಲ್ಲಿ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ…" : "Antar is waking up on the server… Reload in a moment.")}
       </p>
       <p>{disabled ? "Set OBS_ENABLED=true in the backend .env and restart." : error}</p>
       <button type="button" className="tlm-btn" onClick={onRetry}>{kn ? "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ" : "Try again"}</button>

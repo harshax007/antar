@@ -137,6 +137,24 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## "Antar is waking up", never "offline"; one click, one action · 2026-10-26
+
+- While the server warms up (1-2 min after start, or a cold cloud start) a call fails with a network error or a
+  502/503/504. lib/serverStatus.js polls /api/health (one shared poll for every caller) and fetchAPI waits for it
+  and asks once more instead of failing. A line under the nav on every screen says "Antar is waking up on the
+  server…" with the seconds waited, and goes when the server answers. The chat waits and re-asks on its own;
+  if the server never comes up the answer says it is still waking, with Retry. "Offline" / "Backend unreachable"
+  is gone from Chat, Predict, Docs, the trust dashboard, Expert workspace and Admin; the chat footer's answer
+  mode reads "from the records".
+- Double clicks: the chat's send lock was React state, which lags a click, so two taps in one frame (a chip and
+  Enter, Regenerate twice) started two answers into one reply; a ref now holds it. One rating per answer, a
+  second translate tap while one runs is ignored, the later of two network-graph clicks wins, one OSINT scan at
+  a time, and tapping two screens in the nav quickly goes to the second without queueing both.
+- Screen sizes: every fixed width over 400px in the CSS and inline styles was checked; each has a max-width, a
+  scroll box or a media query. Login measured at 375 and 768 px with no sideways scroll.
+
+---
+
 ## OSINT audited: every search on the audit chain, by fingerprint · 2026-10-26
 
 - Audit of the Search screen's OSINT Workbench against what its consent card promises. Held: no FIR, suspect or

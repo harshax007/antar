@@ -377,7 +377,10 @@ function SearchContent() {
   }, [selectedId]); // eslint-disable-line
 
   // ── Standalone OSINT execution (ONLY runs when user explicitly triggers in OSINT tab; ZERO FIR access) ──
+  // one scan at a time: a second click (or Enter) while one runs is ignored, not queued
+  const osintBusyRef = useRef(false);
   const runOsint = useCallback((overrideTarget) => {
+    if (osintBusyRef.current) return;
     const q = (typeof overrideTarget === "string" ? overrideTarget : osintQuery).trim();
     if (!q || q.length < 2) {
       flashToast(kn ? "ಕನಿಷ್ಠ 2 ಅಕ್ಷರಗಳ ಗುರಿಯನ್ನು ನಮೂದಿಸಿ" : "Enter a target identifier (min 2 chars) to run OSINT", "warn");
@@ -388,6 +391,7 @@ function SearchContent() {
     }
     const srcParam = osintSources.length ? `&sources=${encodeURIComponent(osintSources.join(","))}` : "";
     const depthParam = `&depth=${encodeURIComponent(osintDepth)}`;
+    osintBusyRef.current = true;
     setOsintLoading(true);
     appendOsintAudit(`Submitted standalone OSINT query "${q}" [depth=${osintDepth.toUpperCase()}]`);
     fetchAPI(`/api/osint/investigate?entity=${encodeURIComponent(q)}${srcParam}${depthParam}&lang=${kn ? "kn" : "en"}`)
@@ -416,7 +420,7 @@ function SearchContent() {
             : `${decodedLabel}: ${claimList.length} of ${d?.pages_checked ?? "?"} pages mention it · ${r?.live_checks?.length || 0} live checks · ${r?.official_checks?.length || 0} official checks`)
         );
       })
-      .finally(() => setOsintLoading(false));
+      .finally(() => { osintBusyRef.current = false; setOsintLoading(false); });
   }, [osintQuery, osintSources, osintDepth, appendOsintAudit, flashToast, kn]);
 
   // Short alias for the selected profile - the detail pane references it ~60 times.

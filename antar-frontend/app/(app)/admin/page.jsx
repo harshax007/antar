@@ -37,7 +37,7 @@ export default function Admin() {
         chips={[
           status === 200 ? { value: (data?.total ?? 0).toLocaleString(), label: "audited calls" } : null,
           { value: role, label: "viewing as" },
-          status ? { value: status === 200 ? "authorized" : status === 403 ? "denied" : "offline", label: "RBAC" } : null,
+          status ? { value: status === 200 ? "authorized" : status === 403 ? "denied" : "waking up", label: "RBAC" } : null,
         ]}
         detailTitle="What gets audited"
         detail={<p style={{ margin: 0, fontSize: "12px", color: "#9fb3cc", lineHeight: 1.55 }}>

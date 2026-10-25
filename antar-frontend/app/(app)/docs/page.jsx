@@ -120,7 +120,7 @@ function StageTerminal({ stage, run }) {
   const status = run?.status || "waiting";
   const steps = run?.msg?.steps || [];
   const statusColor = status === "done" ? "#10B981" : status === "running" ? cfg.color : status === "offline" ? "#EF4444" : "#1E293B";
-  const statusLabel = status === "done" ? (lang === "kn" ? "ಪೂರ್ಣಗೊಂಡಿದೆ" : "Completed") : status === "running" ? (lang === "kn" ? "ಲೈವ್" : "Live") : status === "offline" ? (lang === "kn" ? "ಆಫ್‌ಲೈನ್" : "Offline") : (lang === "kn" ? "ಕ್ಯೂನಲ್ಲಿದೆ" : "Queued");
+  const statusLabel = status === "done" ? (lang === "kn" ? "ಪೂರ್ಣಗೊಂಡಿದೆ" : "Completed") : status === "running" ? (lang === "kn" ? "ಲೈವ್" : "Live") : status === "offline" ? (lang === "kn" ? "ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ" : "Waking up") : (lang === "kn" ? "ಕ್ಯೂನಲ್ಲಿದೆ" : "Queued");
 
   return (
     <div style={{ background: "rgba(3,5,12,0.97)", border: `1px solid ${cfg.color}${status === "done" ? "70" : status === "running" ? "45" : "1e"}`, borderRadius: "10px", overflow: "hidden", boxShadow: status !== "waiting" ? `0 0 24px ${cfg.color}0d, 0 4px 28px rgba(0,0,0,0.6)` : "none", transition: "border-color 0.5s, box-shadow 0.5s", flex: 1, display: "flex", flexDirection: "column" }}>
@@ -147,7 +147,7 @@ function StageTerminal({ stage, run }) {
           </div>
         ))}
         {status !== "waiting" && steps.length === 0 && <div style={{ color: "#1E2C3D", fontSize: "10px" }}>{lang === "kn" ? "ಏಜೆಂಟ್‌ಗಳನ್ನು ಪ್ರಾರಂಭಿಸಲಾಗುತ್ತಿದೆ" : "Initialising agents"}<span className="antar-blink">…</span></div>}
-        {status === "offline" && <div style={{ color: "#EF4444", marginTop: "5px", fontSize: "10px" }}>{lang === "kn" ? "ಬ್ಯಾಕೆಂಡ್ ತಲುಪಲಾಗುತ್ತಿಲ್ಲ, ಹಂತವನ್ನು ಬಿಟ್ಟುಬಿಡಲಾಗಿದೆ." : "Backend unreachable, stage skipped."}</div>}
+        {status === "offline" && <div style={{ color: "#EF4444", marginTop: "5px", fontSize: "10px" }}>{lang === "kn" ? "ಸರ್ವರ್ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ; ಈ ಹಂತವನ್ನು ಬಿಟ್ಟುಬಿಡಲಾಗಿದೆ." : "Antar was still waking up on the server; this stage was skipped."}</div>}
         {status === "done" && run?.msg && (
           <div style={{ marginTop: "6px", fontSize: "9px", color: "#1A2840" }}>
             {`> ${(run.msg.citations || []).length} citations · ${(run.msg.brainHits || []).length} brain hits · ${steps.filter((s) => s.status === "done").length} agent steps`}
@@ -409,7 +409,7 @@ function AccordionStage({ stage, run, question, isExpanded, onToggle }) {
   const activeQ = run?.msg?.question || question || (lang === "kn" ? "ರಾಜಾಜಿನಗರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧಿಗಳು ಯಾರು?" : "Who are the repeat offenders in Rajajinagar?");
   const oneLineAnswer = getOneLineAgentResponse(stage, activeQ, lang, run?.msg?.text);
 
-  const statusLabel = status === "done" ? (lang === "kn" ? "ಉತ್ತರವನ್ನು ತೋರಿಸು" : "Show Response") : status === "running" ? (lang === "kn" ? "ಕಾರ್ಯಗತಗೊಳ್ಳುತ್ತಿದೆ..." : "Running...") : status === "offline" ? (lang === "kn" ? "ಆಫ್‌ಲೈನ್" : "Offline") : (lang === "kn" ? "ಕ್ಯೂನಲ್ಲಿದೆ" : "Queued");
+  const statusLabel = status === "done" ? (lang === "kn" ? "ಉತ್ತರವನ್ನು ತೋರಿಸು" : "Show Response") : status === "running" ? (lang === "kn" ? "ಕಾರ್ಯಗತಗೊಳ್ಳುತ್ತಿದೆ..." : "Running...") : status === "offline" ? (lang === "kn" ? "ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ" : "Waking up") : (lang === "kn" ? "ಕ್ಯೂನಲ್ಲಿದೆ" : "Queued");
   const statusColor = status === "done" ? "#10B981" : status === "running" ? cfg.color : status === "offline" ? "#EF4444" : "#1E293B";
   const statusMessage = status === "running"
     ? (lang === "kn" ? "ಗುಪ್ತಚರವನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..." : "Computing intelligence...")
