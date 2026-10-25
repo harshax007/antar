@@ -1610,6 +1610,16 @@ export default function ChatPage() {
     toggleWhy: (...a) => liveActions.current.toggleWhy(...a),
   }), []);
   const inputRef = useRef(null);
+  const landInputRef = useRef(null);
+  // Both chat boxes grow with what is typed, up to a cap, then scroll; no fixed two-line box.
+  useLayoutEffect(() => {
+    for (const [el, max] of [[inputRef.current, 200], [landInputRef.current, 220]]) {
+      if (!el) continue;
+      el.style.height = "auto";
+      el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+      el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
+    }
+  }, [input]);
   const kn = lang === "kn";
 
   // Recent questions (this officer's own history) + entity facets for the quick-pick
@@ -2328,6 +2338,7 @@ export default function ChatPage() {
           style={{
             width: "100%",
             minHeight: "56px",
+            maxHeight: "200px",
             background: "transparent",
             border: "none",
             outline: "none",
@@ -2661,6 +2672,7 @@ export default function ChatPage() {
               {/* Prompt Field Wrapper with Typewriter Overlay */}
               <div style={{ position: "relative", width: "100%" }}>
                 <textarea
+                  ref={landInputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onFocus={() => setIsFocus(true)}
