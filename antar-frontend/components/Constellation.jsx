@@ -535,6 +535,9 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
       clear: clearFocus,
       refit: () => fgRef.current?.zoomToFit(600, 60),
       think: flyAgents,
+      // a window covering the brain stops it drawing (see Constellation3D)
+      pause: () => fgRef.current?.pauseAnimation?.(),
+      resume: () => fgRef.current?.resumeAnimation?.(),
       // The FIR drawn nearest a screen point, for dropping a console agent on a record.
       nodeAt: (cx, cy, radius = 26) => {
         const fg = fgRef.current, el = containerRef.current;

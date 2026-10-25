@@ -150,6 +150,16 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   const [thinkOpen, setThinkOpen] = useState(false);
   const consoleRef = useRef(null);                     // { run(cmd) } - the Brain terminal
   const [frView, setFrView] = useState("agent");       // Fast Run results: by agent | by priority
+  const frBodyRef = useRef(null);                      // the results' own scroller (the header stays put)
+  const [frScrolled, setFrScrolled] = useState(false); // far enough down to offer "back to top"
+  // The brain stops drawing while the results cover it, and starts again when they close.
+  useEffect(() => {
+    const c = controlRef.current;
+    if (thinkOpen) setFrScrolled(false);
+    if (!thinkOpen || !c?.pause) return;
+    c.pause();
+    return () => c.resume?.();
+  }, [thinkOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   const [copied, setCopied] = useState(false);
   const closeRef = useRef(null);
 
@@ -910,7 +920,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
         );
         return (
           <MaterialBackdrop key="fast-run" className="bsx-tm-overlay" onClick={() => setThinkOpen(false)}>
-            <MaterialPanel as="section" className="bsx-fr" role="dialog" aria-modal="true" aria-labelledby="bsx-fr-title" onClick={(e) => e.stopPropagation()}>
+            <MaterialPanel as="section" className="bsx-fr" style={{ willChange: "transform, opacity" }} role="dialog" aria-modal="true" aria-labelledby="bsx-fr-title" onClick={(e) => e.stopPropagation()}>
               <header>
                 <h2 id="bsx-fr-title">{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"}</h2>
                 <span>{think.n.toLocaleString()} FIRs · {think.scope}</span>
@@ -922,6 +932,14 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                 <button onClick={runThink}>{kn ? "ಮತ್ತೆ" : "Again"}</button>
                 <button ref={closeRef} className="x" onClick={() => setThinkOpen(false)} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close"}>×</button>
               </header>
+
+              <div className="fr-body" ref={frBodyRef} onScroll={(e) => setFrScrolled(e.currentTarget.scrollTop > 420)}>
+              {/* What this window is, in one sentence, before anything else */}
+              <p className="intro">
+                {kn
+                  ? `ಈ ವೀಕ್ಷಣೆಯ ${think.n.toLocaleString()} FIR ಗಳನ್ನು ${AGENTS.length} ಪರಿಶೀಲನೆಗಳು ಓದಿವೆ; ${think.total} ಅಂಶಗಳು ಸಿಕ್ಕಿವೆ. ಕೆಂಪು ಗುರುತಿನವುಗಳಿಂದ ಆರಂಭಿಸಿ.`
+                  : `Antar ran ${AGENTS.length} checks over the ${think.n.toLocaleString()} FIRs in this view and found ${think.total} ${think.total === 1 ? "thing" : "things"} worth knowing. Start with the red ones.`}
+              </p>
 
               {think.lead && (
                 <div className={`lead sev-${think.lead.sev || "low"}`}>
@@ -945,17 +963,46 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                 <span>{kn ? `${AGENTS.length} ರಲ್ಲಿ ${reported} ಪರಿಶೀಲನೆಗಳಲ್ಲಿ ಅಂಶಗಳಿವೆ` : `${reported} of ${AGENTS.length} checks found something`}</span>
               </div>
 
+              {/* How to read it: what the dots and the small tags mean, once, in words */}
+              <dl className="key">
+                <div><dt className="sev-high"><i className="dot" />{sevName.high}</dt><dd>{kn ? "ಇಂದೇ ನೋಡಿ" : "look at this today"}</dd></div>
+                <div><dt className="sev-med"><i className="dot" />{sevName.med}</dt><dd>{kn ? "ಈ ವಾರ ಪರಿಶೀಲಿಸಿ" : "worth a check this week"}</dd></div>
+                <div><dt className="sev-low"><i className="dot" />{sevName.low}</dt><dd>{kn ? "ಹಿನ್ನೆಲೆ ಮಾಹಿತಿ" : "background"}</dd></div>
+                <div><dt>{plain.K}</dt><dd>{kn ? "FIR ಗಳಿಂದ ನೇರವಾಗಿ ಎಣಿಸಿದ್ದು" : "counted straight from the FIRs"}</dd></div>
+                <div><dt>{plain.D}</dt><dd>{kn ? "ಎಣಿಕೆಗಳಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ್ದು (ಹೋಲಿಕೆ, ಪಾಲು)" : "worked out from counts (a comparison or a share)"}</dd></div>
+              </dl>
+
               {!rows.length && <p className="none">{none}</p>}
               {frView === "agent" ? (
-                <div className="grid">
-                  {groups.map((g) => (
-                    <article key={g.id} className={g.items.length ? "" : "quiet"}>
-                      <h3 title={g.name}>{g.ask}<em>{g.items.length}</em></h3>
-                      <p className="how">{g.how}</p>
-                      {g.items.length ? <ol>{g.items.map((c, i) => finding(c, i, false))}</ol> : <p className="none">{none}</p>}
-                    </article>
-                  ))}
-                </div>
+                <>
+                  {/* Jump to a section: the window is long, and an officer looks for one thing */}
+                  {groups.filter((g) => g.items.length).length > 1 && (
+                    <nav className="jump" aria-label={kn ? "ವಿಭಾಗಕ್ಕೆ ಹೋಗಿ" : "Jump to a section"}>
+                      {groups.filter((g) => g.items.length).map((g) => (
+                        <button key={g.id} type="button"
+                                onClick={() => frBodyRef.current?.querySelector(`#fr-${g.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                          {g.ask}<em>{g.items.length}</em>
+                        </button>
+                      ))}
+                    </nav>
+                  )}
+                  <div className="grid">
+                    {groups.filter((g) => g.items.length).map((g) => (
+                      <article key={g.id} id={`fr-${g.id}`}>
+                        <h3 title={g.name}>{g.ask}<em>{g.items.length}</em></h3>
+                        <p className="how">{g.how}</p>
+                        <ol>{g.items.map((c, i) => finding(c, i, false))}</ol>
+                      </article>
+                    ))}
+                  </div>
+                  {/* checks that found nothing: one line, not a card each */}
+                  {groups.some((g) => !g.items.length) && (
+                    <p className="quietline">
+                      {kn ? "ಏನೂ ಸಿಗದ ಪರಿಶೀಲನೆಗಳು: " : "Checked, nothing found: "}
+                      {groups.filter((g) => !g.items.length).map((g) => g.ask).join(" · ")}
+                    </p>
+                  )}
+                </>
               ) : (
                 <ol className="flat">{rows.map((c, i) => finding(c, i, true))}</ol>
               )}
@@ -965,6 +1012,11 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                   ? "ಎಲ್ಲವೂ ಈ ವೀಕ್ಷಣೆಯ FIR ಗಳಿಂದ ಎಣಿಸಲಾಗಿದೆ; \"ಈಗ ಅಸಾಮಾನ್ಯವಾದದ್ದು\" ಲೈವ್ ಸ್ಕ್ಯಾನ್‌ನಿಂದ ಬರುತ್ತದೆ. ಇವು ಸುಳಿವುಗಳು: ಕ್ರಮ ಕೈಗೊಳ್ಳುವ ಮೊದಲು FIR ಗಳನ್ನು ಪರಿಶೀಲಿಸಿ."
                   : "Everything is counted from the FIRs in this view; \"Unusual right now\" comes from the live scan. These are leads: check the FIRs before acting on them."}
               </footer>
+              </div>
+              {frScrolled && (
+                <button type="button" className="totop" onClick={() => frBodyRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+                        aria-label={kn ? "ಮೇಲಕ್ಕೆ" : "Back to top"}>↑ {kn ? "ಮೇಲಕ್ಕೆ" : "Top"}</button>
+              )}
             </MaterialPanel>
           </MaterialBackdrop>
         );

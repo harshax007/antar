@@ -473,6 +473,10 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       clear: clearFocus,
       refit: () => fgRef.current?.zoomToFit(700, 90),
       think: flyAgents,
+      // A window covering the brain stops it drawing: a full WebGL frame under a scrolling
+      // window was what made the window's scroll stutter.
+      pause: () => fgRef.current?.pauseAnimation?.(),
+      resume: () => fgRef.current?.resumeAnimation?.(),
       // The FIR drawn nearest a screen point, for dropping a console agent on a record.
       nodeAt: (cx, cy, radius = 26) => {
         const fg = fgRef.current, el = containerRef.current;

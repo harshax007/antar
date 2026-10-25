@@ -4601,7 +4601,7 @@ details.ov-panel summary::-webkit-details-marker { display: none; }
   .bsx-layers, .bsx-hint, .bsx-title { display: none !important; }
   .bsx-cal { left: 10px !important; bottom: 10px !important; width: calc(100% - 20px) !important; max-height: 30vh; overflow-y: auto; }
   .bsx-focus, .bsx-cg-detail { right: 10px !important; left: 10px !important; top: auto !important; bottom: 10px !important; width: auto !important; max-height: 44vh !important; }
-  .bsx-fr { padding: 12px !important; }
+  .bsx-fr { padding: 0 !important; }   /* the header and the scroller pad themselves */
   /* a wide table scrolls inside its own box instead of being cut off at the edge of the screen */
   .ov-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .bt-win { left: 8px !important; right: 8px !important; width: auto !important; bottom: 66px !important; }
@@ -5561,6 +5561,53 @@ body:has(.bsx-tm-overlay) #cx-guide-trigger { display: none; }
 .bsx-fr .ft button { font: 500 12px 'Inter'; padding: 5px 12px; }
 .bsx-fr > footer { font-size: 12px; }
 @media (max-width: 1100px) { .bsx-fr .grid { grid-template-columns: 1fr; } }
+
+/* Fast Run, smooth to scroll and plain to read (2026-10-26).
+   - The header stays where it is and only the findings scroll, in their own scroller that
+     does not hand its scroll on to the page behind.
+   - Scrolling stuttered because the backdrop blurred the live 3-D brain on every frame;
+     the brain now stops drawing while this window is open, and the backdrop is a plain
+     dark veil, not a blur.
+   - Sections flow in two columns (CSS columns), so a short section no longer leaves a
+     tall gap beside a long one; checks that found nothing are one line at the end.
+   - A sentence says what the window is, a key says what the dots and tags mean, and the
+     section names at the top jump to their section. */
+.bsx-tm-overlay:has(.bsx-fr) { backdrop-filter: none; background: rgba(3,6,12,.86); }
+.bsx-fr { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.bsx-fr > header { flex: none; margin: 0; padding: 16px 26px 12px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.bsx-fr .fr-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth;
+  scroll-padding-top: 12px; padding: 16px 26px 18px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent;
+  -webkit-overflow-scrolling: touch; }
+.bsx-fr .fr-body::-webkit-scrollbar { width: 8px; }
+.bsx-fr .fr-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 8px; }
+.bsx-fr .intro { margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: #C9D4E2; }
+.bsx-fr .key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 2px 14px; padding: 9px 12px; border-radius: 8px;
+  background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06); font-size: 12px; color: var(--muted-2); }
+.bsx-fr .key div { display: inline-flex; align-items: center; gap: 6px; }
+.bsx-fr .key dt { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #D6DEE8; }
+.bsx-fr .key dd { margin: 0; }
+.bsx-fr .key dd::before { content: "– "; }
+.bsx-fr .jump { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.bsx-fr .jump button { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); color: #D6DEE8; font: 500 12.5px 'Inter'; }
+.bsx-fr .jump button:hover { border-color: rgba(34,230,240,.45); color: var(--cyan); }
+.bsx-fr .jump em { font-style: normal; font: 600 11px 'JetBrains Mono'; color: var(--muted-2); }
+.bsx-fr .grid { display: block; columns: 2 460px; column-gap: 14px; }
+.bsx-fr .grid > article { break-inside: avoid; margin: 0 0 14px; scroll-margin-top: 8px; }
+.bsx-fr .quietline { margin: 2px 2px 0; font-size: 12.5px; color: var(--muted-2); }
+.bsx-fr footer { margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.06); font-size: 12px; line-height: 1.5; color: var(--muted-2); }
+.bsx-fr .totop { position: absolute; right: 22px; bottom: 18px; z-index: 2; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  background: rgba(10,18,30,.96); border: 1px solid rgba(34,230,240,.4); color: var(--cyan); font: 600 12px 'Inter';
+  box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+.bsx-fr .totop:hover { background: rgba(34,230,240,.14); }
+.bsx-fr { position: relative; }
+@media (max-width: 1100px) { .bsx-fr .grid { columns: 1; } }
+@media (max-width: 640px) {
+  .bsx-fr > header { padding: 12px 14px 10px; }
+  .bsx-fr .fr-body { padding: 12px 14px 14px; }
+  .bsx-fr .key { gap: 4px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .bsx-fr .fr-body { scroll-behavior: auto; } }
 
 /* Predict windows sit in a centring backdrop so the spring's scale does not fight the
    old translate(-50%,-50%) centring. */
