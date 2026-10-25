@@ -902,7 +902,7 @@ function DocsFull() {
     <>
 
 
-      <div id="docs-top" style={{ minHeight: "100vh", background: "#03050C", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", overflowX: "hidden", position: "relative", zoom: 1.1 }}>
+      <div id="docs-top" style={{ minHeight: "100vh", background: "#03050C", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", overflowX: "clip", position: "relative", zoom: 1.1 }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />
 
 
@@ -946,7 +946,7 @@ function DocsFull() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ maxWidth: "780px", fontFamily: "'Inter', sans-serif" }}
+                    style={{ maxWidth: "none", marginLeft: "-114px", marginTop: "22px", fontFamily: "'Inter', sans-serif" }}
                   >
 
                     <motion.div
@@ -973,7 +973,7 @@ function DocsFull() {
                           color: "#94A3B8",
                         }}
                       >
-                        {lang === "kn" ? "ಅಂತರ ಏನು" : "What Antar is"}
+                        {lang === "kn" ? "ಡೆವಲಪರ್ ಟಿಪ್ಪಣಿ" : "Developer Note"}
                       </motion.div>
                       <p style={{
                         fontSize: "14.5px",
@@ -982,8 +982,8 @@ function DocsFull() {
                         letterSpacing: "0.01em",
                       }}>
                         {lang === "kn"
-                          ? "ಅಂತರ ಕರ್ನಾಟಕದ FIR ದಾಖಲೆಯ ಬಗ್ಗೆ ಕನ್ನಡ ಅಥವಾ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಉತ್ತರಿಸುತ್ತದೆ, ಆರೋಪಿ, ವಾಹನ, ಫೋನ್ ಅಥವಾ UPI ಹಂಚಿಕೊಳ್ಳುವ ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸುತ್ತದೆ, ಮತ್ತು ಅಪರಾಧ ಎಲ್ಲಿ ಹೆಚ್ಚಾಗಬಹುದು ಎಂದು ಮುನ್ಸೂಚಿಸುತ್ತದೆ. ಠಾಣಾ ಅಧಿಕಾರಿಗಳು, ತನಿಖಾಧಿಕಾರಿಗಳು ಮತ್ತು ಮೇಲ್ವಿಚಾರಕರಿಗಾಗಿ; ಪ್ರತಿ ಉತ್ತರವೂ ಅದರ FIR ಗಳನ್ನು ತೋರಿಸುತ್ತದೆ. ಕೆಳಗೆ ಒಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ ಪ್ರಯತ್ನಿಸಿ."
-                          : "Antar answers questions about Karnataka's FIR register in English or Kannada, links cases that share an accused, vehicle, phone or UPI ID, and forecasts where crime is likely to rise. It is built for station officers, investigators and supervisors, and every answer shows the FIRs it came from. Try it below: ask one question."}
+                          ? "ಅಂತರ ಎಂಬುದು ಬೃಹತ್ ಎಫ್‌ಐಆರ್‌ಗಳು ಮತ್ತು ಪೊಲೀಸ್ ದಾಖಲೆಗಳ ಮೇಲೆ ನಿರ್ಮಿಸಲಾದ ಬುದ್ಧಿವಂತ ಲೇಯರ್ ಆಗಿದೆ. ಇದು ಪ್ರತ್ಯೇಕವಾದ ಪ್ರಕರಣಗಳ ನಡುವಿನ ಚುಕ್ಕೆಗಳನ್ನು ತಕ್ಷಣವೇ ಸಂಪರ್ಕಿಸುವ ಮೂಲಕ, ಗುಪ್ತ ಅಪರಾಧ ಜಾಲಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವ ಮೂಲಕ ಮತ್ತು ಪರಿಶೀಲಿಸಿದ ಗುಪ್ತಚರವನ್ನು ತಲುಪಿಸುವ ಮೂಲಕ ಸುಪ್ತ ಡೇಟಾವನ್ನು ಜೀವಂತಗೊಳಿಸುತ್ತದೆ. ಕೇವಲ ಸರ್ಚ್ ಇಂಜಿನ್‌ಗಿಂತ ಹೆಚ್ಚಾಗಿ, ಇದು ಪೂರ್ವಭಾವಿ ಪಾಲುದಾರನಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ, ಅಭೂತಪೂರ್ವ ವೇಗದೊಂದಿಗೆ ಬೆದರಿಕೆಗಳನ್ನು ನಿರೀಕ್ಷಿಸಲು ಮತ್ತು ಪ್ರಕರಣಗಳನ್ನು ಪರಿಹರಿಸಲು ಅಧಿಕಾರಿಗಳಿಗೆ ಅಧಿಕಾರ ನೀಡುತ್ತದೆ."
+                          : "Antar is an intelligent layer built over vast archives of FIRs and police records. It brings dormant data to life by instantly connecting the dots between isolated cases, uncovering hidden crime networks, and delivering verified intelligence. More than just a search engine, it acts as a proactive partner, empowering officers to anticipate threats and solve cases with unprecedented speed."}
                       </p>
                     </motion.div>
                   </motion.div>
@@ -1049,8 +1049,8 @@ function DocsFull() {
               {tagDone && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }}>
                                     {/* Project Details Inline Row */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} style={{ marginTop: "20px", marginLeft: "114px" }}>
-                      <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginBottom: "16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} style={{ marginTop: "20px", marginLeft: 0 }}>
+                      <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginBottom: "16px" }}>
                         {[
                           { id: 'features', label: lang === "kn" ? 'ಪ್ರಮುಖ ಲಕ್ಷಣಗಳು' : 'Key Features & Functionalities' },
                           { id: 'impact', label: lang === "kn" ? 'ಪರಿಣಾಮ ಮತ್ತು ಬಳಕೆ' : 'Impact & Use Cases' },
@@ -1239,7 +1239,7 @@ function DocsFull() {
         <AnimatePresence>
           {phase === "need-input" && (
             <motion.section key="ni" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -11 }} transition={{ duration: 0.38 }} style={{ marginBottom: "40px" }}>
-              <div style={{ background: "none", border: 0, borderTop: "1px solid rgba(255,255,255,0.14)", borderRadius: 0, padding: "24px 0 0" }}>
+              <div style={{ background: "none", border: 0, borderRadius: 0, padding: "8px 0 0" }}>
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#22E6F0", letterSpacing: "0.1em", marginBottom: "8px" }}>{lang === "kn" ? "01 · ಪ್ರಯತ್ನಿಸಿ" : "01 · TRY IT"}</div>
                 <h2 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: "20px", color: "#F8FAFC", margin: "0 0 6px" }}>{lang === "kn" ? "ಒಂದು ತನಿಖಾ ಪ್ರಶ್ನೆಯನ್ನು ಕೇಳಿ" : "Ask one investigation question"}</h2>
                 <p style={{ fontSize: "13.5px", color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.55 }}>{lang === "kn" ? "ಅಂತರವು ಏಕಕಾಲದಲ್ಲಿ ಮೂರು ರೀತಿಯಲ್ಲಿ ಚಲಿಸುತ್ತದೆ - ಯೋಚಿಸಿ, ಸಂಪರ್ಕಿಸಿ, ನಿರೀಕ್ಷಿಸಿ - ನೈಜ FIR ದಾಖಲೆಗಳಲ್ಲಿ ಲೈವ್." : "Antar will run it three ways simultaneously - Think, Connect, Anticipate - live on real FIR records."}</p>
@@ -1283,10 +1283,10 @@ function DocsFull() {
           <section style={{ marginBottom: "58px" }}>
 
             <motion.div initial={{ opacity: 0, y: 15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5, ease: "easeOut" }}
-              style={{ background: "none", border: 0, borderTop: "1px solid rgba(255,255,255,0.14)", borderRadius: 0, marginBottom: "28px", overflow: "hidden" }}>
+              style={{ background: "none", border: 0, borderRadius: 0, marginBottom: "28px", overflow: "hidden" }}>
 
               {/* Active Query Header (Now unified) */}
-              <div style={{ background: "rgba(0,0,0,0.2)", borderBottom: hasMainText ? "1px solid rgba(255,255,255,0.05)" : "none", padding: "16px 24px", display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ padding: "16px 0", display: "flex", alignItems: "center", gap: "12px" }}>
                 <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "#94a3b8", fontWeight: 500, letterSpacing: "0.05em", flexShrink: 0, textTransform: "uppercase" }}>Active Query</span>
                 <span style={{ fontSize: "15px", color: "#f8fafc", fontWeight: 400, fontFamily: "'Inter', sans-serif", fontStyle: "italic" }}>"{question}"</span>
                 {phase === "running" && (
@@ -1301,7 +1301,7 @@ function DocsFull() {
               <AnimatePresence>
                 {hasMainText && (
                   <motion.div initial={{ opacity: 0, filter: "blur(4px)" }} animate={{ opacity: 1, filter: "blur(0px)" }} transition={{ duration: 0.6, delay: 0.1 }}
-                    style={{ padding: "24px", position: "relative" }}>
+                    style={{ padding: "8px 0 24px", position: "relative" }}>
 
                     <div style={{ fontFamily: "'Inter', sans-serif", width: "100%", color: "#e2e8f0", fontSize: "12.5px", lineHeight: 1.6 }}>
                       <FormattedResponse text={clean(mainThinkRun.msg.text).replace(/\[COMPUTED\]\s*/gi, '').replace(/PATTERNS/g, 'Patterns')} />

@@ -30,8 +30,13 @@ export default function PillNav() {
       const navBottom = document.querySelector(".cx-pillnav")?.getBoundingClientRect().bottom || 60;
       const top = el.getBoundingClientRect().top;
       const under = el.scrollTop > 2 && top < navBottom;
-      el.classList.toggle("is-under-nav", under);
-      if (under) el.style.setProperty("--nav-edge", `${Math.max(24, Math.round(navBottom - top + 28))}px`);
+      // Touch the class and the variable only when they change: writing them on every scroll
+      // event restyled the whole scrolled area each tick, which is what made long pages judder.
+      if (el.classList.contains("is-under-nav") !== under) el.classList.toggle("is-under-nav", under);
+      if (under) {
+        const edge = `${Math.max(24, Math.round(navBottom - top + 28))}px`;
+        if (el.style.getPropertyValue("--nav-edge") !== edge) el.style.setProperty("--nav-edge", edge);
+      }
     };
     document.addEventListener("scroll", onScroll, { capture: true, passive: true });
     return () => document.removeEventListener("scroll", onScroll, { capture: true });
