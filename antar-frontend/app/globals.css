@@ -5772,3 +5772,33 @@ html[lang="kn"] .ov-use-tag { letter-spacing: normal; text-transform: none; }
 .xw-c2 .c2-report .c2-report-main { background: var(--cyan); border-color: var(--cyan); color: #041014; font-weight: 600; }
 .xw-c2 .c2-report .c2-report-main:hover { background: #5BEFF6; color: #041014; }
 .xw-c2 .c2-report > span { flex-basis: 100%; font-size: 12px; color: var(--tx-3); }
+
+/* Expert workspace header shortcuts: Ask next · Antar insights · How? · Copy */
+.xw.xw-c2 { container-type: inline-size; container-name: xw; }
+.xw-c2 .c2-callsign { flex-wrap: wrap; row-gap: 6px; min-width: 0; }
+.xw-c2 .c2-quick { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; }
+.xw-c2 .c2-quick button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; cursor: pointer;
+  background: transparent; border: 1px solid var(--line-2); color: var(--tx-2); font: 500 12.5px 'Inter', sans-serif; white-space: nowrap;
+  transition: color .15s, border-color .15s, background-color .15s; }
+.xw-c2 .c2-quick button svg { color: var(--tx-3); flex: none; transition: color .15s; }
+.xw-c2 .c2-quick button:hover:not(:disabled) { color: var(--tx-1); border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.03); }
+.xw-c2 .c2-quick button:hover:not(:disabled) svg { color: var(--cyan); }
+.xw-c2 .c2-quick button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.xw-c2 .c2-quick button:disabled { opacity: .4; cursor: not-allowed; }
+.xw-c2 .c2-quick .c2-quick-copy { color: var(--cyan); border-color: rgba(34,230,240,.4); background: rgba(34,230,240,.06); }
+.xw-c2 .c2-quick .c2-quick-copy svg { color: var(--cyan); }
+.xw-c2 .c2-quick .c2-quick-copy.err, .xw-c2 .c2-quick .c2-quick-copy.err svg { color: #F5C451; border-color: rgba(245,196,81,.45); background: rgba(245,196,81,.06); }
+.xw-c2 .c2-toast { position: absolute; top: 54px; left: 16px; right: 16px; z-index: 20; padding: 9px 12px; border-radius: 9px; font-size: 12.5px;
+  background: #0E1A22; border: 1px solid rgba(34,230,240,.35); color: var(--tx-1); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.xw-c2 .c2-toast.err { border-color: rgba(245,196,81,.45); color: #F5E3B0; }
+.xw-c2 .c2-report button:disabled { opacity: .6; cursor: progress; }
+.xw-c2 .c2-flash { animation: c2-flash 1.2s ease-out; }
+@keyframes c2-flash { 0% { box-shadow: 0 0 0 2px rgba(34,230,240,.55); } 100% { box-shadow: 0 0 0 2px rgba(34,230,240,0); } }
+#xw-next, #xw-insights, #xw-how { scroll-margin-top: 12px; }
+@container xw (max-width: 760px) {
+  .xw-c2 .c2-callsign > span:first-child { display: none; }
+  .xw-c2 .c2-quick { margin-left: 4px; }
+  .xw-c2 .c2-quick button:not(.c2-quick-copy) span { display: none; }
+  .xw-c2 .c2-quick button { padding: 0 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .xw-c2 .c2-flash { animation: none; } }

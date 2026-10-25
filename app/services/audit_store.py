@@ -376,6 +376,58 @@ def record_hypothesis_event(
                             "user_text": hypothesis_id, "answer": reason})
 
 
+def get_answer_record(digest: str) -> dict | None:
+    """The AI_REASONING entry with this hash, and whether its digest still verifies.
+
+    `verified` is True only when hash_event(prev_hash, stored payload) reproduces the
+    stored hash: the answer text returned is then exactly the text that was chained.
+    """
+    digest = str(digest or "").strip().lower()
+    if not digest or len(digest) > 64:
+        return None
+    entry = None
+    try:
+        conn = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True, timeout=10)
+        conn.row_factory = sqlite3.Row
+        try:
+            r = conn.execute("SELECT hash, prev_hash, payload_json FROM audit_log "
+                             "WHERE hash = ? AND type = 'AI_REASONING' LIMIT 1", (digest,)).fetchone()
+        finally:
+            conn.close()
+        if r:
+            entry = _entry_of(r)
+    except sqlite3.Error:
+        pass
+    if entry is None:                       # the database write failed: the chain is in memory
+        entry = next((e for e in reversed(_log) if e.get("hash") == digest and e.get("type") == "AI_REASONING"), None)
+    if entry is None:
+        return None
+    payload = _payload_of(entry)
+    verified = bool(entry.get("chain_verifiable")) and entry.get("prev_hash") is not None         and hash_event(entry["prev_hash"], payload) == entry["hash"]
+    return {**payload, "hash": entry["hash"], "verified": verified}
+
+
+def record_answer_copied(officer: str, role: str, answer_hash: str, copy_sha256: str, chars: int) -> dict:
+    """An officer copied an audited answer out of Antar. The event binds the SHA-256 of
+    the exact text placed on the clipboard to the answer's own audit entry, so a pasted
+    brief can be traced back to the answer it came from."""
+    payload = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "officer": officer,
+        "role": role,
+        "type": "ANSWER_COPIED",
+        "method": "COPY",
+        "path": f"/answer/{answer_hash}/copy",
+        "status": 200,
+        "answer_hash": answer_hash,
+        "copy_sha256": copy_sha256,
+        "chars": chars,
+    }
+    return _write(payload, {"ts": payload["ts"], "officer": officer, "role": role, "method": "COPY",
+                            "path": payload["path"], "status": 200, "type": "ANSWER_COPIED",
+                            "user_text": answer_hash, "answer": copy_sha256})
+
+
 HITL_EVENTS = {
     "hitl_proposed", "hitl_approved", "hitl_rejected", "hitl_withdrawn",
     "hitl_expired", "hitl_executed", "hitl_failed", "hitl_integrity_failure",

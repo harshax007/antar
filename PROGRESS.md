@@ -137,6 +137,15 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Workspace Copy is the audited answer, word for word · 2026-10-25
+
+- Header shortcuts beside "Agents used": Ask next · Antar insights · How? · Copy (each opens that part of the brief).
+- Copy no longer reads the screen. POST /api/answer-record/{hash}/copy loads the answer's AI_REASONING entry, checks its
+  digest, builds the brief from the audited question, answer and citations, and writes an ANSWER_COPIED event carrying the
+  SHA-256 of the exact text returned. No entry or a digest that fails: 404/409, nothing copied. Only the asking officer
+  or an Admin may copy. tests/test_answer_record.py (verbatim text, tamper refused, other officer refused).
+- Facts strip: "Records checked" was the rows the answer returned; it now says "Rows in answer".
+
 ## Expert workspace rewritten for the officer · 2026-10-25
 
 - The question shows small ("You asked"): it is already in the chat. No capital-letter labels or code fonts.

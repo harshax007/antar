@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, Check, FileSpreadsheet, Radio, ShieldCheck, Activity, Square, ArrowUpRight, CornerDownRight } from "lucide-react";
+import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, Check, FileSpreadsheet, Radio, ShieldCheck, Activity, Square, ArrowUpRight, CornerDownRight, Sparkles, HelpCircle, AlertTriangle } from "lucide-react";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { openReport } from "@/lib/auth";
+import { fetchAPI } from "@/lib/api";
 import WorkspaceAgents, { FACE, agentsUsed } from "@/components/WorkspaceAgents";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -480,29 +481,45 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
     openReport(`/report/${sessionId}`);
   }
 
-  // A ready-to-paste brief for a station diary or a report: the question, the finding, how
-  // sure it is, the ranked rows, every cited FIR and the audit id. Only what is on screen.
-  const [copied, setCopied] = useState(false);
-  function copyForReport() {
-    const when = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
-    const L = [`Antar brief · ${when} IST`, ""];
-    if (question) L.push(`Question: ${question}`);
-    if (parsed.summary) L.push(`Finding: ${plainText(parsed.summary)}`);
-    if (sure) L.push(`How sure: ${sure.text}`);
-    if (parsed.ranking.length) {
-      L.push("", `${parsed.rankCaption || "Ranking"}:`);
-      parsed.ranking.forEach((r, i) => L.push(`${i + 1}. ${plainText(r.name)}: ${r.n}${r.pct ? ` (${r.pct})` : ""}`));
+  // Copy is the AUDITED answer, word for word: the backend reads this answer's audit log
+  // entry, checks its digest, builds the brief from that text and records the copy on the
+  // chain (POST /api/answer-record/{hash}/copy). Nothing on screen is copied, so an edited
+  // or re-rendered brief can never be pasted as if it were the record. No entry, no copy.
+  const [copyState, setCopyState] = useState("idle");      // idle | busy | done | err
+  const [copyMsg, setCopyMsg] = useState("");
+  const copyTimer = useRef(null);
+  async function copyForReport() {
+    clearTimeout(copyTimer.current);
+    if (!meta?.hash) {
+      setCopyState("err");
+      setCopyMsg(kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆ ಇಲ್ಲ, ಆದ್ದರಿಂದ ನಕಲಿಸಲಾಗಿಲ್ಲ." : "Not copied: this answer has no audit log entry.");
+    } else {
+      setCopyState("busy");
+      try {
+        const d = await fetchAPI(`/api/answer-record/${encodeURIComponent(meta.hash)}/copy`, { method: "POST" });
+        await navigator.clipboard.writeText(d.text);
+        setCopyState("done");
+        setCopyMsg(kn ? `ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆಯಿಂದ ಯಥಾವತ್ ನಕಲಿಸಲಾಗಿದೆ · ನಕಲು ದಾಖಲಾಗಿದೆ ${String(d.copy_event_hash).slice(0, 8)}`
+                      : `Copied word for word from the audit log · copy logged ${String(d.copy_event_hash).slice(0, 8)}`);
+      } catch (e) {
+        setCopyState("err");
+        setCopyMsg(e?.message || (kn ? "ನಕಲಿಸಲಾಗಲಿಲ್ಲ." : "Not copied. Please retry."));
+      }
     }
-    const detail = parsed.rest.filter((r) => r.type !== "heading").map((r) => plainText(r.text)).filter(Boolean);
-    if (detail.length) { L.push("", "Detail:"); detail.forEach((t) => L.push(`- ${t}`)); }
-    if (citations?.length) {
-      L.push("", `Cited FIRs (${citations.length}):`);
-      citations.forEach((c) => L.push(`- FIR ${c.fir}${c.station ? `, ${c.station}` : ""}${c.section ? `, ${c.section}` : ""}${c.date ? `, ${c.date}` : ""}`));
-    }
-    if (meta?.hash) L.push("", `Audit log: ${meta.hash}`);
-    L.push("", "Prepared with Antar from the FIR records. Verify against the cited FIRs before use.");
-    try { navigator.clipboard.writeText(L.join("\n")); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
+    copyTimer.current = setTimeout(() => { setCopyState("idle"); setCopyMsg(""); }, 5000);
   }
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
+
+  // The header shortcuts open the Brief and bring that section into view.
+  const jump = (id) => {
+    setActiveTab("document");
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.remove("c2-flash"); void el.offsetWidth; el.classList.add("c2-flash");
+    }, 60);
+  };
 
   function copyCSV() {
     if (parsed.ranking.length > 0) {
@@ -580,7 +597,29 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
               </button>
             );
           })()}
+          {answer && (
+            <div className="c2-quick" role="toolbar" aria-label={kn ? "ಶಾರ್ಟ್‌ಕಟ್‌ಗಳು" : "Shortcuts"}>
+              <button type="button" onClick={() => jump("xw-next")} disabled={!nextQs.length || !onAsk}
+                      title={nextQs.length ? (kn ? "ಮುಂದಿನ ಪ್ರಶ್ನೆಗಳು" : "Follow-up questions, one click asks them") : (kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಮುಂದಿನ ಪ್ರಶ್ನೆಗಳಿಲ್ಲ" : "No follow-up questions for this answer")}>
+                <CornerDownRight size={13} aria-hidden="true" /><span>{kn ? "ಮುಂದೆ ಕೇಳಿ" : "Ask next"}</span>
+              </button>
+              <button type="button" onClick={() => jump("xw-insights")} disabled={!insights.length}
+                      title={insights.length ? (kn ? "ಕೋಷ್ಟಕದಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ ಒಳನೋಟಗಳು" : "Insights calculated from the ranked rows") : (kn ? "ಒಳನೋಟಗಳಿಗೆ ಶ್ರೇಣಿ ಪಟ್ಟಿ ಬೇಕು" : "No insights: they are calculated from a ranked list, and this answer has none")}>
+                <Sparkles size={13} aria-hidden="true" /><span>{kn ? "ಅಂತರ್ ಒಳನೋಟಗಳು" : "Antar insights"}</span>
+              </button>
+              <button type="button" onClick={() => jump("xw-how")} disabled={!parsed.summary}
+                      title={kn ? "ಈ ಉತ್ತರ ಹೇಗೆ ಬಂತು" : "How this was answered: method, agents, audit id"}>
+                <HelpCircle size={13} aria-hidden="true" /><span>{kn ? "ಹೇಗೆ?" : "How?"}</span>
+              </button>
+              <button type="button" className={`c2-quick-copy ${copyState}`} onClick={copyForReport} disabled={copyState === "busy"}
+                      title={copyMsg || (kn ? "ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆಯಿಂದ ಯಥಾವತ್ ನಕಲಿಸಿ" : "Copy the answer exactly as recorded in the audit log")}>
+                {copyState === "done" ? <Check size={13} aria-hidden="true" /> : copyState === "err" ? <AlertTriangle size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                <span>{copyState === "busy" ? (kn ? "ನಕಲಿಸುತ್ತಿದೆ…" : "Copying…") : copyState === "done" ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ನಕಲಿಸಿ" : "Copy")}</span>
+              </button>
+            </div>
+          )}
         </div>
+        {copyMsg && <div className={`c2-toast ${copyState}`} role="status">{copyMsg}</div>}
         <div className="c2-leds" role="status" aria-live="polite">
           <span className={`c2-led ${link}`} title={lastSync ? `Last sync ${Math.round((now - lastSync) / 1000)}s ago` : "Waiting for first sync"}>
             <i /> {linkLabel}
@@ -607,7 +646,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             did not report is left out rather than shown as a dash. ─────────────── */}
       {answer && (() => {
         const facts = [
-          typeof meta?.rows === "number" && [kn ? "ದಾಖಲೆಗಳು ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Records checked", meta.rows.toLocaleString()],
+          typeof meta?.rows === "number" && [kn ? "ಉತ್ತರದ ಸಾಲುಗಳು" : "Rows in answer", meta.rows.toLocaleString()],
           [kn ? "ಉಲ್ಲೇಖಿತ FIR" : "FIRs cited", (citations?.length || 0).toLocaleString()],
           elapsedS && [kn ? "ಉತ್ತರ ಸಮಯ" : "Answered in", `${elapsedS}s`],
           [kn ? "ಲೆಕ್ಕಪತ್ರ" : "Audit log", meta?.hash
@@ -743,7 +782,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                     reported by the pipeline for THIS answer; a missing one reads "—"
                     rather than being filled in with something plausible. */}
                 {parsed.summary && (
-                  <div className="c2-block c2-srcblk">
+                  <div className="c2-block c2-srcblk" id="xw-how">
                     <div className="c2-block-t">{kn ? "ಆಧಾರ ಮತ್ತು ವಿಧಾನ" : "How this was answered"}</div>
                     <div className="c2-srcgrid">
                       <div><span>{kn ? "ವಿಧಾನ" : "Method"}</span><b>{meta?.method || meta?.template_id || "—"}</b></div>
@@ -768,9 +807,9 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                 )}
 
                 {insights.length > 0 && (
-                  <div className="c2-block">
+                  <div className="c2-block" id="xw-insights">
                     <div className="c2-block-t">
-                      {kn ? "ಒಳನೋಟಗಳು" : "Insights"}
+                      {kn ? "ಅಂತರ್ ಒಳನೋಟಗಳು" : "Antar insights"}
                       <ClassTag c="D" kn={kn} />
                     </div>
                     {insights.map((t, i) => <div key={i} className="xw-li">{t}</div>)}
@@ -784,7 +823,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                 {/* Where to go next: the follow-ups the pipeline checked against the data for
                     this answer. One click asks it in the chat. */}
                 {nextQs.length > 0 && onAsk && (
-                  <div className="c2-block c2-next">
+                  <div className="c2-block c2-next" id="xw-next">
                     <div className="c2-block-t">{kn ? "ಮುಂದೆ ಕೇಳಿ" : "Ask next"}</div>
                     {nextQs.map((q) => (
                       <button key={q} type="button" onClick={() => onAsk(q)}>
@@ -796,15 +835,15 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
 
                 {parsed.summary && (
                   <div className="c2-report">
-                    <button type="button" className="c2-report-main" onClick={copyForReport}>
-                      {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-                      {copied ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ವರದಿಗಾಗಿ ನಕಲಿಸಿ" : "Copy for report")}
+                    <button type="button" className="c2-report-main" onClick={copyForReport} disabled={copyState === "busy"}>
+                      {copyState === "done" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                      {copyState === "done" ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ವರದಿಗಾಗಿ ನಕಲಿಸಿ" : "Copy for report")}
                     </button>
                     {sessionId && (
                       <button type="button" onClick={exportReport}><FileText size={14} aria-hidden="true" /> {kn ? "PDF ವರದಿ" : "PDF report"}</button>
                     )}
-                    <span>{kn ? "ಪ್ರಶ್ನೆ, ತೀರ್ಮಾನ, ಉಲ್ಲೇಖಿತ FIR ಮತ್ತು ಲೆಕ್ಕಪತ್ರ ಐಡಿ - ಅಂಟಿಸಲು ಸಿದ್ಧ."
-                              : "Question, finding, cited FIRs and audit id, ready to paste."}</span>
+                    <span>{copyMsg || (kn ? "ಪ್ರಶ್ನೆ, ಉತ್ತರ, ಉಲ್ಲೇಖಿತ FIR ಮತ್ತು ಲೆಕ್ಕಪತ್ರ ಐಡಿ - ಲೆಕ್ಕಪತ್ರ ದಾಖಲೆಯಿಂದ ಯಥಾವತ್, ನಕಲು ಕೂಡ ದಾಖಲಾಗುತ್ತದೆ."
+                              : "Question, answer, cited FIRs and audit id, taken word for word from the audit log. The copy is logged too.")}</span>
                   </div>
                 )}
               </div>
