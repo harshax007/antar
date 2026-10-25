@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, FileSpreadsheet, Radio, Crosshair, ShieldCheck, Activity, Square, Map, Cpu, Search } from "lucide-react";
+import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, Check, FileSpreadsheet, Radio, ShieldCheck, Activity, Square, ArrowUpRight, CornerDownRight } from "lucide-react";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { openReport } from "@/lib/auth";
 import WorkspaceAgents, { FACE, agentsUsed } from "@/components/WorkspaceAgents";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -26,10 +27,72 @@ const CLASS_HELP = {
   U: "Unknown - data absent or unrecorded",
 };
 
+// The evidence class in words an officer reads at a glance, instead of a letter and a key.
+const CLASS_WORD = {
+  K: ["From records", "ದಾಖಲೆಯಿಂದ"],
+  D: ["Calculated", "ಲೆಕ್ಕಾಚಾರ"],
+  I: ["Estimate", "ಅಂದಾಜು"],
+  U: ["Not on record", "ದಾಖಲೆಯಲ್ಲಿಲ್ಲ"],
+};
+function ClassTag({ c, kn }) {
+  if (!CLASS_WORD[c]) return null;
+  return <span className={`c2-tag c2-tag-${c}`} title={CLASS_HELP[c]}>{CLASS_WORD[c][kn ? 1 : 0]}</span>;
+}
+
+// "How sure is this?" in one sentence, from the evidence classes the pipeline reported for
+// THIS answer. Nothing is scored here: it only says what kind of evidence the answer rests on.
+const SURE = {
+  K: ["High: read straight from the FIR records. Open a cited FIR to confirm.",
+      "ಹೆಚ್ಚು: FIR ದಾಖಲೆಗಳಿಂದ ನೇರವಾಗಿ. ಖಚಿತಪಡಿಸಲು ಉಲ್ಲೇಖಿತ FIR ತೆರೆಯಿರಿ."],
+  D: ["Good: calculated from the FIR records. Spot-check a few cited FIRs before relying on it.",
+      "ಉತ್ತಮ: FIR ದಾಖಲೆಗಳಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ್ದು. ಬಳಸುವ ಮೊದಲು ಕೆಲವು FIR ಪರಿಶೀಲಿಸಿ."],
+  I: ["Low: an estimate. Treat it as a lead, not as evidence.",
+      "ಕಡಿಮೆ: ಅಂದಾಜು. ಇದನ್ನು ಸುಳಿವಾಗಿ ಬಳಸಿ, ಸಾಕ್ಷ್ಯವಾಗಿ ಅಲ್ಲ."],
+  U: ["None: the records do not hold this. Do not act on it.",
+      "ಇಲ್ಲ: ದಾಖಲೆಗಳಲ್ಲಿ ಇದು ಇಲ್ಲ. ಇದರ ಮೇಲೆ ಕ್ರಮ ಬೇಡ."],
+};
+function howSure(evidenceClass, claims, kn) {
+  const tags = (claims || []).map((c) => c.tag).filter((t) => SURE[t]);
+  const kinds = [...new Set(tags)];
+  if (kinds.length > 1) {
+    const n = (t) => tags.filter((x) => x === t).length;
+    const parts = ["K", "D", "I", "U"].filter((t) => n(t)).map((t) => `${n(t)} ${CLASS_WORD[t][kn ? 1 : 0].toLowerCase()}`);
+    const weakest = ["U", "I", "D", "K"].find((t) => n(t));
+    return {
+      cls: weakest,
+      text: kn ? `ಮಿಶ್ರ: ${parts.join(", ")}. ಕ್ರಮಕ್ಕೆ ಮೊದಲು ಅಂದಾಜುಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.`
+              : `Mixed: ${parts.join(", ")}. Check anything marked estimate before acting on it.`,
+    };
+  }
+  const c = evidenceClass || kinds[0];
+  return SURE[c] ? { cls: c, text: SURE[c][kn ? 1 : 0] } : null;
+}
+
+const plainText = (t) => stripTags(t).replace(/\*\*/g, "").replace(/`/g, "").trim();
+const sameText = (a, b) => plainText(a).replace(/\s+/g, " ").toLowerCase() === plainText(b).replace(/\s+/g, " ").toLowerCase();
+
+// Every shape of FIR id in the register (the chat uses the same list): an id written in the
+// brief opens that case's timeline.
+const FIR_ID_RE = /\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}|FIR-20\d\d-[\w-]{4,40})\b/g;
+
 const XW_HILITE = /(\b\d{1,3}(?:,\d{3})+\b|\b\d+(?:\.\d+)?%|\bFIR[-\s]?\d[\w-]*|\b\d{4}\b|\b\d{2,}\b)/g;
 
 function XwInline({ text }) {
-  const parts = String(text ?? "").split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  const str = String(text ?? "");
+  if (FIR_ID_RE.test(str)) {
+    FIR_ID_RE.lastIndex = 0;
+    const out = [];
+    let last = 0;
+    for (const m of str.matchAll(FIR_ID_RE)) {
+      if (m.index > last) out.push(<XwInline key={`t${last}`} text={str.slice(last, m.index)} />);
+      out.push(<Link key={`f${m.index}`} href={`/case/${encodeURIComponent(m[1])}`} className="c2-firlink" title="Open the case timeline">{m[1]}</Link>);
+      last = m.index + m[0].length;
+    }
+    if (last < str.length) out.push(<XwInline key={`t${last}`} text={str.slice(last)} />);
+    return out;
+  }
+  FIR_ID_RE.lastIndex = 0;
+  const parts = str.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   return parts.map((p, i) => {
     const b = p.match(/^\*\*([^*]+)\*\*$/);
     if (b) return <b key={i} className="xw-strong">{b[1]}</b>;
@@ -140,11 +203,11 @@ const BG_TASKS = [
   { type: "deep_research", en: "Deep research", kn: "ಆಳವಾದ ಸಂಶೋಧನೆ", cls: "D", needsTarget: true,
     hintEn: "A full profile of a suspect or area, with each point marked as from the records, calculated, estimated or not on record.",
     hintKn: "ಶಂಕಿತ ಅಥವಾ ವಲಯದ ಸಂಪೂರ್ಣ ವಿವರ, ಪ್ರತಿ ಅಂಶದ ಮೂಲದೊಂದಿಗೆ." },
-  { type: "network_deep", en: "Network analysis", kn: "ಜಾಲ ವಿಶ್ಲೇಷಣೆ", cls: "D", needsTarget: true,
+  { type: "network_deep", en: "Map associates", kn: "ಜಾಲ ವಿಶ್ಲೇಷಣೆ", cls: "D", needsTarget: true,
     hintEn: "Associates and links around a suspect id or name.", hintKn: "ಶಂಕಿತರ ಸುತ್ತಲಿನ ಸಹಚರರು ಮತ್ತು ಕೊಂಡಿಗಳು." },
-  { type: "pattern_scan", en: "Pattern scan", kn: "ಮಾದರಿ ಶೋಧ", cls: "D", needsTarget: false,
+  { type: "pattern_scan", en: "Find repeat patterns", kn: "ಮಾದರಿ ಶೋಧ", cls: "D", needsTarget: false,
     hintEn: "The same way of committing a crime, repeated across an area or crime type.", hintKn: "ವಲಯ ಅಥವಾ ಅಪರಾಧ ಪ್ರಕಾರದಲ್ಲಿ ಪುನರಾವರ್ತಿತ ಅಪರಾಧ ವಿಧಾನ." },
-  { type: "threat_assessment", en: "Threat assessment", kn: "ಬೆದರಿಕೆ ಮೌಲ್ಯಮಾಪನ", cls: "I", needsTarget: false,
+  { type: "threat_assessment", en: "Patrol advice", kn: "ಬೆದರಿಕೆ ಮೌಲ್ಯಮಾಪನ", cls: "I", needsTarget: false,
     hintEn: "Patrol and checkpoint recommendations for a zone.", hintKn: "ವಲಯಕ್ಕೆ ಗಸ್ತು ಮತ್ತು ತಪಾಸಣಾ ಶಿಫಾರಸುಗಳು." },
   { type: "custom", en: "Custom task", kn: "ಕಸ್ಟಮ್ ಕಾರ್ಯ", cls: "D", needsTarget: false,
     hintEn: "Any question, answered from the records in the background.",
@@ -191,7 +254,7 @@ const JobResultViewer = ({ data, kn }) => {
   );
 };
 
-export default function ExpertWorkspace({ answer, question, citations = [], suspects = [], sessionId, kn, onClose, meta, trace = [], claims = [], evidenceClass = null }) {
+export default function ExpertWorkspace({ answer, question, citations = [], suspects = [], sessionId, kn, onClose, meta, trace = [], claims = [], evidenceClass = null, suggested = [], onAsk = null }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [showEditDisclaimer, setShowEditDisclaimer] = useState(false);
@@ -417,8 +480,28 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
     openReport(`/report/${sessionId}`);
   }
 
-  function copyText() {
-    navigator.clipboard.writeText(draft);
+  // A ready-to-paste brief for a station diary or a report: the question, the finding, how
+  // sure it is, the ranked rows, every cited FIR and the audit id. Only what is on screen.
+  const [copied, setCopied] = useState(false);
+  function copyForReport() {
+    const when = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
+    const L = [`Antar brief · ${when} IST`, ""];
+    if (question) L.push(`Question: ${question}`);
+    if (parsed.summary) L.push(`Finding: ${plainText(parsed.summary)}`);
+    if (sure) L.push(`How sure: ${sure.text}`);
+    if (parsed.ranking.length) {
+      L.push("", `${parsed.rankCaption || "Ranking"}:`);
+      parsed.ranking.forEach((r, i) => L.push(`${i + 1}. ${plainText(r.name)}: ${r.n}${r.pct ? ` (${r.pct})` : ""}`));
+    }
+    const detail = parsed.rest.filter((r) => r.type !== "heading").map((r) => plainText(r.text)).filter(Boolean);
+    if (detail.length) { L.push("", "Detail:"); detail.forEach((t) => L.push(`- ${t}`)); }
+    if (citations?.length) {
+      L.push("", `Cited FIRs (${citations.length}):`);
+      citations.forEach((c) => L.push(`- FIR ${c.fir}${c.station ? `, ${c.station}` : ""}${c.section ? `, ${c.section}` : ""}${c.date ? `, ${c.date}` : ""}`));
+    }
+    if (meta?.hash) L.push("", `Audit log: ${meta.hash}`);
+    L.push("", "Prepared with Antar from the FIR records. Verify against the cited FIRs before use.");
+    try { navigator.clipboard.writeText(L.join("\n")); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
   }
 
   function copyCSV() {
@@ -432,17 +515,25 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
   const running = jobs.filter((j) => j.status === "running" || j.status === "queued").length;
   const parsed = parseAnswer(editing ? draft : answer);
   const insights = deriveInsights(parsed.ranking, kn);
+  const sure = parsed.summary ? howSure(evidenceClass, claims, kn) : null;
+  // A claim that only repeats the bottom line is not a second piece of evidence.
+  const extraClaims = claims.filter((c) => !sameText(c.text, parsed.summary));
+  const nextQs = (suggested || []).filter((q) => typeof q === "string" && q.trim() && q.trim() !== String(question || "").trim()).slice(0, 4);
 
-  const utc = new Date(now).toISOString().slice(11, 19);
   const stale = lastSync && now - lastSync > (running > 0 ? 8000 : 25000);   // idle poll is 15 s
   const link = linkOk === null ? "wait" : !linkOk ? "down" : stale ? "stale" : "up";
   const linkLabel = { wait: "Syncing", up: "Live", stale: "Stale", down: "Offline" }[link];
   const elapsedS = meta?.elapsed_ms != null ? (meta.elapsed_ms / 1000).toFixed(1) : null;
   const tPlus = (sec) => {
-    if (!sec) return "—";
+    if (!sec) return "";
     const d = Math.max(0, Math.round(now / 1000 - sec));
-    return d < 60 ? `T+${d}s` : d < 3600 ? `T+${Math.floor(d / 60)}m` : `T+${Math.floor(d / 3600)}h`;
+    if (kn) return d < 10 ? "ಈಗ" : d < 60 ? `${d}ಸೆ ಹಿಂದೆ` : d < 3600 ? `${Math.floor(d / 60)}ನಿ ಹಿಂದೆ` : `${Math.floor(d / 3600)}ಗಂ ಹಿಂದೆ`;
+    return d < 10 ? "just now" : d < 60 ? `${d}s ago` : d < 3600 ? `${Math.floor(d / 60)}m ago` : `${Math.floor(d / 3600)}h ago`;
   };
+  const jobStatus = (st) => ({
+    queued: kn ? "ಸರತಿಯಲ್ಲಿ" : "Waiting", running: kn ? "ಚಾಲನೆಯಲ್ಲಿ" : "Running", done: kn ? "ಮುಗಿದಿದೆ" : "Done",
+    failed: kn ? "ವಿಫಲ" : "Failed", cancelled: kn ? "ನಿಲ್ಲಿಸಲಾಗಿದೆ" : "Stopped",
+  }[st] || sentence(String(st || "")));
   const channels = [
     ["document", kn ? "ಸಾರಾಂಶ" : "Brief", null],
     ["references", kn ? "ಸಾಕ್ಷ್ಯ" : "Evidence", citations?.length || 0],
@@ -499,12 +590,8 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
               <i /> {running} {kn ? "ಚಾಲನೆ" : "running"}
             </span>
           )}
-          <span className="c2-clock" title="Time now (UTC, the time standard used in the audit log)">{utc}<small> UTC</small></span>
         </div>
         <div className="c2-actions">
-          <button title="Map"><Map size={13} /></button>
-          <button title="Brain"><Cpu size={13} /></button>
-          <button title="Search"><Search size={13} /></button>
           <button onClick={exportReport} disabled={!sessionId}
                   title={sessionId ? (kn ? "ಗುಪ್ತಚರ ವರದಿ ರಫ್ತು ಮಾಡಿ" : "Export intelligence report")
                                    : (kn ? "ವರದಿಗಾಗಿ ಮೊದಲು ಒಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ" : "Ask a question first: the report is built from the conversation")}
@@ -516,16 +603,23 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
         </div>
       </div>
 
-      {/* ── Situation strip ───────────────────────────────────────────────── */}
-      <div className="c2-sitrep">
-        <div><span>{kn ? "ಪ್ರಶ್ನೆ ಪ್ರಕಾರ" : "Query type"}</span><b>{meta?.template_id || "—"}</b></div>
-        <div><span>{kn ? "ಉಲ್ಲೇಖಗಳು" : "Sources"}</span><b>{citations?.length || 0}</b></div>
-        <div><span>{kn ? "ಸಮಯ" : "Answer time"}</span><b>{elapsedS ? `${elapsedS}s` : "—"}</b></div>
-        <div title={meta?.hash ? `Audit log fingerprint ${meta.hash}` : "This answer has no audit log entry"}>
-          <span>{kn ? "ಲೆಕ್ಕಪತ್ರ" : "Audit log"}</span>
-          <b className={meta?.hash ? "ok" : ""}>{meta?.hash ? <><ShieldCheck size={11} aria-hidden="true" /> {meta.hash.slice(0, 8)}</> : "—"}</b>
-        </div>
-      </div>
+      {/* ── Facts strip: what this answer rests on, in plain words. A value the pipeline
+            did not report is left out rather than shown as a dash. ─────────────── */}
+      {answer && (() => {
+        const facts = [
+          typeof meta?.rows === "number" && [kn ? "ದಾಖಲೆಗಳು ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Records checked", meta.rows.toLocaleString()],
+          [kn ? "ಉಲ್ಲೇಖಿತ FIR" : "FIRs cited", (citations?.length || 0).toLocaleString()],
+          elapsedS && [kn ? "ಉತ್ತರ ಸಮಯ" : "Answered in", `${elapsedS}s`],
+          [kn ? "ಲೆಕ್ಕಪತ್ರ" : "Audit log", meta?.hash
+            ? <span className="ok" title={`Audit log fingerprint ${meta.hash}`}><ShieldCheck size={13} aria-hidden="true" /> {kn ? "ದಾಖಲಾಗಿದೆ" : "Recorded"}</span>
+            : (kn ? "ಇಲ್ಲ" : "Not recorded")],
+        ].filter(Boolean);
+        return (
+          <div className="c2-sitrep" style={{ gridTemplateColumns: `repeat(${facts.length}, minmax(0, 1fr))` }}>
+            {facts.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}
+          </div>
+        );
+      })()}
 
       {/* ── Channels ──────────────────────────────────────────────────────── */}
       <div className="c2-channels" role="tablist">
@@ -549,8 +643,12 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
         {/* BRIEF */}
         {activeTab === "document" && (
           <div className="xw-doc">
-            <div className="c2-label">{kn ? "ಕಾರ್ಯ" : "Question"}</div>
-            <h1 className="xw-doctitle c2-title">{question || (kn ? "ಗುಪ್ತಚರ ಸಾರಾಂಶ" : "Intelligence brief")}</h1>
+            {question && (
+              <div className="c2-asked">
+                <span>{kn ? "ನೀವು ಕೇಳಿದ್ದು" : "You asked"}</span>
+                <p title={question}>{question}</p>
+              </div>
+            )}
             {published && <div className="xw-pub">● {kn ? "ಪ್ರಕಟಿಸಲಾಗಿದೆ" : "Published · read-only record"}</div>}
 
             {showEditDisclaimer ? (
@@ -575,36 +673,39 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                   <div className="c2-block c2-bluf">
                     <div className="c2-block-t">
                       {kn ? "ಮುಖ್ಯ ತೀರ್ಮಾನ" : "Bottom line"}
-                      {evidenceClass && <span className={`c2-cls c2-cls-${evidenceClass}`} title={CLASS_HELP[evidenceClass]}>{evidenceClass}</span>}
+                      <ClassTag c={evidenceClass} kn={kn} />
                     </div>
                     <p><XwInline text={parsed.summary} /></p>
                     {parsed.trend && <div className="c2-trend"><Activity size={12} aria-hidden="true" /> <XwInline text={parsed.trend} /></div>}
+                    {sure && (
+                      <div className={`c2-sure c2-sure-${sure.cls}`}>
+                        <i aria-hidden="true" />
+                        <span><b>{kn ? "ಎಷ್ಟು ಖಚಿತ" : "How sure"}</b> {sure.text}</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <p className="xw-empty">{kn ? "ಎಡಭಾಗದಲ್ಲಿ ಪ್ರಶ್ನೆ ಕೇಳಿ - ಉತ್ತರ ಇಲ್ಲಿ ಸಾರಾಂಶವಾಗುತ್ತದೆ." : "Awaiting tasking - ask on the left and the answer is compiled into a brief here."}</p>
+                  <p className="xw-empty">{kn ? "ಎಡಭಾಗದಲ್ಲಿ ಪ್ರಶ್ನೆ ಕೇಳಿ - ಉತ್ತರ ಇಲ್ಲಿ ಸಾರಾಂಶವಾಗುತ್ತದೆ." : "Ask a question in the chat. The answer is turned into a brief here, with the FIRs it came from."}</p>
                 )}
 
                 {/* Every claim with its evidence class - ICD 203: keep what the record says
                     apart from what was calculated, judged, or is simply unknown. */}
-                {claims.length > 0 && (
+                {extraClaims.length > 0 && (
                   <div className="c2-block">
-                    <div className="c2-block-t">{kn ? "ಪ್ರತಿ ಹೇಳಿಕೆಯ ಸಾಕ್ಷ್ಯ" : "Evidence by claim"}</div>
-                    {claims.map((c, i) => (
+                    <div className="c2-block-t">{kn ? "ಪ್ರತಿ ಅಂಶ ಮತ್ತು ಅದರ ಮೂಲ" : "Each point and where it comes from"}</div>
+                    {extraClaims.map((c, i) => (
                       <div key={i} className="c2-claim">
-                        <span className={`c2-cls c2-cls-${c.tag}`} title={CLASS_HELP[c.tag]}>{c.tag}</span>
                         <span className="c2-claim-t"><XwInline text={c.text} /></span>
+                        <ClassTag c={c.tag} kn={kn} />
                       </div>
                     ))}
-                    <div className="c2-cls-key">
-                      <span>K from the records</span><span>D calculated</span><span>I estimate</span><span>U not on record</span>
-                    </div>
                   </div>
                 )}
 
                 {parsed.ranking.length > 0 && (
                   <div className="c2-block">
                     <div className="c2-block-t">
-                      <span>{parsed.rankCaption || (kn ? "ಶ್ರೇಣಿ" : "RANKING")}</span>
+                      <span>{parsed.rankCaption || (kn ? "ಶ್ರೇಣಿ" : "Ranking")}</span>
                       <button onClick={copyCSV} className="xw-icon-btn" title="Copy as CSV"><FileSpreadsheet size={13} /></button>
                     </div>
                     <table className="xw-table c2-table">
@@ -625,7 +726,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
 
                 {parsed.rest.length > 0 && (
                   <div className="c2-block">
-                    <div className="c2-block-t">{kn ? "ವಿವರಗಳು" : "Detail"}</div>
+                    <div className="c2-block-t">{kn ? "ವಿವರಗಳು" : "Details"}</div>
                     {parsed.rest.map((r, i) => {
                       if (r.type === "heading") return <h3 key={i} className="xw-sh"><XwInline text={r.text} /></h3>;
                       if (r.type === "bullet") return <div key={i} className="xw-li"><XwInline text={r.text} /></div>;
@@ -643,14 +744,14 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                     rather than being filled in with something plausible. */}
                 {parsed.summary && (
                   <div className="c2-block c2-srcblk">
-                    <div className="c2-block-t">{kn ? "ಆಧಾರ ಮತ್ತು ವಿಧಾನ" : "Sources & method"}</div>
+                    <div className="c2-block-t">{kn ? "ಆಧಾರ ಮತ್ತು ವಿಧಾನ" : "How this was answered"}</div>
                     <div className="c2-srcgrid">
                       <div><span>{kn ? "ವಿಧಾನ" : "Method"}</span><b>{meta?.method || meta?.template_id || "—"}</b></div>
                       <div><span>{kn ? "ದಾಖಲೆಗಳು" : "Records read"}</span><b>{typeof meta?.rows === "number" ? meta.rows.toLocaleString() : "—"}</b></div>
                       <div><span>{kn ? "ಉಲ್ಲೇಖಿತ FIR" : "FIRs cited"}</span><b>{citations?.length || 0}</b></div>
-                      <div><span>{kn ? "ಮಾರ್ಗ" : "Path"}</span><b>{meta?.mode === "llm" ? (kn ? "ಭಾಷಾ ಮಾದರಿ" : "Language model") : (kn ? "ನಿರ್ಣಾಯಕ" : "Deterministic")}</b></div>
+                      <div><span>{kn ? "ಬರೆದದ್ದು" : "Written by"}</span><b>{meta?.mode === "llm" ? (kn ? "ಭಾಷಾ ಮಾದರಿ" : "Language model, checked") : (kn ? "ನಿಗದಿತ ನಮೂನೆ" : "Fixed template")}</b></div>
                       <div><span>{kn ? "ಏಜೆಂಟ್‌ಗಳು" : "Agents"}</span><b>{(meta?.agents || []).length ? meta.agents.map((a) => sentence(String(a).replace(/_/g, " "))).join(", ") : "—"}</b></div>
-                      <div><span>{kn ? "ಸಮಗ್ರತೆ" : "Integrity"}</span><b>{meta?.hash ? meta.hash.slice(0, 12) : "—"}</b></div>
+                      <div><span>{kn ? "ಲೆಕ್ಕಪತ್ರ ಐಡಿ" : "Audit id"}</span><b title={meta?.hash || ""}>{meta?.hash ? meta.hash.slice(0, 12) : "—"}</b></div>
                     </div>
                     {citations?.length > 0 && (
                       <button className="c2-srclink" onClick={() => setActiveTab("references")}>
@@ -670,7 +771,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                   <div className="c2-block">
                     <div className="c2-block-t">
                       {kn ? "ಒಳನೋಟಗಳು" : "Insights"}
-                      <span className="c2-cls c2-cls-D" title={CLASS_HELP.D}>D</span>
+                      <ClassTag c="D" kn={kn} />
                     </div>
                     {insights.map((t, i) => <div key={i} className="xw-li">{t}</div>)}
                     <div className="c2-srcnote">
@@ -680,8 +781,31 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                   </div>
                 )}
 
+                {/* Where to go next: the follow-ups the pipeline checked against the data for
+                    this answer. One click asks it in the chat. */}
+                {nextQs.length > 0 && onAsk && (
+                  <div className="c2-block c2-next">
+                    <div className="c2-block-t">{kn ? "ಮುಂದೆ ಕೇಳಿ" : "Ask next"}</div>
+                    {nextQs.map((q) => (
+                      <button key={q} type="button" onClick={() => onAsk(q)}>
+                        <CornerDownRight size={13} aria-hidden="true" /><span>{q}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {parsed.summary && (
-                  <button onClick={copyText} className="xw-text-btn"><Copy size={12} /> {kn ? "ಪಠ್ಯ ನಕಲಿಸಿ" : "Copy as text"}</button>
+                  <div className="c2-report">
+                    <button type="button" className="c2-report-main" onClick={copyForReport}>
+                      {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                      {copied ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ವರದಿಗಾಗಿ ನಕಲಿಸಿ" : "Copy for report")}
+                    </button>
+                    {sessionId && (
+                      <button type="button" onClick={exportReport}><FileText size={14} aria-hidden="true" /> {kn ? "PDF ವರದಿ" : "PDF report"}</button>
+                    )}
+                    <span>{kn ? "ಪ್ರಶ್ನೆ, ತೀರ್ಮಾನ, ಉಲ್ಲೇಖಿತ FIR ಮತ್ತು ಲೆಕ್ಕಪತ್ರ ಐಡಿ - ಅಂಟಿಸಲು ಸಿದ್ಧ."
+                              : "Question, finding, cited FIRs and audit id, ready to paste."}</span>
+                  </div>
                 )}
               </div>
             )}
@@ -694,13 +818,14 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             {(!citations || citations.length === 0) ? (
               <div className="xw-empty">{kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಉಲ್ಲೇಖಗಳಿಲ್ಲ." : "No evidence rows cited for this answer."}</div>
             ) : citations.map((c, i) => (
-              <div key={i} className="xw-ref c2-row">
-                <span className="c2-idx">{String(i + 1).padStart(2, "0")}</span>
+              <Link key={i} href={`/case/${encodeURIComponent(c.fir)}`} className="xw-ref c2-row c2-firrow" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>
+                <span className="c2-idx">{i + 1}</span>
                 <div>
-                  <b>FIR {c.fir}</b>{c.station ? ` · ${c.station}` : ""}
+                  <b>FIR {c.fir}</b>{c.station ? <span className="c2-firstn"> · {c.station}</span> : ""}
                   <div className="xw-ref-sub">{[c.section, c.date].filter(Boolean).join(" · ")}</div>
                 </div>
-              </div>
+                <ArrowUpRight size={14} className="c2-firgo" aria-hidden="true" />
+              </Link>
             ))}
           </div>
         )}
@@ -754,30 +879,37 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
       <section className={`c2-ops ${jobsExpanded ? "open" : ""}`} aria-label={kn ? "ಕಾರ್ಯಾಚರಣೆಗಳು" : "Operations"}>
         <button className="c2-ops-h" onClick={() => setJobsExpanded(!jobsExpanded)} aria-expanded={jobsExpanded}>
           <Radio size={13} aria-hidden="true" />
-          <b>{kn ? "ಕಾರ್ಯಾಚರಣೆ ಸರತಿ" : "Operations"}</b>
-          <span className="c2-ops-count">{running} {kn ? "ಚಾಲನೆಯಲ್ಲಿ" : "active"} · {jobs.length} {kn ? "ಒಟ್ಟು" : "total"}</span>
+          <b>{kn ? "ಹಿನ್ನೆಲೆ ಕಾರ್ಯಗಳು" : "Background tasks"}</b>
+          <span className="c2-ops-count">
+            {running > 0 ? `${running} ${kn ? "ಚಾಲನೆಯಲ್ಲಿ" : "running"} · ` : ""}
+            {kn ? "ನೀವು ಕೆಲಸ ಮುಂದುವರಿಸುವಾಗ ಓಡುತ್ತವೆ" : "run while you keep working"}
+          </span>
           <span className="c2-spacer" />
           <span onClick={(e) => { e.stopPropagation(); refreshJobsAndWorkspace(); }} className="xw-refresh" role="button" title="Refresh" tabIndex={0}><RefreshCw size={12} /></span>
           <span className="chev">{jobsExpanded ? "▾" : "▴"}</span>
         </button>
 
         <div className="c2-task">
-          {[["pattern_scan", kn ? "ಮಾದರಿ" : "Pattern scan"], ["network_deep", kn ? "ಜಾಲ" : "Network analysis"], ["threat_assessment", kn ? "ಬೆದರಿಕೆ" : "Threat assessment"], ["osint_recon", "OSINT recon"]].map(([t, l]) => (
-            <button key={t} onClick={() => launch(t)} title={`Task: ${l}`}><Play size={10} aria-hidden="true" /> {l}</button>
-          ))}
+          {["pattern_scan", "network_deep", "threat_assessment", "osint_recon"].map((t) => {
+            const spec = BG_TASKS.find((x) => x.type === t);
+            return (
+              <button key={t} onClick={() => launch(t)} title={kn ? spec.hintKn : spec.hintEn}>
+                <Play size={10} aria-hidden="true" /> {kn ? spec.kn : spec.en}
+              </button>
+            );
+          })}
         </div>
 
         {jobsExpanded && (
           <>
             {/* Background task - choose, fill, then Run. Nothing starts before the click. */}
             <div className="c2-bg" role="group" aria-label={kn ? "ಹಿನ್ನೆಲೆ ಕಾರ್ಯ" : "Background task"}>
-              <div className="c2-bg-h">{kn ? "ಹಿನ್ನೆಲೆ ಕಾರ್ಯ" : "Background task"}</div>
+              <div className="c2-bg-h">{kn ? "ಹೊಸ ಕಾರ್ಯ ಆರಂಭಿಸಿ" : "Start a task"}</div>
               <div className="c2-bg-types">
                 {BG_TASKS.map((t) => (
                   <button key={t.type} type="button" className={bgType === t.type ? "on" : ""}
                           aria-pressed={bgType === t.type} onClick={() => { setBgType(t.type); setBgErr(""); }}>
                     {kn ? t.kn : t.en}
-                    <span className={`c2-cls c2-cls-${t.cls}`} title={CLASS_HELP[t.cls]}>{t.cls}</span>
                   </button>
                 ))}
               </div>
@@ -785,8 +917,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                 {(() => { const t = BG_TASKS.find((x) => x.type === bgType); return kn ? t?.hintKn : t?.hintEn; })()}
               </div>
               <div className="c2-input">
-                <span className="c2-prompt">&gt;</span>
-                <input type="text"
+                                <input type="text"
                   placeholder={bgType === "custom"
                     ? (kn ? "ಕಾರ್ಯವನ್ನು ವಿವರಿಸಿ…" : "Describe the task…")
                     : (kn ? "ಗುರಿ - ಹೆಸರು, ಐಡಿ, ಜಿಲ್ಲೆ…" : `Target - name, id, district${suspects[0] ? ` (default: ${suspects[0].name || suspects[0].id})` : ""}`)}
@@ -800,23 +931,23 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             </div>
             <div className="c2-queue">
               {!Array.isArray(jobs) || jobs.length === 0 ? (
-                <div className="xw-jobs-empty">{kn ? "ಇನ್ನೂ ಕಾರ್ಯಾಚರಣೆಗಳಿಲ್ಲ." : "No operations yet - start one above."}</div>
+                <div className="xw-jobs-empty">{kn ? "ಇನ್ನೂ ಕಾರ್ಯಾಚರಣೆಗಳಿಲ್ಲ." : "No tasks yet. Start one above; the result appears here."}</div>
               ) : jobs.map((j) => (
                 <div key={j.job_id} className={`c2-job ${j.status}`}>
                   <span className={`xw-dot ${j.status}`} />
                   <div className="xw-job-body">
                     <div className="xw-job-t">
-                      {j.type === "custom" ? `Custom · ${j.instruction}` : `${sentence(String(j.type || "").replace(/_/g, " "))}${j.target ? ` · ${j.target}` : ""}`}
+                      {j.type === "custom" ? `Custom · ${j.instruction}` : `${(BG_TASKS.find((x) => x.type === j.type)?.[kn ? "kn" : "en"]) || sentence(String(j.type || "").replace(/_/g, " "))}${j.target ? ` · ${j.target}` : ""}`}
                     </div>
                     <div className="xw-job-s">{j.summary || j.status}</div>
                   </div>
                   <span className="c2-job-meta">
-                    <span className="st">{sentence(String(j.status))}</span>
+                    <span className="st">{jobStatus(j.status)}</span>
                     <span className="tp">{tPlus(j.started_at || j.created_at)}</span>
                   </span>
                   {j.status === "done" && <button onClick={() => setViewingJob(j)} className="xw-view-btn">View</button>}
                   {["queued", "running"].includes(j.status) && (
-                    <button onClick={() => cancelJob(j.job_id)} title="Abort operation" className="xw-stop-btn"><Square size={9} /> Stop</button>
+                    <button onClick={() => cancelJob(j.job_id)} title="Stop this task" className="xw-stop-btn"><Square size={9} /> Stop</button>
                   )}
                 </div>
               ))}
@@ -830,7 +961,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h3 className="c2-modal-t">
               <span className="c2-led up"><i /></span>
-              {sentence(String(viewingJob.type || "").replace(/_/g, " "))} · {kn ? "ಫಲಿತಾಂಶ" : "Result"}
+              {(BG_TASKS.find((x) => x.type === viewingJob.type)?.[kn ? "kn" : "en"]) || sentence(String(viewingJob.type || "").replace(/_/g, " "))} · {kn ? "ಫಲಿತಾಂಶ" : "Result"}
             </h3>
             <button onClick={() => setViewingJob(null)} className="xw-icon-btn"><X size={16} /></button>
           </div>

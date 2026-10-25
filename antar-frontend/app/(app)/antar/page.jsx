@@ -3032,6 +3032,8 @@ export default function ChatPage() {
               trace={[...(lastAssistant?.steps || []), ...(lastAssistant?.reasoning || [])]}
               claims={lastAssistant?.layout?.kdiu || []}
               evidenceClass={lastAssistant?.layout?.evidence_class || null}
+              suggested={lastAssistant?.suggested || []}
+              onAsk={loading ? null : (q) => send(q)}
               onClose={() => {
                 setDeepThink(false);
                 try { localStorage.setItem("antar_expert", "0"); } catch {}

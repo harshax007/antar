@@ -137,6 +137,18 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Expert workspace rewritten for the officer · 2026-10-25
+
+- The question shows small ("You asked"): it is already in the chat. No capital-letter labels or code fonts.
+- "Query type T1 / Sources / Answer time / Audit log" became plain facts: records checked, FIRs cited, answered in, audit log recorded.
+- Evidence classes read as words (From records / Calculated / Estimate / Not on record), and a "How sure" line under the
+  bottom line says in one sentence how far to trust it. A claim that only repeats the bottom line is no longer listed twice.
+- FIR ids in the brief and every row in Evidence open the case timeline.
+- New: "Ask next" (the checked follow-ups, one click asks in the chat) and "Copy for report" (question, finding, how sure,
+  rows, cited FIRs, audit id, ready to paste into a diary or report).
+- Removed the UTC clock and the Map/Brain/Search icons, which did nothing. Operations is "Background tasks", with task
+  names an officer would use (Find repeat patterns, Map associates, Patrol advice, Open-web search) and "5m ago" times.
+
 ## Backend fits in 2 GB: 2.5 GB steady to 0.48 GB · 2026-10-25
 
 Measured on the full server (port 8001, 12-core Windows, all warm-ups run), private bytes:
