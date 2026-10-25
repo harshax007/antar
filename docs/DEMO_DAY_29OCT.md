@@ -48,6 +48,7 @@ Only demonstration rows were re-dated; nothing was inserted, the register is sti
 | C3 UPI mule ring: newest case dated **27 Oct** (`suman68@ybl`) | Linkage works on something "new": 12 FIRs, 4 districts | `demo_week.py --revert` |
 | C4 "digital arrest" scam: newest case **28 Oct** (`103.32.58.79`) | 9 FIRs, 4 districts | same |
 | C2 chain-snatching crew: newest case **29 Oct** (vehicle `KA-06-AH-5331`) | 8 FIRs, 3 districts | same |
+| Demo-day volume (applied 26 Oct): **28 Oct → 300 FIRs** (build-up), **29 Oct → 670 FIRs**, from Nov–Dec background padding; concentrated in Bengaluru City (388 on the 29th), then Mangaluru City and Mysuru City | A busy demo day that reads as a hotspot on the Map, not an even rise. Story rows, entity-key rows and the P2 spike pair were not used as donors. `demo_check.py --date 2026-10-29` still READY (spike z 4.05) | `python scripts/demo_day_volume.py --revert` |
 
 Already in the data (unchanged): the **Raju K. "Yellappa"** alias link (shares a phone with
 Yellappa M. in Mysuru), five evidence syndicates (highway dacoity, robbery + pawnbroker,
