@@ -1493,7 +1493,7 @@ function DocsFull() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 2.5, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ textAlign: "center", width: "100%", justifyContent: "center", display: "flex",  fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#FFFFFF", letterSpacing: "0.1em", marginTop: "80px", marginBottom: "8px", opacity: 0.85 }}
+                    style={{ textAlign: "center", width: "100%", justifyContent: "center", display: "flex",  fontFamily: lang === "kn" ? "'Anek Kannada', sans-serif" : "'Inter', sans-serif", fontSize: "13px", fontWeight: 500, color: "#FFFFFF", letterSpacing: "0.01em", marginTop: "80px", marginBottom: "8px", opacity: 0.85 }}
                   >
                     {lang === "kn" ? "ಅಭಿವೃದ್ಧಿಪಡಿಸಿದವರು" : "Developed by"}
                     <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.7, duration: 1.2 }} style={{ color: "#22E6F0", textDecoration: "none", marginLeft: "6px", position: "relative", zIndex: 10 }}>
