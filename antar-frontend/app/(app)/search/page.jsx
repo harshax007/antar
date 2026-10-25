@@ -456,8 +456,8 @@ function SearchContent() {
             <header className="sx-intro">
               <h1>{kn ? <>ಹುಡುಕಾಟ · <em>ಅಪರಾಧ ದಾಖಲೆ</em></> : <>Search · <em>Criminal Record</em></>}</h1>
               <p>{kn
-                ? "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ತಂದೆಯ ಹೆಸರು, ಫೋನ್ ಅಥವಾ ವಾಹನ ಸಂಖ್ಯೆ. ದಾಖಲೆ ತೆರೆಯಿರಿ: ಪ್ರಕರಣಗಳು, ಅಪಾಯ, ಸಹಚರರು."
-                : "For station officers and investigators before an arrest or a visit: find a person by name, alias, father's name, phone or vehicle plate, then open their FIRs, risk, associates and money trail."}</p>
+                ? "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ತಂದೆಯ ಹೆಸರು, ಫೋನ್ ಅಥವಾ ವಾಹನ ಸಂಖ್ಯೆಯಿಂದ ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕಿ; ಅವರ FIR, ಅಪಾಯ ಮತ್ತು ಸಹಚರರನ್ನು ನೋಡಿ."
+                : "Find a person by name, alias, father's name, phone or vehicle number, and see their FIRs, risk and associates."}</p>
             </header>
             <div className="sx-searchbar">
               <Search size={15} />

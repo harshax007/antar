@@ -152,10 +152,8 @@ export default function SocialInsights() {
       <div className="so-wrap">
         <header className="so-head">
           <h1 className="so-title">{L(<>Search · <em>Social Insights</em></>, <>ಹುಡುಕಾಟ · <em>ಸಾಮಾಜಿಕ ಒಳನೋಟಗಳು</em></>)}</h1>
-          <p className="so-lede">{L(`What goes with crime, district by district: crime rates in Karnataka's ${d.districts} districts set against urbanisation, population growth, education, child marriage, household amenities and alcohol use.`,
-                                   `ಜಿಲ್ಲೆಯಿಂದ ಜಿಲ್ಲೆಗೆ ಅಪರಾಧದ ಜೊತೆ ಏನು ಬರುತ್ತದೆ: ಕರ್ನಾಟಕದ ${d.districts} ಜಿಲ್ಲೆಗಳ ಅಪರಾಧ ದರಗಳು ನಗರೀಕರಣ, ಜನಸಂಖ್ಯಾ ಬೆಳವಣಿಗೆ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯ ವಿವಾಹ, ಗೃಹ ಸೌಲಭ್ಯ ಮತ್ತು ಮದ್ಯಪಾನದ ಎದುರು.`)}</p>
-          <p className="so-why">{L("For district SPs and planners deciding where prevention work goes: which social conditions travel with which crime. Pick a kind of crime below, read its clear links in 01, then check any district in 02.",
-                                   "ತಡೆಗಟ್ಟುವ ಕೆಲಸ ಎಲ್ಲಿ ಎಂದು ನಿರ್ಧರಿಸುವ ಜಿಲ್ಲಾ SP ಮತ್ತು ಯೋಜಕರಿಗೆ. ಕೆಳಗೆ ಅಪರಾಧದ ಪ್ರಕಾರ ಆರಿಸಿ, 01 ರಲ್ಲಿ ಸಂಬಂಧಗಳನ್ನು ಓದಿ, 02 ರಲ್ಲಿ ಜಿಲ್ಲೆ ಪರಿಶೀಲಿಸಿ.")}</p>
+          <p className="so-lede">{L(`How crime rates in Karnataka's ${d.districts} districts move with urbanisation, education, child marriage, household amenities and alcohol use. These are links between districts, not causes, and never a reason to target a group.`,
+                                   `ಕರ್ನಾಟಕದ ${d.districts} ಜಿಲ್ಲೆಗಳ ಅಪರಾಧ ದರಗಳು ನಗರೀಕರಣ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯ ವಿವಾಹ, ಗೃಹ ಸೌಲಭ್ಯ ಮತ್ತು ಮದ್ಯಪಾನದೊಂದಿಗೆ ಹೇಗೆ ಬದಲಾಗುತ್ತವೆ. ಇವು ಸಂಬಂಧಗಳು, ಕಾರಣಗಳಲ್ಲ; ಯಾವುದೇ ಗುಂಪನ್ನು ಗುರಿಯಾಗಿಸಲು ಆಧಾರವಲ್ಲ.`)}</p>
           <div className="so-cta">
             <button type="button" className="ui-btn ui-btn--primary" onClick={() => router.push(`/antar?q=${encodeURIComponent(ASK[cat] || ASK.all)}`)}>
               {L("Ask Chat to explain these links", "ಈ ಸಂಬಂಧಗಳನ್ನು ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ")}

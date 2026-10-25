@@ -103,10 +103,8 @@ export default function MoneyTrail() {
       <div className="mt-wrap">
         <header className="mt-head">
           <h1 className="mt-title">{L(<>Search · <em>Money Trail</em></>, <>ಹುಡುಕಾಟ · <em>ಹಣದ ಜಾಡು</em></>)}</h1>
-          <p className="mt-lede">{L("For investigating officers and financial-crime units: follow the money behind an FIR. Where a complainant's money went after a UPI fraud, which accounts collected it and passed it on, and who it reached.",
-                                   "ತನಿಖಾಧಿಕಾರಿಗಳು ಮತ್ತು ಆರ್ಥಿಕ ಅಪರಾಧ ಘಟಕಗಳಿಗೆ: FIR ಹಿಂದಿನ ಹಣವನ್ನು ಅನುಸರಿಸಿ. UPI ವಂಚನೆಯ ನಂತರ ದೂರುದಾರರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು, ಯಾವ ಖಾತೆಗಳು ಸಂಗ್ರಹಿಸಿ ಮುಂದೆ ಕಳುಹಿಸಿದವು, ಯಾರಿಗೆ ತಲುಪಿತು.")}</p>
-          <p className="mt-why">{L("Money leaves a mule account within hours, and a freeze request has to name the account and its transactions. Start with the account at the top of 01, read its warning signs in 03, then export its transactions for the bank.",
-                                  "ಹಣ ಕೆಲವೇ ಗಂಟೆಗಳಲ್ಲಿ ಖಾತೆಯಿಂದ ಹೊರಹೋಗುತ್ತದೆ; ತಡೆ ವಿನಂತಿಗೆ ಖಾತೆ ಮತ್ತು ವಹಿವಾಟುಗಳು ಬೇಕು. 01 ರ ಮೇಲಿನ ಖಾತೆಯಿಂದ ಆರಂಭಿಸಿ, 03 ರಲ್ಲಿ ಎಚ್ಚರಿಕೆಗಳನ್ನು ಓದಿ, ನಂತರ ಬ್ಯಾಂಕ್‌ಗಾಗಿ ರಫ್ತು ಮಾಡಿ.")}</p>
+          <p className="mt-lede">{L("Trace where money went after a UPI fraud: which accounts received it, where they sent it, and the FIRs they appear in. Export an account's transactions for a freeze request.",
+                                   "UPI ವಂಚನೆಯ ನಂತರ ಹಣ ಎಲ್ಲಿ ಹೋಯಿತು ಎಂದು ಪತ್ತೆಹಚ್ಚಿ: ಯಾವ ಖಾತೆಗಳು ಪಡೆದವು, ಎಲ್ಲಿಗೆ ಕಳುಹಿಸಿದವು, ಯಾವ FIR ಗಳಲ್ಲಿವೆ. ತಡೆ ವಿನಂತಿಗಾಗಿ ಖಾತೆಯ ವಹಿವಾಟುಗಳನ್ನು ರಫ್ತು ಮಾಡಿ.")}</p>
           <div className="mt-cta">
             <button type="button" className="ui-btn ui-btn--primary" disabled={!sel || exporting === true} onClick={() => sel && exportCsv(sel)}>
               {exporting === true ? L("Preparing…", "ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…")

@@ -105,7 +105,7 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-views button:hover { color: var(--text-1); }
 .sx-views button.on { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
 /* OSINT is a tool, not a view: quieter grey until hovered or open */
-.sx-views button[data-tool="osint"] { color: var(--text-4); }
+.sx-views button[data-tool="osint"] { align-self: flex-end; font-size: 12px; font-weight: 500; color: var(--text-4); padding-bottom: 10px; }
 .sx-views button[data-tool="osint"]:hover { color: var(--text-2); }
 .sx-views button[data-tool="osint"].on { color: var(--text-2); border-bottom-color: var(--text-3); }
 .sx-page--money { display: block; overflow-y: auto; }
@@ -118,7 +118,8 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 /* one heading style for all three: "Search · <em>View</em>", then a plain paragraph */
 .sx-page .mt-title, .sx-page .so-title { margin: 0 0 var(--sp-2); font: 700 22px/1.2 'Chakra Petch', sans-serif; letter-spacing: -.01em; color: var(--text-1); }
 .sx-page .mt-title em, .sx-page .so-title em { font-style: normal; color: var(--accent); }
-.sx-page .mt-lede, .sx-page .so-lede { margin: var(--sp-2) 0 0; max-width: 78ch; font-size: var(--fs-body-sm); line-height: 1.55; color: var(--text-2); }
+.sx-page .mt-lede, .sx-page .so-lede { margin: var(--sp-2) 0 0; max-width: 64ch; font-size: var(--fs-body-sm); line-height: 1.55; color: var(--text-2); }
+.sx-page .mt-head, .sx-page .so-head { max-width: none; padding-bottom: 0; }
 .sx-page .mt-why, .sx-page .so-why { margin: var(--sp-2) 0 0; max-width: 78ch; font-size: var(--fs-body-sm); line-height: 1.55; color: var(--text-3); }
 .sx-page .so-head { border-bottom: 0; }
 
