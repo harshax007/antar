@@ -1,6 +1,6 @@
 "use client";
 // Money trail (shown as a view of the Search screen, /search?view=money): follow money between accounts - who paid whom, how fast it moved on, where it
-// ended up, and the FIRs each account is named in. Data from /api/money/* (app/services/
+// ended up, and the FIRs each account is named in. Data from /api/funds/* (app/services/
 // money_trail.py); every flag is a counted rule, shown in words with its numbers.
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -47,7 +47,7 @@ export default function MoneyTrail() {
   const [hits, setHits] = useState(null);
 
   useEffect(() => {
-    get("/api/money/overview?limit=40").then((o) => {
+    get("/api/funds/overview?limit=40").then((o) => {
       setOv(o);
       setRoot((r) => r || o.top?.[0]?.account_id || null);
     }).catch((e) => setErr(e));
@@ -56,19 +56,19 @@ export default function MoneyTrail() {
   useEffect(() => {
     if (!root) return;
     setTrail(null); setSel(root);
-    get(`/api/money/trail?account=${encodeURIComponent(root)}&depth=${depth}`).then(setTrail).catch((e) => setErr(e));
+    get(`/api/funds/trail?account=${encodeURIComponent(root)}&depth=${depth}`).then(setTrail).catch((e) => setErr(e));
   }, [root, depth]);
 
   useEffect(() => {
     if (!sel) return;
     setAcct(null);
-    get(`/api/money/account/${encodeURIComponent(sel)}`).then(setAcct).catch(() => setAcct({ error: true }));
+    get(`/api/funds/account/${encodeURIComponent(sel)}`).then(setAcct).catch(() => setAcct({ error: true }));
   }, [sel]);
 
   const doSearch = (e) => {
     e?.preventDefault();
     if (q.trim().length < 2) return;
-    get(`/api/money/search?q=${encodeURIComponent(q.trim())}`).then((r) => setHits(r.results || [])).catch(() => setHits([]));
+    get(`/api/funds/search?q=${encodeURIComponent(q.trim())}`).then((r) => setHits(r.results || [])).catch(() => setHits([]));
   };
 
   const legend = useMemo(() => Object.entries(KIND), []);

@@ -1,12 +1,12 @@
 """
 Antar - Money trail API
 =======================
-GET /api/money/overview               the accounts most worth a look, with the rules they trip
-GET /api/money/search?q=              accounts by id, label, FIR id or suspect id
-GET /api/money/trail?account=&depth=  accounts within N hops, money summed per pair
-GET /api/money/account/{id}           one account: totals, flags, FIRs, transactions
-GET /api/money/person/{suspect_id}    the accounts a person holds, and the UPI IDs on FIRs naming them
-GET /api/money/export?account=        one account's transactions as CSV, for a bank or
+GET /api/funds/overview               the accounts most worth a look, with the rules they trip
+GET /api/funds/search?q=              accounts by id, label, FIR id or suspect id
+GET /api/funds/trail?account=&depth=  accounts within N hops, money summed per pair
+GET /api/funds/account/{id}           one account: totals, flags, FIRs, transactions
+GET /api/funds/person/{suspect_id}    the accounts a person holds, and the UPI IDs on FIRs naming them
+GET /api/funds/export?account=        one account's transactions as CSV, for a bank or
                                       financial-intelligence request (every export is on the audit log)
 
 Names suspects and follows money between people, so Inspector and above (mounted with that

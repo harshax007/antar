@@ -500,7 +500,9 @@ app.include_router(case_api.router,   prefix="/api/case", tags=["Case Timeline"]
 from app.api import answer_record
 app.include_router(answer_record.router, prefix="/api/answer-record", tags=["Antar Insights"], dependencies=[Depends(require_role("Constable"))])
 from app.api import money_api
-app.include_router(money_api.router,  prefix="/api/money", tags=["Money Trail"], dependencies=_inspector)
+app.include_router(money_api.router,  prefix="/api/funds", tags=["Money Trail"], dependencies=_inspector)
+# the old prefix, kept working (hidden) until after demo day for any page still open on it
+app.include_router(money_api.router,  prefix="/api/money", include_in_schema=False, dependencies=_inspector)
 app.include_router(vigil.router,       prefix="/api/vigil", tags=["Vigil Compliance Auditor"])
 app.include_router(hypothesis.router,  prefix="/api", tags=["Hypothesis Lifecycle"])
 app.include_router(ops.router,         prefix="/api/orchestrator", tags=["Orchestrator Ops"])

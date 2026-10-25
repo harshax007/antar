@@ -1184,7 +1184,7 @@ const inr = (n) => {
   return `₹${v.toLocaleString("en-IN")}`;
 };
 
-// The money trail around a person (GET /api/money/person/{id}): the accounts they hold and the
+// The money trail around a person (GET /api/funds/person/{id}): the accounts they hold and the
 // UPI IDs on the FIRs that name them, each one step from the full trail.
 function PersonMoney({ id, kn }) {
   const router = useRouter();
@@ -1193,7 +1193,7 @@ function PersonMoney({ id, kn }) {
     if (!id) return;
     let alive = true;
     setD(null);
-    fetch(`${API}/api/money/person/${encodeURIComponent(id)}`)
+    fetch(`${API}/api/funds/person/${encodeURIComponent(id)}`)
       .then((r) => (r.ok ? r.json() : { accounts: [], unavailable: r.status === 403 ? "role" : "error" }))
       .then((j) => { if (alive) setD(j); })
       .catch(() => { if (alive) setD({ accounts: [], unavailable: "error" }); });

@@ -1,5 +1,5 @@
 """
-Money trail (app/services/money_trail.py, /api/money/*): accounts, transactions, the rules
+Money trail (app/services/money_trail.py, /api/funds/*): accounts, transactions, the rules
 that flag an account, and the FIRs behind each UPI ID.
 """
 from datetime import date
@@ -62,12 +62,12 @@ class TestEndpoint:
     def test_inspector_reads_it_and_a_constable_does_not(self):
         from main import app
         c = TestClient(app)
-        assert c.get("/api/money/overview", headers={"X-Role": "Inspector"}).status_code == 200
-        assert c.get("/api/money/overview", headers={"X-Role": "Constable"}).status_code == 403
+        assert c.get("/api/funds/overview", headers={"X-Role": "Inspector"}).status_code == 200
+        assert c.get("/api/funds/overview", headers={"X-Role": "Constable"}).status_code == 403
 
     def test_account_ids_with_an_at_sign_resolve(self):
         from main import app
         upi = next(a for a, v in m._snapshot()["accounts"].items() if v["kind"] == "upi")
-        r = TestClient(app).get(f"/api/money/account/{upi}", headers={"X-Role": "Inspector"})
+        r = TestClient(app).get(f"/api/funds/account/{upi}", headers={"X-Role": "Inspector"})
         assert r.status_code == 200 and r.json()["account"]["account_id"] == upi
-        assert TestClient(app).get("/api/money/trail?account=nope", headers={"X-Role": "Inspector"}).status_code == 404
+        assert TestClient(app).get("/api/funds/trail?account=nope", headers={"X-Role": "Inspector"}).status_code == 404

@@ -51,11 +51,11 @@ def test_money_export_is_a_csv_ledger():
     from main import app
     from app.services import money_trail as m
     upi = m.overview(1)["top"][0]["account_id"]
-    r = TestClient(app).get(f"/api/money/export?account={upi}", headers={"X-Role": "Inspector"})
+    r = TestClient(app).get(f"/api/funds/export?account={upi}", headers={"X-Role": "Inspector"})
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
     lines = r.text.splitlines()
     assert lines[0].startswith(f"account,{upi}") and any(l.startswith("txn_id,date_time,direction") for l in lines)
-    assert TestClient(app).get(f"/api/money/export?account={upi}", headers={"X-Role": "Constable"}).status_code == 403
+    assert TestClient(app).get(f"/api/funds/export?account={upi}", headers={"X-Role": "Constable"}).status_code == 403
 
 
 def test_a_persons_firs_open_as_cases():
@@ -98,7 +98,7 @@ def test_a_persons_money_trail():
     from main import app
     from app.services import money_trail as m
     sid = next(a["suspect_id"] for a in m._snapshot()["accounts"].values() if a["suspect_id"])
-    r = TestClient(app).get(f"/api/money/person/{sid}", headers={"X-Role": "Inspector"})
+    r = TestClient(app).get(f"/api/funds/person/{sid}", headers={"X-Role": "Inspector"})
     d = r.json()
     assert r.status_code == 200 and d["accounts"] and d["accounts"][0]["how"] in ("held", "on_fir")
-    assert TestClient(app).get(f"/api/money/person/{sid}", headers={"X-Role": "Constable"}).status_code == 403
+    assert TestClient(app).get(f"/api/funds/person/{sid}", headers={"X-Role": "Constable"}).status_code == 403
