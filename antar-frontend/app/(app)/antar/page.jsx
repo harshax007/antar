@@ -1438,10 +1438,10 @@ const MessageRow = memo(({
 // Expert mode lives in the composer's toolbar, beside the mic and send, never over the text.
 function ExpertSwitch({ on, onToggle, kn }) {
   return (
-    <button type="button" className={`cx-expert-switch ${on ? "on" : ""}`} role="switch" aria-checked={on}
-            title={kn ? "ತಜ್ಞ: ಆಳವಾದ ಬಹು-ಏಜೆಂಟ್ ತನಿಖೆ" : "Expert: deep multi-agent investigation and workspace"}
-            onClick={(e) => { e.stopPropagation(); onToggle(); }}>
-      <span className="track" aria-hidden="true"><span className="knob" /></span>
+    <button type="button" className={`cx-expert-toggle ${on ? "on" : ""}`} aria-pressed={on}
+            title="Expert - deep multi-agent investigation + workspace"
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            style={{ padding: "4px 10px", fontSize: "11px" }}>
       {kn ? "ತಜ್ಞ" : "Expert"}
     </button>
   );
