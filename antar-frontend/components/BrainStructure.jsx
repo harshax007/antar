@@ -855,20 +855,20 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                 <Orb agent={cur.id} label={cur.name} />
                 <div>
                   <span className="eyebrow">{kn ? "ಫಾಸ್ಟ್ ರನ್" : "Fast Run"} · {filtered.length.toLocaleString()} {kn ? "FIR" : "FIRs"}</span>
-                  <AnimatePresence mode="wait">
-                    <motion.b key={cur.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18 }}>
-                      {cur.name} · {cur.ask}
-                    </motion.b>
-                  </AnimatePresence>
+                  <motion.b key={cur.id} initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}>
+                    {cur.name} · {cur.ask}
+                  </motion.b>
                 </div>
                 <span className="ct">{at + 1} / {AGENTS.length}</span>
               </div>
               <div className="bar"><b style={{ width: `${((at + 1) / AGENTS.length) * 100}%` }} /></div>
               <ol className="steps">
                 {AGENTS.map((a, i) => (
-                  <li key={a.id} className={i < at ? "done" : i === at ? "now" : ""}>
-                    <i aria-hidden="true">{i < at ? "✓" : ""}</i>{a.name}
-                  </li>
+                  <motion.li key={a.id} className={i < at ? "done" : i === at ? "now" : ""}
+                             initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + i * 0.03, duration: 0.25 }}>
+                    <i aria-hidden="true">{i < at && <motion.svg viewBox="0 0 12 12" initial={{ scale: 0.3, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 520, damping: 22 }}><path d="M2.5 6.2l2.3 2.3 4.7-5" /></motion.svg>}</i>
+                    {a.name}
+                  </motion.li>
                 ))}
               </ol>
             </motion.div>
