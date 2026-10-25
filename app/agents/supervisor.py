@@ -75,7 +75,7 @@ Respond ONLY with this JSON structure:
 # it (tests/test_agents_manifest.py is what fails loudly instead). Keep them in sync —
 # the same test asserts they match the manifest.
 _FALLBACK_GRAPH_NODES = {"query", "network", "profile", "forecast", "social", "research",
-                         "brain", "osint", "synthesize"}
+                         "brain", "synthesize"}
 _FALLBACK_ROUTE_MAP = {
     # semantic labels (LLM supervisor)
     "VAULT": "query",
@@ -98,9 +98,9 @@ _FALLBACK_ROUTE_MAP = {
     "PREDICT": "forecast",
     "ALERT_SUGGEST": "forecast",
     "RESEARCH": "research",
-    # Both have their own node now. They used to fold into "query", which does NOT run
-    # them, so a BRAIN or OSINT route produced a trail claiming work that never happened.
-    "OSINT": "osint",
+    # BRAIN has its own node. It used to fold into "query", which does NOT run it, so a
+    # BRAIN route produced a trail claiming work that never happened. There is no OSINT
+    # label: OSINT runs only from the Workbench (/api/osint/*), never from a question.
     "BRAIN": "brain",
 }
 

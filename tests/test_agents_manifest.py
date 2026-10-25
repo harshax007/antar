@@ -104,7 +104,7 @@ def test_heuristic_router_emits_only_declared_labels(man):
         "victim gender demographic breakdown",        # social
         "where are the theft hotspots",               # geo
         "what patterns or clusters exist",            # pattern
-        "osint background check open web",            # osint
+        "osint background check open web",            # never osint: Workbench only
         "deep research dossier on this case",         # research
         "second brain cross-case overlap",            # network/profile/brain
         "how many thefts in Bengaluru",               # query
@@ -263,3 +263,24 @@ def test_hitl_agents_are_explicit(man):
     for a in man.agents.values():
         if a.hitl:
             assert a.degraded, f"{a.agent} requires HITL but declares no degraded behaviour"
+
+
+def test_osint_is_workbench_only():
+    """OSINT is a separate branch outside the FIR path: no chat question may reach it.
+
+    It used to be added to every profile question by the keyword router, and the chat graph
+    had a node that then searched the open web for that name. It now runs only from the
+    OSINT Workbench (/api/osint/*).
+    """
+    from app.agents.agentic_spine import _route
+    from app.agents.state import build_graph  # noqa: F401  (the graph module must import)
+    from app.agents.graph import app_graph
+    from app.agents import manifest as m
+
+    for q in ("osint background check open web", "who is Raju, profile him",
+              "deep profile and background of Chandru Rao", "everything about S0041"):
+        assert "osint" not in _route(q)[0], q
+    assert "osint" not in app_graph.get_graph().nodes
+    spec = m.load().agents["osint"]
+    assert spec.graph_node is None and not spec.routes
+    assert "OSINT" not in m.load().route_map()

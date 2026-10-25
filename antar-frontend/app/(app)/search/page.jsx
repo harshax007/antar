@@ -1167,7 +1167,7 @@ function SearchViews({ view, onChange, kn, osint = null }) {
       {/* Open-source checks open in the People view's right panel; only the identifier leaves */}
       {osint && (
         <button type="button" className={osint.on ? "on" : ""} aria-pressed={osint.on} onClick={osint.toggle} data-tool="osint"
-                title={kn ? "ಸ್ವತಂತ್ರ ಮುಕ್ತ-ಮೂಲ ಗುಪ್ತಚರ ಘಟಕ (FIR ಡೇಟಾಬೇಸ್ ಸಂಪರ್ಕವಿಲ್ಲ)" : "Open-source checks: only the identifier leaves; the FIR record is never read"}>
+                title={kn ? "OSINT FIR ಮಾರ್ಗದಿಂದ ಹೊರಗಿದೆ: ಅಂತರದ ಪ್ರತ್ಯೇಕ ಶಾಖೆ (ಕರೆದಾಗ ಮಾತ್ರ)" : "OSINT out of FIR: a different branch to Antar (only when called)"}>
           {kn ? "OSINT ವರ್ಕ್‌ಬೆಂಚ್" : "OSINT Workbench"}
         </button>
       )}

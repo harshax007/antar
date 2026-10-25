@@ -355,50 +355,6 @@ async def brain_node(state: AgentState) -> dict:
     }
 
 
-async def osint_node(state: AgentState) -> dict:
-    """Quarantined open-web scan for a named subject.
-
-    Also had no graph node before this, so an OSINT route folded into `query` and the
-    agent never ran. Two things make this node different from the others and both are
-    deliberate:
-
-      * It is the only agent that leaves the building. Everything it returns is UNVERIFIED
-        and stays labelled that way — the open web is not the FIR record and must never be
-        merged into it as if it were.
-      * It refuses without a named subject rather than scanning on a guess. Searching the
-        open web for whatever capitalised word happened to be in the sentence is how an
-        uninvolved member of the public ends up in a police work product.
-    """
-    entities = state.get("entities") or {}
-    suspects = entities.get("suspects") or entities.get("persons") or []
-    if isinstance(suspects, str):
-        suspects = [suspects]
-
-    from app.agents.osint_agent import osint_agent_run
-    # The one agent that leaves the building, so the timeout is not optional: a slow
-    # third-party page must not hold an officer's turn open.
-    ok, res, reason = await _run(
-        "osint", lambda: osint_agent_run(state.get("user_text", ""),
-                                         {"suspects": list(suspects)}))
-    if not ok:
-        return _degraded("osint", reason)
-    claims = (res or {}).get("claims") or []
-
-    if not claims:
-        return {"reasoning": [{"agent": "osint", "step": "scan",
-                               "detail": (res or {}).get("summary")
-                                         or "No open-web result for this subject."}]}
-
-    return {                       # already native — _run() converts
-        "results": {"osint": res},
-        "visuals": {"osint": res},
-        "actions": [{"type": "open_osint", "label": "Open OSINT panel", "params": {}}],
-        "reasoning": [{"agent": "osint", "step": "scan",
-                       "detail": f"{len(claims)} unverified open-web claim(s) — "
-                                 f"quarantined, not part of the record."}],
-    }
-
-
 async def social_node(state: AgentState) -> dict:
     from app.agents.social_agent import demographics
     ok, social, reason = await _run("social", _sync(demographics))
@@ -496,7 +452,6 @@ app_graph = build_graph(
     social_node=social_node,
     research_node=research_node,
     brain_node=brain_node,
-    osint_node=osint_node,
     synthesize_node=synthesize_node,
     route_fn=route_fn,
 )

@@ -350,7 +350,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         for _agent in ["network", "pattern"]:
             if _agent not in routes:
                 routes.append(_agent)
-    if "osint" in routes:
+    if "osint" in routes:          # OSINT never runs from chat: Workbench only (/api/osint/*)
         routes.remove("osint")
     await q.emit("step", agent="router", status="done",
                  routes=routes, confidence=routing_conf,
@@ -597,18 +597,6 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         actions.append({"type": "open_alerts", "label": "View active alerts", "params": {}})
         await q.emit("step", agent="alerts", status="done", label=sugg.get("summary", "Recommendations ready"))
 
-    async def run_osint_task():
-        await q.emit("step", agent="osint", status="running",
-                     label=_L(lang, "OSINT open-web scan…", "OSINT ಮುಕ್ತ-ವೆಬ್ ಸ್ಕ್ಯಾನ್…"))
-        from app.agents.osint_agent import osint_agent_run
-        ok, osint_res, meta = await orchestrator.run_agent("osint", lambda: osint_agent_run(query_text, params))
-        if not ok:
-            return await _degraded("osint", meta)
-        results["osint"] = osint_res
-        visuals["osint"] = osint_res
-        actions.append({"type": "open_osint", "label": "Open OSINT panel", "params": {}})
-        await q.emit("step", agent="osint", status="done", label=osint_res.get("summary", "OSINT ready"))
-
     if command == "connect" and not suspect_id:
         # Honest: /connect forced linkage agents but no entity resolved from the query.
         await q.emit("step", agent="network", status="done",
@@ -625,8 +613,6 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         tasks.append(run_predict_task())
     if "alert_suggest" in routes:
         tasks.append(run_alerts_task())
-    if "osint" in routes:
-        tasks.append(run_osint_task())
 
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)

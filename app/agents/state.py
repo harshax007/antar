@@ -90,7 +90,6 @@ def build_graph(
     social_node,
     research_node,
     brain_node,
-    osint_node,
     synthesize_node,
     route_fn,
 ) -> Any:
@@ -100,7 +99,7 @@ def build_graph(
 
     Graph topology:
         supervisor → [query | network | profile | forecast | social | research
-                      | brain | osint]
+                      | brain]
                    → synthesize → END
     Fan-out is parallel when supervisor sets parallel=True (independent routes).
 
@@ -118,11 +117,11 @@ def build_graph(
     g.add_node("forecast", forecast_node)
     g.add_node("social", social_node)
     g.add_node("research", research_node)
-    # brain and osint used to have NO node: their routes folded into `query`, which does
-    # not run them, so the reasoning trail showed a fan-out that never happened
-    # (AGENTS.md, "Known gaps"). They are first-class nodes now.
+    # brain used to have NO node: its routes folded into `query`, which does not run it, so
+    # the reasoning trail showed a fan-out that never happened (AGENTS.md, "Known gaps").
+    # osint deliberately has none: it is out of the FIR path and runs only when the OSINT
+    # Workbench calls /api/osint/*, never from a chat question.
     g.add_node("brain", brain_node)
-    g.add_node("osint", osint_node)
     g.add_node("synthesize", synthesize_node)
 
     # Entry point
@@ -133,7 +132,7 @@ def build_graph(
 
     # All specialist agents → synthesize → END
     for name in ["query", "network", "profile", "forecast", "social", "research",
-                 "brain", "osint"]:
+                 "brain"]:
         g.add_edge(name, "synthesize")
     g.add_edge("synthesize", END)
 

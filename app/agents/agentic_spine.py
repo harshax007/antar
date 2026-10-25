@@ -203,14 +203,13 @@ def _route(text: str, command: str | None = None, mode: str | None = None) -> tu
         routes.append("geo")
     if any(w in low for w in ("pattern", "patterns", "cluster", "signature")):
         routes.append("pattern")
-    if any(w in low for w in ("osint", "open web", "deep profile", "background")):
-        routes.append("osint")
     if any(w in low for w in ("research", "kul", "dossier", "investigate", "deep research", "everything about", "who could be behind")):
         routes.append("research")
 
-    # The user requested OSINT side-by-side with Profile, so if profile is in routes, ensure OSINT is too
-    if "profile" in routes and "osint" not in routes:
-        routes.append("osint")
+    # OSINT is never routed from a question. It is a separate branch, out of the FIR path,
+    # that runs only when an officer opens the OSINT Workbench and asks it to
+    # (/api/osint/*). It used to be added to every profile question, so the open web was
+    # searched for a name nobody had asked about.
 
     routes_dedup = list(dict.fromkeys(routes))
     if len(routes_dedup) > 1:
@@ -392,11 +391,6 @@ def _synthesize(base: str, results: dict, claims: list[dict], lang: str = "en") 
                      "These are leads from similar records, not findings.")
         parts.append(chr(10).join(lines))
 
-    osint_res = results.get("osint")
-    if osint_res and osint_res.get("summary"):
-        parts.append(f"OSINT: {osint_res['summary']}")
-    if osint_res and osint_res.get("risk_flags"):
-        parts.append(f"OSINT Flags: {', '.join(osint_res['risk_flags'])}")
     res_dossier = results.get("research")
     if res_dossier:
         parts.append(f"Research Dossier: Deep K/D/I/U intelligence for '{res_dossier.get('anchor', 'target')}'")

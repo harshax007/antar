@@ -60,7 +60,7 @@ Every block below declares one agent. Fields:
 topology:
   entry: supervisor
   terminal: synthesize
-  nodes: [supervisor, query, network, profile, forecast, social, research, brain, osint, synthesize]
+  nodes: [supervisor, query, network, profile, forecast, social, research, brain, synthesize]
   checkpointer: SqliteSaver          # thread_id = session_id; durable, survives restart
   fanout: conditional                # supervisor -> route_fn -> [worker...] -> synthesize -> END
 ```
@@ -323,10 +323,10 @@ This section used to hold agents with **no graph node**, whose routes folded int
 `unrouted_fallback` — a node that does *not* run them, so in a graph turn they were
 silently absent while the trail showed them working.
 
-It is now empty of gaps. `research` was the first to get its own node; `brain` and `osint`
-followed (2026-09-25), and both are declared and tested like any other worker. The section
-is kept because the failure mode is worth remembering, not because anything still sits
-here.
+It is now empty of gaps. `research` was the first to get its own node; `brain` followed
+(2026-09-25). `osint` had one too, and lost it on purpose (2026-10-25): it is now a separate
+branch outside the FIR path that runs only when the OSINT Workbench calls it, so it has no
+route and no node. The section is kept because the failure mode is worth remembering.
 
 ### osint
 
@@ -338,24 +338,28 @@ min_role: Inspector
 obligations: [label_unverified]
 role: Scout - open-web scan
 module: app/agents/graph.py::osint_node
-graph_node: osint
-routes: [OSINT]
+graph_node: null
+routes: []
 timeout_s: 15.0
 retries: 1
-surfaces: [chat_stream, api]
+surfaces: [api]
 reads: [osint_recon, external_web]
 emits: [results.osint]
 guardrails: [redact_pii, verify_claims, vigil]
 hitl: false
 degraded: "OSINT section omitted; never presents an unreachable source as checked"
 notes: >
-  Has its own graph node as of 2026-09-25 (it used to fold into query, which does not run
-  it). The ONLY agent that leaves the building: everything it returns is UNVERIFIED and
+  OUT OF THE FIR PATH, AND ONLY WHEN CALLED (2026-10-25). No route label and no graph
+  node: a chat question never reaches it, and it is no longer added to profile questions
+  (it was, so the open web was searched for names nobody asked about). It runs only from
+  the OSINT Workbench, POST /api/osint/*, and reads no FIR, suspect or case table - only
+  the identifier the officer typed leaves the building.
+  The ONLY agent that leaves the building: everything it returns is UNVERIFIED and
   stays labelled that way - the open web is not the FIR record and is never merged into it.
   Refuses without a named subject rather than scanning on a guess; searching the open web
   for whatever capitalised word was in the sentence is how an uninvolved member of the
   public ends up in a police work product.
-  chat_stream still strips "osint" from its own route list - that surface is unchanged.
+  chat_stream strips "osint" from its route list as a second guard.
 ```
 
 ### research
@@ -676,7 +680,7 @@ been empty proves nothing:
 
 | Was | Effect it had | Closed by |
 |---|---|---|
-| `osint` and `brain` had no graph node | Routes folded into `query`, which does not run them — the reasoning trail showed a fan-out that never happened | `brain_node` / `osint_node` in `app/agents/graph.py`; both declared above and asserted by `tests/test_agents_manifest.py` |
+| `osint` and `brain` had no graph node | Routes folded into `query`, which does not run them — the reasoning trail showed a fan-out that never happened | `brain_node` in `app/agents/graph.py`; `osint` taken out of the graph instead (Workbench only). Both asserted by `tests/test_agents_manifest.py` |
 | `MemorySaver` checkpointer was in-memory | Session continuity reset on restart; there was no durable case file | `app/agents/checkpoint_store.py::SqliteSaver` — `tests/test_checkpoint_store.py` writes a thread in one process and reads it back in another |
 
 | Gap | Effect |

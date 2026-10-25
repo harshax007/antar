@@ -27,12 +27,11 @@ MODES: dict[str, ModeSpec] = {
         "label": "Deep Analytical Reasoning & Dossier Mode",
         "description": "Performs deep multi-layer investigative research across K/D/I/U states, building evidence trails and hypotheses.",
         "primary_agents": ["query", "profile", "research"],
-        "secondary_agents": ["osint", "vigil"],
+        "secondary_agents": ["vigil"],
         "dag": {
             "query": [],
             "profile": ["query"],
             "research": ["query"],
-            "osint": ["research"],
             "vigil": ["profile", "research"]
         },
         "instructions": (
