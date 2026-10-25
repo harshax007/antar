@@ -407,27 +407,6 @@ def get_answer_record(digest: str) -> dict | None:
     return {**payload, "hash": entry["hash"], "verified": verified}
 
 
-def record_answer_copied(officer: str, role: str, answer_hash: str, copy_sha256: str, chars: int) -> dict:
-    """An officer copied an audited answer out of Antar. The event binds the SHA-256 of
-    the exact text placed on the clipboard to the answer's own audit entry, so a pasted
-    brief can be traced back to the answer it came from."""
-    payload = {
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "officer": officer,
-        "role": role,
-        "type": "ANSWER_COPIED",
-        "method": "COPY",
-        "path": f"/answer/{answer_hash}/copy",
-        "status": 200,
-        "answer_hash": answer_hash,
-        "copy_sha256": copy_sha256,
-        "chars": chars,
-    }
-    return _write(payload, {"ts": payload["ts"], "officer": officer, "role": role, "method": "COPY",
-                            "path": payload["path"], "status": 200, "type": "ANSWER_COPIED",
-                            "user_text": answer_hash, "answer": copy_sha256})
-
-
 HITL_EVENTS = {
     "hitl_proposed", "hitl_approved", "hitl_rejected", "hitl_withdrawn",
     "hitl_expired", "hitl_executed", "hitl_failed", "hitl_integrity_failure",

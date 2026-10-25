@@ -498,7 +498,7 @@ app.include_router(linkage.router,     prefix="/api/linkage", tags=["MO Case-Mat
 from app.api import case_api
 app.include_router(case_api.router,   prefix="/api/case", tags=["Case Timeline"], dependencies=[Depends(require_role("Constable"))])
 from app.api import answer_record
-app.include_router(answer_record.router, prefix="/api/answer-record", tags=["Answer Copy"], dependencies=[Depends(require_role("Constable"))])
+app.include_router(answer_record.router, prefix="/api/answer-record", tags=["Antar Insights"], dependencies=[Depends(require_role("Constable"))])
 from app.api import money_api
 app.include_router(money_api.router,  prefix="/api/money", tags=["Money Trail"], dependencies=_inspector)
 app.include_router(vigil.router,       prefix="/api/vigil", tags=["Vigil Compliance Auditor"])

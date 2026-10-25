@@ -1,12 +1,10 @@
 """
-Antar - the Expert workspace's Copy is the audited answer, word for word
-========================================================================
-POST /api/answer-record/{hash}/copy builds the brief from the AI_REASONING entry in the
-audit log, not from the screen, and records the copy (with the SHA-256 of the exact text)
-on the chain. A missing or tampered entry is refused, never copied from somewhere else.
+Antar - insights for an audited answer
+======================================
+GET /api/answer-record/{hash}/insights reads the FIRs cited by the answer's verified audit
+entry. A missing or tampered entry, or another officer's answer, is refused.
 """
 import asyncio
-import hashlib
 import sqlite3
 
 import pytest
@@ -45,43 +43,23 @@ def _answer():
                                            ["query"], CITES, reasoning_id=None)
 
 
-def test_copy_is_the_audited_text_and_is_recorded(monkeypatch):
+def test_insights_need_a_verified_entry_of_the_asking_officer(monkeypatch):
     h = _answer()
-    _as(monkeypatch, "OFF-1")
-    out = asyncio.run(answer_record.copy_answer(h, request=None))
-    assert ANSWER in out["text"]                              # verbatim, markdown and all
-    assert "Show the latest cases" in out["text"] and h in out["text"]
-    assert "FIR SYN-2026-000708, CID, BNS 106, 2026-12-29" in out["text"]
-    assert out["copy_sha256"] == hashlib.sha256(out["text"].encode("utf-8")).hexdigest()
-    ev = [e for e in audit_store.query(limit=10) if e["type"] == "ANSWER_COPIED"]
-    assert len(ev) == 1 and ev[0]["answer_hash"] == h and ev[0]["copy_sha256"] == out["copy_sha256"]
-    assert audit_store.verify_chain_report()["ok"]
-
-
-def test_tampered_answer_is_not_copied(monkeypatch):
-    h = _answer()
+    _as(monkeypatch, "OFF-2")
+    with pytest.raises(HTTPException) as e:
+        asyncio.run(answer_record.answer_insights_for(h, request=None))
+    assert e.value.status_code == 403
+    with pytest.raises(HTTPException) as e:
+        asyncio.run(answer_record.answer_insights_for("f" * 64, request=None))
+    assert e.value.status_code == 404
     conn = sqlite3.connect(audit_store.DB_PATH)
     raw = conn.execute("SELECT payload_json FROM audit_log WHERE hash = ?", (h,)).fetchone()[0]
     conn.execute("UPDATE audit_log SET payload_json = ? WHERE hash = ?", (raw.replace("996,894", "996,895"), h))
     conn.commit(); conn.close()
     _as(monkeypatch, "OFF-1")
     with pytest.raises(HTTPException) as e:
-        asyncio.run(answer_record.copy_answer(h, request=None))
+        asyncio.run(answer_record.answer_insights_for(h, request=None))
     assert e.value.status_code == 409
-    assert not any(x["type"] == "ANSWER_COPIED" for x in audit_store.query(limit=10))
-
-
-def test_unknown_hash_and_other_officer_are_refused(monkeypatch):
-    h = _answer()
-    _as(monkeypatch, "OFF-2")
-    with pytest.raises(HTTPException) as e:
-        asyncio.run(answer_record.copy_answer(h, request=None))
-    assert e.value.status_code == 403
-    with pytest.raises(HTTPException) as e:
-        asyncio.run(answer_record.copy_answer("f" * 64, request=None))
-    assert e.value.status_code == 404
-    _as(monkeypatch, "ADMIN-1", "Admin")
-    assert asyncio.run(answer_record.copy_answer(h, request=None))["answer_hash"] == h
 
 
 # ── Antar Insights ────────────────────────────────────────────────────────────
