@@ -137,6 +137,53 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## OSINT audited: every search on the audit chain, by fingerprint · 2026-10-26
+
+- Audit of the Search screen's OSINT Workbench against what its consent card promises. Held: no FIR, suspect or
+  case table is read; every outside call passes the egress allow-list (one web search engine, the RBI IFSC list,
+  RDAP, crt.sh); Inspector and above; rate-limited; every call on the audit log.
+- Gap: the audit row said an OSINT call ran, not what was searched. Each endpoint now puts the identifier's type
+  and its SHA-256 fingerprint on the row (never the identifier: the chain cannot be edited). GET /api/osint/log
+  reads the officer's own searches back, shown under "On the audit chain" in the session panel.
+- The consent card lists, one fact per row, what is sent out, where it goes, what is never opened, what is
+  logged, who can use it and what a result is worth.
+
+---
+
+## Officer questions on the empty chat screen, tested in both languages · 2026-10-26
+
+- 28 questions an officer needs on a working day, drawn from the 165-prompt hackathon suite (questions.txt) and
+  the chat's own follow-up chips (districts with the most theft, top beats for theft and for burglary, theft
+  conviction rate, stations with the most cybercrime in 2022), now
+  open the empty chat screen ahead of the demo-story bank (app/agents/officer_questions.py, served first by
+  /api/docs/questions): today's count, today against usual, unusual spikes, this week against last, what rose in
+  six months, patrol focus, one case and its timeline, similar cases, 90-day pendency, charge-sheet rate, shared
+  UPI ids and vehicles, accused and victim age groups, missing coordinates, monthly counts for a year.
+- Kept only if the answer can be trusted: tests/test_officer_questions.py asks all 28 in English and 25 in Kannada
+  through the real stream and checks the path each is answered by, that none is turned away or asked back, and
+  that Kannada is answered in Kannada (53 checks). The page's fallback list is asserted equal to the server's.
+  tests/test_suggestions_real.py (real-record only) now covers the role chips; the starters ask about today. The three one-case questions are offered in English on the
+  Kannada screen, because the case sheet is written in English.
+- Fixed on the way, from running the suite's questions:
+  - "Retrieve FIR X and summarise it" went to the briefing ("summarise it"); an FIR id now makes it a case question.
+  - "Similar cases to FIR X" gave the case alone; it now lists the five nearest FIRs of the same crime at the same
+    station (one line per crime number), with "similar on the record is not a link".
+  - "Top 5 crime types…" asked which crime to use for hotspots; it is the crime mix (T13).
+  - "Which crime types rose the most in the last 6 months?" listed the most common; it now compares the two
+    6-month windows by crime type. A label in one window only (Burglary 117 → 0, Assault 0 → 117) is set aside as a
+    relabelling, not counted as a swing.
+  - "Accused named in more than one case" was turned away as off-topic.
+  - "Theft by hour of day" listed FIRs; the register holds no time of day and the answer now says so, and offers
+    the day of the week. "FIRs with missing coordinates" was turned away; it is counted.
+  - A monthly trend ignored "this year" / "in 2025"; the window named is used, months with no FIR show as 0, and
+    fewer than 10 a quarter is "too few to call a direction" instead of "down 40%". "3 vs 5" in a week comparison
+    is said the same way.
+  - Answers for "today" / "this week" / "this year" no longer carry a direction line about Dec 2023–Feb 2024.
+  - A rate under 1% keeps a decimal: theft conviction in Bengaluru City (89 of 18,225) read "**0%** convicted";
+    it is 0.5%.
+  - Kannada: patrol, age group, day of week, "more than N days", "N or more districts", "same UPI in many cases",
+    "last N months", "busier than usual", hour of day and missing coordinates now reach the same answer as English.
+
 ## Demo-day end-to-end run: six chat misses fixed · 2026-10-26
 
 - **"Is crime rising in Bengaluru City this week?"** dropped the place and listed the state's newest FIRs. It is now

@@ -55,7 +55,8 @@ class TestCompareAnswer:
                                                "date_from": p["date_from"], "date_to": p["date_to"]}) or 0)
 
     def test_small_change_is_about_the_same(self):
-        assert period_compare._verdict(3, 2)[0] == "flat"
+        assert period_compare._verdict(3, 2)[0] == "few"
+        assert period_compare._verdict(2, 0)[0] == "few"
         assert period_compare._verdict(105, 100)[0] == "flat"
         assert period_compare._verdict(130, 100)[0] == "up"
         assert period_compare._verdict(70, 100)[0] == "down"

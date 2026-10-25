@@ -307,7 +307,8 @@ def _direction(done: list[tuple[str, int]]):
         wa, wb = (done[0][0],) * 2, (done[-1][0],) * 2
     pct = (100 if b > 0 else 0) if a == 0 else round(100 * (b - a) / a)
     word = "UPWARD" if pct > 5 else "DOWNWARD" if pct < -5 else "STABLE"
-    return {"word": word, "pct": pct, "from": wa, "to": wb}
+    # 3 cases against 5 is "down 40%" in arithmetic and nothing on the ground
+    return {"word": word, "pct": pct, "from": wa, "to": wb, "few": max(a, b) < 10}
 
 
 def _trend(crime_types, zones):
@@ -391,7 +392,7 @@ def _w_rank(rows, kn, params, template_id):
     lines = [lead]
     # The direction compares the latest months — meaningless under a past-period question
     # ("crimes against women 2023") — so it is shown only for open-ended scopes.
-    if dim in ("zone", "district") and not asc and not params.get("date_from") and not _absc(params):
+    if dim in ("zone", "district") and not asc and not params.get("date_from") and not params.get("period") and not _absc(params):
         lines.append(_dir_line(_trend(cts, [place]), kn, f"{place} ನಲ್ಲಿ " if kn else place))
     if kn:
         lines.append(f"{'ಕಡಿಮೆ ಇರುವ' if asc else 'ಅಗ್ರ'} {len(rows)} {_DIM_KN.get(dim, 'ಸ್ಥಳಗಳು')}:")
@@ -455,7 +456,10 @@ def _w_types(rows, kn, params, template_id):
         among = " among cases with accused still at large" if _absc(params) else ""
         lead = (f"[COMPUTED] **{_crime_en(top)}** is the most common crime in {where}{among} — "
                 f"**{_fmt(n)}** FIRs{share_s} ({scope}).")
-    lines = [lead] + ([] if _absc(params) or params.get("stations") else [_dir_line(_trend([top], zones), kn)])
+    # the direction is the latest months of the real record: shown only for an open-ended scope,
+    # not under "this year" or "in the last 6 months", where it compared other months
+    lines = [lead] + ([] if _absc(params) or params.get("stations") or params.get("date_from") or params.get("period")
+                      else [_dir_line(_trend([top], zones), kn)])
     lines.append("ಪ್ರಮುಖ ಅಪರಾಧ ಪ್ರಕಾರಗಳು:" if kn else "Most common crime types:")
     for i, r in enumerate(rows[:6], 1):
         c = int(r.get("n") or 0)
@@ -473,6 +477,17 @@ def _w_trend(rows, kn, params, template_id):
     series = [(str(r.get("month")), int(r.get("n") or 0)) for r in rows if r.get("month")]
     if not series:
         return None
+    # a month with no FIR has no row: put it back as 0, from the first month asked for (or
+    # on record) to the last, so the list and the direction both see it
+    have = dict(series)
+    m0 = str(params.get("date_from") or "")[:7] or series[0][0]
+    y, m = int(min(m0, series[0][0])[:4]), int(min(m0, series[0][0])[5:7])
+    filled = []
+    while f"{y:04d}-{m:02d}" <= series[-1][0]:
+        k = f"{y:04d}-{m:02d}"
+        filled.append((k, have.get(k, 0)))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    series = filled
     done, partial = _complete(series)
     cts = params.get("crime_types") or []
     zones = params.get("zones") or []
@@ -491,9 +506,15 @@ def _w_trend(rows, kn, params, template_id):
                      f"[COMPUTED] {what.capitalize()} cases in {where} peaked in **{_mon(pm, kn)}** — "
                      f"**{_fmt(pn)}**, {above}% above the monthly average of {_fmt(round(avg))}.")
         for m, n in done[-12:]:
-            lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {'ಪ್ರಕರಣಗಳು' if kn else 'cases'}")
+            lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {'ಪ್ರಕರಣಗಳು' if kn else ('case' if n == 1 else 'cases')}")
         return lines
-    if d:
+    if d and d.get("few"):
+        tot = sum(n for _, n in done)
+        lines.append(f"[COMPUTED] {_in_loc(where, True)} {what} ಪ್ರಕರಣಗಳು ತಿಂಗಳಿಗೆ ಕೆಲವೇ ({_fmt(tot)} ಒಟ್ಟು) — "
+                     f"ಏರಿಕೆ ಅಥವಾ ಇಳಿಕೆ ಹೇಳಲು ಸಾಕಾಗುವುದಿಲ್ಲ." if kn else
+                     f"[COMPUTED] {what.capitalize()} cases in {where} are too few to call a direction: "
+                     f"**{_fmt(tot)}** in {len(done)} months, a handful a month, where one or two cases swing the percentage.")
+    elif d:
         span = f"{_win(d['to'], kn)} vs {_win(d['from'], kn)}"
         if kn:
             sign = "+" if d["pct"] > 0 else ""
@@ -513,8 +534,8 @@ def _w_trend(rows, kn, params, template_id):
                      f"ಪ್ರವೃತ್ತಿ ಹೇಳಲು ಸಾಕಾಗುವುದಿಲ್ಲ." if kn else
                      f"[COMPUTED] Only one complete month is on record for {what} in {where} "
                      f"({_mon(m, kn)}: {_fmt(n)} cases) — not enough to call a direction.")
-    for m, n in done[-8:]:
-        lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {'ಪ್ರಕರಣಗಳು' if kn else 'cases'}")
+    for m, n in done[-12:]:
+        lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {'ಪ್ರಕರಣಗಳು' if kn else ('case' if n == 1 else 'cases')}")
     if done:
         pm, pn = max(done, key=lambda x: x[1])
         lines.append(f"ಗರಿಷ್ಠ: {_mon(pm, kn)} ({_fmt(pn)})." if kn else f"Peak: {_mon(pm, kn)} with {_fmt(pn)} cases.")
@@ -932,7 +953,8 @@ def _w_count(rows, kn, params, template_id):
                 (" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "FIRs") + _absq(params, False) + _statq(params, False)
         lead = f"[VERIFIED] **{_fmt(total)}** {what} are on record {_in_loc(where, False)} ({scope})."
     lines = [lead]
-    if not params.get("date_from") and not _absc(params) and not params.get("stations") and not params.get("heads"):
+    if not params.get("date_from") and not params.get("period") and not _absc(params) and not params.get("stations") \
+            and not params.get("heads"):
         lines.append(_dir_line(_trend(cts, zones), kn))
     dates = {k: params.get(k) for k in ("date_from", "date_to", "period")}
     for k in ("stations", "heads"):          # the breakdown counts exactly what the total counted
@@ -1259,7 +1281,12 @@ _STAGE_LABEL = {
     "false_case": ("False case", "ಸುಳ್ಳು ಪ್ರಕರಣ"),
 }
 def _rate(v) -> str:
-    return "—" if v is None else f"{v:.0f}%"
+    # a small rate keeps a decimal: 89 convicted of 18,225 is 0.5%, and "0%" reads as none
+    if v is None:
+        return "—"
+    if 0 < v < 0.05:
+        return "under 0.1%"
+    return f"{v:.1f}%" if 0 < v < 1 else f"{v:.0f}%"
 
 
 # Each outcome rate: (rate field, base field, part field, EN name, KN name).

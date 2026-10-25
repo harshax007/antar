@@ -36,7 +36,54 @@ _NOT_HELD = (
     (r"\bcomplainant", "the complainant's name, address and occupation"),
     (r"\b(court|hearing|judge)\b", "the court and hearing dates"),
     (r"\b(arrest|surrender)\w*\b.*\bdates?\b|\bdates?\b.*\b(arrest|surrender)", "arrest and surrender dates"),
+    (r"\b(forensic|fsl|post[- ]?mortem|autopsy)", "forensic and post-mortem reports"),
+    (r"\b(judgment|judgement|verdict text|court order)", "judgments and court orders"),
+    (r"\b(case diary|investigation diary|cd entries)", "the case diary"),
 )
+_SIMILAR = re.compile(r"\b(similar|alike|like (?:this|it)|comparable|resembl\w*|same kind)\b", re.I)
+
+
+def _nearest(fir_id: str, n: int = 5) -> tuple[list[dict], str]:
+    """The FIRs of the same crime type at the same station (else district), nearest in date.
+
+    A similarity of record - same crime, same place, close in time - and nothing more: it is
+    not a link between the cases, and the answer says so."""
+    from datetime import date
+    from app.core.db_path import DB_PATH, registry_connect
+    con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    today = date.today().isoformat()
+    try:
+        r = con.execute("SELECT crime_type, station, district_norm, date, Beat_Name, MO_Details, CrimeNo FROM FIRs WHERE fir_id = ?",
+                        (fir_id,)).fetchone()
+        if not r or not r["crime_type"]:
+            return [], ""
+        for scope, col, val in (("station", "station", r["station"]), ("district", "district_norm", r["district_norm"])):
+            if not val:
+                continue
+            rows = con.execute(
+                f"SELECT fir_id, CrimeNo, date, station, Beat_Name, FIR_Stage, MO_Details FROM FIRs "
+                f"WHERE {col} = ? AND crime_type = ? AND fir_id <> ? AND date <= ? "
+                f"ORDER BY ABS(julianday(date) - julianday(?)) LIMIT ?",
+                (val, r["crime_type"], fir_id, today, r["date"], 4 * n)).fetchall()
+            # one line per case: a crime number carried by two register rows, or this case's own, is not another case
+            seen, kept = {str(r["CrimeNo"] or fir_id)}, []
+            for x in rows:
+                k = str(x["CrimeNo"] or x["fir_id"])
+                if k not in seen:
+                    seen.add(k); kept.append(x)
+            rows = kept[:n]
+            if rows:
+                out = []
+                for x in rows:
+                    same = [w for w, a, b in (("beat", x["Beat_Name"], r["Beat_Name"]), ("MO", x["MO_Details"], r["MO_Details"]))
+                            if a and b and str(a).strip().upper() == str(b).strip().upper()]
+                    out.append({"fir_id": x["fir_id"], "crime_no": x["CrimeNo"], "date": x["date"], "station": x["station"],
+                                "stage": " ".join(str(x["FIR_Stage"] or "").replace("_", " ").split()).title(), "same": same})
+                return out, f"same crime type ({str(r['crime_type']).replace('_', ' ').lower()}) at the same {scope}, nearest in date"
+        return [], ""
+    finally:
+        con.close()
 
 
 def fir_ids(text: str) -> list[str]:
@@ -166,6 +213,19 @@ def answer(text: str, lang: str = "en") -> dict:
                      + (f"; {sim['convicted_of_decided']}% of those decided ended in conviction"
                         if sim.get("convicted_of_decided") is not None else "")
                      + ".")
+    near = []
+    if _SIMILAR.search(low):
+        near, how = _nearest(d["fir_id"])
+        if near:
+            lines.append(f"\n**{len(near)} similar cases** ({how}):")
+            lines += [f"{i}. FIR {x['crime_no'] or x['fir_id']} — {x['station']}, {x['date']}"
+                      + (f" · {x['stage']}" if x["stage"] else "")
+                      + (f" · same {' and '.join(x['same'])}" if x["same"] else "")
+                      for i, x in enumerate(near, 1)]
+            lines.append("Similar on the record is not a link: no shared accused, vehicle, phone or account is "
+                         "claimed. Compare the case files before treating any two as connected.")
+        else:
+            lines.append("\nNo other FIR of the same crime type is on record at this station or district.")
     not_held = [label for rx, label in _NOT_HELD if re.search(rx, low)]
     if not_held:
         lines.append("\n**Not held in the FIR register:** " + "; ".join(not_held)

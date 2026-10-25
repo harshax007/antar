@@ -322,8 +322,11 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     # ...and a brief of the previous answer ("a memo summarising the above") names no crime either
     from app.agents.spikes_answer import wants_spikes as _wants_spikes
     from app.agents.period_compare import wants_compare as _wants_compare
+    # ...and "FIRs with missing coordinates" / "theft by hour of day" are answered by saying
+    # what the register holds (register_gaps.py)
+    from app.agents.register_gaps import asks as _asks_gap
     _is_case = (_wants_case(query_text) or _refers_back(query_text) or _wants_briefing(query_text)
-                or _wants_spikes(query_text) or bool(_wants_compare(query_text)))
+                or _wants_spikes(query_text) or bool(_wants_compare(query_text)) or _asks_gap(query_text))
     if hs_res.get("template_id") == "NONE" and not command and not req.deep_think and not _agent_ask and not _is_forecast and not _is_case:
         answer = ("I'm built for crime-data questions, so I can't answer that one.\n"
                   "Try asking:\n• most crimes?\n• theft trend in Bengaluru City\n"

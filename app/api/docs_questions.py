@@ -1,7 +1,7 @@
 """
 Antar — Question Bank API for /docs rotating demo questions.
 
-GET /api/docs/questions          → all 35 questions
+GET /api/docs/questions          → the officer questions (officer_questions.py), then the bank
 GET /api/docs/questions?set=<n>  → the 3-4 questions for that set index (0-8)
 """
 from __future__ import annotations
@@ -50,6 +50,15 @@ async def get_questions(set: int | None = None) -> dict:
         "mechanism": r["mechanism"],
         "story_id": r["story_id"],
     } for r in rows]
+
+    # The full list feeds the empty chat screen: the officer questions come first, each one
+    # asked in both languages by tests/test_officer_questions.py; the demo-story bank follows.
+    if set is None:
+        from app.agents.officer_questions import OFFICER_QUESTIONS
+        questions = [{"id": f"O{i:02d}", "verb": "officer", "tier": "officer", "set_index": None,
+                      "question_en": q["en"], "question_kn": q.get("kn") or q["en"],
+                      "expected_answer": None, "mechanism": None, "story_id": q.get("suite")}
+                     for i, q in enumerate(OFFICER_QUESTIONS, 1)] + questions
 
     return {
         "questions": questions,

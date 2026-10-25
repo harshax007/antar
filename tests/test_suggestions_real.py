@@ -1,4 +1,4 @@
-"""Every question the chat offers (empty-state starters and role chips) must be answered
+"""Every role chip the chat offers must be answered
 from the real KSP record: rows found, the question it asked actually applied, and no count
 of demonstration records. Read-only against the registry."""
 import asyncio
@@ -13,7 +13,9 @@ PAGE = Path(__file__).resolve().parents[1] / "antar-frontend" / "app" / "(app)" 
 def _offered() -> list[tuple[str, str]]:
     src = PAGE.read_text(encoding="utf-8")
     out = []
-    for block in ("const ROLE_QUESTIONS = {", "const STARTERS = {"):
+    # the empty-screen STARTERS are the officer questions (today, this week ...), asked
+    # through the real stream in both languages by tests/test_officer_questions.py
+    for block in ("const ROLE_QUESTIONS = {",):
         body = src[src.index(block): src.index("};", src.index(block))]
         for lang, items in re.findall(r"\b(en|kn): \[(.*?)\]", body, re.S):
             out += [(lang, q) for q in re.findall(r'"([^"]+)"', items)]

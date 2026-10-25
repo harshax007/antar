@@ -77,37 +77,70 @@ const ROLE_QUESTIONS = {
   },
 };
 
-// Starters on the empty chat. Each one is answered from the real KSP record and was run
-// through the router and the answer writer before it was put here (2026-10-16). They used
-// to name people, vehicles and localities that exist only in seeded demo rows ("Ravi living
-// in Jayanagar", "KA-02-M-2093", "Bheema the Butcher"). They rank, compare and rate; none
-// headlines a raw count. 2016-2022 is a partial extract (about a third of each year), so its
-// counts are low while its shares and rankings hold; 2023-24 holds 100,000 duplicated rows
-// (PROGRESS.md, open risks).
+// Starters on the empty chat, used when /api/docs/questions cannot be reached. The same
+// officer questions the API serves first (app/agents/officer_questions.py): each one is asked
+// in both languages through the real chat stream by tests/test_officer_questions.py and is
+// answered from the register, never from the model alone (2026-10-26).
 const STARTERS = {
   en: [
-    "Cognizable FIRs registered in Karnataka in 2022?",
-    "IPC/BNS vs SLL split for 2022?",
-    "Which police stations recorded the most cybercrime in 2022?",
-    "Which districts had the most murders in 2022?",
-    "Crimes against women 2022 + top districts?",
-    "Fastest-growing crime groups 2021 to 2022?",
-    "Which districts had the most theft in 2022?",
-    "Top areas for theft in Mysuru City",
-    "Which district had the most road accident cases in 2022?",
-    "Conviction rate by district in 2022",
+    "How many FIRs were registered today?",
+    "Is today busier than usual?",
+    "Are there any unusual spikes right now?",
+    "Is crime rising in Bengaluru City this week?",
+    "Which police stations registered the most FIRs this week?",
+    "Which crime types rose the most in the last 6 months?",
+    "Top 5 crime types in Karnataka this year with their share",
+    "Where should the night patrol focus in Bengaluru City?",
+    "Top areas for chain snatching in Bengaluru City",
+    "Which day of the week has the most theft in Bengaluru City?",
+    "Which districts have the most theft?",
+    "Top beats for theft in Bengaluru City",
     "Top beats for burglary in Bengaluru City",
+    "Conviction rate for theft in Bengaluru City",
+    "Which police stations recorded the most cybercrime in 2022?",
+    "Retrieve FIR 100011245202300001 and summarise it",
+    "Timeline of FIR C00418",
+    "Find cases similar to FIR C00418",
+    "Cases under investigation for more than 90 days in Mysuru City",
+    "Case status breakdown in Bengaluru City this year",
+    "Which districts have the highest charge-sheet rate this year?",
+    "Are any UPI IDs shared across multiple cyber fraud cases?",
+    "Which vehicles appear in FIRs across 3 or more districts?",
+    "Accused age groups in theft cases",
+    "Victims of crimes against women by age group",
+    "FIRs with missing location coordinates",
+    "Theft by hour of day in Bengaluru City",
+    "Monthly burglary in Mysuru City in 2025",
   ],
   kn: [
-    "2022 ರಲ್ಲಿ ಕರ್ನಾಟಕದಲ್ಲಿ ದಾಖಲಾದ ಕಾಗ್ನಿಜೇಬಲ್ FIR ಗಳು ಎಷ್ಟು?",
-    "2022 ರ IPC/BNS ಮತ್ತು SLL ಹಂಚಿಕೆ",
-    "2022 ರಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧ ಹೆಚ್ಚು ದಾಖಲಾದ ಠಾಣೆಗಳು",
-    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕೊಲೆಗಳು ದಾಖಲಾಗಿವೆ?",
-    "2022 ರ ಮಹಿಳೆಯರ ಮೇಲಿನ ಅಪರಾಧಗಳು + ಪ್ರಮುಖ ಜಿಲ್ಲೆಗಳು",
-    "2021 ರಿಂದ 2022 ಕ್ಕೆ ವೇಗವಾಗಿ ಬೆಳೆಯುತ್ತಿರುವ ಅಪರಾಧ ಗುಂಪುಗಳು",
-    "2022 ರಲ್ಲಿ ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಹೆಚ್ಚು ಕಳ್ಳತನ ನಡೆದಿದೆ?",
-    "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
+    "ಇಂದು ಎಷ್ಟು FIR ದಾಖಲಾಗಿವೆ?",
+    "ಇಂದು ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳು ದಾಖಲಾಗಿವೆಯೇ?",
+    "ಈಗ ಯಾವುದಾದರೂ ಅಸಾಮಾನ್ಯ ಏರಿಕೆ ಇದೆಯೇ?",
+    "ಈ ವಾರ ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಅಪರಾಧ ಹೆಚ್ಚಾಗುತ್ತಿದೆಯೇ?",
+    "ಈ ವಾರ ಅತಿ ಹೆಚ್ಚು FIR ದಾಖಲಾದ ಪೊಲೀಸ್ ಠಾಣೆಗಳು ಯಾವುವು?",
+    "ಕಳೆದ 6 ತಿಂಗಳಲ್ಲಿ ಯಾವ ಅಪರಾಧ ಪ್ರಕಾರಗಳು ಹೆಚ್ಚು ಏರಿಕೆ ಕಂಡಿವೆ?",
+    "ಈ ವರ್ಷ ಕರ್ನಾಟಕದಲ್ಲಿ ಅತಿ ಹೆಚ್ಚು ದಾಖಲಾದ ಅಪರಾಧ ಪ್ರಕಾರಗಳು",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ರಾತ್ರಿ ಗಸ್ತು ಎಲ್ಲಿ ಕೇಂದ್ರೀಕರಿಸಬೇಕು?",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಸರಗಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ವಾರದ ಯಾವ ದಿನ ಕಳ್ಳತನ ಹೆಚ್ಚು?",
+    "ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು?",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು",
     "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳ ಶಿಕ್ಷೆ ದರ",
+    "2022 ರಲ್ಲಿ ಅತಿ ಹೆಚ್ಚು ಸೈಬರ್ ಅಪರಾಧ ದಾಖಲಿಸಿದ ಪೊಲೀಸ್ ಠಾಣೆಗಳು ಯಾವುವು?",
+    "Retrieve FIR 100011245202300001 and summarise it",
+    "Timeline of FIR C00418",
+    "Find cases similar to FIR C00418",
+    "ಮೈಸೂರು ನಗರದಲ್ಲಿ 90 ದಿನಗಳಿಗಿಂತ ಹೆಚ್ಚು ಕಾಲ ತನಿಖೆಯಲ್ಲಿರುವ ಪ್ರಕರಣಗಳು",
+    "ಈ ವರ್ಷ ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಪ್ರಕರಣಗಳ ಸ್ಥಿತಿ",
+    "ಈ ವರ್ಷ ಅತಿ ಹೆಚ್ಚು ದೋಷಾರೋಪ ಪಟ್ಟಿ ದರ ಇರುವ ಜಿಲ್ಲೆಗಳು",
+    "ಹಲವು ಸೈಬರ್ ವಂಚನೆ ಪ್ರಕರಣಗಳಲ್ಲಿ ಒಂದೇ UPI ID ಇದೆಯೇ?",
+    "3 ಅಥವಾ ಹೆಚ್ಚು ಜಿಲ್ಲೆಗಳ FIR ಗಳಲ್ಲಿ ಕಾಣಿಸಿಕೊಂಡ ವಾಹನಗಳು",
+    "ಕಳ್ಳತನ ಪ್ರಕರಣಗಳಲ್ಲಿ ಆರೋಪಿಗಳ ವಯಸ್ಸಿನ ಗುಂಪುಗಳು",
+    "ಮಹಿಳೆಯರ ವಿರುದ್ಧದ ಅಪರಾಧಗಳ ಸಂತ್ರಸ್ತರು ವಯಸ್ಸಿನ ಪ್ರಕಾರ",
+    "ಸ್ಥಳದ ನಿರ್ದೇಶಾಂಕಗಳಿಲ್ಲದ FIR ಗಳು",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ದಿನದ ಯಾವ ಗಂಟೆಯಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು?",
+    "2025 ರಲ್ಲಿ ಮೈಸೂರು ನಗರದಲ್ಲಿ ತಿಂಗಳವಾರು ಮನೆಗಳ್ಳತನ ಪ್ರಕರಣಗಳು",
   ],
 };
 

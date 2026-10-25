@@ -37,7 +37,11 @@ _STANDING = [
 def wants_briefing(text: str) -> bool:
     """A brief OF the answer: "brief the SP on theft in Mysuru" is a new question, and is not this."""
     t = text or ""
-    return bool(_ASK.search(t) and _BACK.search(t))
+    if not (_ASK.search(t) and _BACK.search(t)):
+        return False
+    # "Retrieve FIR 1000112452023000001 and summarise it": the "it" is that FIR, a case question
+    from app.agents.case_answer import fir_ids
+    return not fir_ids(t)
 
 
 def _title(who: str | None) -> str:

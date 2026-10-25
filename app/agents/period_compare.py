@@ -27,25 +27,31 @@ import re
 import statistics
 from datetime import date, timedelta
 
-_UP_DOWN = (r"\b(ris(?:e|es|ing)|going up|go(?:ne)? up|increas\w*|ris(?:en)|more than usual|"
+_UP_DOWN = (r"\b(ris(?:e|es|ing)|rose|going up|go(?:ne)? up|increas\w*|ris(?:en)|more than usual|"
             r"fall(?:s|ing|en)?|going down|go(?:ne)? down|decreas\w*|drop(?:s|ped|ping)?|declin\w*|"
             r"up or down|compar\w*|vs\.?|versus|against|change[sd]?|busier|quieter)\b")
 # "is theft rising this month": a direction asked of one month. Not "higher"/"lower", which
 # also rank ("districts with lower crime this month" is a ranking).
-_DIRECTION = re.compile(r"\b(ris(?:e|es|ing|en)|going up|go(?:ne)? up|increas\w*|fall(?:s|ing|en)?|going down|"
+_DIRECTION = re.compile(r"\b(ris(?:e|es|ing|en)|rose|going up|go(?:ne)? up|increas\w*|fall(?:s|ing|en)?|going down|"
                         r"go(?:ne)? down|decreas\w*|drop(?:s|ped|ping)?|declin\w*|up or down)\b", re.I)
 _WEEK = re.compile(r"\b(this week|past week|last 7 days|past 7 days|previous 7 days|week on week|week over week|"
                    r"this week'?s|last week)\b", re.I)
 _DAY = re.compile(r"\b(today|yesterday|day before)\b", re.I)
 _MONTH_CMP = re.compile(r"\b(this month|past month|last 30 days)\b[^.?!]{0,40}\b(last|previous|prior|the month before)\s+month\b"
                         r"|\bmonth on month\b|\bmonth over month\b", re.I)
+# "which crime types rose the most in the last 6 months": N months against the N before
+_N_MONTHS = re.compile(r"\b(?:last|past|previous|recent)\s+(\d{1,2}|two|three|four|six|nine|twelve)\s+months\b", re.I)
+_NUM = {"two": 2, "three": 3, "four": 4, "six": 6, "nine": 9, "twelve": 12}
+_WHICH_TYPES = re.compile(r"\b(crime types?|types of crimes?|which crimes?|crime groups?|crime categor\w*|crime heads?|"
+                          r"sub-?heads?|what crimes?)\b", re.I)
 _LAST_WEEK_ONLY = re.compile(r"\blast week\b[^.?!]{0,40}\b(week before|previous week|prior week)\b", re.I)
 
 
 _KN = (("ಈ ವಾರ", " this week "), ("ಕಳೆದ ವಾರ", " last week "), ("ಹಿಂದಿನ ವಾರ", " last week "),
        ("ಈ ತಿಂಗಳ", " this month "), ("ಕಳೆದ ತಿಂಗಳ", " last month "), ("ಇಂದು", " today "), ("ಇವತ್ತು", " today "),
        ("ನಿನ್ನೆ", " yesterday "), ("ಹೆಚ್ಚಾಗ", " rising "), ("ಏರಿಕೆ", " rising "), ("ಇಳಿಕೆ", " falling "),
-       ("ಕಡಿಮೆಯಾಗ", " falling "), ("ಹೋಲಿಸ", " compare "), ("ಸಾಮಾನ್ಯಕ್ಕಿಂತ", " than usual "))
+       ("ಕಡಿಮೆಯಾಗ", " falling "), ("ಹೋಲಿಸ", " compare "), ("ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು", " busier "),
+       ("ಸಾಮಾನ್ಯಕ್ಕಿಂತ", " than usual "), ("ಅಪರಾಧ ಪ್ರಕಾರ", " crime types "))
 
 
 def kn_words(text: str) -> str:
@@ -53,7 +59,8 @@ def kn_words(text: str) -> str:
     t = text or ""
     for k, e in _KN:
         t = t.replace(k, k + e)
-    return t
+    # "ಕಳೆದ 6 ತಿಂಗಳಲ್ಲಿ": the last 6 months
+    return re.sub(r"ಕಳೆದ\s*(\d{1,2})\s*ತಿಂಗಳ\S*", lambda m: f"{m.group(0)} last {m.group(1)} months ", t)
 
 
 def wants_compare(text: str) -> str | None:
@@ -61,6 +68,11 @@ def wants_compare(text: str) -> str | None:
     t = kn_words(text)
     if not re.search(_UP_DOWN, t, re.I):
         return None
+    nm = _N_MONTHS.search(t)
+    if nm and _DIRECTION.search(t):
+        n = int(nm.group(1)) if nm.group(1).isdigit() else _NUM[nm.group(1).lower()]
+        if 1 <= n <= 12:
+            return f"m{n}"
     if _MONTH_CMP.search(t) or (re.search(r"\b(this month|past month|last 30 days)\b", t, re.I) and _DIRECTION.search(t)):
         return "month"
     if _WEEK.search(t):
@@ -98,14 +110,18 @@ def _nice(d: date) -> str:
 
 
 def _span(a: date, b: date) -> str:
-    return _nice(a) if a == b else f"{_nice(a)}–{_nice(b)} {b.year}"
+    if a == b:
+        return _nice(a)
+    return f"{_nice(a)}–{_nice(b)} {b.year}" if a.year == b.year else f"{_nice(a)} {a.year}–{_nice(b)} {b.year}"
 
 
 def _verdict(now: int, before: int) -> tuple[str, str]:
     if before == 0:
-        return ("up", "none in the window before") if now else ("flat", "none in either window")
+        return ("up" if now >= 10 else "few", "none in the window before") if now else ("flat", "none in either window")
     pct = round(100 * (now - before) / before)
-    if max(now, before) < 10 or abs(pct) < 10:
+    if max(now, before) < 10:
+        return "few", f"{'+' if pct > 0 else ''}{pct}% on counts too small to read"
+    if abs(pct) < 10:
         return "flat", f"{'+' if pct > 0 else ''}{pct}%"
     return ("up" if pct > 0 else "down"), f"{'+' if pct > 0 else ''}{pct}%"
 
@@ -126,6 +142,10 @@ def answer(text: str, unit: str, ents: dict, lang: str = "en") -> dict:
     elif unit == "month":
         a1, a0 = today, today - timedelta(days=29)
         b1, b0 = a0 - timedelta(days=1), a0 - timedelta(days=30)
+    elif unit.startswith("m") and unit[1:].isdigit():
+        days = 30 * int(unit[1:])
+        a1, a0 = today, today - timedelta(days=days - 1)
+        b1, b0 = a0 - timedelta(days=1), a0 - timedelta(days=days)
     else:
         a1 = today - timedelta(days=7) if _LAST_WEEK_ONLY.search(text) else today
         a0 = a1 - timedelta(days=6)
@@ -134,13 +154,14 @@ def answer(text: str, unit: str, ents: dict, lang: str = "en") -> dict:
     way, pct = _verdict(now, before)
     what = (" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "FIRs"
     where = f" in {', '.join(zones)}" if zones else " in Karnataka"
-    word = {"up": "**up**", "down": "**down**", "flat": "**about the same**"}[way]
+    word = {"up": "**up**", "down": "**down**", "flat": "**about the same**", "few": "**too few to call**"}[way]
     if kn:
-        word_kn = {"up": "**ಏರಿಕೆ**", "down": "**ಇಳಿಕೆ**", "flat": "**ಸುಮಾರು ಅಷ್ಟೇ**"}[way]
+        word_kn = {"up": "**ಏರಿಕೆ**", "down": "**ಇಳಿಕೆ**", "flat": "**ಸುಮಾರು ಅಷ್ಟೇ**", "few": "**ಹೇಳಲು ಪ್ರಕರಣಗಳು ಕಡಿಮೆ**"}[way]
         what_kn = (", ".join(_crime_word(c, True) for c in cts) + " ಪ್ರಕರಣಗಳು") if cts else "FIR ಗಳು"
         where_kn = f"{', '.join(zones)} ನಲ್ಲಿ" if zones else "ಕರ್ನಾಟಕದಲ್ಲಿ"
         lead = (f"[COMPUTED] {where_kn} {what_kn}: {word_kn} — {_span(a0, a1)} ರಲ್ಲಿ **{now:,}**, "
-                f"ಹಿಂದಿನ ಅವಧಿ {_span(b0, b1)} ರಲ್ಲಿ **{before:,}** ({pct}).")
+                f"ಹಿಂದಿನ ಅವಧಿ {_span(b0, b1)} ರಲ್ಲಿ **{before:,}** "
+                f"({pct.split(' on ')[0].replace('none in the window before', 'ಹಿಂದಿನ ಅವಧಿಯಲ್ಲಿ ಯಾವುದೂ ಇಲ್ಲ').replace('none in either window', 'ಎರಡೂ ಅವಧಿಯಲ್ಲಿ ಇಲ್ಲ')}).")
     else:
         lead = (f"[COMPUTED] {what[0].upper() + what[1:]}{where} are {word}: **{now:,}** in {_span(a0, a1)} "
                 f"against **{before:,}** in {_span(b0, b1)} ({pct}).")
@@ -154,13 +175,28 @@ def answer(text: str, unit: str, ents: dict, lang: str = "en") -> dict:
                          f"{_nice(a1)} is **{now / usual:.1f}×** that.")
     if not cts:
         cur, prev = _by_type(zones, a0, a1), _by_type(zones, b0, b1)
-        moves = sorted(((k, cur.get(k, 0) - prev.get(k, 0)) for k in set(cur) | set(prev)), key=lambda x: -abs(x[1]))
-        ups = [f"{k.title()} ({prev.get(k, 0)} → {cur.get(k, 0)})" for k, d in moves if d > 0][:3]
-        downs = [f"{k.title()} ({prev.get(k, 0)} → {cur.get(k, 0)})" for k, d in moves if d < 0][:2]
+        # A label with many cases in one window and none in the other is a change in how the
+        # cases were labelled, not crime that appeared or vanished: kept out of the movers.
+        relabel = sorted(k for k in set(cur) | set(prev)
+                         if min(cur.get(k, 0), prev.get(k, 0)) == 0 and max(cur.get(k, 0), prev.get(k, 0)) >= 20)
+        moves = sorted(((k, cur.get(k, 0) - prev.get(k, 0)) for k in (set(cur) | set(prev)) - set(relabel)),
+                       key=lambda x: (-abs(x[1]), x[0]))
+        def _mv(k):
+            b, a = prev.get(k, 0), cur.get(k, 0)
+            pc = f", {'+' if a > b else ''}{round(100 * (a - b) / b)}%" if b >= 10 else ""
+            return f"{k.title()} ({b:,} → {a:,}{pc})"
+        # "which crime types rose the most": the ranking is the answer, so it is longer
+        many = 5 if _WHICH_TYPES.search(text) else 3
+        ups = [_mv(k) for k, d in moves if d > 0][:many]
+        downs = [_mv(k) for k, d in moves if d < 0][:max(2, many - 2)]
         if ups:
             lines.append(("- ಹೆಚ್ಚು ಏರಿದವು: " if kn else "- Biggest rises: ") + "; ".join(ups) + ".")
         if downs:
             lines.append(("- ಹೆಚ್ಚು ಇಳಿದವು: " if kn else "- Biggest falls: ") + "; ".join(downs) + ".")
+        if relabel:
+            lines.append(("- ಒಂದೇ ಅವಧಿಯಲ್ಲಿ ಮಾತ್ರ ದಾಖಲಾದ ವರ್ಗಗಳು (ಹೆಸರು ಬದಲಾವಣೆ ಸಾಧ್ಯ): " if kn else
+                          "- Recorded in one window only, likely a change of label rather than of crime: ")
+                         + "; ".join(f"{k.title()} ({prev.get(k, 0):,} → {cur.get(k, 0):,})" for k in relabel) + ".")
     lines.append("ಇವು ಪ್ರತಿ ಅವಧಿಯಲ್ಲಿ ದಾಖಲಾದ FIR ಗಳು; ಚಿಕ್ಕ ಅವಧಿ ಕೆಲವೇ ಪ್ರಕರಣಗಳಿಂದ ಹೆಚ್ಚು ಬದಲಾಗುತ್ತದೆ." if kn else
                  "Counts are FIRs registered in each window, not incidents; a short window moves a lot "
                  "on a few cases, so read it with the monthly trend.")

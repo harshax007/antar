@@ -1149,7 +1149,8 @@ async def query_agent_run(
     # last week": one window against the one before (period_compare.py). Both used to fall
     # to a list of the newest FIRs in the state, the place and the comparison dropped.
     from app.agents import spikes_answer as _spikes, period_compare as _cmp
-    _unit = _cmp.wants_compare(user_text)
+    # "any unusual rise today?" asks for the flags, though it also says "rise" and "today"
+    _unit = None if _spikes.wants_spikes(user_text) else _cmp.wants_compare(user_text)
     if _unit or _spikes.wants_spikes(user_text):
         from app.agents.heuristics import extract_entities as _ents
         try:

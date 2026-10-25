@@ -145,8 +145,10 @@ async def chat(req: ChatRequest, request: Request) -> dict:
         from app.agents.briefing import wants_briefing
         from app.agents.spikes_answer import wants_spikes
         from app.agents.period_compare import wants_compare
+        from app.agents.register_gaps import asks as asks_gap
         if hs_res.get("template_id") == "NONE" and not req.deep_think and not wants_case(req.text) \
-                and not wants_briefing(req.text) and not wants_spikes(req.text) and not wants_compare(req.text):
+                and not wants_briefing(req.text) and not wants_spikes(req.text) and not wants_compare(req.text) \
+                and not asks_gap(req.text):
             answer = "I can answer questions about crimes, suspects, trends, hotspots, and demographics." if lang == "en" else "ನಾನು ಅಪರಾಧಗಳು, ಶಂಕಿತರು, ಪ್ರವೃತ್ತಿಗಳು, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಮತ್ತು ಜನಸಂಖ್ಯಾಶಾಸ್ತ್ರದ ಬಗ್ಗೆ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಬಲ್ಲೆ."
             sessions.append_assistant_turn(session_id, answer, lang, "NONE", reasoning_id, [{"step": "guardrail", "detail": "Intercepted off-topic query."}])
             return {"answer": answer, "lang": lang, "citations": [], "agents_used": ["guardrail"],

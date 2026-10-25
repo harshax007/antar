@@ -160,7 +160,20 @@ _KN_BRIDGE = {
     # case state
     "ಬಾಕಿ": "pending", "ಬಗೆಹರಿಯದ": "unsolved", "ತನಿಖೆ": "investigation",
     "ತಲೆಮರೆಸಿಕೊಂಡ": "absconding",
+    # the officer questions on the empty chat screen (officer_questions.py)
+    "ಗಸ್ತು": "patrol", "ವಯಸ್ಸಿನ": "age", "ವಯೋಮಾನ": "age",
+    "ವಾರದ ಯಾವ ದಿನ": "which day of the week",
+    # "ಹಲವು ... ಪ್ರಕರಣಗಳಲ್ಲಿ ಒಂದೇ UPI": the same identifier on many cases
+    "ಒಂದೇ": "shared across multiple cases",
 }
+# Kannada with a number in it: "90 ದಿನಗಳಿಗಿಂತ ಹೆಚ್ಚು" (more than 90 days), "3 ಅಥವಾ ಹೆಚ್ಚು
+# ಜಿಲ್ಲೆಗಳ" (3 or more districts), "ಕಳೆದ 6 ತಿಂಗಳ" (last 6 months)
+_KN_NUM_BRIDGE = (
+    (re.compile(r"(\d{1,4})\s*ದಿನ\S*\s*ಹೆಚ್ಚು"), r"more than \1 days"),
+    (re.compile(r"(\d{1,4})\s*ತಿಂಗಳ\S*\s*ಹೆಚ್ಚು"), r"more than \1 months"),
+    (re.compile(r"(\d{1,2})\s*ಅಥವಾ\s*ಹೆಚ್ಚು\s*ಜಿಲ್ಲೆ"), r"in \1 or more districts"),
+    (re.compile(r"ಕಳೆದ\s*(\d{1,2})\s*ತಿಂಗಳ"), r"last \1 months"),
+)
 _SCRIPT_SEAM = re.compile(r"(?<=[0-9a-z])(?=[ಀ-೿])|(?<=[ಀ-೿])(?=[0-9a-z])")
 # Longest Kannada terms first, so "ಅತಿ ಹೆಚ್ಚು" wins before "ಹೆಚ್ಚು".
 _KN_BRIDGE_ORDER = sorted(_KN_BRIDGE.items(), key=lambda kv: -len(kv[0]))
@@ -182,6 +195,8 @@ def kn_bridge(low: str) -> str:
     for kn_term, en_term in _KN_BRIDGE_ORDER:
         if kn_term in low and en_term not in extra:
             extra.append(en_term)
+    for rx, en in _KN_NUM_BRIDGE:
+        extra += [m.expand(en) for m in rx.finditer(low)]
     return f"{low} {' '.join(extra)}" if extra else low
 
 
@@ -733,6 +748,10 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     if _many:
         n = int(_many.group(2)) + (0 if _many.group(1) == "at least" else 1)
         return choice("T5", {"min_priors": max(1, n), "limit": limit_val, "zones": zones})
+    # "which accused are named in more than one case?": the same thing, said the other way
+    if re.search(r"\b(accused|suspects?|offenders?|persons?|people|names?)\b.{0,30}\b(named|appear\w*|linked|involved|listed)\s+"
+                 r"(?:in|across)\s+(more than one|multiple|two or more|2 or more|several|many)\s+(cases?|firs?|crimes?)\b", low):
+        return choice("T5", {"min_priors": 2, "limit": limit_val, "zones": zones})
     # repeat offenders
     if any(w in low for w in ["repeat offender", "habitual", "repeat criminal",
                               "ಪುನರಾವರ್ತಿತ", "ಪದೇಪದೇ", "ಅಭ್ಯಾಸ ಅಪರಾಧಿ"]):
@@ -869,8 +888,12 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     if ct and not rank_q and re.search(r"\b(trend|trends|over time|monthly|month[- ]wise|month by month|month[- ]on[- ]month|"
                                        r"rising|falling|increasing|decreasing|declining|going (?:up|down)|on the rise|"
                                        r"getting (?:better|worse))\b", low):
+        t_from, t_to = date_from, date_to
+        if not (t_from and t_to) and period:           # "theft trend in Mysuru City this year"
+            from app.services.zcql_repo import resolve_period
+            t_from, t_to = resolve_period(period)
         return choice("T3", {"crime_types": ct, "zones": zones, "months": months,
-                             "date_from": date_from, "date_to": date_to})
+                             "date_from": t_from, "date_to": t_to})
 
     # Case outcomes — "conviction rate by district in 2023", "charge sheet rate for murder"
     if re.search(r"\b(convict\w*|charge[- ]?sheet\w*|chargesheet\w*|arrest rates?|detection rates?|"
@@ -949,6 +972,11 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
                                   "date_to": date_to, "period": period})
         return choice("T11", {"crime_types": ct, "limit": limit_val, "dimension": geo_dim,
                               "date_from": date_from, "date_to": date_to, "period": period})
+    # "Top 5 crime types in Karnataka this year with their share": the crime mix, not a
+    # hotspot ranking ("top" sent it to "which crime type should I use for the hotspots?")
+    if not ct and re.search(r"\b(crime (?:types?|categor\w+|heads?|sub-?heads?)|types of crimes?|kinds of crimes?)\b", low) \
+            and not re.search(r"\b(stations?|districts?|beats?|areas?|officers?|zones?|cities)\b", low):
+        return choice("T13", {"zones": zones, "date_from": date_from, "date_to": date_to, "period": period})
     # hotspots / rankings / top cities / where / patrol / distribution / across dimensions.
     # A named place with no ranking word ("murders in Bengaluru City") is about that place,
     # not a ranking — the word "city" alone used to turn it into a district leaderboard.
@@ -984,10 +1012,17 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         })
     # trend
     if any(w in low for w in ["trend", "over time", "monthly", "increase", "rising",
-                              "ಪ್ರವೃತ್ತಿ", "ಹೆಚ್ಚಳ", "ಮಾಸಿಕ", "ಏರಿಕೆ"]):
+                              "ಪ್ರವೃತ್ತಿ", "ಹೆಚ್ಚಳ", "ಮಾಸಿಕ", "ಏರಿಕೆ", "ತಿಂಗಳವಾರು"]):
         if not ct:
             return choice("CLARIFY", {"missing": "crime_types", "intent": "trend"})
-        return choice("T3", {"crime_types": ct, "zones": zones, "months": months})
+        # "monthly burglary in Mysuru City in 2025", "theft trend this year": the period named
+        # is the window, not the last 12 months of the real record
+        t_from, t_to = date_from, date_to
+        if not (t_from and t_to) and period:
+            from app.services.zcql_repo import resolve_period
+            t_from, t_to = resolve_period(period)
+        return choice("T3", {"crime_types": ct, "zones": zones, "months": months,
+                             **({"date_from": t_from, "date_to": t_to} if t_from and t_to else {})})
     # status counts
     if any(w in low for w in ["open case", "status", "how many open", "pending",
                               "ತೆರೆದ ಪ್ರಕರಣ", "ಸ್ಥಿತಿ", "ಬಾಕಿ"]):
