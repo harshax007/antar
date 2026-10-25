@@ -137,6 +137,27 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Demo-day end-to-end run: six chat misses fixed · 2026-10-26
+
+- **"Is crime rising in Bengaluru City this week?"** dropped the place and listed the state's newest FIRs. It is now
+  a comparison (period_compare.py): the 7 days to today against the 7 before, counted with the same filters a list
+  uses, with the biggest rises and falls by crime type. "This week vs last week", "today vs yesterday / usual" (with
+  the 28-day median day) and "this month vs last month" work the same way, in Kannada too. A change under 10%, or
+  on fewer than 10 cases, is said as "about the same". "Higher"/"lower" stay rankings.
+- **"Any unusual spikes right now?"** asked for a crime type. It now reads the anomaly scan the Predict screen uses
+  (spikes_answer.py): upward flags only, observed against usual, z and confidence, narrowed by a place or crime
+  named, with "a flag is a signal, not a finding". Festival questions ("spike before Deepavali") stay on T30.
+- **"Deep research on Raju K"** wrote junk: the research agent did not run in the stream. It now does, and the
+  dossier replaces the placeholder.
+- **"Weather in Mysuru"** listed Mysuru FIRs. Off-topic questions (weather, cricket, movies, recipes…) get the
+  guardrail unless they name a crime ("does rain affect theft" is still answered); self-heal no longer turns them
+  into a listing.
+- Self-heal could return FIRs dated after today; those rows are dropped.
+- Answers a module writes whole (comparison, flags, brief, dossier, one case) skip the model rewrite in the stream:
+  a comparison took 7.7-10 s waiting on a QuickML timeout, now 0.5-1.6 s.
+- The Kannada "today" count was right (62); the miss was the test's fake clock.
+- tests/test_chat_e2e_fixes.py (17). `demo_check --date 2026-10-29`: READY, 0 fail, 0 warn.
+
 ## Every FIR its own id; the last four report items · 2026-10-25
 
 - **Duplicate FIR ids fixed in main.db.** 2,933 fir_ids (C00001-C05000) were each carried by a Bagalkot/Ballari
