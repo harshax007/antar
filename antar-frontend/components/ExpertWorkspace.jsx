@@ -164,31 +164,33 @@ function parseAnswer(text) {
 // second place, the length of the tail. Arithmetic only: nothing here is generated, so
 // nothing here can be wrong in a way the officer cannot check against the table.
 function deriveInsights(ranking, kn) {
-  const nums = ranking.map((r) => Number(String(r.n).replace(/,/g, ""))).filter((n) => Number.isFinite(n));
-  if (nums.length < 2) return [];
-  const total = nums.reduce((a, b) => a + b, 0);
+  const rows = ranking.map((r) => ({ name: r.name, n: Number(String(r.n).replace(/,/g, "")) })).filter((r) => Number.isFinite(r.n));
+  if (rows.length < 2) return [];
+  const total = rows.reduce((a, r) => a + r.n, 0);
   if (!total) return [];
-  const out = [];
   const pct = (n) => Math.round((n / total) * 100);
-  const top = ranking[0];
+  const fmt = (n) => n.toLocaleString("en-IN");
+  const [a, b] = rows;
+  const out = [];
   out.push(kn
-    ? `${top.name} ಈ ಪಟ್ಟಿಯ ${pct(nums[0])}% ಭಾಗ - ತೋರಿಸಿದ ${nums.length} ಸಾಲುಗಳಲ್ಲಿ ಅಗ್ರಸ್ಥಾನ.`
-    : `${top.name} accounts for ${pct(nums[0])}% of the ${nums.length} rows shown.`);
-  const lead = nums[0] - nums[1];
-  if (lead > 0) {
-    const times = nums[1] ? (nums[0] / nums[1]) : 0;
+    ? `**${a.name}** ಅತಿ ಹೆಚ್ಚು: ${fmt(a.n)}, ತೋರಿಸಿದ ಒಟ್ಟು ${fmt(total)} ರಲ್ಲಿ **${pct(a.n)}%**.`
+    : `**${a.name}** is the largest: ${fmt(a.n)} of the ${fmt(total)} shown (**${pct(a.n)}%**).`);
+  if (a.n > b.n) {
+    const x = b.n ? a.n / b.n : 0;
     out.push(kn
-      ? `${top.name} ಎರಡನೆಯದಕ್ಕಿಂತ ${lead.toLocaleString()} ಹೆಚ್ಚು${times >= 1.5 ? ` (${times.toFixed(1)}×)` : ""}.`
-      : `${top.name} leads ${ranking[1].name} by ${lead.toLocaleString()}${times >= 1.5 ? ` (${times.toFixed(1)}×)` : ""}.`);
+      ? `ಎರಡನೆಯ ${b.name} ಗಿಂತ **${fmt(a.n - b.n)}** ಹೆಚ್ಚು${x >= 1.2 ? ` (${x.toFixed(1)}×)` : ""}.`
+      : `${fmt(a.n - b.n)} more than the next, ${b.name}${x >= 1.2 ? ` (**${x.toFixed(1)}×**)` : ""}.`);
   }
-  if (nums.length >= 3) {
-    const top3 = pct(nums[0] + nums[1] + nums[2]);
-    if (top3 >= 50) {
-      out.push(kn
-        ? `ಮೊದಲ ಮೂರು ಸೇರಿ ${top3}% - ಗಮನ ಕೇಂದ್ರೀಕೃತವಾಗಿದೆ.`
-        : `The top three hold ${top3}% between them - the distribution is concentrated.`);
-    }
+  if (rows.length >= 4) {
+    const top3 = pct(a.n + b.n + rows[2].n);
+    out.push(kn
+      ? `ಮೊದಲ ಮೂರು **${top3}%**; ಉಳಿದ ${rows.length - 3} ಸೇರಿ ${100 - top3}%.`
+      : `The top three make up **${top3}%**; the other ${rows.length - 3} share ${100 - top3}%.`);
   }
+  const last = rows[rows.length - 1];
+  if (rows.length >= 3 && last.n > 0) out.push(kn
+    ? `ಕಡಿಮೆ: ${last.name}, ${fmt(last.n)} (${pct(last.n)}%).`
+    : `Smallest shown: ${last.name}, ${fmt(last.n)} (${pct(last.n)}%).`);
   return out;
 }
 
@@ -210,19 +212,22 @@ function InsightRow({ it, kn }) {
   const firs = it.firs || [];
   return (
     <li className={`c2-ins c2-ins-${INSIGHT_TONE[it.kind] || "note"}`}>
-      <span className="c2-ins-ic" aria-hidden="true"><Icon size={15} /></span>
+      <span className="c2-ins-ic" aria-hidden="true"><Icon size={12} /></span>
       <div className="c2-ins-b">
         {it.title && <b>{it.title}</b>}
-        <p><XwInline text={it.text} /></p>
+        <p title={CLASS_HELP[it.cls]}>{it.kind === "ranking"
+          ? it.text.split(/\*\*([^*]+)\*\*/g).map((t, i) => (i % 2 ? <strong key={i}>{t}</strong> : t))
+          : <XwInline text={it.text} />}</p>
+        {firs.length > 0 && (
         <div className="c2-ins-f">
-          <ClassTag c={it.cls} kn={kn} />
-          {firs.length > 0 && (
+          {(
             <button type="button" className="c2-ins-more" aria-expanded={open} onClick={() => setOpen(!open)}>
               {kn ? `${firs.length} FIR ತೋರಿಸಿ` : `${open ? "Hide" : "Show"} ${firs.length} ${firs.length === 1 ? "FIR" : "FIRs"}`}
               <ChevronDown size={12} aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : "none" }} />
             </button>
           )}
         </div>
+        )}
         {open && (
           <div className="c2-ins-firs">
             {firs.map((f) => (
