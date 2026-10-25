@@ -17,6 +17,15 @@ const BrainStructure = dynamic(() => import("@/components/BrainStructure"), {
   ssr: false,
   loading: () => <BrainLoader />,
 });
+// A cheap fingerprint of the graph rows, so a refresh can tell "nothing changed" apart
+const rowsSignature = (rows) => {
+  const s = JSON.stringify(rows);
+  let h = 0;
+  for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return `${rows.length}:${s.length}:${h}`;
+};
+const REFRESH_MS = 5 * 60 * 1000;
+
 const CaseBrain = dynamic(() => import("@/components/CaseBrain"), { ssr: false });
 
 // Screen 03 (served at /brain and /brain/structure): Page 01 (3D Brain Globe,
@@ -37,6 +46,7 @@ export default function BrainHub() {
   // lands on an empty shell mid-load. (owner req: wait for complete load.)
   const [contentReady, setContentReady] = useState(false);
   const topRef = useRef(null);
+  const sigRef = useRef(null);          // fingerprint of the rows on screen
   const isCase = /^S\d+/i.test(kpi);
 
   useEffect(() => {
@@ -52,6 +62,7 @@ export default function BrainHub() {
       fetchAPI("/api/dataset/graph?limit=3500")
         .then((d) => {
           if (!d?.rows) return;
+          sigRef.current = rowsSignature(d.rows);
           const recsRaw = fromRecords(d.rows);
           setBrainCache(recsRaw);
           if (alive) setRecs(prepare(recsRaw));
@@ -69,6 +80,35 @@ export default function BrainHub() {
         });
     });
     return () => { alive = false; };
+  }, [isCase]);
+
+  // Refresh every 5 minutes while the Brain is open, in the background (no loader). The
+  // graph is rebuilt only when the rows actually changed, so an unchanged refresh never
+  // moves the view under the officer. A hidden tab skips its turn and catches up on return.
+  useEffect(() => {
+    if (isCase) return;
+    let alive = true, last = Date.now(), busy = false;
+    const refresh = () => {
+      if (busy || document.hidden) return;
+      busy = true;
+      last = Date.now();
+      fetchAPI("/api/dataset/graph?limit=3500")
+        .then((d) => {
+          if (!alive || !d?.rows) return;
+          const next = rowsSignature(d.rows);
+          if (next === sigRef.current) return;
+          sigRef.current = next;
+          const recsRaw = fromRecords(d.rows);
+          setBrainCache(recsRaw);
+          setRecs(prepare(recsRaw));
+        })
+        .catch(() => {})                              // keep what is on screen
+        .finally(() => { busy = false; });
+    };
+    const timer = setInterval(refresh, REFRESH_MS);
+    const onVisible = () => { if (!document.hidden && Date.now() - last >= REFRESH_MS) refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { alive = false; clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, [isCase]);
 
   // Reveal the screen only once records exist and the constellation has had two paint

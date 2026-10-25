@@ -575,7 +575,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
         style={{
           position: "absolute",
           inset: 0,
-          background: "#03050c",
+          background: "var(--void, #060910)",
           zIndex: 25,
           display: "flex",
           flexDirection: "column",
