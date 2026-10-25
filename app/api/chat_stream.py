@@ -314,7 +314,12 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
                   if a in ("network", "profile", "alert_suggest", "predict", "pattern")]
     from app.forecast.chat import wants_forecast as _wants_forecast
     _is_forecast = _wants_forecast(query_text)
-    if hs_res.get("template_id") == "NONE" and not command and not req.deep_think and not _agent_ask             and not _is_forecast:
+    # A question naming one FIR ("arrest dates for FIR 1000112452023000001", "witness
+    # statements for FIR C00001") is answered from that case, which also says what the
+    # register does not hold. The keyword router saw no crime word and turned it away.
+    from app.agents.case_answer import wants_case as _wants_case, refers_back as _refers_back
+    _is_case = _wants_case(query_text) or _refers_back(query_text)
+    if hs_res.get("template_id") == "NONE" and not command and not req.deep_think and not _agent_ask and not _is_forecast and not _is_case:
         answer = ("I'm built for crime-data questions, so I can't answer that one.\n"
                   "Try asking:\n• most crimes?\n• theft trend in Bengaluru City\n"
                   "• how many murders in 2023?\n• who are the repeat offenders?"
@@ -601,18 +606,27 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         # Honest: /connect forced linkage agents but no entity resolved from the query.
         await q.emit("step", agent="network", status="done",
                      label="No entity resolved in query — showing database links only")
+    # What actually runs, as opposed to what was routed: the audit row and the "Agents used"
+    # line used to repeat the route list, so a profile with no suspect to profile, or a
+    # research/social route this surface has no runner for, was recorded as having worked.
+    ran = ["query"]
     if "profile" in routes and suspect_id:
-        tasks.append(run_profile_task())
+        tasks.append(run_profile_task()); ran.append("profile")
     if "network" in routes and suspect_id:
-        tasks.append(run_network_task())
+        tasks.append(run_network_task()); ran.append("network")
     if "geo" in routes or (template_id in ("T11", "T12", "T1", "T15") and not _is_forecast):
-        tasks.append(run_geo_task())
+        tasks.append(run_geo_task()); ran.append("geo")
     if "pattern" in routes:
-        tasks.append(run_pattern_task())
+        tasks.append(run_pattern_task()); ran.append("pattern")
     if "predict" in routes:
-        tasks.append(run_predict_task())
+        tasks.append(run_predict_task()); ran.append("predict")
     if "alert_suggest" in routes:
-        tasks.append(run_alerts_task())
+        tasks.append(run_alerts_task()); ran.append("alert_suggest")
+    _skipped = [r for r in routes if r not in ran]
+    if _skipped:
+        extra_reasoning.append({"agent": "router", "step": "skipped",
+                                "detail": "Routed but not run: " + ", ".join(
+                                    f"{r} (no suspect named)" if r in ("profile", "network") else r for r in _skipped)})
 
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -634,6 +648,10 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     # answer (no rows) or the officer asked for them by name.
     _asked = query_text.casefold()
     def _keep(k: str) -> bool:
+        # "The register holds no incident date" / "No FIR X in the register" is the whole
+        # answer; a patrol tip or pattern count under it reads as if something was found.
+        if template_id == "UNRESOLVED" and k != "query":
+            return False
         if k == "geo":
             # The geo route also fires on words like "city"; a patrol tip only belongs under
             # a where / hotspot / patrol question, not under "how many murders in Bengaluru City".
@@ -757,9 +775,11 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         await q.emit("suggested", data=suggested)
 
     # ── Step 8: Persist & complete ────────────────────────────────────────────
-    reasoning = query.get("reasoning", []) + [{
+    # extra_reasoning (Brain failures, skipped routes, a broader-than-asked answer) was
+    # collected and then dropped here, so /explain never replayed it.
+    reasoning = query.get("reasoning", []) + extra_reasoning + [{
         "step": "orchestrate",
-        "detail": f"Streamed to {', '.join(routes)} with confidence {routing_conf}.",
+        "detail": f"Streamed to {', '.join(ran)} with confidence {routing_conf}.",
     }]
     elapsed_ms = int((time.perf_counter() - t_start) * 1000)
     audit_hash = audit_store.record_ai_reasoning(
@@ -767,7 +787,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         session_id=session_id,
         user_text=req.text,
         answer=answer,
-        agents_used=routes,
+        agents_used=ran,
         citations=citations,
         reasoning_id=reasoning_id,
         reasoning_trace=reasoning
@@ -783,7 +803,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
             "question": req.text, "officer": officer, "citations": (citations or [])[:50],
             "rows": len(rows or []), "template_id": template_id, "method": method,
             "confidence": conf, "elapsed_ms": elapsed_ms, "audit_hash": audit_hash,
-            "mode": mode, "agents": routes, "lang": lang,
+            "mode": mode, "agents": ran, "lang": lang,
         })
 
     await q.emit("complete",
@@ -793,7 +813,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
                  template_id=template_id,
                  lang=lang,
                  mode=mode,
-                 agents_used=routes,
+                 agents_used=ran,
                  # What the Expert workspace states under "Sources": the named method that
                  # produced the answer and how many records it stands on. Both were already
                  # written to the session meta below — the screen just could not see them.

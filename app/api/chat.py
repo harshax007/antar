@@ -80,6 +80,36 @@ async def chat(req: ChatRequest, request: Request) -> dict:
 
     sessions.append_user_turn(session_id, req.text, lang)
 
+    # ── Misuse screen (vigil) before any data agent sees the question ────────
+    # The stream has refused REJECTED questions for a while; this endpoint (the app's
+    # non-stream path, and any direct API caller) answered them. Same screen, same refusal.
+    officer_id = current_identity(request).officer
+    try:
+        from app.agents.vigil_agent import audit_request
+        _screen = audit_request(req.text, officer=officer_id)
+    except Exception:
+        _screen = {}
+    if _screen.get("status") == "REJECTED":
+        answer = ("Antar ಇದಕ್ಕೆ ಉತ್ತರಿಸುವುದಿಲ್ಲ. ಇದು ಜಾತಿ, ಧರ್ಮ ಅಥವಾ ಸಮುದಾಯದ ಆಧಾರದ ಮೇಲೆ ಜನರ ಬಗ್ಗೆ ಕೇಳುತ್ತದೆ; "
+                  "ಪೊಲೀಸ್ ವಿಶ್ಲೇಷಣೆ ಹಾಗೆ ಮಾಡುವಂತಿಲ್ಲ (ಸಂವಿಧಾನದ ಅನುಚ್ಛೇದ 15; BNSS ಸೆಕ್ಷನ್ 173). ಬದಲಿಗೆ ಅಪರಾಧದ ಬಗ್ಗೆ "
+                  "ಕೇಳಿ - ಉದಾ: \"ರಾಜಾಜಿನಗರದಲ್ಲಿ ಈ ತಿಂಗಳ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳು\"." if lang == "kn" else
+                  "Antar does not answer this. It asks about people by their caste, religion or community, "
+                  "which police analysis may not do (Article 15 of the Constitution; BNSS Sec 173, "
+                  "non-discriminatory investigation). Ask about the crime instead - for example "
+                  "\"theft cases in Rajajinagar this month\" or \"top beats for theft in Rajajinagar\".")
+        refusal_trace = [{"step": "vigil", "detail": "; ".join(_screen.get("flags") or []) or "prohibited targeting",
+                          "citation": _screen.get("bnss_citation")}]
+        try:
+            audit_store.record_ai_reasoning(
+                officer=officer_id, session_id=session_id, user_text=req.text, answer=answer,
+                agents_used=["vigil"], citations=[], reasoning_id=reasoning_id, reasoning_trace=refusal_trace)
+        except Exception:
+            pass
+        sessions.append_assistant_turn(session_id, answer, lang, "REFUSED", reasoning_id, refusal_trace)
+        return {"answer": answer, "lang": lang, "citations": [], "agents_used": ["vigil"],
+                "visuals": {}, "brain_hits": [], "reasoning_id": reasoning_id, "reasoning": refusal_trace,
+                "suggested": [], "session_id": session_id, "template_id": "REFUSED", "mode": "refusal"}
+
     # ── Explain capability (M9): "why did you say that?" replays the last reasoning ──
     # `has_previous`: with nothing answered yet, a question that merely contains
     # "why" or "ಹೇಗೆ" is a real question, not a request to justify an earlier answer.
@@ -111,7 +141,8 @@ async def chat(req: ChatRequest, request: Request) -> dict:
     if result is None and use_llm:
         from app.agents.heuristics import heuristic_select
         hs_res = await heuristic_select(req.text, lang, history=history)
-        if hs_res.get("template_id") == "NONE" and not req.deep_think:
+        from app.agents.case_answer import wants_case
+        if hs_res.get("template_id") == "NONE" and not req.deep_think and not wants_case(req.text):
             answer = "I can answer questions about crimes, suspects, trends, hotspots, and demographics." if lang == "en" else "ನಾನು ಅಪರಾಧಗಳು, ಶಂಕಿತರು, ಪ್ರವೃತ್ತಿಗಳು, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಮತ್ತು ಜನಸಂಖ್ಯಾಶಾಸ್ತ್ರದ ಬಗ್ಗೆ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಬಲ್ಲೆ."
             sessions.append_assistant_turn(session_id, answer, lang, "NONE", reasoning_id, [{"step": "guardrail", "detail": "Intercepted off-topic query."}])
             return {"answer": answer, "lang": lang, "citations": [], "agents_used": ["guardrail"],

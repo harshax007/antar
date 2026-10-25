@@ -137,6 +137,31 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Chat QA report re-run: questions answered as asked, limits said out loud · 2026-10-25
+
+The QA report (CHAT_QA_TEST_REPORT_AND_FIXES.md) graded 29 of 40 as passing, but many of those passes answered a
+different question (similar cases → a district ranking; crime sub-heads → districts; missing coordinates → missing
+persons). Re-run against the real stream pipeline, judged by what was asked:
+
+- One FIR by crime number (18 digits) now opens that case (case_answer.py), names every row that carries the
+  number, and lists the full record: sections, accused and arrests, victims by sex, IO, MO, the accused's other
+  FIRs. What the register does not hold (witness statements, CDR, seized property, bank accounts, complainant
+  details, arrest and court dates) is named as not held. The stream's off-topic guardrail no longer turns these away.
+- "This case" with no FIR named uses the FIR named earlier in the conversation, or asks which one.
+- /api/chat now runs the vigil misuse screen; the community/religion question was answered there (Q027).
+- Fields the register lacks (incident date, FIR/UDR/Zero FIR category) are said, not answered with the nearest
+  template (register_gaps.py). Data quality is counted: Bagalkot has 9,723 of 21,291 FIRs with no coordinates.
+- Guilt and a child victim's identity get one plain boundary line above the answer (boundaries.py).
+- Routing: identifiers shared across cases → cross-district links; police stations of a district; crime
+  sub-heads; "compare with the preceding period" (trend, or year against year). Agent routing matches whole words
+  ("damage" no longer fires the age/demographic agent). "Complainant Raju" is no longer suspect S0001.
+- Follow-ups carry place, crime and period up to three questions back; sessions now keep 8 turns, not 6.
+- The stream's audit row and "agents used" list only agents that ran (it listed routed ones), and the trail now
+  carries the notes it used to drop (Brain failure, broader-than-asked, skipped routes).
+- Data issue found, not changed: 2,933 FIR ids (C00001 …) are carried by two rows each, a register FIR at Amengad PS
+  and a seeded one at BLR-RJN-0x. Answers now say so; the ids themselves need a decision.
+- tests/test_chat_qa_fixes.py guards each report prompt (19 tests). Full suite: 1,988 passed.
+
 ## Ask next: next steps from the answer, checked the way a click runs them · 2026-10-25
 
 - Follow-ups used to fall back to "Who are the repeat offenders?" and "Breakdown of crimes by type" for most answers.
