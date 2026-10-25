@@ -102,6 +102,10 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
   color: var(--text-3); font: 500 var(--fs-body) 'Inter', sans-serif; cursor: pointer; }
 .sx-views button:hover { color: var(--text-1); }
 .sx-views button.on { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
+/* OSINT is a tool, not a view: quieter grey until hovered or open */
+.sx-views button[data-tool="osint"] { color: var(--text-4); }
+.sx-views button[data-tool="osint"]:hover { color: var(--text-2); }
+.sx-views button[data-tool="osint"].on { color: var(--text-2); border-bottom-color: var(--text-3); }
 .sx-page--money { display: block; overflow-y: auto; }
 .sx-page--money > .sx-views { max-width: 1680px; margin: 84px max(var(--sp-4), calc((100% - 1680px) / 2)) 0; }
 .sx-page--money .mt-page { padding-top: var(--sp-5); }
