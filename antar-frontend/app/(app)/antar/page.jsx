@@ -2700,6 +2700,7 @@ export default function ChatPage() {
                   className="cx-land-input"
                   style={{
                     width: "100%",
+                    paddingRight: canUseExpert ? "88px" : 0,   // keep typed text clear of the Expert button
                     minHeight: "72px",
                     maxHeight: "220px",
                     background: "transparent",
