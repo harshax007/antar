@@ -2,6 +2,7 @@
 Antar - Copy an answer exactly as it was audited
 ================================================
 POST /api/answer-record/{audit_hash}/copy
+GET  /api/answer-record/{audit_hash}/insights   Antar Insights over the FIRs it cites
 
 The Expert workspace's Copy button does not copy what is on screen. It asks for the
 answer's own AI_REASONING entry in the audit log, checks that the entry's digest still
@@ -15,6 +16,7 @@ verifies, is not copied (409). Only the officer who asked, or an Admin, may copy
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
@@ -22,7 +24,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Request
 
 from app.core.auth_middleware import current_identity
-from app.services import audit_store
+from app.services import answer_insights, audit_store
 
 router = APIRouter()
 
@@ -63,18 +65,38 @@ def build_copy_text(rec: dict) -> str:
     return "\n".join(lines)
 
 
-@router.post("/{audit_hash}/copy")
-async def copy_answer(audit_hash: str, request: Request) -> dict:
+def _audited(audit_hash: str, request: Request, verb: str) -> tuple[dict, str, str]:
+    """The answer's verified audit entry, for the officer who asked it (or an Admin)."""
     rec = audit_store.get_answer_record(audit_hash)
     if rec is None:
-        raise HTTPException(status_code=404, detail="This answer has no audit log entry, so it cannot be copied.")
+        raise HTTPException(status_code=404, detail=f"This answer has no audit log entry, so it cannot be {verb}.")
     ident = current_identity(request)          # the same identity the chat recorded the answer under
     officer, role = ident.officer, ident.role
     if rec.get("officer") and officer != rec.get("officer") and role != "Admin":
-        raise HTTPException(status_code=403, detail="Only the officer who asked this question can copy its answer.")
+        raise HTTPException(status_code=403, detail="Only the officer who asked this question can do this.")
     if not rec["verified"]:
-        raise HTTPException(status_code=409, detail="The audit entry for this answer does not verify, so it was not copied.")
+        raise HTTPException(status_code=409, detail=f"The audit entry for this answer does not verify, so it was not {verb}.")
+    return rec, officer, role
+
+
+@router.post("/{audit_hash}/copy")
+async def copy_answer(audit_hash: str, request: Request) -> dict:
+    rec, officer, role = _audited(audit_hash, request, "copied")
     text = build_copy_text(rec)
     sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
     event = audit_store.record_answer_copied(officer, role, rec["hash"], sha, len(text))
     return {"text": text, "answer_hash": rec["hash"], "copy_sha256": sha, "copy_event_hash": event["hash"]}
+
+
+@router.get("/{audit_hash}/insights")
+async def answer_insights_for(audit_hash: str, request: Request) -> dict:
+    """Antar Insights for one answer, over the FIRs its audit entry cites (not the screen)."""
+    rec, _, _ = _audited(audit_hash, request, "analysed")
+    cites = rec.get("citations") or []
+    if isinstance(cites, str):
+        try:
+            cites = json.loads(cites)
+        except ValueError:
+            cites = []
+    out = await asyncio.to_thread(answer_insights.compute, answer_insights.fir_ids_from_citations(cites))
+    return {**out, "answer_hash": rec["hash"]}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, Check, FileSpreadsheet, Radio, ShieldCheck, Activity, Square, ArrowUpRight, CornerDownRight, Sparkles, HelpCircle, AlertTriangle } from "lucide-react";
+import { Download, RefreshCw, X, Play, FileText, Maximize2, Minimize2, Copy, Check, FileSpreadsheet, Radio, ShieldCheck, Activity, Square, ArrowUpRight, CornerDownRight, Sparkles, HelpCircle, AlertTriangle, Link2, Fingerprint, ShieldAlert, UserX, Hourglass, MapPin, Route, CalendarClock, Calendar, Layers, BarChart3, ChevronDown } from "lucide-react";
 import { getActiveOfficerId } from "@/components/OfficerSelector";
 import { openReport } from "@/lib/auth";
 import { fetchAPI } from "@/lib/api";
@@ -190,6 +190,84 @@ function deriveInsights(ranking, kn) {
     }
   }
   return out;
+}
+
+// ── Antar insights ──────────────────────────────────────────────────────────
+// What the FIRs behind this answer have in common, computed on the server from the FIRs
+// the answer's AUDIT ENTRY cites (GET /api/answer-record/{hash}/insights): shared accused,
+// vehicles or payment ids, a repeated method, child victims, arrests not yet made, cases
+// stuck against the state rate, a station, beat or weekday that recurs. Arithmetic over
+// rows, never generated, and every insight opens the FIRs it rests on.
+const INSIGHT_ICON = {
+  shared: Link2, method: Fingerprint, victims: ShieldAlert, arrests: UserX, progress: Hourglass,
+  place: MapPin, beat: Route, timing: CalendarClock, span: Calendar, mix: Layers, ranking: BarChart3,
+};
+const INSIGHT_TONE = { shared: "lead", method: "lead", victims: "alert", arrests: "alert", progress: "alert" };
+
+function InsightRow({ it, kn }) {
+  const [open, setOpen] = useState(false);
+  const Icon = INSIGHT_ICON[it.kind] || Sparkles;
+  const firs = it.firs || [];
+  return (
+    <li className={`c2-ins c2-ins-${INSIGHT_TONE[it.kind] || "note"}`}>
+      <span className="c2-ins-ic" aria-hidden="true"><Icon size={15} /></span>
+      <div className="c2-ins-b">
+        {it.title && <b>{it.title}</b>}
+        <p><XwInline text={it.text} /></p>
+        <div className="c2-ins-f">
+          <ClassTag c={it.cls} kn={kn} />
+          {firs.length > 0 && (
+            <button type="button" className="c2-ins-more" aria-expanded={open} onClick={() => setOpen(!open)}>
+              {kn ? `${firs.length} FIR ತೋರಿಸಿ` : `${open ? "Hide" : "Show"} ${firs.length} ${firs.length === 1 ? "FIR" : "FIRs"}`}
+              <ChevronDown size={12} aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : "none" }} />
+            </button>
+          )}
+        </div>
+        {open && (
+          <div className="c2-ins-firs">
+            {firs.map((f) => (
+              <Link key={f} href={`/case/${encodeURIComponent(f)}`} className="c2-firlink" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>{f}</Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function AntarInsights({ state, extra, kn }) {
+  const items = [...(state.data?.items || []), ...extra];
+  const loading = state.status === "loading";
+  return (
+    <div className="c2-block c2-insblk" id="xw-insights">
+      <div className="c2-block-t">
+        <span className="c2-ins-h"><Sparkles size={13} aria-hidden="true" /> {kn ? "ಅಂತರ್ ಒಳನೋಟಗಳು" : "Antar insights"}</span>
+        <span className="c2-ins-src">{kn ? "ಲೆಕ್ಕ ಹಾಕಿದ್ದು, ಉತ್ಪಾದಿಸಿದ್ದಲ್ಲ" : "Calculated, not generated"}</span>
+      </div>
+      {loading && (
+        <ul className="c2-ins-list" aria-busy="true">
+          {[0, 1, 2].map((i) => <li key={i} className="c2-ins c2-ins-skel"><span /><div><i /><i /></div></li>)}
+        </ul>
+      )}
+      {!loading && items.length > 0 && (
+        <ul className="c2-ins-list">
+          {items.map((it, i) => <InsightRow key={`${it.kind}-${i}`} it={it} kn={kn} />)}
+        </ul>
+      )}
+      {!loading && items.length === 0 && (
+        <p className="c2-ins-empty">
+          {state.status === "err" ? state.error
+            : state.data?.note || (kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಒಳನೋಟಗಳಿಲ್ಲ." : "Nothing stands out in the records behind this answer.")}
+        </p>
+      )}
+      {!loading && items.length > 0 && (
+        <div className="c2-srcnote">
+          {state.data?.note || (kn ? "ಮೇಲಿನ ಕೋಷ್ಟಕದಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ್ದು." : "Calculated from the ranked rows in this answer.")}
+          {" "}{kn ? "ಇವು ಸುಳಿವುಗಳು, ತೀರ್ಮಾನಗಳಲ್ಲ." : "These are leads to check, not findings."}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Long-running work an officer can hand off without blocking the chat. Each maps to a
@@ -510,6 +588,17 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
   }
   useEffect(() => () => clearTimeout(copyTimer.current), []);
 
+  const [ins, setIns] = useState({ status: "idle", data: null, error: "" });
+  useEffect(() => {
+    if (!meta?.hash) { setIns({ status: "idle", data: null, error: "" }); return; }
+    let alive = true;
+    setIns({ status: "loading", data: null, error: "" });
+    fetchAPI(`/api/answer-record/${encodeURIComponent(meta.hash)}/insights`)
+      .then((d) => { if (alive) setIns({ status: "ok", data: d, error: "" }); })
+      .catch((e) => { if (alive) setIns({ status: "err", data: null, error: e?.message || "Insights are not available right now." }); });
+    return () => { alive = false; };
+  }, [meta?.hash]);
+
   // The header shortcuts open the Brief and bring that section into view.
   const jump = (id) => {
     setActiveTab("document");
@@ -532,6 +621,9 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
   const running = jobs.filter((j) => j.status === "running" || j.status === "queued").length;
   const parsed = parseAnswer(editing ? draft : answer);
   const insights = deriveInsights(parsed.ranking, kn);
+  const rankInsights = insights.map((t) => ({ kind: "ranking", title: "", text: t, cls: "D", firs: [] }));
+  const insightCount = (ins.data?.items?.length || 0) + rankInsights.length;
+  const showInsights = !!parsed.summary && (ins.status === "loading" || insightCount > 0 || !!meta?.hash);
   const sure = parsed.summary ? howSure(evidenceClass, claims, kn) : null;
   // A claim that only repeats the bottom line is not a second piece of evidence.
   const extraClaims = claims.filter((c) => !sameText(c.text, parsed.summary));
@@ -603,9 +695,10 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                       title={nextQs.length ? (kn ? "ಮುಂದಿನ ಪ್ರಶ್ನೆಗಳು" : "Follow-up questions, one click asks them") : (kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಮುಂದಿನ ಪ್ರಶ್ನೆಗಳಿಲ್ಲ" : "No follow-up questions for this answer")}>
                 <CornerDownRight size={13} aria-hidden="true" /><span>{kn ? "ಮುಂದೆ ಕೇಳಿ" : "Ask next"}</span>
               </button>
-              <button type="button" onClick={() => jump("xw-insights")} disabled={!insights.length}
-                      title={insights.length ? (kn ? "ಕೋಷ್ಟಕದಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ ಒಳನೋಟಗಳು" : "Insights calculated from the ranked rows") : (kn ? "ಒಳನೋಟಗಳಿಗೆ ಶ್ರೇಣಿ ಪಟ್ಟಿ ಬೇಕು" : "No insights: they are calculated from a ranked list, and this answer has none")}>
+              <button type="button" onClick={() => jump("xw-insights")} disabled={!showInsights}
+                      title={kn ? "ಈ ಉತ್ತರದ FIRಗಳಲ್ಲಿ ಎದ್ದು ಕಾಣುವುದು" : "What stands out in the FIRs behind this answer"}>
                 <Sparkles size={13} aria-hidden="true" /><span>{kn ? "ಅಂತರ್ ಒಳನೋಟಗಳು" : "Antar insights"}</span>
+                {insightCount > 0 && <em className="c2-quick-n">{insightCount}</em>}
               </button>
               <button type="button" onClick={() => jump("xw-how")} disabled={!parsed.summary}
                       title={kn ? "ಈ ಉತ್ತರ ಹೇಗೆ ಬಂತು" : "How this was answered: method, agents, audit id"}>
@@ -727,6 +820,8 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                   <p className="xw-empty">{kn ? "ಎಡಭಾಗದಲ್ಲಿ ಪ್ರಶ್ನೆ ಕೇಳಿ - ಉತ್ತರ ಇಲ್ಲಿ ಸಾರಾಂಶವಾಗುತ್ತದೆ." : "Ask a question in the chat. The answer is turned into a brief here, with the FIRs it came from."}</p>
                 )}
 
+                {showInsights && <AntarInsights state={ins} extra={rankInsights} kn={kn} />}
+
                 {/* Every claim with its evidence class - ICD 203: keep what the record says
                     apart from what was calculated, judged, or is simply unknown. */}
                 {extraClaims.length > 0 && (
@@ -806,20 +901,6 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                   </div>
                 )}
 
-                {insights.length > 0 && (
-                  <div className="c2-block" id="xw-insights">
-                    <div className="c2-block-t">
-                      {kn ? "ಅಂತರ್ ಒಳನೋಟಗಳು" : "Antar insights"}
-                      <ClassTag c="D" kn={kn} />
-                    </div>
-                    {insights.map((t, i) => <div key={i} className="xw-li">{t}</div>)}
-                    <div className="c2-srcnote">
-                      {kn ? "ಮೇಲಿನ ಕೋಷ್ಟಕದಿಂದ ಲೆಕ್ಕ ಹಾಕಿದ್ದು - ಉತ್ಪಾದಿಸಿದ್ದಲ್ಲ."
-                          : "Calculated from the table above - not generated."}
-                    </div>
-                  </div>
-                )}
-
                 {/* Where to go next: the follow-ups the pipeline checked against the data for
                     this answer. One click asks it in the chat. */}
                 {nextQs.length > 0 && onAsk && (
@@ -857,7 +938,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             {(!citations || citations.length === 0) ? (
               <div className="xw-empty">{kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಉಲ್ಲೇಖಗಳಿಲ್ಲ." : "No evidence rows cited for this answer."}</div>
             ) : citations.map((c, i) => (
-              <Link key={i} href={`/case/${encodeURIComponent(c.fir)}`} className="xw-ref c2-row c2-firrow" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>
+              <Link key={i} href={`/case/${encodeURIComponent(c.id || c.fir)}`} className="xw-ref c2-row c2-firrow" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>
                 <span className="c2-idx">{i + 1}</span>
                 <div>
                   <b>FIR {c.fir}</b>{c.station ? <span className="c2-firstn"> · {c.station}</span> : ""}

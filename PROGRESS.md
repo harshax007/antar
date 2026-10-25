@@ -137,6 +137,18 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Antar insights: what the FIRs behind an answer have in common · 2026-10-25
+
+- New app/services/answer_insights.py, served at GET /api/answer-record/{hash}/insights. It reads the FIRs the answer's
+  verified audit entry cites (not the screen) and states, only where it holds: a shared accused id, vehicle, UPI id or IP
+  address; the same method recorded twice; child or women victims; named accused not yet arrested; cases still under
+  investigation against the statewide rate for the same crime types; a station, beat or weekday that recurs; the span.
+- Arithmetic only, class K or D, ranked child victims and shared ids first. Each insight lists the FIR ids it rests on,
+  which open the case timeline. Ranking-table insights are merged in. Typically 0.0-0.2 s; the first comparison for a
+  crime type ~1 s, then cached.
+- The panel sits right under the bottom line; the header button shows the count. Evidence rows now open the case by its
+  register id (c.id), not the crime number, which repeats across stations.
+
 ## Workspace Copy is the audited answer, word for word · 2026-10-25
 
 - Header shortcuts beside "Agents used": Ask next · Antar insights · How? · Copy (each opens that part of the brief).

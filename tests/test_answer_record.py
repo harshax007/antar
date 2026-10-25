@@ -82,3 +82,43 @@ def test_unknown_hash_and_other_officer_are_refused(monkeypatch):
     assert e.value.status_code == 404
     _as(monkeypatch, "ADMIN-1", "Admin")
     assert asyncio.run(answer_record.copy_answer(h, request=None))["answer_hash"] == h
+
+
+# ── Antar Insights ────────────────────────────────────────────────────────────
+from app.services import answer_insights
+
+
+def _register(tmp_path, rows):
+    con = sqlite3.connect(tmp_path / "reg.db")
+    cols = [c.strip() for c in answer_insights._COLS.split(",")]
+    con.execute(f"CREATE TABLE FIRs ({', '.join(cols)})")
+    for r in rows:
+        base = {c: None for c in cols}
+        base.update(r)
+        con.execute(f"INSERT INTO FIRs VALUES ({','.join('?' * len(cols))})", [base[c] for c in cols])
+    con.commit()
+    return con
+
+
+def test_insights_are_arithmetic_over_the_cited_firs(tmp_path):
+    answer_insights._baseline.clear()
+    rows = [dict(fir_id=f"F{i}", station="Whitefield PS", district_norm="Bengaluru City", crime_type="THEFT",
+                 date=f"2026-01-{i + 1:02d}", FIR_Stage="Under Investigation", Accused_Count=2, Arrested_Count_No_=0,
+                 Vehicle_Reg_No="KA01AB1234" if i < 2 else "", Girl=1 if i == 0 else 0) for i in range(4)]
+    rows.append(dict(fir_id="F9", station="Other PS", district_norm="Mysuru", crime_type="THEFT", date="2026-01-09",
+                     FIR_Stage="Convicted", Accused_Count=1, Arrested_Count_No_=1))
+    con = _register(tmp_path, rows)
+    out = answer_insights.compute(["F0", "F1", "F2", "F3", "F9", "MISSING"], con=con)
+    by = {i["kind"]: i for i in out["items"]}
+    assert out["basis"] == 5
+    assert by["victims"]["firs"] == ["F0"] and out["items"][0]["kind"] == "victims"   # child victims first
+    assert by["shared"]["firs"] == ["F0", "F1"] and "KA01AB1234" in by["shared"]["text"]
+    assert "9 accused named across 5 FIRs; 1 arrested (11%)" in by["arrests"]["text"]
+    assert by["place"]["title"] == "4 at Whitefield PS"
+    assert all(set(i["firs"]) <= {"F0", "F1", "F2", "F3", "F9"} for i in out["items"])   # only what was cited
+
+
+def test_no_insight_without_enough_firs(tmp_path):
+    con = _register(tmp_path, [dict(fir_id="F0", station="X", date="2026-01-01")])
+    assert answer_insights.compute(["F0"], con=con)["items"] == []
+    assert answer_insights.compute([], con=con)["items"] == []
