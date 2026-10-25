@@ -1799,8 +1799,8 @@ const avgConf = predictions?.length
         <div className="px-hero-main">
           <h1 className="px-title">
             {kn
-              ? <>ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಅಪರಾಧ <em>ಎಲ್ಲಿ ಹೆಚ್ಚಾಗಬಹುದು.</em></>
-              : <>Where crime is likely to <em>rise</em> in the next 7 days.</>}
+              ? <>ಮುಂಬರುವ ದಿನಗಳಲ್ಲಿ ಅಪರಾಧ <em>ಎಲ್ಲಿ ಹೆಚ್ಚಾಗಬಹುದು.</em></>
+              : <>Where crime is likely to <em>rise</em> in coming days.</>}
           </h1>
           <p className="px-sub">
             {kn ? "ಪ್ರಕರಣಗಳು ಬರುವ ಮೊದಲೇ ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ಯೋಜಿಸಿ. ಪ್ರತಿ ಮುನ್ಸೂಚನೆಗೂ ನಿರೀಕ್ಷಿತ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಅದನ್ನು ಲೆಕ್ಕ ಹಾಕಿದ FIR ಗಳು."
