@@ -167,6 +167,14 @@ def run_info(conn: sqlite3.Connection, as_of_week: str) -> dict | None:
     return {k.split(".", 2)[2]: json.loads(v) for k, v in rows}
 
 
+def _current(conn: sqlite3.Connection, override: str | None) -> tuple[asof_mod.AsOf, dict | None]:
+    a = asof_mod.resolve(conn, override)
+    info = run_info(conn, a.history_end.isoformat())
+    current = (info and info.get("signature") == store._signature(conn)
+               and info.get("model_version") == MODEL_VERSION)
+    return a, (info if current else None)
+
+
 def ensure(conn: sqlite3.Connection | None = None, override: str | None = None) -> dict:
     """Forecasts for the configured as-of exist and are current; compute them if not."""
     own = conn is None
@@ -175,18 +183,38 @@ def ensure(conn: sqlite3.Connection | None = None, override: str | None = None) 
         conn = registry_connect(DB_PATH, timeout=60)
     try:
         store.ensure(conn)
-        a = asof_mod.resolve(conn, override)
-        info = run_info(conn, a.history_end.isoformat())
-        current = (info and info.get("signature") == store._signature(conn)
-                   and info.get("model_version") == MODEL_VERSION)
-        return info if current else compute(conn, a)
+        a, info = _current(conn, override)
+        return info or compute(conn, a)
     finally:
         if own:
             conn.close()
 
 
+def ensure_isolated(override: str | None = None) -> dict:
+    """ensure() for the running server: the check runs here, a refit runs in a child process
+    (app/forecast/child.py), so its memory leaves with the child instead of staying in the
+    server. The CLI, the back-test and the tests keep calling ensure() directly."""
+    from app.core.db_path import DB_PATH
+    conn = registry_connect(DB_PATH, timeout=60)
+    try:
+        try:
+            _, info = _current(conn, override)
+            if info:
+                return info
+        except (sqlite3.OperationalError, ValueError):
+            pass                                   # store not built yet: the child builds it
+    finally:
+        conn.close()
+    from app.forecast import child
+    return child.run("app.forecast.run", "--ensure", override or "")
+
+
 if __name__ == "__main__":                              # python -m app.forecast.run [as-of]
     import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--ensure":  # the server's child (ensure_isolated)
+        from app.forecast import child
+        child.emit(ensure(override=(sys.argv[2] if len(sys.argv) > 2 else "") or None))
+        sys.exit(0)
     from app.core.db_path import DB_PATH
     con = registry_connect(DB_PATH, timeout=60)
     a = asof_mod.resolve(con, sys.argv[1] if len(sys.argv) > 1 else None)

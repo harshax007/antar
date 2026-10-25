@@ -170,7 +170,7 @@ def _prepare_async(override: str | None) -> None:
 
     def work():
         try:
-            R.ensure(override=override)
+            R.ensure_isolated(override=override)     # a refit runs in a child process
         finally:
             _preparing.discard(key)
     threading.Thread(target=work, daemon=True).start()

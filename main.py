@@ -251,7 +251,9 @@ async def background_warmup():
         # Current → read from forecast_meta; stale → ~70 s each, in the background.
         from app.forecast import run as _frun
         for _spec in (None, "real"):
-            _fr = await asyncio.to_thread(lambda s=_spec: _frun.ensure(override=s))
+            # a refit runs in a child process (app/forecast/child.py), so the ~1 GB it
+            # needs is returned when it ends instead of staying with the server
+            _fr = await asyncio.to_thread(lambda s=_spec: _frun.ensure_isolated(override=s))
             print(f"  Forecasts as of {_fr['as_of']} ({_fr['models']} models, "
                   f"{_fr['real_share']:.0%} real history)")
         # Gi* for the configured as-of, so /api/forecast/hotspots never waits 2 s for it

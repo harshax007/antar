@@ -143,6 +143,9 @@ if __name__ == "__main__":
     con = registry_connect(DB_PATH, timeout=60)
     if "--check" in sys.argv:
         print(json.dumps(state(con), indent=2))
+    elif "--forecasts-only" in sys.argv:              # the server's hourly tick, as a child process
+        from app.forecast import child
+        child.emit(run_once(con, backtest=False, log=lambda *_: None))
     else:
         res = run_once(con, force="--force" in sys.argv)
         print(json.dumps(res, indent=2))

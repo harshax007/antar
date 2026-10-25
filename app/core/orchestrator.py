@@ -248,9 +248,11 @@ def _refit_forecasts() -> dict | None:
     try:
         if not refit.due(con)["forecasts"]:
             return None
-        return refit.run_once(con, backtest=False, log=lambda *_: None)
     finally:
         con.close()
+    # The refit itself runs in a child process so its memory is returned when it ends
+    from app.forecast import child
+    return child.run("app.forecast.refit", "--forecasts-only")
 
 
 async def _autonomous_loop(interval_s: int) -> None:

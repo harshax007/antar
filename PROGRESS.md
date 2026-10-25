@@ -137,6 +137,26 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Backend fits in 2 GB: 2.5 GB steady to 0.48 GB · 2026-10-25
+
+Measured on the full server (port 8001, 12-core Windows, all warm-ups run), private bytes:
+
+| | Before | After |
+|---|---|---|
+| Steady, after warm-up | 2.5 GB | **0.46 GB** |
+| Spike every ~2 min | 3.4 GB | none |
+| Highest seen | 3.56 GB (daily forecast refit) | **0.51 GB** under load (screens + 4 chat answers) |
+
+- **The victims table is no longer copied into memory.** `zcql_local._world()` loaded all
+  900,477 victim rows as dicts (~1 GB) though nothing read `world["victims"]`, and the 60 s
+  cache rebuilt it, which was the 2-minute spike. Victims are still read per FIR.
+- **Forecast refits run in a child process** (`app/forecast/child.py`). Start-up, the hourly
+  tick and the forecast service check in-process whether forecasts are current (0.1 s) and
+  only start `python -m app.forecast.run --ensure` / `app.forecast.refit --forecasts-only`
+  when a refit is due. A forced refit on a copy of main.db: 51 s, the child peaked at 699 MB
+  and returned it on exit; the server did not grow. The CLI, back-test and tests still call
+  `ensure()` in-process.
+
 ## Money trail, linked victims, district social indicators · 2026-10-24
 
 | Area | Added | Where |

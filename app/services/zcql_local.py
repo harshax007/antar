@@ -730,7 +730,9 @@ def _world() -> dict:
     conn.row_factory = _dict_factory
     
     world = {}
-    tables = ["suspects", "relationships", "crime_suspects", "financial_links", "officers", "property", "victims", "stations"]
+    # "victims" is deliberately absent: 900k rows as dicts cost ~1 GB and nothing reads world["victims"].
+    # Victim rows are read per FIR where needed (app/services/case_timeline.py::_victims).
+    tables = ["suspects", "relationships", "crime_suspects", "financial_links", "officers", "property", "stations"]
     for t in tables:
         try:
             world[t] = conn.execute(f"SELECT * FROM {t}").fetchall()
