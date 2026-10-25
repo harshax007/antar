@@ -65,7 +65,7 @@ GOLDEN: list[tuple[str, str, str, bool]] = [
     ("ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು", "kn", "T12", True),                     # recent cases
     # ── Cross-station intelligence & outcomes (T19–T23) and the T8 / T12 filters ──
     ("which UPI IDs are used in more than one district", "en", "T19", True),
-    ("FIRs for UPI user1101@bank", "en", "T20", True),
+    ("FIRs for UPI geetha.achar40@okicici", "en", "T20", True),
     ("cases for accused ACC-KA-500777", "en", "T21", True),
     ("conviction rate by district in 2023", "en", "T22", True),
     ("top beats for theft in Bengaluru City", "en", "T23", True),

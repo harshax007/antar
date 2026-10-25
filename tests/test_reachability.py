@@ -41,10 +41,10 @@ class TestActions:
         assert _query_actions({"template_id": "T4", "params": {}})[0]["payload"] == "/antarBrain"
 
     def test_a_upi_answer_offers_the_money_trail_and_a_case(self):
-        acts = _query_actions({"template_id": "T20", "params": {"key_type": "upi", "value": "user1077@bank"},
+        acts = _query_actions({"template_id": "T20", "params": {"key_type": "upi", "value": "pooja.swamy66@okicici"},
                                "citations": [{"fir": "1000", "id": "C16633"}]})
         payloads = [a["payload"] for a in acts]
-        assert "/search?view=money&account=user1077@bank" in payloads and "/case/C16633" in payloads
+        assert "/search?view=money&account=pooja.swamy66@okicici" in payloads and "/case/C16633" in payloads
 
 
 def test_money_export_is_a_csv_ledger():

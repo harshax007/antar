@@ -32,6 +32,18 @@ from app.core.db_path import DB_PATH  # noqa: E402
 SEED = 20261024
 BANKS = ["oksbi", "okhdfcbank", "okicici", "okaxis", "ybl", "paytm", "ibl", "upi"]
 CHANNELS_IN = ["UPI", "UPI", "UPI", "IMPS", "NEFT"]
+
+# Holder name and bank for the named UPI ids (scripts/rename_upi_ids.py), so a rebuild keeps them.
+def _holders() -> dict:
+    import csv
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "upi_rename_map.csv")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return {r["new_id"]: (r["holder"], r["bank"]) for r in csv.DictReader(f)}
+
+
+HOLDERS = _holders()
 SCHEMA = """
 DROP TABLE IF EXISTS money_transactions;
 DROP TABLE IF EXISTS money_accounts;
@@ -154,7 +166,8 @@ def build(con: sqlite3.Connection) -> dict:
         acct(cash, "cash", f"Cash withdrawals · {district}", district)
         sus = suspects[i % len(suspects)] if suspects else None
         for u in members:
-            acct(u, "upi", u, district, u.split("@")[-1] if "@" in u else None)
+            holder, bank = HOLDERS.get(u, (u, u.split("@")[-1] if "@" in u else None))
+            acct(u, "upi", holder, district, bank)
         for u in members:
             for (fir, upi, d, fdate, head, accused) in by_upi[u]:
                 try:

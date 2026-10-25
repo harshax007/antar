@@ -58,7 +58,7 @@ def test_loose_llm_params_are_coerced():
     ("accused who appear across multiple districts", "en", "T19"),
     ("vehicles linked to FIRs in 3 or more districts", "en", "T19"),
     ("ಹಲವು ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಬಳಸಿದ UPI ಐಡಿಗಳು", "kn", "T19"),
-    ("FIRs for UPI user1101@bank", "en", "T20"),
+    ("FIRs for UPI geetha.achar40@okicici", "en", "T20"),
     ("cases linked to IP 103.87.106.22", "en", "T20"),
     ("cases for accused ACC-KA-500777", "en", "T21"),
     ("history of acc ka 102883", "en", "T21"),
@@ -98,7 +98,7 @@ def test_neighbouring_questions_do_not_change_route():
 
 def test_identifier_normalisation():
     assert normalize_accused_id("acc ka 500777") == "ACC-KA-500777"
-    assert detect_identifier("user1101@bank") == "upi"
+    assert detect_identifier("geetha.achar40@okicici") == "upi"
     assert detect_identifier("103.87.106.22") == "ip"
     assert detect_identifier("KA-02-M-2093") == "vehicle"
     assert detect_identifier("ACC-KA-500777") == "accused"
@@ -155,16 +155,16 @@ def test_t19_vehicle_question_does_not_filter_to_vehicle_theft():
 # ── T20 identifier lookup ─────────────────────────────────────────────────────
 
 def test_t20_upi_lookup_answer():
-    rows, cites = run_template("T20", {"value": "user1101@bank"})
+    rows, cites = run_template("T20", {"value": "geetha.achar40@okicici"})
     assert rows and cites
-    text = write_answer(rows, "T20", "en", {"value": "user1101@bank"}, "FIRs for UPI user1101@bank")
-    assert text.startswith("[VERIFIED] UPI ID **user1101@bank** appears in")
+    text = write_answer(rows, "T20", "en", {"value": "geetha.achar40@okicici"}, "FIRs for UPI geetha.achar40@okicici")
+    assert text.startswith("[VERIFIED] UPI ID **geetha.achar40@okicici** appears in")
     assert "Districts:" in text and "Crime types:" in text
 
 
 def test_t20_is_case_insensitive():
-    upper, _ = run_template("T20", {"value": "USER1101@BANK"})
-    lower, _ = run_template("T20", {"value": "user1101@bank"})
+    upper, _ = run_template("T20", {"value": "GEETHA.ACHAR40@OKICICI"})
+    lower, _ = run_template("T20", {"value": "geetha.achar40@okicici"})
     assert len(upper) == len(lower) > 0
 
 
@@ -283,7 +283,7 @@ def test_t12_crime_filter():
 
 @pytest.mark.parametrize("q,tid,needle", [
     ("which UPI IDs are used in more than one district", "T19", "UPI IDs appear in FIRs"),
-    ("FIRs for UPI user1101@bank", "T20", "UPI ID **user1101@bank** appears in"),
+    ("FIRs for UPI geetha.achar40@okicici", "T20", "UPI ID **geetha.achar40@okicici** appears in"),
     ("cases for accused ACC-KA-500777", "T21", "Accused **ACC-KA-500777** appears in"),
     ("conviction rate by district in 2023", "T22", "conviction rate among districts"),
     ("top beats for theft in Bengaluru City", "T23", "busiest beat for theft cases"),

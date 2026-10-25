@@ -137,6 +137,16 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Money trail: named UPI ids instead of user####@bank · 2026-10-25
+
+- scripts/rename_upi_ids.py renamed the 249 placeholder UPI ids (user1050@bank ...) to name-style ids with real UPI
+  handles (sowmya.rao79@axl), and set each account's label to the holder's name and its bank. One transaction across
+  FIRs.UPI_ID (976 rows) and money_transactions from/to (2,752 each). Deterministic; the map is data/upi_rename_map.csv
+  and `--revert` puts the old ids back. seed_money_trail.py keeps the names on a rebuild.
+- The audit log was not touched: 51 old rows still mention user####@bank, and rewriting them would break the chain.
+- Removed "Export for a bank request" (Money trail) and "Ask Chat to explain these links" (Social insights). Both pages
+  now put the heading left and the figures or limits right, full width. Full suite: 1,964 passed.
+
 ## Antar insights: what the FIRs behind an answer have in common · 2026-10-25
 
 - New app/services/answer_insights.py, served at GET /api/answer-record/{hash}/insights. It reads the FIRs the answer's

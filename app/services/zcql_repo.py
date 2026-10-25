@@ -2075,7 +2075,7 @@ TEMPLATES: dict[str, Template] = {
                      "accused who appear across multiple districts",
                      "vehicles linked to FIRs in 3 or more districts"], SharedIdentifiers, _t19),
     "T20": Template("T20", "All FIRs linked to one UPI ID, IP address or modus-operandi code (identifier lookup)",
-                    ["FIRs for UPI user1101@bank", "cases linked to IP 103.87.106.22",
+                    ["FIRs for UPI geetha.achar40@okicici", "cases linked to IP 103.87.106.22",
                      "FIRs sharing modus operandi MO-A1-festival-lockedhouse"],
                     IdentifierLookup, _t20),
     "T21": Template("T21", "Full FIR history of one accused ID across districts, with arrests, charge-sheets and convictions",

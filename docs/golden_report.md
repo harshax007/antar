@@ -29,7 +29,7 @@
 | ✅ | ತೆರೆದ ಪ್ರಕರಣಗಳು ಎಷ್ಟು | kn | T8 | T8 | 17 |
 | ✅ | ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು | kn | T12 | T12 | 10 |
 | ✅ | which UPI IDs are used in more than one district | en | T19 | T19 | 10 |
-| ✅ | FIRs for UPI user1101@bank | en | T20 | T20 | 19 |
+| ✅ | FIRs for UPI geetha.achar40@okicici | en | T20 | T20 | 19 |
 | ✅ | cases for accused ACC-KA-500777 | en | T21 | T21 | 25 |
 | ✅ | conviction rate by district in 2023 | en | T22 | T22 | 40 |
 | ✅ | top beats for theft in Bengaluru City | en | T23 | T23 | 10 |

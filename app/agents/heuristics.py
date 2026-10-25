@@ -566,7 +566,7 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     _acc = re.search(r"\bACC[\s_-]?KA[\s_-]?(\d{3,7})\b", (user_text or "").upper())
     if _acc:
         return choice("T21", {"accused_id": f"ACC-KA-{_acc.group(1)}"})
-    # T20 identifier lookup: "cases linked to IP 103.87.106.22", "FIRs for UPI user1101@bank"
+    # T20 identifier lookup: "cases linked to IP 103.87.106.22", "FIRs for UPI geetha.achar40@okicici"
     _ip = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", user_text or "")
     if _ip:
         return choice("T20", {"key_type": "ip", "value": _ip.group(0)})
