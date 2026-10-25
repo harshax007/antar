@@ -168,6 +168,8 @@ def _virtual_table(spec: QuerySpec) -> list[dict]:
         rows = conn.execute(sql, params).fetchall()
         conn.close()
         return rows
+    if spec.table == "__suspect_demographics__":
+        return _cached_virtual(spec, _suspect_demographics)
     if spec.table == "__shared_identifiers__":
         return _cached_virtual(spec, _shared_identifiers)
     if spec.table == "__case_outcomes__":
@@ -406,6 +408,32 @@ def _case_outcomes(spec: QuerySpec) -> list[dict]:
         r["conviction_rate"] = round(100 * min(cv, cs) / cs, 1) if cs else None
         r["undetected_share"] = round(100 * (r.get("undetected") or 0) / firs, 1) if firs else None
     return [r for r in rows if r.get("grp") is not None]
+
+
+_SUSPECT_DIMS = ("age", "gender", "occupation", "address_zone")
+
+
+def _suspect_demographics(spec: QuerySpec) -> list[dict]:
+    """T7 for suspects limited to a crime type or place: each suspect once, if any case linked
+    to them (crime_suspects) matches. The dimension is a fixed whitelist, never user text."""
+    dim = _fval(spec, "dimension", default="gender")
+    if dim not in _SUSPECT_DIMS:
+        dim = "gender"
+    where, args = ["1 = 1"], []
+    for col, val in (("c.crime_type", _fval(spec, "crime_type", "in")), ("c.zone", _fval(spec, "zone", "in"))):
+        sql, a = _in_clause(col, val)
+        if sql:
+            where.append(sql)
+            args += a
+    sql = (f"SELECT s.{dim} AS {dim}, COUNT(*) AS n FROM suspects s WHERE s.suspect_id IN ("
+           f"SELECT cs.suspect_id FROM crime_suspects cs JOIN crimes c ON c.crime_id = cs.crime_id "
+           f"WHERE {' AND '.join(where)}) GROUP BY s.{dim} ORDER BY n DESC LIMIT ?")
+    conn = registry_connect(DB_PATH)
+    conn.row_factory = _dict_factory
+    try:
+        return conn.execute(sql, args + [int(spec.limit or 50)]).fetchall()
+    finally:
+        conn.close()
 
 
 _OPEN_INV = ("under investigation", "transferred - under investigation")

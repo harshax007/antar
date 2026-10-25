@@ -357,6 +357,8 @@ def _runners_up(rows, dim: str, kn: bool) -> str:
 def _w_rank(rows, kn, params, template_id):
     """T11 — "most theft?", "which district has the most crime?", "least crime district"."""
     dim = next((k for k in rows[0] if k != "n"), "zone")
+    if dim == "io_name":
+        return _w_officers(rows, kn, params, template_id)
     cts = params.get("crime_types") or []
     asc = str(params.get("order") or "").lower() == "asc"
     total = _total_like(template_id, params)
@@ -399,6 +401,39 @@ def _w_rank(rows, kn, params, template_id):
         c = int(r.get("n") or 0)
         p = _pct(c, total)
         lines.append(f"{i}. {r.get(dim) or '—'} — {_fmt(c)}" + (f" ({p}%)" if p is not None else ""))
+    return lines
+
+
+def _w_officers(rows, kn, params, template_id):
+    """T11 by investigating officer: FIRs registered to each IO, said as caseload, not merit."""
+    rows = [r for r in rows if str(r.get("io_name") or "").strip()]
+    if not rows:
+        return None
+    cts = params.get("crime_types") or []
+    total = _total_like(template_id, params)
+    scope = _scope(params, kn)
+    _in = ", ".join(params.get("zones") or [])
+    r0 = rows[0]
+    n = int(r0.get("n") or 0)
+    if kn:
+        lead = (f"[COMPUTED] {_in + ' ನಲ್ಲಿ ' if _in else ''}{scope} ತನಿಖಾಧಿಕಾರಿಗಳಲ್ಲಿ **{' '.join(r0['io_name'].split())}** ಅವರಿಗೆ "
+                f"ಅತಿ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳು — **{_fmt(n)}** FIR.")
+        note = "ಇವು ಪ್ರತಿ ಅಧಿಕಾರಿಗೆ ದಾಖಲಾದ ಪ್ರಕರಣಗಳ ಸಂಖ್ಯೆ ಮಾತ್ರ, ಕಾರ್ಯಕ್ಷಮತೆಯ ಅಳತೆ ಅಲ್ಲ."
+        head = f"ಅಗ್ರ {len(rows)} ತನಿಖಾಧಿಕಾರಿಗಳು:"
+    else:
+        what = (" / ".join(_crime_word(c, False) for c in cts) + " FIRs") if cts else "FIRs"
+        where = f" in {_in}" if _in else ""
+        of = f" of {_fmt(total)}" if total else ""
+        lead = (f"[COMPUTED] By investigating officer{where} ({scope}), **{' '.join(r0['io_name'].split())}** holds the most "
+                f"{what} — **{_fmt(n)}**{of}.")
+        note = ("These are registration counts per officer, not a measure of performance: an officer's caseload "
+                "follows their station, beat, rank and the crime mix there.")
+        head = f"{'Fewest' if str(params.get('order')) == 'asc' else 'Top'} {len(rows)} investigating officers:"
+    lines = [lead, note, head]
+    for i, r in enumerate(rows, 1):
+        c = int(r.get("n") or 0)
+        p = _pct(c, total)
+        lines.append(f"{i}. {' '.join(str(r.get('io_name')).split())} — {_fmt(c)}" + (f" ({p}%)" if p is not None else ""))
     return lines
 
 
@@ -563,8 +598,13 @@ def _w_split(rows, kn, params, template_id):
         # victims are linked to FIRs, so the crime and the place asked about are named
         cts, zones = params.get("crime_types") or [], params.get("zones") or []
         who = ent
-        if ent == "victims" and not kn and (cts or zones):
-            who = ((" / ".join(_crime_word(c, False) for c in cts) + " ") if cts else "") + "victims"                   + (f" in {', '.join(zones)}" if zones else "")
+        if not kn and (cts or zones):
+            if ent == "victims":
+                who = ((" / ".join(_crime_word(c, False) for c in cts) + " ") if cts else "") + "victims" \
+                    + (f" in {', '.join(zones)}" if zones else "")
+            else:
+                who = "accused linked to " + ((" / ".join(_crime_word(c, False) for c in cts) + " ") if cts else "") \
+                    + "cases" + (f" in {', '.join(zones)}" if zones else "")
         dim = params.get("dimension")
         if kn:
             label = f"{top} ವಯಸ್ಸಿನವರು" if is_age else top
@@ -713,18 +753,33 @@ def _w_list(rows, kn, params, template_id):
         what = ((" / ".join(_crime_word(c, False) for c in cts) + " cases") if cts else "cases") + _absq(params, False) + _statq(params, False)
         where = f" in {', '.join(zones)}" if zones else ""
         scope = f" {_scope(params, False)}" if scoped else ""
-        if total:
+        if params.get("order") == "asc":
+            # "sort by elapsed time": the longest-registered first
+            lead = (f"[VERIFIED] **{_fmt(total)}** {what}{where} are on record{scope}; here are the {len(rows)} "
+                    f"registered longest ago, oldest first — from **{latest}** ({zone0})." if total else
+                    f"[VERIFIED] The {len(rows)} oldest {what}{where}, oldest first — from **{latest}** ({zone0}).")
+        elif total:
             lead = (f"[VERIFIED] **{_fmt(total)}** {what}{where} are on record{scope}; here are the latest "
                     f"{len(rows)} — the most recent on **{latest}** ({zone0}).")
         else:
             lead = f"[VERIFIED] The {len(rows)} most recent {what}{where} — the latest on **{latest}** ({zone0})."
+    elapsed = None
+    if params.get("order") == "asc" and not kn:
+        from app.services.zcql_repo import data_today
+        today = data_today()
+
+        def elapsed(d):
+            try:
+                return f" · {(today - date.fromisoformat(str(d)[:10])).days:,} days since registration"
+            except (TypeError, ValueError):
+                return ""
     lines = [lead]
     for i, r in enumerate(rows[:12], 1):
         f = r.get("fir_number") or r.get("crime_id") or "—"
         ct = _crime_word(r.get("crime_type"), True) if kn else _crime_en(r.get("crime_type"))
         st = f" · {_status(r.get('status'), kn)}" if r.get("status") else ""
         lines.append(f"{i}. FIR {f} — {ct}, {r.get('zone') or '—'}, {_date(r.get('occurred_at'))}{st}"
-                     f"{_accused_note(r, kn)}")
+                     f"{elapsed(r.get('occurred_at')) if elapsed else ''}{_accused_note(r, kn)}")
     return lines
 
 

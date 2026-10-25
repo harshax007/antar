@@ -486,6 +486,20 @@ def extract_entities(text: str, history: list[dict] | None = None) -> dict:
                 date_from, date_to, period = prev_ent.get("date_from"), prev_ent.get("date_to"), prev_ent.get("period")
                 period_label, span_kind = prev_ent.get("period_label"), prev_ent.get("span_kind")
 
+    # "registered more than 30 days ago", "FIRs over 6 months old": the window ends N days
+    # before the last record. It keeps an earlier start already asked for, else runs from
+    # the first year on record; a carried "recent" period would contradict it and is dropped.
+    _ago = re.search(r"\b(?:more than|over|older than|at least|beyond)\s+(\d{1,4})\s*(days?|weeks?|months?|years?)"
+                     r"\s+(?:ago|old|back|earlier)\b", low)
+    if _ago:
+        import datetime as _dt
+        n_, unit = int(_ago.group(1)), _ago.group(2)
+        days = n_ * (1 if unit.startswith("day") else 7 if unit.startswith("week") else 30 if unit.startswith("month") else 365)
+        cut = (data_today() - _dt.timedelta(days=days)).isoformat()
+        start = date_from if (date_from and date_from < cut) else f"{data_first_year()}-01-01"
+        date_from, date_to, period = start, cut, None
+        period_label, span_kind = f"registered more than {n_} {unit} ago (on or before {cut})", "before"
+
     # status words (unsolved/open/solved…) — word-boundary so 'solved' does not fire in 'unsolved'
     statuses = []
     for k in STATUS_SYNONYMS:
@@ -640,6 +654,14 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         return choice("T11", {"dimension": "station_code", "zones": zones, "limit": 50,
                               "date_from": date_from, "date_to": date_to, "period": period})
 
+    # "Count registered cases by investigating officer in Bagalkot for 2023": FIRs per IO.
+    if re.search(r"\b(?:by|per|each|every|which|top|most)\s+(?:investigating\s+)?(?:officers?|ios?)\b"
+                 r"|\binvestigating officers?\b[^.?!]{0,30}\b(count|most|caseload|workload|number|how many)\b"
+                 r"|\b(caseload|workload)\b[^.?!]{0,30}\b(officers?|ios?)\b", low):
+        return choice("T11", {"dimension": "io_name", "zones": zones, "crime_types": ct, "limit": 20,
+                              "order": "asc" if re.search(r"\b(least|fewest|lowest)\b", low) else "desc",
+                              "date_from": date_from, "date_to": date_to, "period": period})
+
     # "Most frequently recorded crime sub-heads in 2023": the register's sub-headings ranked.
     if re.search(r"\bsub[- ]?heads?\b|\bsub[- ]?headings?\b|\bcrime heads?\b", low):
         _nw = re.search(r"\b(\d{1,2}|three|five|ten)\s+(?:most|top|largest|biggest)\b|\btop\s+(\d{1,2})\b", low)
@@ -717,7 +739,8 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
                 dim = "age_group"
             # victims are linked to FIRs, so the crime and the place asked about apply
             return choice("T7", {"entity": entity, "dimension": dim, "crime_types": ct, "zones": zones})
-        return choice("T7", {"entity": entity, "dimension": dim})
+        # accused: counted through their linked cases, so the crime and the place apply too
+        return choice("T7", {"entity": entity, "dimension": dim, "crime_types": ct, "zones": zones})
     # top suspects (MUST be checked before T11 so 'top suspects in Rajajinagar' routes to T4)
     if "top suspect" in low or ("suspect" in low and ("top" in low or "most" in low)) \
             or "ಪ್ರಮುಖ ಸಂಶಯಿತ" in low:
@@ -999,7 +1022,9 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
         whole_registry_q = count_q or bool(re.search(
             r"\b(total|overall|all (crimes|cases|firs)|summary|breakdown|registry)\b", low))
         if constrained or whole_registry_q:
-            return choice("T1", {"crime_types": ct, "zones": zones, "status": statuses, "limit": limit_val, "date_from": date_from, "date_to": date_to, "period": period})
+            # "sort by elapsed time", "oldest first": longest-registered at the top
+            order = "asc" if re.search(r"\b(elapsed|oldest|earliest|longest[- ]pending|sort(?:ed)? by age)\b", low) else "desc"
+            return choice("T1", {"crime_types": ct, "zones": zones, "status": statuses, "limit": limit_val, "date_from": date_from, "date_to": date_to, "period": period, "order": order})
     return {"template_id": "NONE", "reason": "no keyword match", "answer_lang": answer_lang}
 
 

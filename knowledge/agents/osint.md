@@ -7,7 +7,7 @@ tags:
   - worker
 generated:
   by: process:antar-okf-export
-  at: "2026-10-24T15:11:42Z"
+  at: "2026-10-25T17:33:51Z"
 sources:
   - id: antar-agent-manifest
     resource: /AGENTS.md
@@ -18,10 +18,9 @@ status: stable
 
 # osint — Scout - open-web scan
 
-Runs as graph node `osint`.
+No graph node — API and autonomous surfaces only.
 
 * **Module**: `app/agents/graph.py::osint_node`
-* **Routes**: OSINT
 * **Guardrails**: redact_pii, verify_claims, vigil
 * **Human approval required**: no
 

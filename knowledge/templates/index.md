@@ -1,6 +1,6 @@
 # Whitelisted query templates
 
-* [T1 — List crimes by type / zone / date range](./t1-list-crimes-by-type-zone-date-range.md) - 10 parameter(s)
+* [T1 — List crimes by type / zone / date range](./t1-list-crimes-by-type-zone-date-range.md) - 11 parameter(s)
 * [T11 — Crime counts ranked by zone, district, or city (hotspots & city rankings)](./t11-crime-counts-ranked-by-zone-district-or-city-hotspots-ci.md) - 11 parameter(s)
 * [T12 — Most recent crimes (optionally by zone and crime type)](./t12-most-recent-crimes-optionally-by-zone-and-crime-type.md) - 6 parameter(s)
 * [T13 — Crime counts by crime type (breakdown)](./t13-crime-counts-by-crime-type-breakdown.md) - 6 parameter(s)

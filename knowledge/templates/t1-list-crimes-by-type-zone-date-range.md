@@ -34,6 +34,9 @@ parameters:
   - name: limit
     type: int
     required: false
+  - name: order
+    type: "Literal of 'desc', 'asc'"
+    required: false
 executor:
   resource: /app/services/zcql_repo.py
   receipt:
@@ -49,7 +52,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-24T15:11:41Z"
+  at: "2026-10-25T17:33:50Z"
 status: stable
 ---
 

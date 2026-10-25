@@ -20,7 +20,7 @@ parameters:
     type: str
     required: false
   - name: dimension
-    type: "Literal of 'zone', 'district', 'station_code'"
+    type: "Literal of 'zone', 'district', 'station_code', 'io_name'"
     required: false
   - name: limit
     type: int
@@ -52,7 +52,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-24T15:11:41Z"
+  at: "2026-10-25T17:33:50Z"
 status: stable
 ---
 

@@ -177,3 +177,83 @@ class TestAuditRecordsWhatRan:
         assert "research" not in complete["agents_used"] and "social" not in complete["agents_used"]
         assert complete["agents_used"][0] == "query"
         assert any(s.get("step") == "skipped" for s in complete.get("reasoning") or [])
+
+
+class TestEveryFirHasItsOwnId:
+    """2,933 fir_ids were carried by a Bagalkot/Ballari register row and a seeded Bengaluru
+    row at once (scripts/dedupe_fir_ids.py)."""
+
+    def _con(self):
+        import sqlite3
+        from app.core.db_path import DB_PATH
+        return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+
+    def test_no_fir_id_is_shared(self):
+        con = self._con()
+        try:
+            n = con.execute("SELECT COUNT(*) FROM (SELECT fir_id FROM FIRs GROUP BY fir_id HAVING COUNT(*) > 1)").fetchone()[0]
+        finally:
+            con.close()
+        assert n == 0
+
+    def test_a_suspects_cases_are_only_their_own(self):
+        con = self._con()
+        try:
+            stations = [r[0] for r in con.execute(
+                "SELECT f.station FROM crime_suspects cs JOIN FIRs f ON f.fir_id = cs.crime_id WHERE cs.suspect_id = 'S0001'")]
+        finally:
+            con.close()
+        assert stations and all(s.startswith("BLR-") for s in stations)     # no Bagalkot FIR by a shared number
+
+    def test_the_register_row_answers_under_its_new_id(self):
+        r = _ask("status of FIR C273697")
+        assert r["template_id"] == "CASE" and "Amengad PS" in r["answer"] and "1 FIR" not in r["answer"][:20]
+
+
+class TestRemainingReportItems:
+    def test_accused_age_groups_keep_the_crime_asked(self):           # Q023
+        r = _ask("Show the recorded age-group distribution of accused persons across theft cases.")
+        assert r["template_id"] == "T7" and r["params"]["crime_types"] == ["THEFT"]
+        assert "accused linked to theft cases" in r["answer"]
+        total = int(r["answer"].split(" of ")[1].split(" ")[0].replace(",", ""))
+        assert total < 2365                       # not every suspect on record
+
+    def test_registered_more_than_n_days_ago_oldest_first(self):      # Q008
+        hist = [{"role": "user", "text": "List the recent crimes in Rajajinagar."}, {"role": "assistant", "text": "…"},
+                {"role": "user", "text": "show only those with theft"}, {"role": "assistant", "text": "…"},
+                {"role": "user", "text": "Narrow those results to cases registered more than 30 days ago and sort by elapsed time."}]
+        r = _ask(hist[-1]["text"], history=hist)
+        from datetime import timedelta
+        from app.services.zcql_repo import data_today
+        cut = (data_today() - timedelta(days=30)).isoformat()
+        assert r["template_id"] == "T1" and r["params"]["date_to"] == cut and r["params"]["order"] == "asc"
+        assert r["params"]["zones"] == ["Rajajinagar"] and r["params"]["crime_types"] == ["THEFT"]
+        dates = [c.get("occurred_at") for c in r["rows"]]
+        assert dates == sorted(dates) and max(dates)[:10] <= cut
+        assert "oldest first" in r["answer"] and "days since registration" in r["answer"]
+
+    def test_case_counts_by_investigating_officer(self):              # Q132
+        r = _ask("Count registered cases by investigating officer in Bagalkot for 2023.")
+        assert r["template_id"] == "T11" and r["params"]["dimension"] == "io_name"
+        assert "not a measure of performance" in r["answer"]
+
+    def test_briefing_of_the_previous_answer(self):                   # Q010
+        first = _ask("List the recent theft cases in Rajajinagar.")
+        hist = [{"role": "user", "text": "List the recent theft cases in Rajajinagar."},
+                {"role": "assistant", "text": first["answer"]},
+                {"role": "user", "text": "Prepare a short briefing for the district superintendent summarizing the "
+                                         "result, priority records, and data limitations."}]
+        r = _ask(hist[-1]["text"], history=hist)
+        assert r["template_id"] == "BRIEFING"
+        assert "District Superintendent" in r["answer"] and "**Data limitations:**" in r["answer"]
+        assert "Rajajinagar" in r["answer"] and "FIR " in r["answer"]
+        r = _ask(hist[-1]["text"], history=[hist[-1]])
+        assert r["template_id"] == "CLARIFY"
+
+    def test_a_follow_up_is_not_answered_from_another_conversation(self):
+        q = "show only those with theft"
+        a = _ask(q, history=[{"role": "user", "text": "crimes in Mysuru"}, {"role": "assistant", "text": "…"},
+                             {"role": "user", "text": q}])
+        b = _ask(q, history=[{"role": "user", "text": "crimes in Mangaluru"}, {"role": "assistant", "text": "…"},
+                             {"role": "user", "text": q}])
+        assert a["params"]["zones"] != b["params"]["zones"]

@@ -1036,6 +1036,7 @@ class TypeZonePeriod(BaseModel):
     stations: StrList = Field(default_factory=list)
     heads: StrList = Field(default_factory=list)
     limit: int = 100
+    order: Literal["desc", "asc"] = "desc"   # "asc": oldest first ("sort by elapsed time")
 
     @field_validator("limit")
     @classmethod
@@ -1065,7 +1066,7 @@ def _t1(p: TypeZonePeriod) -> QuerySpec:
         select=["crime_id", "fir_number", "crime_type", "act", "acts_sections", "zone",
                 "district", "station_code", "occurred_at", "status", "io_name"]
                + (["accused", "arrested"] if p.arrest_status else []),
-        filters=filters, order_by=("occurred_at", "desc"), limit=p.limit,
+        filters=filters, order_by=("occurred_at", getattr(p, "order", "desc")), limit=p.limit,
     )
 
 
@@ -1209,7 +1210,7 @@ Dimension = Annotated[Literal["age_band", "gender", "occupation", "zone", "addre
 class DemographicBreakdown(BaseModel):
     entity: Literal["victims", "suspects"] = "victims"
     dimension: Dimension = "gender"
-    # victims only: each victim row carries its FIR's crime type and place
+    # victims: each row carries its FIR's crime type and place; suspects: through their linked cases
     crime_types: CrimeTypeList = Field(default_factory=list)
     zones: StrList = Field(default_factory=list)
 
@@ -1222,6 +1223,16 @@ def _t7(p: DemographicBreakdown) -> QuerySpec:
         dim = "address_zone"
     if p.entity == "suspects" and dim in ("relation", "age_group"):
         dim = "gender"                       # a victim's attributes, not a suspect's
+    if p.entity == "suspects" and (p.crime_types or p.zones):
+        # "accused across theft cases": a suspect counts once, if linked to a case that matches
+        filters = [Filter("dimension", "=", dim)]
+        if p.crime_types:
+            filters.append(Filter("crime_type", "in", expand_crime_types(p.crime_types)))
+        zones = resolve_zones(p.zones)
+        if zones:
+            filters.append(Filter("zone", "in", zones))
+        return QuerySpec(table="__suspect_demographics__", select=[dim], filters=filters,
+                         order_by=("n", "desc"), limit=50)
     filters = []
     if p.entity == "victims":
         if p.crime_types:
@@ -1240,10 +1251,12 @@ def _as_geo_dimension(v: Any) -> str:
     s = str(v or "").strip().lower().replace(" ", "_")
     if s in ("station", "stations", "station_code", "police_station", "unit", "units", "ps"):
         return "station_code"
+    if s in ("io", "io_name", "officer", "officers", "investigating_officer", "investigating_officers"):
+        return "io_name"
     return "zone"
 
 
-GeoDimension = Annotated[Literal["zone", "district", "station_code"], BeforeValidator(_as_geo_dimension)]
+GeoDimension = Annotated[Literal["zone", "district", "station_code", "io_name"], BeforeValidator(_as_geo_dimension)]
 
 
 def _as_order(v: Any) -> str:

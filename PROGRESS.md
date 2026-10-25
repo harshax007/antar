@@ -137,6 +137,29 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Every FIR its own id; the last four report items · 2026-10-25
+
+- **Duplicate FIR ids fixed in main.db.** 2,933 fir_ids (C00001-C05000) were each carried by a Bagalkot/Ballari
+  register row and a seeded Bengaluru row, so a lookup by id got both, and S0001's "linked cases" included a
+  Bagalkot FIR that only shared the number (8 cases listed, 4 his). `scripts/dedupe_fir_ids.py` gave the register rows
+  fresh ids above the highest in use (C00026 at Amengad PS is now C273697) and moved what belongs to them:
+  3,188 victims rows and 13 money-trail rows (the trail starts from the register row's UPI id). The seeded rows keep
+  their ids, so suspects, property, relationships and the seed files are untouched. One transaction; the map is in
+  data/fir_id_rename_map.csv and `--revert` puts it back (dry-run both ways on a copy first). audit_log is not
+  rewritten, so old audit rows still name the old ids. No fir_id is now carried by more than one row.
+- Q023: the accused age-group breakdown applies the crime asked: "accused across theft cases" counts the 242
+  accused linked to a theft FIR, not all 2,365 on record.
+- Q008: "registered more than 30 days ago" ends the window 30 days before the last record, and "sort by elapsed
+  time" lists oldest first with the days since registration on each row.
+- Q132: case counts by investigating officer (T11 by IO), with a line that these are registration counts, not a
+  measure of performance.
+- Q010: "a briefing for the superintendent summarising the result" is a brief of the previous answer (briefing.py):
+  question, result, the records it listed first, every limitation it stated plus the register's standing ones. No
+  new query; phone/UPI/account numbers masked. With no earlier answer it says so. Only the query agent runs for it.
+- Found on the way: answers were cached by question text alone, so "show only those with theft" could replay
+  another conversation's answer for a different place. The cache key now includes the questions before it.
+- A one-case answer names its register id when the FIR has no crime number.
+
 ## Chat QA report re-run: questions answered as asked, limits said out loud · 2026-10-25
 
 The QA report (CHAT_QA_TEST_REPORT_AND_FIXES.md) graded 29 of 40 as passing, but many of those passes answered a
@@ -158,8 +181,7 @@ persons). Re-run against the real stream pipeline, judged by what was asked:
 - Follow-ups carry place, crime and period up to three questions back; sessions now keep 8 turns, not 6.
 - The stream's audit row and "agents used" list only agents that ran (it listed routed ones), and the trail now
   carries the notes it used to drop (Brain failure, broader-than-asked, skipped routes).
-- Data issue found, not changed: 2,933 FIR ids (C00001 …) are carried by two rows each, a register FIR at Amengad PS
-  and a seeded one at BLR-RJN-0x. Answers now say so; the ids themselves need a decision.
+- Data issue found: 2,933 FIR ids (C00001 …) were carried by two rows each (fixed in the entry above).
 - tests/test_chat_qa_fixes.py guards each report prompt (19 tests). Full suite: 1,988 passed.
 
 ## Ask next: next steps from the answer, checked the way a click runs them · 2026-10-25

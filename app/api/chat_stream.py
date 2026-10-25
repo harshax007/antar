@@ -318,7 +318,9 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     # statements for FIR C00001") is answered from that case, which also says what the
     # register does not hold. The keyword router saw no crime word and turned it away.
     from app.agents.case_answer import wants_case as _wants_case, refers_back as _refers_back
-    _is_case = _wants_case(query_text) or _refers_back(query_text)
+    from app.agents.briefing import wants_briefing as _wants_briefing
+    # ...and a brief of the previous answer ("a memo summarising the above") names no crime either
+    _is_case = _wants_case(query_text) or _refers_back(query_text) or _wants_briefing(query_text)
     if hs_res.get("template_id") == "NONE" and not command and not req.deep_think and not _agent_ask and not _is_forecast and not _is_case:
         answer = ("I'm built for crime-data questions, so I can't answer that one.\n"
                   "Try asking:\n• most crimes?\n• theft trend in Bengaluru City\n"
@@ -504,6 +506,10 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         # pattern / alert / geo agents would append unmeasured "risk" sections beneath it that
         # can contradict it, so they don't run for a forecast question.
         routes = [r for r in routes if r not in ("predict", "pattern", "alert_suggest", "geo")]
+    if template_id in ("BRIEFING", "CLARIFY") and not command:
+        # A brief of the last answer, or a question back to the officer, is the whole turn:
+        # "briefing for the district superintendent" set off the geo agent on "district".
+        routes = []
     params = query.get("params", {})
     tasks = []
 

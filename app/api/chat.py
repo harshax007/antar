@@ -142,7 +142,9 @@ async def chat(req: ChatRequest, request: Request) -> dict:
         from app.agents.heuristics import heuristic_select
         hs_res = await heuristic_select(req.text, lang, history=history)
         from app.agents.case_answer import wants_case
-        if hs_res.get("template_id") == "NONE" and not req.deep_think and not wants_case(req.text):
+        from app.agents.briefing import wants_briefing
+        if hs_res.get("template_id") == "NONE" and not req.deep_think and not wants_case(req.text) \
+                and not wants_briefing(req.text):
             answer = "I can answer questions about crimes, suspects, trends, hotspots, and demographics." if lang == "en" else "ನಾನು ಅಪರಾಧಗಳು, ಶಂಕಿತರು, ಪ್ರವೃತ್ತಿಗಳು, ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಮತ್ತು ಜನಸಂಖ್ಯಾಶಾಸ್ತ್ರದ ಬಗ್ಗೆ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಬಲ್ಲೆ."
             sessions.append_assistant_turn(session_id, answer, lang, "NONE", reasoning_id, [{"step": "guardrail", "detail": "Intercepted off-topic query."}])
             return {"answer": answer, "lang": lang, "citations": [], "agents_used": ["guardrail"],

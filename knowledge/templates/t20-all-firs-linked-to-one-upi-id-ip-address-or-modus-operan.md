@@ -25,7 +25,7 @@ tags:
   - whitelist
 generated:
   by: process:antar-okf-export
-  at: "2026-10-24T15:11:41Z"
+  at: "2026-10-25T17:33:50Z"
 status: stable
 ---
 
@@ -35,7 +35,7 @@ A whitelisted, parameterised query over the FIR registry. Antar never executes f
 
 ## Questions this answers
 
-* FIRs for UPI user1101@bank
+* FIRs for UPI geetha.achar40@okicici
 * cases linked to IP 103.87.106.22
 * FIRs sharing modus operandi MO-A1-festival-lockedhouse
 

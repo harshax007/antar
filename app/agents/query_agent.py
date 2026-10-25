@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio          # compose_answer wraps the LLM call in asyncio.wait_for; without
                         # this import every composition raised NameError, was swallowed by
                         # the fallback, and the model was never actually used.
+import hashlib
 import os as _os
 import re
 import time
@@ -1066,6 +1067,11 @@ async def query_agent_run(
     # the answer depends on whose question it is when case rows are limited to a posting
     from app.services.zcql_repo import scoped_posting as _scoped_posting
     cache_key = f"{lang}:{_scoped_posting().lower()}:{user_text.strip().lower()}"
+    # A follow-up ("show only those with theft") means what the questions before it asked;
+    # keyed on its text alone, it replayed another conversation's answer.
+    _prior = [t.get("text") or "" for t in (history or [])[:-1] if t.get("role") == "user"][-3:]
+    if _prior:
+        cache_key += ":" + hashlib.sha1("\n".join(_prior).lower().encode()).hexdigest()[:12]
     cached = _get_cached_query(cache_key)
     if cached:
         return cached
@@ -1097,6 +1103,16 @@ async def query_agent_run(
             if res["template_id"] == "FORECAST":
                 _set_cached_query(cache_key, res)
             return res
+
+    # "A short briefing for the superintendent summarising the result": a brief of the
+    # previous answer, built from the conversation (app/agents/briefing.py). It used to be
+    # read as a new question with no place in it, and asked which hotspot was meant.
+    from app.agents import briefing as _briefing
+    if _briefing.wants_briefing(user_text):
+        res = _briefing.build(user_text, history or [], lang or "en")
+        log_step(session_id, "query", res["template_id"], user_text[:80], f"{res['params'].get('records', 0)} records",
+                 int((time.time() - t0) * 1000))
+        return res
 
     # One FIR named ("status of FIR C00026"): answered from that case, with its timeline
     # (app/agents/case_answer.py). It used to fall through to a statewide count.
