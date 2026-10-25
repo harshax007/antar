@@ -83,8 +83,8 @@ function SearchContent() {
   const sp = useSearchParams();
   const { lang } = useLang();
   const kn = lang === "kn";
-  const view = sp?.get("view") === "money" ? "money" : "people";
-  const setView = (v) => router.replace(v === "money" ? "/search?view=money" : "/search");
+  const view = ["money", "social"].includes(sp?.get("view")) ? sp.get("view") : "people";
+  const setView = (v) => router.replace(v === "people" ? "/search" : `/search?view=${v}`);
 
   const [role, setRoleState] = useState("Officer");
   const [trueAdmin, setTrueAdmin] = useState(false);
@@ -421,12 +421,13 @@ function SearchContent() {
     ].map(([k, label, detail]) => ({ k, label, detail, pts: Math.round(p.risk_attributions?.[k] ?? (p.factors?.[k] || 0) * 25) })),
     strongMatches: (p.similar_cases || []).filter((c) => (c.score || 0) >= 0.25),
   } : null;
-  // Search has two views: People (records) and the Money trail (/search?view=money)
-  if (view === "money") {
+  // Search has three views: People (records), the Money trail (/search?view=money) and
+  // Social insights (/search?view=social)
+  if (view === "money" || view === "social") {
     return (
-      <div className="sx-page sx-page--money">
+      <div className={`sx-page sx-page--money sx-page--${view}`}>
         <SearchViews view={view} onChange={setView} kn={kn} />
-        <MoneyTrail />
+        {view === "money" ? <MoneyTrail /> : <SocialInsights />}
       </div>
     );
   }
@@ -1168,10 +1169,11 @@ function SearchContent() {
 }
 
 const MoneyTrail = dynamic(() => import("@/components/MoneyTrail"), { ssr: false });
+const SocialInsights = dynamic(() => import("@/components/SocialInsights"), { ssr: false });
 
 // People | Money trail: the two ways into a case from Search.
 function SearchViews({ view, onChange, kn }) {
-  const tabs = [["people", kn ? "ವ್ಯಕ್ತಿಗಳು" : "People"], ["money", kn ? "ಹಣದ ಜಾಡು" : "Money trail"]];
+  const tabs = [["people", kn ? "ವ್ಯಕ್ತಿಗಳು" : "People"], ["money", kn ? "ಹಣದ ಜಾಡು" : "Money trail"], ["social", kn ? "ಸಾಮಾಜಿಕ ಒಳನೋಟ" : "Social insights"]];
   return (
     <nav className="sx-views" role="tablist" aria-label={kn ? "ಹುಡುಕಾಟ ನೋಟ" : "Search view"}>
       {tabs.map(([k, label]) => (

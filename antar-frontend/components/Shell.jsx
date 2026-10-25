@@ -18,7 +18,7 @@ const NAV = [
   { href: "/map", en: "Map", kn: "ನಕ್ಷೆ", ico: "", live: true },
   { href: "/network", en: "Network", kn: "ಜಾಲ", ico: "", live: true },
   { href: "/trends", en: "Trends", kn: "ಪ್ರವೃತ್ತಿ", ico: "", live: true },
-  { href: "/social", en: "Social", kn: "ಸಾಮಾಜಿಕ", ico: "", live: true },
+  { href: "/search?view=social", en: "Social", kn: "ಸಾಮಾಜಿಕ", ico: "", live: true },
   { href: "/predict", en: "Predict", kn: "ಮುನ್ಸೂಚನೆ", ico: "", live: true },
   { href: "/profiles", en: "Profiles", kn: "ವ್ಯಕ್ತಿಚಿತ್ರ", ico: "", live: true },
   { href: "/alerts", en: "Alerts", kn: "ಎಚ್ಚರಿಕೆ", ico: "", live: false },
