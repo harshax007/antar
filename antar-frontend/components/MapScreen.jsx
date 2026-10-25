@@ -1482,8 +1482,9 @@ export default function MapScreen() {
           
 
         </MapContainer></div>
-        {/* What the forecast dots are: a strip under the map, never over it */}
-        {dayView && (
+        {/* What the forecast dots are: a strip under the map, never over it. An open agent
+            card takes the same corner, so the strip waits until the card is closed. */}
+        {dayView && !agentRun && (
           <div className="mx-fckey" role="note" style={{ width: keyRoom }}>
             <span className="mx-fckey-dots day" aria-hidden="true"><i /></span>
             <p>{dayCases?.error ? <>{kn ? "ಈ ದಿನದ ಪ್ರಕರಣಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ." : "The cases for this day could not be read just now."}</> : kn ? <>
@@ -1495,7 +1496,7 @@ export default function MapScreen() {
               </>}</p>
           </div>
         )}
-        {fc.on && !dayView && (() => {
+        {fc.on && !dayView && !agentRun && (() => {
           const ci = (fc.layer?.fields || []).indexOf("class");
           const units = fc.layer?.units || [];
           const busiest = ci >= 0 ? units.filter((u) => u[ci] >= 4).length : 0;
