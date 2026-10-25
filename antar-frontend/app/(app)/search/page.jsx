@@ -1170,7 +1170,7 @@ function SearchViews({ view, onChange, kn, osint = null }) {
       {osint && (
         <button type="button" className={osint.on ? "on" : ""} aria-pressed={osint.on} onClick={osint.toggle} data-tool="osint"
                 title={kn ? "OSINT FIR ಮಾರ್ಗದಿಂದ ಹೊರಗಿದೆ: ಅಂತರದ ಪ್ರತ್ಯೇಕ ಶಾಖೆ (ಕರೆದಾಗ ಮಾತ್ರ)" : "OSINT out of FIR: a different branch to Antar (only when called)"}>
-          {kn ? "OSINT ವರ್ಕ್‌ಬೆಂಚ್" : "OSINT Workbench"}
+          OSINT
         </button>
       )}
     </nav>

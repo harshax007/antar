@@ -105,7 +105,9 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
 .sx-views button:hover { color: var(--text-1); }
 .sx-views button.on { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
 /* OSINT is a tool, not a view: quieter grey until hovered or open */
-.sx-views button[data-tool="osint"] { align-self: flex-end; font-size: 12px; font-weight: 500; color: var(--text-4); padding-bottom: 10px; }
+/* OSINT is a side tool, not a fourth view: one small grey word, set apart on the right */
+.sx-views button[data-tool="osint"] { align-self: flex-end; margin-left: auto; padding-bottom: 10px;
+  font: 500 10.5px 'JetBrains Mono', monospace; letter-spacing: .08em; color: #5C6A7C; }
 .sx-views button[data-tool="osint"]:hover { color: var(--text-2); }
 .sx-views button[data-tool="osint"].on { color: var(--text-2); border-bottom-color: var(--text-3); }
 .sx-page--money { display: block; overflow-y: auto; }
