@@ -5900,3 +5900,10 @@ html[lang="kn"] .ov-use-tag { letter-spacing: normal; text-transform: none; }
 .xw-c2 .c2-ins-b p strong { color: var(--tx-1); font-weight: 600; }
 .xw-c2 .c2-ins-f { margin-top: 4px; }
 .xw-c2 .c2-insblk .c2-srcnote { margin-top: 6px; font-size: 11px; }
+
+/* OSINT consent card: what one search does, one fact per row (2026-10-26) */
+.sx-osint-facts { margin: 12px 0 0; display: grid; gap: 0; border-top: 1px solid rgba(255,255,255,0.08); }
+.sx-osint-facts > div { display: grid; grid-template-columns: 132px 1fr; gap: 12px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.sx-osint-facts dt { font: 600 11.5px 'Inter', sans-serif; color: #CBD5E1; }
+.sx-osint-facts dd { margin: 0; font-size: 12px; line-height: 1.5; color: #94A3B8; }
+@media (max-width: 560px) { .sx-osint-facts > div { grid-template-columns: 1fr; gap: 2px; } }

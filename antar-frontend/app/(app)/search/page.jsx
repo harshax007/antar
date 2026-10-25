@@ -27,6 +27,25 @@ const FILTERS = [
 
 const EXAMPLES = ["Raju", "Yellappa", "Tiger", "Manju"];
 
+// The OSINT consent card, one fact per row. Kept in step with app/api/osint_api.py
+// (role, rate limit, the audit fingerprint) and app/core/egress.py (the outside hosts).
+const OSINT_FACTS_EN = [
+  ["What is sent out", "Only the identifier you type. No FIR, suspect, victim or case text."],
+  ["Where it goes", "One web search (DuckDuckGo or Bing; Brave if a key is set) and, by type: the RBI IFSC list, the domain registry (RDAP) and the certificate log (crt.sh). Every outside call is checked against a fixed allow-list."],
+  ["Never opened", "Social media, WhatsApp, Telegram and court sites are links for you to open by hand. Antar does not log in anywhere."],
+  ["What is logged", "Your ID, the time, the identifier's type and a SHA-256 fingerprint of it, on the tamper-evident audit chain. The identifier itself is not stored."],
+  ["Who can use it", "Inspector and above. 20 searches at once, then about 12 a minute."],
+  ["What it is worth", "Unverified until you confirm it. Never added to the FIR record; an official notice (BNSS §94) is drafted for you to send."],
+];
+const OSINT_FACTS_KN = [
+  ["ಹೊರಗೆ ಹೋಗುವುದು", "ನೀವು ಟೈಪ್ ಮಾಡುವ ಗುರುತು ಮಾತ್ರ. FIR, ಆರೋಪಿ, ಸಂತ್ರಸ್ತ ಅಥವಾ ಪ್ರಕರಣದ ಪಠ್ಯ ಇಲ್ಲ."],
+  ["ಎಲ್ಲಿಗೆ", "ಒಂದು ವೆಬ್ ಹುಡುಕಾಟ (DuckDuckGo ಅಥವಾ Bing; ಕೀ ಇದ್ದರೆ Brave) ಮತ್ತು ಪ್ರಕಾರಕ್ಕೆ ತಕ್ಕಂತೆ: RBI IFSC ಪಟ್ಟಿ, ಡೊಮೇನ್ ನೋಂದಣಿ (RDAP), ಪ್ರಮಾಣಪತ್ರ ದಾಖಲೆ (crt.sh). ಪ್ರತಿ ಹೊರ ಕರೆಯನ್ನು ಸ್ಥಿರ ಅನುಮತಿ ಪಟ್ಟಿಯೊಂದಿಗೆ ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ."],
+  ["ತೆರೆಯುವುದಿಲ್ಲ", "ಸಾಮಾಜಿಕ ಮಾಧ್ಯಮ, WhatsApp, Telegram, ನ್ಯಾಯಾಲಯ ತಾಣಗಳು ನೀವೇ ತೆರೆಯುವ ಲಿಂಕ್‌ಗಳು. Antar ಎಲ್ಲಿಯೂ ಲಾಗಿನ್ ಆಗುವುದಿಲ್ಲ."],
+  ["ದಾಖಲಾಗುವುದು", "ನಿಮ್ಮ ಐಡಿ, ಸಮಯ, ಗುರುತಿನ ಪ್ರಕಾರ ಮತ್ತು ಅದರ SHA-256 ಬೆರಳಚ್ಚು, ಬದಲಾಯಿಸಲಾಗದ ಲೆಕ್ಕಪರಿಶೋಧನಾ ಸರಪಳಿಯಲ್ಲಿ. ಗುರುತನ್ನೇ ಉಳಿಸುವುದಿಲ್ಲ."],
+  ["ಯಾರು ಬಳಸಬಹುದು", "ಇನ್ಸ್‌ಪೆಕ್ಟರ್ ಮತ್ತು ಮೇಲಿನವರು. ಒಮ್ಮೆಗೆ 20 ಹುಡುಕಾಟ, ನಂತರ ನಿಮಿಷಕ್ಕೆ ಸುಮಾರು 12."],
+  ["ಇದರ ಮೌಲ್ಯ", "ನೀವು ದೃಢೀಕರಿಸುವವರೆಗೆ ಪರಿಶೀಲಿಸದ ಸುಳಿವು. FIR ದಾಖಲೆಗೆ ಎಂದಿಗೂ ಸೇರಿಸುವುದಿಲ್ಲ; ಕಳುಹಿಸಲು ಅಧಿಕೃತ ನೋಟಿಸ್ (BNSS §94) ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತದೆ."],
+];
+
 const initials = (name) => (name || "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 const cap = (s) => (s || "").replace(/_/g, " ");
 
@@ -176,6 +195,15 @@ function SearchContent() {
   const [osintSources, setOsintSources] = useState([]);   // [] = every kind of page; a chip narrows it
   const [osintDepth, setOsintDepth] = useState("standard");
   const [osintAuditLog, setOsintAuditLog] = useState([]);
+  // the officer's own searches as the server recorded them (hash-chained, fingerprint only),
+  // re-read after each run so the panel shows the record, not just this tab's memory
+  const [osintServerLog, setOsintServerLog] = useState(null);
+  useEffect(() => {
+    if (!osintAllowed || osintConsentOpen || osintLoading) return;
+    let live = true;
+    fetchAPI("/api/osint/log?limit=5").then((d) => { if (live) setOsintServerLog(d?.searches || []); }).catch(() => {});
+    return () => { live = false; };
+  }, [osintAllowed, osintConsentOpen, osintLoading]);
   const [osintRecording, setOsintRecording] = useState(false);
   const osintRecRef = useRef(null);
 
@@ -665,6 +693,12 @@ function SearchContent() {
                         Everything found is an unverified lead until you confirm it, and every search is logged against your name.
                       </p>
                     )}
+                    {/* what one search does, row by row - each line is what osint_api.py and egress.py actually do */}
+                    <dl className="sx-osint-facts">
+                      {(kn ? OSINT_FACTS_KN : OSINT_FACTS_EN).map(([k, v]) => (
+                        <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
+                      ))}
+                    </dl>
                     <div className="sx-osint-consent-btns">
                       <button onClick={() => setProfileTab("details")} className="sx-act">{kn ? "ರದ್ದುಮಾಡಿ" : "Cancel"}</button>
                       <button onClick={() => setOsintAbout((v) => !v)} className="sx-act" aria-expanded={osintAbout}>
@@ -878,6 +912,24 @@ function SearchContent() {
                             <span className="ts">{entry.ts}</span> {entry.text}
                           </div>
                         ))}
+                        {osintServerLog && (
+                          <>
+                            <div className="t" style={{ marginTop: 10 }}>{kn ? "ಸರ್ವರ್ ದಾಖಲೆ (ಲೆಕ್ಕಪರಿಶೋಧನಾ ಸರಪಳಿ)" : "On the audit chain"}</div>
+                            {osintServerLog.length === 0 && (
+                              <div className="row">{kn ? "ಇನ್ನೂ ಯಾವುದೇ ಹುಡುಕಾಟ ದಾಖಲಾಗಿಲ್ಲ." : "No searches recorded yet."}</div>
+                            )}
+                            {osintServerLog.map((s, i) => (
+                              <div key={s.call_chain_id || i} className="row" title={s.identifier_sha256}>
+                                <span className="ts">{String(s.ts || "").slice(11, 19)}</span>
+                                {cap(s.identifier_type)} · {kn ? "ಬೆರಳಚ್ಚು" : "fingerprint"} {String(s.identifier_sha256 || "").slice(0, 10)}…
+                                {s.refused ? (kn ? " · ನಿರಾಕರಿಸಲಾಗಿದೆ" : " · refused") : ""}
+                              </div>
+                            ))}
+                            <div className="row" style={{ color: "#64748B" }}>
+                              {kn ? "ಗುರುತನ್ನು SHA-256 ಬೆರಳಚ್ಚು ಆಗಿ ಮಾತ್ರ ಉಳಿಸಲಾಗಿದೆ." : "The identifier is kept only as a SHA-256 fingerprint."}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 

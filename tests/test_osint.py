@@ -112,3 +112,24 @@ def test_osint_api_never_touches_fir_world():
     assert rep["isolation_mode"] == "STANDALONE_NO_FIR_ACCESS"
     assert rep["phone_infoga"]["matching_firs"] == []
 
+
+
+def test_every_osint_search_is_on_the_audit_chain_as_a_fingerprint_only():
+    # The audit row is permanent, so it names what was searched by SHA-256, never in clear;
+    # the officer reads their own searches back from /api/osint/log.
+    import json
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.services import audit_store
+
+    c = TestClient(app)
+    h = {"X-Role": "Inspector", "X-Officer": "osint-audit-test"}
+    assert c.get("/api/osint/recon", params={"entity": "KA-01-AB-1234"}, headers=h).status_code == 200
+    row = audit_store.query("osint-audit-test", limit=1)[0]
+    o = row["scope"]["osint"]
+    assert o["identifier_type"] == "vehicle_plate" and o["fir_access"] is False
+    assert "KA-01-AB-1234" not in json.dumps(row) and "ka01ab1234" not in json.dumps(row).lower()
+    log = c.get("/api/osint/log", headers=h).json()
+    assert log["searches"] and log["searches"][0]["identifier_sha256"] == o["identifier_sha256"]
+    assert len(o["identifier_sha256"]) == 64
+    assert c.get("/api/osint/log", headers={"X-Role": "Constable"}).status_code == 403
