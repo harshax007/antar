@@ -73,6 +73,41 @@ class TestGroundedFollowups:
         assert any("Rajajinagar" in s for s in suggestions)
 
 
+class TestRelevance:
+    def test_a_click_runs_the_query_that_was_checked(self):
+        # The text is what the chat routes when clicked; it must reach the same template
+        # with the same zone and crime type, or the suggestion answers another question.
+        from app.agents.followup_agent import _route
+        ctx = _context({"zones": ["Bengaluru City"], "crime_types": ["THEFT"]}, [])
+        for q, tid, params in _candidates("T1", ctx):
+            got, routed = _route(q)
+            if got is None:       # Kannada / fixed-param drafts are not routed
+                continue
+            assert got == tid, q
+            if "Bengaluru City" in q:
+                assert "Bengaluru City" in (routed.get("zones") or []), q
+
+    def test_ranking_leader_becomes_the_next_drill_down(self):
+        rows = [{"grp": "Mysuru City", "firs": 900}, {"grp": "Bengaluru City", "firs": 800}]
+        out = grounded_followups("T22", {"dimension": "district"}, rows)
+        assert any("Mysuru City" in s for s in out), out
+
+    def test_a_case_list_has_no_leader(self):
+        ctx = _context({}, [{"crime_id": "C1", "crime_type": "THEFT", "zone": "Mysuru City"}])
+        assert ctx["top_zone"] is None and ctx["top_crime"] is None
+
+    def test_unknown_zone_is_not_widened_to_the_state(self):
+        out = grounded_followups("T1", {"zones": ["Atlantis Sector 9"]}, [])
+        assert not any("Atlantis" in s for s in out)
+
+    def test_three_different_next_steps(self):
+        rows, _ = run_template("T1", {"zones": ["Bengaluru City"], "crime_types": ["THEFT"], "limit": 20})
+        ctx = _context({"zones": ["Bengaluru City"], "crime_types": ["THEFT"]}, rows)
+        kinds = {q: t for q, t, _p in _candidates("T1", ctx)}
+        out = grounded_followups("T1", {"zones": ["Bengaluru City"], "crime_types": ["THEFT"]}, rows)
+        assert len({kinds[s] for s in out}) == len(out) == 3
+
+
 class TestStarters:
     def test_starters_are_validated_and_nonempty(self):
         starters = grounded_starters()

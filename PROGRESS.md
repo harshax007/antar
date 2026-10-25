@@ -137,6 +137,17 @@ so re-planting on E: alone changes nothing an officer would see.
 
 ---
 
+## Ask next: next steps from the answer, checked the way a click runs them · 2026-10-25
+
+- Follow-ups used to fall back to "Who are the repeat offenders?" and "Breakdown of crimes by type" for most answers.
+  They now come from the answer itself: the zone and crime type asked about, the leader of a ranking (top district
+  drills into its beats, conviction rate and weekday), the top suspect, and any accused id, UPI or vehicle in the rows.
+- Each suggestion's text is put through the chat's own router and kept only if it reaches the intended template with
+  the same zone and crime type. That caught a real fault: the router drops an unknown zone, so "Top beats in X"
+  would have answered for the whole state. One suggestion per kind of query, so three chips are three different steps.
+- Aggregate checks probe the indexed latest-case lookup on the same filter: 0.01s per answer instead of ~3.4s.
+  Kannada keeps its own validated set. Full suite: 1,969 passed.
+
 ## Money trail: named UPI ids instead of user####@bank · 2026-10-25
 
 - scripts/rename_upi_ids.py renamed the 249 placeholder UPI ids (user1050@bank ...) to name-style ids with real UPI
