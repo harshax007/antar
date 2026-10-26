@@ -1093,7 +1093,7 @@ export default function MapScreen() {
     if (selectedDistrict !== gadmName) openDistrict(gadmName, null);
     const put = (patch) => setAgentRun((prev) => (prev?.id === id ? { ...prev, ...patch } : prev));
     const refused = (text) => ({ status: "refused", bottom_line: text, context: "", evidence: [], limits: [], next: [] });
-    if (!zone) { put({ status: "done", body: refused(`No records are held for ${gadmName}.`) }); return; }
+    if (!zone) { put({ status: "done", body: refused(kn ? `${gadmName} ಗೆ ಯಾವುದೇ ದಾಖಲೆಗಳಿಲ್ಲ.` : `No records are held for ${gadmName}.`) }); return; }
 
     // what the record held on that date: the 30 days ending on it, and where that ranks
     windowCounts(29, endDate, crimeType).then((w) => {
@@ -1110,13 +1110,13 @@ export default function MapScreen() {
       if (agentId === "pattern") {
         body = crimeType
           ? await call("pattern", { crime_group: crimeType, district: zone })
-          : refused("Pick a crime type in the top row first. Pattern looks for clusters of one kind of crime.");
+          : refused(kn ? "ಮೊದಲು ಮೇಲಿನ ಸಾಲಿನಲ್ಲಿ ಒಂದು ಅಪರಾಧ ಪ್ರಕಾರವನ್ನು ಆರಿಸಿ. ಮಾದರಿ ಒಂದು ಬಗೆಯ ಅಪರಾಧದ ಗುಂಪುಗಳನ್ನು ಹುಡುಕುತ್ತದೆ." : "Pick a crime type in the top row first. Pattern looks for groups of one kind of crime.");
       } else if (agentId === "forecast") {
         // a forecast is made for a station: Geo names the district's busiest one first
         if (!via) {
           const g = await call("geo", zone);
           via = (g.next || []).map((t) => /^run forecast (.+)$/.exec(t)?.[1]).find(Boolean) || null;
-          if (!via) body = g.status === "ok" ? refused(`No station in ${zone} has enough history for a forecast.`) : g;
+          if (!via) body = g.status === "ok" ? refused(kn ? `${zone} ನಲ್ಲಿ ಮುನ್ಸೂಚನೆಗೆ ಸಾಕಷ್ಟು ಇತಿಹಾಸವಿರುವ ಠಾಣೆ ಇಲ್ಲ.` : `No station in ${zone} has enough history for a forecast.`) : g;
         }
         if (via) body = await call("forecast", via);
       } else if (agentId === "research") {
@@ -1128,7 +1128,7 @@ export default function MapScreen() {
       }
       put({ status: "done", body, station: agentId === "forecast" || agentId === "research" ? via : null });
     } catch {
-      put({ status: "done", body: { status: "error", bottom_line: "The agent could not be reached. Check that the server is running.", context: "", evidence: [], limits: [], next: [] } });
+      put({ status: "done", body: { status: "error", bottom_line: kn ? "ಏಜೆಂಟ್ ತಲುಪಲಾಗಲಿಲ್ಲ. Antar ಸರ್ವರ್‌ನಲ್ಲಿ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿರಬಹುದು; ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : "The agent could not be reached. Antar may still be waking up on the server; try again in a moment.", context: "", evidence: [], limits: [], next: [] } });
     }
   }
 
@@ -1559,11 +1559,15 @@ export default function MapScreen() {
         {dragAgent && (
           <p className="mxa-drop" aria-hidden="true">
             {dropOver
-              ? <>Run <b>{MAP_AGENTS.find((a) => a.id === dragAgent)?.name}</b> on <b>{dropOver}</b> · {new Date(`${endDate}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</>
-              : "Drop on a district"}
+              ? (() => {
+                  const ag = MAP_AGENTS.find((a) => a.id === dragAgent);
+                  const day = new Date(`${endDate}T00:00:00`).toLocaleDateString(kn ? "kn-IN" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
+                  return kn ? <><b>{dropOver}</b> ನಲ್ಲಿ <b>{ag?.kn}</b> ಚಲಾಯಿಸಿ · {day}</> : <>Run <b>{ag?.name}</b> on <b>{dropOver}</b> · {day}</>;
+                })()
+              : (kn ? "ಜಿಲ್ಲೆಯ ಮೇಲೆ ಬಿಡಿ" : "Drop on a district")}
           </p>
         )}
-        <MapAgentResult run={agentRun} todayIso={todayIso}
+        <MapAgentResult run={agentRun} kn={kn}
                         stale={!!agentRun && agentRun.status === "done" && (agentRun.date !== endDate || agentRun.crime !== crimeType)}
                         onClose={() => setAgentRun(null)}
                         onRun={(id, arg) => runMapAgent(id, agentRun.district, id === "forecast" || id === "research" ? (arg || undefined) : undefined)}
