@@ -19,6 +19,7 @@ import { AnimatePresence, AnimatePresence as PlanPresence, motion } from "framer
 import { MaterialBackdrop, MaterialPanel, SPRING } from "@/components/ui/MaterialPanel";
 import EngineOverall from "@/components/EngineOverall";
 import CaseLeads from "@/components/CaseLeads";
+import { crimeKn, dateKn, monthKn } from "@/lib/kn";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -75,6 +76,12 @@ const ALERT_KIND = {
   seasonal_surge: "Seasonal rise",
   hotspot: "Hotspot",
   spatial_spike: "Sudden rise in a hotspot",
+};
+const ALERT_KIND_KN = {
+  spike: "ಹಠಾತ್ ಏರಿಕೆ",
+  seasonal_surge: "ಋತುಮಾನದ ಏರಿಕೆ",
+  hotspot: "ಹಾಟ್‌ಸ್ಪಾಟ್",
+  spatial_spike: "ಹಾಟ್‌ಸ್ಪಾಟ್‌ನಲ್ಲಿ ಹಠಾತ್ ಏರಿಕೆ",
 };
 const STEP_KIND = { data: "records", signal: "signal", agent: "step", llm: "weighing", out: "result" };
 const stepName = (t) => {
@@ -168,12 +175,14 @@ const plainCrime = (name) => {
   const hit = CRIME_PLAIN.find(([re]) => re.test(k));
   return hit ? hit[1] : null;
 };
+// The crime as it reads on this page: Kannada where there is a name for it.
+const crimeOf = (name, kn) => (kn ? crimeKn(name) || cap(name) : cap(name));
 // A crime name with its plain meaning on hover (a dotted underline says there is one).
-function CrimeName({ name, className }) {
-  const plain = plainCrime(name);
+function CrimeName({ name, className, kn }) {
+  const plain = kn ? null : plainCrime(name);
   return plain
     ? <span className={`px-term${className ? ` ${className}` : ""}`} title={plain}>{cap(name)}</span>
-    : <span className={className}>{cap(name)}</span>;
+    : <span className={className}>{crimeOf(name, kn)}</span>;
 }
 const RISK_WORD = { HIGH: "High risk", MEDIUM: "Medium risk", LOW: "Low risk" };
 // Statewide police units register FIRs under their own name, so they arrive in the board
@@ -184,48 +193,61 @@ const UNIT_NAMES = { "CID": "Criminal Investigation Department", "Coastal Securi
 const isUnit = (p) => !!(p?.unit || UNIT_NAMES[p?.zone]);
 // What the card says about an area. "Low risk" beside "far above normal" read as a
 // contradiction (few cases, but many more than usual), so the card leads with what to do.
-function statusOf(p) {
-  if (p?.risk === "HIGH") return { k: "hi", t: "High risk" };
-  if (p?.direction === "silence") return { k: "dn", t: "Check reports" };
+function statusOf(p, kn) {
+  if (p?.risk === "HIGH") return { k: "hi", t: kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High risk" };
+  if (p?.direction === "silence") return { k: "dn", t: kn ? "ವರದಿ ಪರಿಶೀಲಿಸಿ" : "Check reports" };
   const z = Number(p?.z_score) || 0;
-  if (z >= 2) return { k: "up", t: "Above normal" };
-  if ((p?.events || []).length) return { k: "ev", t: "Event" };
-  return { k: "eq", t: "Usual" };
+  if (z >= 2) return { k: "up", t: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal" };
+  if ((p?.events || []).length) return { k: "ev", t: kn ? "ಉತ್ಸವ" : "Event" };
+  return { k: "eq", t: kn ? "ಸಾಮಾನ್ಯ" : "Usual" };
 }
 // The anomaly score, said in words. The number itself stays one click away.
-function levelOf(p) {
-  if (p?.direction === "silence") return "Unusual drop in reports";
+function levelOf(p, kn) {
   const z = Number(p?.z_score) || 0;
+  if (kn) {
+    if (p?.direction === "silence") return "ವರದಿಗಳಲ್ಲಿ ಅಸಾಮಾನ್ಯ ಇಳಿಕೆ";
+    if (z >= 4) return "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಬಹಳ ಹೆಚ್ಚು";
+    if (z >= 2.5) return "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಸಾಕಷ್ಟು ಹೆಚ್ಚು";
+    if (z >= 2) return "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು";
+    if (z > 0) return "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಸ್ವಲ್ಪ ಹೆಚ್ಚು";
+    return "ಸಾಮಾನ್ಯ ಮಟ್ಟದಲ್ಲಿ";
+  }
+  if (p?.direction === "silence") return "Unusual drop in reports";
   if (z >= 4) return "Far above normal";
   if (z >= 2.5) return "Well above normal";
   if (z >= 2) return "Above normal";
   if (z > 0) return "Slightly above normal";
   return "At its usual level";
 }
-function rangeOf(p) {
+function rangeOf(p, kn) {
   let lo = p?.conformal_lo, hi = p?.conformal_hi;
   if (lo == null || hi == null) {
     const m = /([\d.]+)\s*-\s*([\d.]+)/.exec(p?.band || "");
     if (!m) return null;
     lo = m[1]; hi = m[2];
   }
-  return `${num(lo)} to ${num(hi)} cases`;
+  return kn ? `${num(lo)}–${num(hi)} ಪ್ರಕರಣಗಳು` : `${num(lo)} to ${num(hi)} cases`;
 }
 const coverOf = (c) => (c == null || c === "" ? null : typeof c === "number" ? `${Math.round(c <= 1 ? c * 100 : c)}%` : String(c));
-const dayOf = (iso) => { const d = new Date(`${iso}T00:00:00`); return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); };
+const dayOf = (iso, kn) => {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return kn ? dateKn(d) : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
 // What the model saw, one plain line per signal the backend names in `why`.
-function sawOf(item) {
+function sawOf(item, kn) {
   const out = [];
   for (const part of String(item?.why || "").split(/\s[·-]\s/)) {
     const t = part.trim();
     if (!t) continue;
     let m;
-    if (/^MAD-z/i.test(t)) out.push(`Recent cases are ${levelOf(item).toLowerCase()} for this area (unusual-activity score ${item.z_score}; 2 is unusual, 4 is rare).`);
-    else if (/hotspot/i.test(t)) out.push("Neighbouring areas are high too, so this is a cluster and not a one-off.");
-    else if (/DBSCAN|cluster/i.test(t)) out.push("A group of recent cases sits close together in place and time.");
-    else if ((m = /seasonal uplift \+?(\d+)%/i.exec(t))) out.push(`This time of year usually adds about ${m[1]}%.`);
-    else if (/silence|under-reporting/i.test(t)) out.push("Reports fell well below what this area normally files.");
-    else if (/baseline/i.test(t)) out.push("Nothing unusual in the recent trend.");
+    if (/^MAD-z/i.test(t)) out.push(kn ? `ಈ ವಲಯದ ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು ${levelOf(item, true)} (ಅಸಾಮಾನ್ಯತೆ ಅಂಕ ${item.z_score}; 2 ಅಸಾಮಾನ್ಯ, 4 ಅಪರೂಪ).`
+      : `Recent cases are ${levelOf(item).toLowerCase()} for this area (unusual-activity score ${item.z_score}; 2 is unusual, 4 is rare).`);
+    else if (/hotspot/i.test(t)) out.push(kn ? "ಪಕ್ಕದ ವಲಯಗಳಲ್ಲೂ ಹೆಚ್ಚು: ಇದು ಒಂದು ಗುಂಪು, ಒಮ್ಮೆಯ ಘಟನೆ ಅಲ್ಲ." : "Neighbouring areas are high too, so this is a cluster and not a one-off.");
+    else if (/DBSCAN|cluster/i.test(t)) out.push(kn ? "ಇತ್ತೀಚಿನ ಕೆಲವು ಪ್ರಕರಣಗಳು ಸ್ಥಳ ಮತ್ತು ಸಮಯದಲ್ಲಿ ಹತ್ತಿರವಿವೆ." : "A group of recent cases sits close together in place and time.");
+    else if ((m = /seasonal uplift \+?(\d+)%/i.exec(t))) out.push(kn ? `ವರ್ಷದ ಈ ಸಮಯದಲ್ಲಿ ಸಾಮಾನ್ಯವಾಗಿ ಸುಮಾರು ${m[1]}% ಹೆಚ್ಚು.` : `This time of year usually adds about ${m[1]}%.`);
+    else if (/silence|under-reporting/i.test(t)) out.push(kn ? "ಈ ವಲಯ ಸಾಮಾನ್ಯವಾಗಿ ದಾಖಲಿಸುವುದಕ್ಕಿಂತ ವರದಿಗಳು ತುಂಬಾ ಕಡಿಮೆ." : "Reports fell well below what this area normally files.");
+    else if (/baseline/i.test(t)) out.push(kn ? "ಇತ್ತೀಚಿನ ಪ್ರವೃತ್ತಿಯಲ್ಲಿ ಅಸಾಮಾನ್ಯವೇನೂ ಇಲ್ಲ." : "Nothing unusual in the recent trend.");
     else out.push(cap(t) + ".");
   }
   return [...new Set(out)];
@@ -289,24 +311,41 @@ function alertToPrediction(a) {
 }
 
 const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? iso : `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })}`; };
-const monthOf = (iso) => { const d = new Date(`${iso}T00:00:00`); return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-IN", { month: "short", year: "numeric" }); };
+const whenKn = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? iso : `${dateKn(d)}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })}`; };
+const monthOf = (iso, kn) => { const d = new Date(`${iso}T00:00:00`); return Number.isNaN(d.getTime()) ? iso : kn ? monthKn(d) : d.toLocaleDateString("en-IN", { month: "short", year: "numeric" }); };
 const LEVELS = ["Limited", "Moderate", "High"];
+const LEVEL_KN = { Limited: "ಸೀಮಿತ", Moderate: "ಮಧ್ಯಮ", High: "ಹೆಚ್ಚು" };
+const lvl = (l, kn) => (kn ? LEVEL_KN[l] || l : l);
+const MON3 = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const labelKn = (l, kn) => {
+  if (!kn) return l;
+  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/.exec(String(l || "").trim());
+  const i = m ? MON3.indexOf(m[1].toLowerCase()) : -1;
+  return i < 0 ? l : monthKn(`${m[2]}-${String(i + 1).padStart(2, "0")}`);
+};
 const LEVEL_SAYS = {
   High: "The ranges have held against the real register and the data is current.",
   Moderate: "The method is graded; one limit on the data is stated below. Read the ranges as a guide.",
   Limited: "Treat this week's figures as indicative only.",
+};
+const LEVEL_SAYS_KN = {
+  High: "ವ್ಯಾಪ್ತಿಗಳು ನೈಜ ರಿಜಿಸ್ಟರ್ ವಿರುದ್ಧ ಸರಿಯಾಗಿವೆ ಮತ್ತು ದತ್ತಾಂಶ ಇತ್ತೀಚಿನದು.",
+  Moderate: "ವಿಧಾನವನ್ನು ಪರೀಕ್ಷಿಸಲಾಗಿದೆ; ದತ್ತಾಂಶದ ಒಂದು ಮಿತಿಯನ್ನು ಕೆಳಗೆ ಹೇಳಲಾಗಿದೆ. ವ್ಯಾಪ್ತಿಗಳನ್ನು ಮಾರ್ಗದರ್ಶಿಯಾಗಿ ಓದಿ.",
+  Limited: "ಈ ವಾರದ ಅಂಕಿಗಳನ್ನು ಸೂಚಕ ಮಾತ್ರ ಎಂದು ಪರಿಗಣಿಸಿ.",
 };
 
 // ── How far to trust it ───────────────────────────────────────────────────────────
 // One line until it is opened: the level, its meaning, and a count of the reasons. The
 // reasons and the rule that sets the level are a click away, so the page opens on what
 // to act on and not on a paragraph about the model.
-function EngineConfidence({ eng, open, onToggle, anchor }) {
-  if (eng === null) return <section className="px-conf is-wait" ref={anchor}><p>Reading the engine status…</p></section>;
+function EngineConfidence({ eng, open, onToggle, anchor, kn }) {
+  if (eng === null) return <section className="px-conf is-wait" ref={anchor}><p>{kn ? "ಎಂಜಿನ್ ಸ್ಥಿತಿ ಓದುತ್ತಿದೆ…" : "Reading the engine status…"}</p></section>;
   if (eng === "missing") {
     return (
       <section className="px-conf is-wait" ref={anchor}>
-        <p><b>Engine status is not loaded.</b> This server was started before the engine status and the event calendar were added. Restart it to see how far the forecast can be trusted, and the events ahead.</p>
+        {kn
+          ? <p><b>ಎಂಜಿನ್ ಸ್ಥಿತಿ ಲೋಡ್ ಆಗಿಲ್ಲ.</b> ಎಂಜಿನ್ ಸ್ಥಿತಿ ಮತ್ತು ಉತ್ಸವ ಕ್ಯಾಲೆಂಡರ್ ಸೇರಿಸುವ ಮೊದಲೇ ಈ ಸರ್ವರ್ ಆರಂಭವಾಗಿದೆ. ಮುನ್ಸೂಚನೆ ಎಷ್ಟು ವಿಶ್ವಾಸಾರ್ಹ ಮತ್ತು ಮುಂಬರುವ ಉತ್ಸವಗಳನ್ನು ನೋಡಲು ಸರ್ವರ್ ಮರುಆರಂಭಿಸಿ.</p>
+          : <p><b>Engine status is not loaded.</b> This server was started before the engine status and the event calendar were added. Restart it to see how far the forecast can be trusted, and the events ahead.</p>}
       </section>
     );
   }
@@ -314,27 +353,32 @@ function EngineConfidence({ eng, open, onToggle, anchor }) {
   const at = Math.max(0, LEVELS.indexOf(c.level));
   const n = (c.reasons || []).length;
   return (
-    <section className={`px-conf${open ? " open" : ""}`} ref={anchor} aria-label="Engine confidence">
+    <section className={`px-conf${open ? " open" : ""}`} ref={anchor} aria-label={kn ? "ಎಂಜಿನ್ ವಿಶ್ವಾಸ" : "Engine confidence"}>
       <button type="button" className="px-conf-bar" aria-expanded={open} onClick={onToggle}>
-        <span className="px-conf-k">Engine confidence</span>
-        <b className={`px-conf-lv l-${c.level}`}>{c.level || "—"}</b>
-        <span className="px-eng-meter" role="img" aria-label={`Step ${at + 1} of 3`}>
+        <span className="px-conf-k">{kn ? "ಎಂಜಿನ್ ವಿಶ್ವಾಸ" : "Engine confidence"}</span>
+        <b className={`px-conf-lv l-${c.level}`}>{lvl(c.level, kn) || "—"}</b>
+        <span className="px-eng-meter" role="img" aria-label={kn ? `3 ರಲ್ಲಿ ${at + 1}ನೇ ಹಂತ` : `Step ${at + 1} of 3`}>
           {LEVELS.map((l, i) => <i key={l} className={i <= at ? `on l-${c.level}` : ""} />)}
         </span>
-        <span className="px-conf-says">{LEVEL_SAYS[c.level] || ""}</span>
-        <span className="px-conf-more">{open ? "Hide the reasons" : `Show the ${n} reasons`}<i aria-hidden="true">{open ? "▴" : "▾"}</i></span>
+        <span className="px-conf-says">{(kn ? LEVEL_SAYS_KN : LEVEL_SAYS)[c.level] || ""}</span>
+        <span className="px-conf-more">{open ? (kn ? "ಕಾರಣಗಳನ್ನು ಮರೆಮಾಡಿ" : "Hide the reasons") : (kn ? `${n} ಕಾರಣಗಳನ್ನು ತೋರಿಸಿ` : `Show the ${n} reasons`)}<i aria-hidden="true">{open ? "▴" : "▾"}</i></span>
       </button>
       {open && (
         <div className="px-conf-body">
           <ul className="px-eng-why">
-            {(c.reasons || []).map((x, i) => <li key={i} className={x.ok ? "ok" : "no"}>{x.text}</li>)}
+            {(c.reasons || []).map((x, i) => <li key={i} className={x.ok ? "ok" : "no"}>{(kn && x.text_kn) || x.text}</li>)}
           </ul>
           <div className="px-conf-rule">
-            <h4>How the level is set</h4>
-            <p><b>High</b> needs the graded ranges to have held and the records to be current. It is capped at <b>Moderate</b> when the latest weeks are not real records, or when the ranges held less often than stated. It falls to <b>Limited</b> when the forecast has not been graded, or when too few cases are on record.</p>
-            <p>A green mark is a reason that counts for the forecast; an amber one counts against it.</p>
+            <h4>{kn ? "ಮಟ್ಟವನ್ನು ಹೇಗೆ ನಿರ್ಧರಿಸಲಾಗುತ್ತದೆ" : "How the level is set"}</h4>
+            {kn ? <>
+              <p><b>ಹೆಚ್ಚು</b> ಆಗಲು ಪರೀಕ್ಷಿಸಿದ ವ್ಯಾಪ್ತಿಗಳು ಸರಿಯಾಗಿರಬೇಕು ಮತ್ತು ದಾಖಲೆಗಳು ಇತ್ತೀಚಿನವಾಗಿರಬೇಕು. ಇತ್ತೀಚಿನ ವಾರಗಳು ನೈಜ ದಾಖಲೆಗಳಲ್ಲದಿದ್ದರೆ, ಅಥವಾ ವ್ಯಾಪ್ತಿಗಳು ಹೇಳಿದ್ದಕ್ಕಿಂತ ಕಡಿಮೆ ಬಾರಿ ಸರಿಯಾಗಿದ್ದರೆ, ಅದು <b>ಮಧ್ಯಮ</b>ಕ್ಕೆ ಸೀಮಿತ. ಮುನ್ಸೂಚನೆಯನ್ನು ಪರೀಕ್ಷಿಸದಿದ್ದರೆ ಅಥವಾ ದಾಖಲಾದ ಪ್ರಕರಣಗಳು ತುಂಬಾ ಕಡಿಮೆ ಇದ್ದರೆ ಅದು <b>ಸೀಮಿತ</b>.</p>
+              <p>ಹಸಿರು ಗುರುತು ಮುನ್ಸೂಚನೆಯ ಪರವಾದ ಕಾರಣ; ಕಿತ್ತಳೆ ಗುರುತು ಅದರ ವಿರುದ್ಧ.</p>
+            </> : <>
+              <p><b>High</b> needs the graded ranges to have held and the records to be current. It is capped at <b>Moderate</b> when the latest weeks are not real records, or when the ranges held less often than stated. It falls to <b>Limited</b> when the forecast has not been graded, or when too few cases are on record.</p>
+              <p>A green mark is a reason that counts for the forecast; an amber one counts against it.</p>
+            </>}
           </div>
-          <EngineOverall />
+          <EngineOverall kn={kn} />
         </div>
       )}
     </section>
@@ -342,16 +386,33 @@ function EngineConfidence({ eng, open, onToggle, anchor }) {
 }
 
 // ── What it is built on: the records, and the calendar from the internet ──────────
-function KnownData({ eng }) {
+function KnownData({ eng, kn }) {
   const r = (eng && eng !== "missing" && eng.records) || {}, t = eng && eng !== "missing" ? eng.track_record : null;
   const ready = eng && eng !== "missing";
   return (
     <div className="pxd-card px-src">
       <div className="pxd-hd pxd-hd2"><div>
-        <span className="pxd-ttl">Known data <i>FIR records</i></span>
-        <span className="pxd-note">What the engine read, and how its forecasts held up against the real register.</span>
+        <span className="pxd-ttl">{kn ? <>ತಿಳಿದ ದತ್ತಾಂಶ <i>FIR ದಾಖಲೆಗಳು</i></> : <>Known data <i>FIR records</i></>}</span>
+        <span className="pxd-note">{kn ? "ಎಂಜಿನ್ ಓದಿದ್ದು, ಮತ್ತು ಅದರ ಮುನ್ಸೂಚನೆಗಳು ನೈಜ ರಿಜಿಸ್ಟರ್ ವಿರುದ್ಧ ಹೇಗೆ ಸರಿಯಾದವು." : "What the engine read, and how its forecasts held up against the real register."}</span>
       </div></div>
-      {!ready ? <div className="pxd-empty">{eng === null ? "Reading…" : "Not loaded. Restart the server."}</div> : (
+      {!ready ? <div className="pxd-empty">{eng === null ? (kn ? "ಓದುತ್ತಿದೆ…" : "Reading…") : (kn ? "ಲೋಡ್ ಆಗಿಲ್ಲ. ಸರ್ವರ್ ಮರುಆರಂಭಿಸಿ." : "Not loaded. Restart the server.")}</div> : kn ? (
+        <dl>
+          <div><dt>ಓದಿದ ಪ್ರಕರಣಗಳು</dt><dd>ಕಳೆದ 13 ವಾರಗಳಲ್ಲಿ <b>{num(r.cases_13w)}</b><span>ಕಳೆದ 52 ವಾರಗಳಲ್ಲಿ {num(r.cases_52w)}</span></dd></div>
+          <div><dt>ವಲಯಗಳು</dt><dd>ಸಾಕಷ್ಟು ದಾಖಲೆ ಇರುವ <b>{num(r.areas)}</b></dd></div>
+          <div><dt>ಓದಿದ್ದು</dt><dd><b>{r.through ? dayOf(r.through, true) : "—"}</b> ವರೆಗೆ</dd></div>
+          {r.real_record_ends && (
+            <div><dt>ನೈಜ ರಿಜಿಸ್ಟರ್</dt><dd><b>{dayOf(r.real_record_ends, true)}</b> ವರೆಗೆ</dd></div>
+          )}
+          {t ? (
+            <>
+              <div><dt>ಹಿಂದಿನ ದಾಖಲೆ</dt><dd><b>{(t.coverage80 * 100).toFixed(1)}%</b> ವಾರಗಳು ಸಂಭಾವ್ಯ ವ್ಯಾಪ್ತಿಯೊಳಗೆ<span>ನೈಜ ರಿಜಿಸ್ಟರ್‌ನ {t.weeks} ವಾರಗಳು, {monthOf(t.from, true)} ರಿಂದ {monthOf(t.to, true)}; ಠಾಣಾ ಮುನ್ಸೂಚನೆಗಳು</span></dd></div>
+              <div><dt>ವಿಶಾಲ ವ್ಯಾಪ್ತಿ</dt><dd><b>{(t.coverage90 * 100).toFixed(1)}%</b> ವಾರಗಳು ಅದರೊಳಗೆ</dd></div>
+              <div><dt>ಒಟ್ಟು ಮುನ್ಸೂಚನೆ</dt><dd>ದಾಖಲಾದ <b>{num(t.actual_total)}</b> ಕ್ಕೆ ಎದುರಾಗಿ <b>{num(Math.round(t.forecast_total))}</b><span>ಪರೀಕ್ಷಿಸಿದ ವಾರಗಳಲ್ಲಿ</span></dd></div>
+              <div><dt>ಸರಳ ಊಹೆಗೆ ಹೋಲಿಸಿದರೆ</dt><dd><b>{t.weeks_ranked} ರಲ್ಲಿ {t.weeks_better}</b> ವಾರ ಉತ್ತಮ<span>ಠಾಣೆಗಳನ್ನು ಅವುಗಳ ಕಳೆದ 4 ವಾರಗಳಿಂದ ಶ್ರೇಣೀಕರಿಸುವುದಕ್ಕಿಂತ</span></dd></div>
+            </>
+          ) : <div><dt>ಹಿಂದಿನ ದಾಖಲೆ</dt><dd>ಇನ್ನೂ ಪರೀಕ್ಷಿಸಿಲ್ಲ</dd></div>}
+        </dl>
+      ) : (
         <dl>
           <div><dt>Cases read</dt><dd><b>{num(r.cases_13w)}</b> in the last 13 weeks<span>{num(r.cases_52w)} in the last 52 weeks</span></dd></div>
           <div><dt>Areas</dt><dd><b>{num(r.areas)}</b> with enough records</dd></div>
@@ -373,16 +434,25 @@ function KnownData({ eng }) {
   );
 }
 
-function InternetData({ eng, onEvents }) {
+function InternetData({ eng, onEvents, kn }) {
   const ready = eng && eng !== "missing";
   const cal = (ready && eng.calendar) || {}, evs = (ready && eng.events) || [];
   return (
     <div className="pxd-card px-src">
       <div className="pxd-hd pxd-hd2"><div>
-        <span className="pxd-ttl">Festival calendar <i>from the internet</i></span>
-        <span className="pxd-note">Where festival dates come from. What a festival does to crime is never taken from the internet.</span>
+        <span className="pxd-ttl">{kn ? <>ಉತ್ಸವ ಕ್ಯಾಲೆಂಡರ್ <i>ಅಂತರ್ಜಾಲದಿಂದ</i></> : <>Festival calendar <i>from the internet</i></>}</span>
+        <span className="pxd-note">{kn ? "ಉತ್ಸವದ ದಿನಾಂಕಗಳು ಎಲ್ಲಿಂದ ಬರುತ್ತವೆ. ಉತ್ಸವ ಅಪರಾಧದ ಮೇಲೆ ಏನು ಮಾಡುತ್ತದೆ ಎಂಬುದನ್ನು ಎಂದಿಗೂ ಅಂತರ್ಜಾಲದಿಂದ ತೆಗೆದುಕೊಳ್ಳುವುದಿಲ್ಲ." : "Where festival dates come from. What a festival does to crime is never taken from the internet."}</span>
       </div></div>
-      {!ready ? <div className="pxd-empty">{eng === null ? "Reading…" : "Not loaded. Restart the server."}</div> : (
+      {!ready ? <div className="pxd-empty">{eng === null ? (kn ? "ಓದುತ್ತಿದೆ…" : "Reading…") : (kn ? "ಲೋಡ್ ಆಗಿಲ್ಲ. ಸರ್ವರ್ ಮರುಆರಂಭಿಸಿ." : "Not loaded. Restart the server.")}</div> : kn ? (
+        <dl>
+          <div><dt>ಮೂಲ</dt><dd><b>{cal.name || "—"}</b><span>{cal.note}</span></dd></div>
+          <div><dt>ಕೊನೆಯ ಪರಿಶೀಲನೆ</dt><dd><b>{cal.checked_at ? whenKn(cal.checked_at) : "ತಲುಪಲಿಲ್ಲ"}</b></dd></div>
+          <div><dt>ಮುಂಬರುವ ಉತ್ಸವಗಳು</dt><dd>ನಡೆಯುತ್ತಿರುವ ಅಥವಾ 3 ವಾರಗಳೊಳಗಿನ <b>{evs.length}</b>
+            {evs.length > 0 && <span>{evs.map((e) => e.name).join(", ")}</span>}</dd></div>
+          <div><dt>ತೆಗೆದುಕೊಳ್ಳುವುದು</dt><dd>ಪಟ್ಟಿಯಲ್ಲಿರುವ ಉತ್ಸವದ ದಿನಾಂಕ ಮಾತ್ರ.<span>ಉತ್ಸವದ ಪರಿಣಾಮವನ್ನು ಹಿಂದಿನ FIR ಗಳಿಂದ ಅಳೆಯಲಾಗುತ್ತದೆ: ಉತ್ಸವದ ಅವಧಿಯಲ್ಲಿ ದಾಖಲಾದ ಪ್ರಕರಣಗಳನ್ನು ಅದರ ಎರಡೂ ಬದಿಯ 4 ವಾರಗಳಿಗೆ ಹೋಲಿಸಿ.</span></dd></div>
+          {evs.length > 0 && <div><dt /><dd><button type="button" className="px-linkbtn" onClick={onEvents}>ಹಿಂದಿನ ವರ್ಷಗಳು ಏನು ತೋರಿಸುತ್ತವೆ</button></dd></div>}
+        </dl>
+      ) : (
         <dl>
           <div><dt>Source</dt><dd><b>{cal.name || "—"}</b><span>{cal.note}</span></dd></div>
           <div><dt>Last checked</dt><dd><b>{cal.checked_at ? when(cal.checked_at) : "Not reached"}</b></dd></div>
@@ -397,17 +467,18 @@ function InternetData({ eng, onEvents }) {
 }
 
 // One measured line: a bar that runs left of the centre for "lower", right for "higher".
-function EffectRow({ label, ef, soft }) {
+function EffectRow({ label, ef, soft, kn }) {
   if (!ef) return null;
   const w = Math.min(50, Math.abs(ef.percent) / 2);          // 100% = half the track
   return (
     <div className={`px-ef${soft ? " soft" : ""}`}>
-      <span className="px-ef-l">{label}{soft ? <i>less certain</i> : null}</span>
+      <span className="px-ef-l">{label}{soft ? <i>{kn ? "ಕಡಿಮೆ ಖಚಿತ" : "less certain"}</i> : null}</span>
       <span className="px-ef-bar" aria-hidden="true">
         <i className={ef.percent >= 0 ? "up" : "dn"} style={ef.percent >= 0 ? { left: "50%", width: `${w}%` } : { right: "50%", width: `${w}%` }} />
       </span>
-      <span className="px-ef-v"><b className={ef.percent >= 0 ? "up" : "dn"}>{Math.abs(ef.percent)}% {ef.percent >= 0 ? "higher" : "lower"}</b>
-        <em>{num(ef.seen)} cases against {num(ef.expected >= 20 ? Math.round(ef.expected) : ef.expected)} expected; higher in {ef.years_higher} of {ef.years} years</em></span>
+      <span className="px-ef-v"><b className={ef.percent >= 0 ? "up" : "dn"}>{Math.abs(ef.percent)}% {ef.percent >= 0 ? (kn ? "ಹೆಚ್ಚು" : "higher") : (kn ? "ಕಡಿಮೆ" : "lower")}</b>
+        <em>{kn ? `ನಿರೀಕ್ಷಿತ ${num(ef.expected >= 20 ? Math.round(ef.expected) : ef.expected)} ಕ್ಕೆ ಎದುರಾಗಿ ${num(ef.seen)} ಪ್ರಕರಣಗಳು; ${ef.years} ರಲ್ಲಿ ${ef.years_higher} ವರ್ಷ ಹೆಚ್ಚು`
+          : `${num(ef.seen)} cases against ${num(ef.expected >= 20 ? Math.round(ef.expected) : ef.expected)} expected; higher in ${ef.years_higher} of ${ef.years} years`}</em></span>
     </div>
   );
 }
@@ -418,7 +489,7 @@ function EffectRow({ label, ef, soft }) {
 function EventCard({ ev, kn, areas, onOpen, onAsk }) {
   const o = ev.overall, n = ev.occurrences_measured || 0;
   const [copied, setCopied] = useState(false);
-  const day = (d) => { const t = new Date(); t.setDate(t.getDate() + d); return t.toLocaleDateString("en-IN", { day: "numeric", month: "short" }); };
+  const day = (d) => { const t = new Date(); t.setDate(t.getDate() + d); return kn ? dateKn(t, { year: false }) : t.toLocaleDateString("en-IN", { day: "numeric", month: "short" }); };
   const starts = ev.starts_in_days, ends = ev.ends_in_days;
   const now = ev.phase === "under way";
   const dates = starts == null ? null : now ? (kn ? `ಈಗ ನಡೆಯುತ್ತಿದೆ, ${day(Math.max(0, ends ?? 0))} ವರೆಗೆ` : `On now, until ${day(Math.max(0, ends ?? 0))}`)
@@ -464,8 +535,8 @@ function EventCard({ ev, kn, areas, onOpen, onAsk }) {
             <ul className="px-ev-up">
               {brief.map((x) => (
                 <li key={x.crime} className={x.sure ? "" : "soft"}>
-                  <b>{cap(x.crime)}</b>
-                  {plainCrime(x.crime) && <small>{plainCrime(x.crime)}</small>}
+                  <b>{crimeOf(x.crime, kn)}</b>
+                  {!kn && plainCrime(x.crime) && <small>{plainCrime(x.crime)}</small>}
                   <span>{times(x)} · {kn ? `${x.years} ರಲ್ಲಿ ${x.years_higher} ವರ್ಷ ಹೆಚ್ಚು` : `higher in ${x.years_higher} of ${x.years} years`}{x.sure ? "" : (kn ? " · ಕಡಿಮೆ ಖಚಿತ" : " · less certain")}</span>
                 </li>
               ))}
@@ -476,26 +547,28 @@ function EventCard({ ev, kn, areas, onOpen, onAsk }) {
           <h5>{kn ? "ಒಟ್ಟಾರೆ" : "Overall"}</h5>
           <p className="px-ev-all">{overallLine}{o ? <em> {kn ? `ನಿರೀಕ್ಷಿತ ${num(Math.round(o.expected))} ಕ್ಕೆ ಎದುರಾಗಿ ${num(o.seen)} ಪ್ರಕರಣಗಳು, ${o.years} ವರ್ಷಗಳು.` : `${num(o.seen)} cases against ${num(Math.round(o.expected))} expected, ${o.years} years.`}</em> : null}</p>
           {quieter.length > 0 && (
-            <p className="px-ev-dn">{kn ? "ಸಾಮಾನ್ಯವಾಗಿ ಕಡಿಮೆ: " : "Usually fewer registered: "}{quieter.map((x) => cap(x.crime)).join(", ")}.
-              <em> {kn ? "" : "Fewer FIRs can mean slower reporting during an event, not less crime."}</em></p>
+            <p className="px-ev-dn">{kn ? "ಸಾಮಾನ್ಯವಾಗಿ ಕಡಿಮೆ: " : "Usually fewer registered: "}{quieter.map((x) => crimeOf(x.crime, kn)).join(", ")}.
+              <em> {kn ? "ಉತ್ಸವದ ಸಮಯದಲ್ಲಿ ಕಡಿಮೆ FIR ಎಂದರೆ ವರದಿ ತಡವಾಗಿರಬಹುದು, ಅಪರಾಧ ಕಡಿಮೆ ಎಂದಲ್ಲ." : "Fewer FIRs can mean slower reporting during an event, not less crime."}</em></p>
           )}
         </div>
       </div>
 
       {n >= 4 && (
         <details className="px-ev-more">
-          <summary>{kn ? "ವರ್ಷವಾರು ಅಳತೆ" : `How it was measured: ${n} past years in ${ev.measured_in}${o ? `, ${o.from_year} to ${o.to_year}` : ""}`}</summary>
-          <EffectRow label="All registered cases" ef={o} />
-          {(ev.rises || []).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} />)}
-          {(ev.watch || []).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} soft />)}
-          {(ev.falls || []).slice(0, 3).map((x) => <EffectRow key={x.crime} label={cap(x.crime)} ef={x} />)}
-          <p className="px-ev-src">Date from the {ev.date_source === "internet" ? "internet calendar" : ev.date_source === "fixed date" ? "fixed annual date" : "built-in calendar"}. Effect: FIRs in the event window against the 4 weeks either side, each past year.</p>
+          <summary>{kn ? `ಹೇಗೆ ಅಳೆಯಲಾಯಿತು: ${ev.measured_in} ನಲ್ಲಿ ಹಿಂದಿನ ${n} ವರ್ಷಗಳು${o ? `, ${o.from_year} ರಿಂದ ${o.to_year}` : ""}` : `How it was measured: ${n} past years in ${ev.measured_in}${o ? `, ${o.from_year} to ${o.to_year}` : ""}`}</summary>
+          <EffectRow label={kn ? "ಎಲ್ಲಾ ದಾಖಲಾದ ಪ್ರಕರಣಗಳು" : "All registered cases"} ef={o} kn={kn} />
+          {(ev.rises || []).map((x) => <EffectRow key={x.crime} label={crimeOf(x.crime, kn)} ef={x} kn={kn} />)}
+          {(ev.watch || []).map((x) => <EffectRow key={x.crime} label={crimeOf(x.crime, kn)} ef={x} soft kn={kn} />)}
+          {(ev.falls || []).slice(0, 3).map((x) => <EffectRow key={x.crime} label={crimeOf(x.crime, kn)} ef={x} kn={kn} />)}
+          <p className="px-ev-src">{kn
+            ? `ದಿನಾಂಕ ${ev.date_source === "internet" ? "ಅಂತರ್ಜಾಲ ಕ್ಯಾಲೆಂಡರ್‌ನಿಂದ" : ev.date_source === "fixed date" ? "ಪ್ರತಿ ವರ್ಷದ ನಿಗದಿತ ದಿನಾಂಕದಿಂದ" : "ಅಂತರ್ಗತ ಕ್ಯಾಲೆಂಡರ್‌ನಿಂದ"}. ಪರಿಣಾಮ: ಪ್ರತಿ ಹಿಂದಿನ ವರ್ಷ, ಉತ್ಸವದ ಅವಧಿಯ FIR ಗಳನ್ನು ಅದರ ಎರಡೂ ಬದಿಯ 4 ವಾರಗಳಿಗೆ ಹೋಲಿಸಿ.`
+            : `Date from the ${ev.date_source === "internet" ? "internet calendar" : ev.date_source === "fixed date" ? "fixed annual date" : "built-in calendar"}. Effect: FIRs in the event window against the 4 weeks either side, each past year.`}</p>
         </details>
       )}
 
       <footer>
-        <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={copy}>{copied ? "Copied" : (kn ? "ಬಂದೋಬಸ್ತ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ" : "Copy a bandobast note")}</button>
-        <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" onClick={() => onAsk(`What did ${ev.name} do to crime in ${ev.measured_in} in past years?`)}>{kn ? "ಅಂತರ್‌ಗೆ ಕೇಳಿ" : "Ask Antar about past years"}</button>
+        <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={copy}>{copied ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ಬಂದೋಬಸ್ತ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ" : "Copy a bandobast note")}</button>
+        <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" onClick={() => onAsk(kn ? `ಹಿಂದಿನ ವರ್ಷಗಳಲ್ಲಿ ${ev.name} ಸಮಯದಲ್ಲಿ ${ev.measured_in} ನಲ್ಲಿ ಅಪರಾಧ ಹೇಗೆ ಬದಲಾಯಿತು?` : `What did ${ev.name} do to crime in ${ev.measured_in} in past years?`)}>{kn ? "ಅಂತರ್‌ಗೆ ಕೇಳಿ" : "Ask Antar about past years"}</button>
         {areas.map((a) => <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" key={a.zone} onClick={() => onOpen(a)}>{kn ? "ತೆರೆಯಿರಿ" : "Open"} {a.zone}</button>)}
       </footer>
     </article>
@@ -569,16 +642,18 @@ function VolumeTrend({ volume, kn }) {
             <div className={`pxd-callout ${selIdx > N / 2 ? "left" : ""}`} style={at(selIdx)}>
               <b>{num(cur.value)}</b>
               <span className={rising ? "up" : "down"}>
-                {dPct == null ? cur.label : `${dPct > 0 ? "+" : dPct < 0 ? "-" : ""}${Math.abs(dPct)}%`}
+                {dPct == null ? labelKn(cur.label, kn) : `${dPct > 0 ? "+" : dPct < 0 ? "-" : ""}${Math.abs(dPct)}%`}
               </span>
             </div>
           </div>
 
-          <div className="pxd-xlabels">{ticks.map((ti) => <span key={ti}>{series[ti].label}</span>)}</div>
+          <div className="pxd-xlabels">{ticks.map((ti) => <span key={ti}>{labelKn(series[ti].label, kn)}</span>)}</div>
 
           <div className="pxd-selline">
-            <b>{cur.label}</b> {num(cur.value)} {kn ? "ಪ್ರಕರಣಗಳು" : "cases"}
-            {dPct != null && selIdx > 0 && <>, {dPct === 0 ? "the same as" : `${Math.abs(dPct)}% ${dPct > 0 ? "more than" : "fewer than"}`} {series[selIdx - 1].label}</>}
+            <b>{labelKn(cur.label, kn)}</b> {num(cur.value)} {kn ? "ಪ್ರಕರಣಗಳು" : "cases"}
+            {dPct != null && selIdx > 0 && (kn
+              ? <>, {labelKn(series[selIdx - 1].label, kn)} ಕ್ಕೆ {dPct === 0 ? "ಸಮ" : `${Math.abs(dPct)}% ${dPct > 0 ? "ಹೆಚ್ಚು" : "ಕಡಿಮೆ"}`}</>
+              : <>, {dPct === 0 ? "the same as" : `${Math.abs(dPct)}% ${dPct > 0 ? "more than" : "fewer than"}`} {series[selIdx - 1].label}</>)}
             {cur.partial && <span className="pxd-partial">{kn ? "ಭಾಗಶಃ" : "year not complete"}</span>}
           </div>
 
@@ -1671,8 +1746,20 @@ function PredictScreen() {
     if (!item) return "";
     const name = item.zone, ctype = cap(item.crime_type), range = rangeOf(item);
     if (kn) {
-      const up = item.direction !== "silence";
-      return `ಅಂತರ್ ವಿಶ್ಲೇಷಣೆ: ${name} ವಲಯದಲ್ಲಿ ${ctype} ಪ್ರಕರಣಗಳಲ್ಲಿ ${up ? "ಹೆಚ್ಚಳ" : "ಕಡಿಮೆ"} ಕಂಡುಬಂದಿದೆ.`;
+      const ck = crimeOf(item.crime_type, true), rk = rangeOf(item, true);
+      if (item.direction === "silence") {
+        return `${name} ನಲ್ಲಿ ${ck} ಪ್ರಕರಣಗಳ ವರದಿ ಸಾಮಾನ್ಯಕ್ಕಿಂತ ತುಂಬಾ ಕಡಿಮೆ. ಇಷ್ಟು ತೀವ್ರ ಇಳಿಕೆ ಎಂದರೆ ಅಪರಾಧ ನಿಜವಾಗಿ ಕಡಿಮೆಯಾಗಿರಬಹುದು, ಅಥವಾ ಪ್ರಕರಣಗಳು ವರದಿ/ದಾಖಲಾಗುತ್ತಿಲ್ಲದಿರಬಹುದು. ಠಾಣೆಯೊಂದಿಗೆ ಪರಿಶೀಲಿಸಿ.`;
+      }
+      if (!(Number(item.z_score) > 0)) {
+        return `${name} ಸಾಮಾನ್ಯ ಮಟ್ಟದಲ್ಲಿದೆ. ${ck} ಇಲ್ಲಿನ ಅತಿ ಸಾಮಾನ್ಯ ಪ್ರಕರಣ; ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಅಸಾಮಾನ್ಯವೇನೂ ನಿರೀಕ್ಷಿತವಿಲ್ಲ.`;
+      }
+      const riskKn = { HIGH: "ಹೆಚ್ಚು", MEDIUM: "ಮಧ್ಯಮ", LOW: "ಕಡಿಮೆ" }[item.risk] || "";
+      return `${name} ನಲ್ಲಿ ${ck} ಪ್ರಕರಣಗಳು ಈ ವಲಯಕ್ಕೆ ${levelOf(item, true)}.`
+        + (rk ? ` ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ${rk} ನಿರೀಕ್ಷಿತ.` : "")
+        + (riskKn ? ` ಅಪಾಯ ಮಟ್ಟ: ${riskKn}` : "")
+        + (item.confidence_level ? `, ವಿಶ್ವಾಸ: ${lvl(item.confidence_level, true)}.`
+          : item.fromAlert ? `; ಈ ಏರಿಕೆ ಅಸಾಮಾನ್ಯ ಎಂದು ಸ್ಕ್ಯಾನ್ ${pct(item.confidence)}% ಖಚಿತ.`
+          : `, ${pct(item.confidence)}% ವಿಶ್ವಾಸ.`);
     }
     if (item.direction === "silence") {
       return `Far fewer ${ctype.toLowerCase()} cases than usual have been reported in ${name}. A drop this sharp can mean the crime really fell, or that cases are not being reported or registered. It is worth a check with the station.`;
@@ -1698,9 +1785,26 @@ function PredictScreen() {
   const aboves = A.filter((x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2).sort((a, b) => (b.z_score || 0) - (a.z_score || 0));
   const drops = A.filter((x) => x.direction === "silence");
   const usual = A.filter((x) => x.risk !== "HIGH" && x.direction !== "silence" && (Number(x.z_score) || 0) < 2).length;
-  const names = (a, n = 3) => a.slice(0, n).map((x) => x.zone).join(", ") + (a.length > n ? ` and ${a.length - n} more` : "");
+  const names = (a, n = 3) => a.slice(0, n).map((x) => x.zone).join(", ") + (a.length > n ? (kn ? ` ಮತ್ತು ಇನ್ನೂ ${a.length - n}` : ` and ${a.length - n} more`) : "");
   const are = (n) => (n === 1 ? "area is" : "areas are");
-  const brief = !P.length ? [] : [
+  const brief = !P.length ? [] : kn ? [
+    highs.length
+      ? { k: "hi", go: highs[0], t: `ಈ ವಾರ ${highs.length} ವಲಯಗಳು ಹೆಚ್ಚು ಅಪಾಯದಲ್ಲಿವೆ: ${names(highs)}.` }
+      : { k: "ok", t: "ಈ ವಾರ ಯಾವುದೇ ವಲಯ ಹೆಚ್ಚು ಅಪಾಯದಲ್ಲಿಲ್ಲ." },
+    aboves.length
+      ? { k: "up", go: aboves[0], t: `${aboves.length} ವಲಯಗಳು ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ಹೆಚ್ಚು. ಅತಿ ಹೆಚ್ಚು ${aboves[0].zone} (${crimeOf(aboves[0].crime_type, true)})${rangeOf(aboves[0], true) ? `, ಅಲ್ಲಿ ${rangeOf(aboves[0], true)} ನಿರೀಕ್ಷಿತ` : ""}.` }
+      : { k: "ok", t: "ಯಾವುದೇ ವಲಯ ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ಹೆಚ್ಚಿಲ್ಲ." },
+    drops.length
+      ? { k: "dn", go: drops[0], t: `${drops.length} ವಲಯಗಳಲ್ಲಿ ವರದಿಗಳು ಅಸಾಮಾನ್ಯವಾಗಿ ಕಡಿಮೆ (${names(drops)}). ಇದು ಕಡಿಮೆ ವರದಿಯಾಗುತ್ತಿರುವುದನ್ನು ಸೂಚಿಸಬಹುದು; ಪರಿಶೀಲಿಸಿ.` }
+      : null,
+    usual ? { k: "eq", t: `${usual} ವಲಯಗಳು ಸಾಮಾನ್ಯ ಮಟ್ಟದಲ್ಲಿವೆ.` } : null,
+    ...evsAhead.filter((e) => e.in_forecast_window).map((e) => {
+      const o = e.overall, up = (e.rises || [])[0] || (e.watch || [])[0];
+      return { k: "ev", toEvents: true, t: `${e.name}: ${e.when}.`
+        + (o ? ` ಹಿಂದಿನ ${o.years} ವರ್ಷಗಳಲ್ಲಿ ಈ ಅವಧಿಯಲ್ಲಿ ${e.measured_in} ನಲ್ಲಿ ${Math.abs(o.percent)}% ${o.percent < 0 ? "ಕಡಿಮೆ" : "ಹೆಚ್ಚು"} ಪ್ರಕರಣಗಳು ದಾಖಲಾದವು` : "")
+        + (o && up ? `; ${crimeOf(up.crime, true)} ${up.percent}% ಹೆಚ್ಚು${(e.rises || []).length ? "" : " (ಕಡಿಮೆ ಖಚಿತ)"}.` : o ? "." : "") };
+    }),
+  ].filter(Boolean) : [
     highs.length
       ? { k: "hi", go: highs[0], t: `${highs.length} ${are(highs.length)} at high risk this week: ${names(highs)}.` }
       : { k: "ok", t: "No area is at high risk this week." },
@@ -1724,21 +1828,28 @@ function PredictScreen() {
   const plan = [];
   if (P.length) {
     for (const x of highs.slice(0, 2)) plan.push({ k: "hi", verb: kn ? "ಆದ್ಯತೆ" : "Act first", go: x,
-      title: `${x.zone}: ${cap(x.crime_type)}`, plain: plainCrime(x.crime_type), short: rangeOf(x) ? `${rangeOf(x)} expected` : "High risk",
-      text: `High risk${rangeOf(x) ? `, ${rangeOf(x)} expected` : ""}. Put extra beat visits on the stations listed under its forecast.` });
+      title: `${x.zone}: ${crimeOf(x.crime_type, kn)}`, plain: kn ? null : plainCrime(x.crime_type),
+      short: rangeOf(x, kn) ? (kn ? `${rangeOf(x, true)} ನಿರೀಕ್ಷಿತ` : `${rangeOf(x)} expected`) : (kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High risk"),
+      text: kn ? `ಹೆಚ್ಚು ಅಪಾಯ${rangeOf(x, true) ? `, ${rangeOf(x, true)} ನಿರೀಕ್ಷಿತ` : ""}. ಅದರ ಮುನ್ಸೂಚನೆಯಡಿ ಹೆಸರಿಸಿದ ಠಾಣೆಗಳಿಗೆ ಹೆಚ್ಚುವರಿ ಬೀಟ್ ಭೇಟಿಗಳನ್ನು ನೀಡಿ.`
+        : `High risk${rangeOf(x) ? `, ${rangeOf(x)} expected` : ""}. Put extra beat visits on the stations listed under its forecast.` });
     for (const x of aboves.filter((a) => !highs.includes(a)).slice(0, Math.max(0, 2 - plan.length))) plan.push({ k: "up", verb: kn ? "ಗಸ್ತು" : "More patrols", go: x,
-      title: `${x.zone}: ${cap(x.crime_type)}`, plain: plainCrime(x.crime_type), short: levelOf(x),
-      text: `${levelOf(x)}${rangeOf(x) ? `; ${rangeOf(x)} expected` : ""}. Short, repeated beat visits to the stations named in its forecast.` });
+      title: `${x.zone}: ${crimeOf(x.crime_type, kn)}`, plain: kn ? null : plainCrime(x.crime_type), short: levelOf(x, kn),
+      text: kn ? `${levelOf(x, true)}${rangeOf(x, true) ? `; ${rangeOf(x, true)} ನಿರೀಕ್ಷಿತ` : ""}. ಮುನ್ಸೂಚನೆಯಲ್ಲಿ ಹೆಸರಿಸಿದ ಠಾಣೆಗಳಿಗೆ ಕಿರು, ಪುನರಾವರ್ತಿತ ಬೀಟ್ ಭೇಟಿಗಳು.`
+        : `${levelOf(x)}${rangeOf(x) ? `; ${rangeOf(x)} expected` : ""}. Short, repeated beat visits to the stations named in its forecast.` });
     if (drops[0]) plan.push({ k: "dn", verb: kn ? "ಪರಿಶೀಲಿಸಿ" : "Check records", go: drops[0],
-      title: `${drops[0].zone}: ${cap(drops[0].crime_type)}`, short: "Fewer reports than usual", text: "Far fewer reports than usual. Ask the station whether complaints are being registered before reading it as a fall in crime." });
+      title: `${drops[0].zone}: ${crimeOf(drops[0].crime_type, kn)}`, short: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಕಡಿಮೆ ವರದಿಗಳು" : "Fewer reports than usual",
+      text: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ತುಂಬಾ ಕಡಿಮೆ ವರದಿಗಳು. ಇದನ್ನು ಅಪರಾಧದ ಇಳಿಕೆ ಎಂದು ಓದುವ ಮೊದಲು ದೂರುಗಳು ದಾಖಲಾಗುತ್ತಿವೆಯೇ ಎಂದು ಠಾಣೆಯನ್ನು ಕೇಳಿ."
+        : "Far fewer reports than usual. Ask the station whether complaints are being registered before reading it as a fall in crime." });
     const ev = evsAhead.find((e) => e.in_forecast_window) || evsAhead[0];
     if (ev) {
       const up = (ev.rises || [])[0] || (ev.watch || [])[0];
       plan.push({ k: "ev", verb: kn ? "ಬಂದೋಬಸ್ತ್" : "Plan for event", toEvents: true, title: ev.name, short: ev.when,
-        text: `${ev.when}.${up ? ` In past years ${cap(up.crime).toLowerCase()} ran ${up.percent}% higher during it.` : ""} Plan deployment for it.` });
+        text: kn ? `${ev.when}.${up ? ` ಹಿಂದಿನ ವರ್ಷಗಳಲ್ಲಿ ಇದರ ಸಮಯದಲ್ಲಿ ${crimeOf(up.crime, true)} ${up.percent}% ಹೆಚ್ಚಾಗಿತ್ತು.` : ""} ಇದಕ್ಕೆ ನಿಯೋಜನೆ ಯೋಜಿಸಿ.`
+          : `${ev.when}.${up ? ` In past years ${cap(up.crime).toLowerCase()} ran ${up.percent}% higher during it.` : ""} Plan deployment for it.` });
     }
-    if (!plan.length) plan.push({ k: "ok", verb: kn ? "ಸಾಮಾನ್ಯ" : "No change", title: "Every area is at its usual level", short: "Routine beats",
-      text: "No area needs extra deployment this week. Routine beats as planned." });
+    if (!plan.length) plan.push({ k: "ok", verb: kn ? "ಸಾಮಾನ್ಯ" : "No change", title: kn ? "ಎಲ್ಲಾ ವಲಯಗಳು ಸಾಮಾನ್ಯ ಮಟ್ಟದಲ್ಲಿವೆ" : "Every area is at its usual level",
+      short: kn ? "ಸಾಮಾನ್ಯ ಬೀಟ್‌ಗಳು" : "Routine beats",
+      text: kn ? "ಈ ವಾರ ಯಾವುದೇ ವಲಯಕ್ಕೆ ಹೆಚ್ಚುವರಿ ನಿಯೋಜನೆ ಬೇಕಿಲ್ಲ. ಯೋಜಿಸಿದಂತೆ ಸಾಮಾನ್ಯ ಬೀಟ್‌ಗಳು." : "No area needs extra deployment this week. Routine beats as planned." });
   }
 
   // Alerts, with repeats grouped: the same area, crime and kind of signal is one alert,
@@ -1780,26 +1891,27 @@ function PredictScreen() {
   // selection is an index into it.
   const needsAttention = (x) => x.risk === "HIGH" || x.direction === "silence" || (Number(x.z_score) || 0) >= 2 || (x.events || []).length > 0;
   const FILTERS = [
-    ["attention", "Needs attention", needsAttention],
-    ["high", "High risk", (x) => x.risk === "HIGH"],
-    ["all", "All areas", () => true],
-    ["above", "Above normal", (x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2],
-    ["drops", "Reporting drops", (x) => x.direction === "silence"],
-    ["event", "Event this week", (x) => (x.events || []).length > 0],
-    ["sure", "High confidence", (x) => x.confidence_level === "High"],
+    ["attention", kn ? "ಗಮನ ಬೇಕು" : "Needs attention", needsAttention],
+    ["high", kn ? "ಹೆಚ್ಚು ಅಪಾಯ" : "High risk", (x) => x.risk === "HIGH"],
+    ["all", kn ? "ಎಲ್ಲಾ ವಲಯಗಳು" : "All areas", () => true],
+    ["above", kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", (x) => x.direction !== "silence" && (Number(x.z_score) || 0) >= 2],
+    ["drops", kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", (x) => x.direction === "silence"],
+    ["event", kn ? "ಈ ವಾರ ಉತ್ಸವ" : "Event this week", (x) => (x.events || []).length > 0],
+    ["sure", kn ? "ಹೆಚ್ಚು ವಿಶ್ವಾಸ" : "High confidence", (x) => x.confidence_level === "High"],
   ];
   useEffect(() => {
     if (predictions?.length && flt === "attention" && !predictions.some((x) => !isUnit(x) && needsAttention(x))) setFlt("all");
   }, [predictions]); // eslint-disable-line react-hooks/exhaustive-deps
   const needle = findArea.trim().toLowerCase();
   const passes = (FILTERS.find((f) => f[0] === flt) || FILTERS[0])[2];
-  const shown = P.map((x, i) => ({ p: x, i })).filter(({ p: x }) => !isUnit(x) && passes(x) && (!needle || String(x.zone).toLowerCase().includes(needle) || cap(x.crime_type).toLowerCase().includes(needle)));
+  const shown = P.map((x, i) => ({ p: x, i })).filter(({ p: x }) => !isUnit(x) && passes(x) && (!needle || String(x.zone).toLowerCase().includes(needle) || cap(x.crime_type).toLowerCase().includes(needle) || (crimeKn(x.crime_type) || "").includes(findArea.trim())));
 
   // The week as text an officer can paste into a briefing note.
   const copyBrief = async () => {
-    const lines = [`Antar forecast for the next 7 days${boardMeta?.as_of ? `, assessed ${dayOf(boardMeta.as_of)}` : ""}`, ...brief.map((b) => `- ${b.t}`)];
-    if (reading) lines.push("", reading);
-    if (eng && eng !== "missing" && eng.confidence?.level) lines.push("", `Engine confidence: ${eng.confidence.level}. Decision support only; the officer decides.`);
+    const lines = [kn ? `ಮುಂದಿನ 7 ದಿನಗಳ ಅಂತರ್ ಮುನ್ಸೂಚನೆ${boardMeta?.as_of ? `, ${dayOf(boardMeta.as_of, true)} ರಂದು` : ""}`
+      : `Antar forecast for the next 7 days${boardMeta?.as_of ? `, assessed ${dayOf(boardMeta.as_of)}` : ""}`, ...brief.map((b) => `- ${b.t}`)];
+    if (reading && !kn) lines.push("", reading);
+    if (eng && eng !== "missing" && eng.confidence?.level) lines.push("", kn ? `ಎಂಜಿನ್ ವಿಶ್ವಾಸ: ${lvl(eng.confidence.level, true)}. ನಿರ್ಧಾರ-ಬೆಂಬಲ ಮಾತ್ರ; ಅಧಿಕಾರಿ ತೀರ್ಮಾನಿಸುತ್ತಾರೆ.` : `Engine confidence: ${eng.confidence.level}. Decision support only; the officer decides.`);
     try { await navigator.clipboard.writeText(lines.join("\n")); setCopied(true); setTimeout(() => setCopied(false), 2200); } catch { /* clipboard not available */ }
   };
 const avgConf = predictions?.length
@@ -1842,8 +1954,8 @@ const avgConf = predictions?.length
           {trackPct && (
             // the forecast's own track record, up front: opens the details
             <button type="button" className="px-meta-btn" onClick={toConfidence}
-                    title="How often the real count fell inside the forecast range, tested on past weeks of the real register">
-              {kn ? "ದಾಖಲೆ" : "Range held in"} <b>{trackPct}</b> {kn ? "ವಾರಗಳಲ್ಲಿ" : "of tested weeks"}
+                    title={kn ? "ನೈಜ ಸಂಖ್ಯೆ ಮುನ್ಸೂಚನೆ ವ್ಯಾಪ್ತಿಯೊಳಗೆ ಎಷ್ಟು ಬಾರಿ ಬಿತ್ತು, ನೈಜ ರಿಜಿಸ್ಟರ್‌ನ ಹಿಂದಿನ ವಾರಗಳಲ್ಲಿ ಪರೀಕ್ಷಿಸಲಾಗಿದೆ" : "How often the real count fell inside the forecast range, tested on past weeks of the real register"}>
+              {kn ? <>ಪರೀಕ್ಷಿಸಿದ <b>{trackPct}</b> ವಾರಗಳಲ್ಲಿ ವ್ಯಾಪ್ತಿ ಸರಿಯಾಗಿದೆ</> : <>Range held in <b>{trackPct}</b> of tested weeks</>}
             </button>
           )}
           {offlineSample && <span className="px-offline">{kn ? "ಸರ್ವರ್ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ · ಮಾದರಿ" : "Sample data while Antar wakes up"}</span>}
@@ -1859,7 +1971,7 @@ const avgConf = predictions?.length
           { k: "up", n: aboves.length, l: kn ? "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" : "Above normal", hint: kn ? "ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ತುಂಬಾ ಹೆಚ್ಚು" : "Well above the area's usual level", go: () => { setFlt(aboves.length ? "above" : "all"); toForecast(); } },
           { k: "dn", n: drops.length, l: kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drops", hint: kn ? "ದಾಖಲಾತಿ ಪರಿಶೀಲಿಸಿ" : "Far fewer reports: check registration", go: () => { setFlt(drops.length ? "drops" : "all"); toForecast(); } },
           { k: "al", n: alertGroups.length, l: kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು" : "Active alerts", hint: kn ? "ಸಾಮಾನ್ಯ ಮಾದರಿ ಮುರಿದ ಪ್ರಕರಣಗಳು" : "Cases that broke an area's pattern", go: toAlerts },
-          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", hint: nextEv ? `${nextEv.name}, ${nextEv.when.toLowerCase()}` : (kn ? "ಮುಂಬರುವ ಉತ್ಸವ ಇಲ್ಲ" : "Nothing coming up"), go: toEvents },
+          { k: "ev", n: evsAhead.length, l: kn ? "ಮುಂಬರುವ ಉತ್ಸವ" : "Events in 3 weeks", hint: nextEv ? `${nextEv.name}, ${kn ? nextEv.when : nextEv.when.toLowerCase()}` : (kn ? "ಮುಂಬರುವ ಉತ್ಸವ ಇಲ್ಲ" : "Nothing coming up"), go: toEvents },
         ];
         return (
           <div className="px-stats" role="list" aria-label={kn ? "ವಾರ ಒಂದು ನೋಟದಲ್ಲಿ" : "The week at a glance"}>
@@ -1873,11 +1985,11 @@ const avgConf = predictions?.length
       })()}
 
       {/* This week's plan: one line per action, opened for the detail */}
-      <section className="px-plan" ref={planRef} aria-label="This week's plan">
+      <section className="px-plan" ref={planRef} aria-label={kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}>
         <div className="px-plan-hd">
           <div>
             <span className="ui-eyebrow">{kn ? "ಇಲ್ಲಿಂದ ಆರಂಭಿಸಿ" : "Start here"}</span>
-            <h2><span className="px-secnum">01</span>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}{plan.length > 0 && <small>{Math.min(plan.length, 4)} {Math.min(plan.length, 4) === 1 ? "action" : "actions"}</small>}</h2>
+            <h2><span className="px-secnum">01</span>{kn ? "ಈ ವಾರದ ಯೋಜನೆ" : "This week's plan"}{plan.length > 0 && <small>{Math.min(plan.length, 4)} {kn ? "ಕ್ರಮಗಳು" : Math.min(plan.length, 4) === 1 ? "action" : "actions"}</small>}</h2>
           </div>
           <button type="button" className="ui-btn ui-btn--secondary" onClick={copyBrief} disabled={!brief.length}>
             {copied ? (kn ? "ನಕಲಿಸಲಾಗಿದೆ" : "Copied") : (kn ? "ಬ್ರೀಫಿಂಗ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ" : "Copy for the briefing note")}
@@ -1918,7 +2030,7 @@ const avgConf = predictions?.length
           <details className="px-plan-more">
             <summary>{kn ? "ವಾರದ ಸಾರಾಂಶ" : "The whole week in brief"}</summary>
             <ul className="px-plan-brief">{brief.map((b, i) => <li key={i} className={`k-${b.k}`}>{b.t}</li>)}</ul>
-            {reading && <p className="px-plan-ai"><span>{kn ? "ಅಂತರ್ ಓದು" : "Antar's reading"}</span>{reading}</p>}
+            {reading && !kn && <p className="px-plan-ai"><span>Antar's reading</span>{reading}</p>}
           </details>
         )}
       </section>
@@ -1933,7 +2045,7 @@ const avgConf = predictions?.length
           </div>
           <p className="px-sec-note">{kn ? "ಪ್ರತಿ ಕಾರ್ಡ್ ಒಂದು ವಲಯ: ಅಲ್ಲಿ ಹೆಚ್ಚು ಬದಲಾಗಬಹುದಾದ ಅಪರಾಧ, ಸಾಮಾನ್ಯದಿಂದ ಎಷ್ಟು ದೂರ, ಮತ್ತು ಮುಂದಿನ 7 ದಿನಗಳ ನಿರೀಕ್ಷಿತ ಪ್ರಕರಣಗಳು. ಕಾರಣಕ್ಕಾಗಿ ಒಂದನ್ನು ಆರಿಸಿ."
             : "Each card is one area: the crime most likely to move, how far from normal, and the cases expected. Pick one for the reasons."}</p>
-          <div className="px-flt" role="toolbar" aria-label="Narrow the forecast list">
+          <div className="px-flt" role="toolbar" aria-label={kn ? "ಮುನ್ಸೂಚನೆ ಪಟ್ಟಿ ಕಿರಿದಾಗಿಸಿ" : "Narrow the forecast list"}>
             {FILTERS.map(([key, label, test]) => {
               const count = A.filter(test).length;
               return (
@@ -1947,7 +2059,7 @@ const avgConf = predictions?.length
               );
             })}
             <input type="search" value={findArea} onChange={(e) => setFindArea(e.target.value)}
-                   placeholder="Find an area or crime type" aria-label="Find an area or crime type" />
+                   placeholder={kn ? "ವಲಯ ಅಥವಾ ಅಪರಾಧ ಹುಡುಕಿ" : "Find an area or crime type"} aria-label={kn ? "ವಲಯ ಅಥವಾ ಅಪರಾಧ ಹುಡುಕಿ" : "Find an area or crime type"} />
           </div>
           <div className="pxd-scroll" role="group" aria-label={kn ? "ಹಾಟ್‌ಸ್ಪಾಟ್ ಪ್ರಾಧಾನ್ಯ" : "Hotspot rankings"}>
             {predictions === null && (
@@ -1957,7 +2069,7 @@ const avgConf = predictions?.length
               <div className="px-loading">{kn ? "ಸಕ್ರಿಯ ಮುನ್ಸೂಚನೆಗಳಿಲ್ಲ" : "No forecasts right now."}</div>
             )}
             {predictions?.length > 0 && shown.length === 0 && (
-              <div className="px-loading">No area matches. <button type="button" className="px-linkbtn" onClick={() => { setFlt("all"); setFindArea(""); }}>Show all</button></div>
+              <div className="px-loading">{kn ? "ಯಾವುದೇ ವಲಯ ಹೊಂದುತ್ತಿಲ್ಲ." : "No area matches."} <button type="button" className="px-linkbtn" onClick={() => { setFlt("all"); setFindArea(""); }}>{kn ? "ಎಲ್ಲಾ ತೋರಿಸಿ" : "Show all"}</button></div>
             )}
             {shown.map(({ p, i }) => (
               <div
@@ -1974,10 +2086,10 @@ const avgConf = predictions?.length
                 )}
                 <div className="px-card-top">
                   <span className="px-zone">{p.zone}</span>
-                  <span className={`px-st s-${statusOf(p).k}`}>{statusOf(p).t}</span>
+                  <span className={`px-st s-${statusOf(p).k}`}>{statusOf(p, kn).t}</span>
                 </div>
                 <div className="px-crime-row">
-                  <CrimeName name={p.crime_type} className="px-crime" />
+                  <CrimeName name={p.crime_type} className="px-crime" kn={kn} />
                   <button
                     type="button"
                     className="px-know"
@@ -1987,17 +2099,19 @@ const avgConf = predictions?.length
                     {kn ? "ಏಕೆ?" : "Why?"}
                   </button>
                 </div>
-                <div className="px-say" title={p.z_score ? `Unusual-activity score ${p.z_score} (2 is unusual, 4 is rare)` : undefined}>
-                  <b className={p.direction === "silence" ? "dn" : (Number(p.z_score) || 0) >= 2 ? "up" : ""}>{levelOf(p)}</b>
-                  {rangeOf(p) ? <span>{kn ? "ನಿರೀಕ್ಷಿತ" : "Expected"} {rangeOf(p)}</span> : null}
+                <div className="px-say" title={p.z_score ? (kn ? `ಅಸಾಮಾನ್ಯತೆ ಅಂಕ ${p.z_score} (2 ಅಸಾಮಾನ್ಯ, 4 ಅಪರೂಪ)` : `Unusual-activity score ${p.z_score} (2 is unusual, 4 is rare)`) : undefined}>
+                  <b className={p.direction === "silence" ? "dn" : (Number(p.z_score) || 0) >= 2 ? "up" : ""}>{levelOf(p, kn)}</b>
+                  {rangeOf(p, kn) ? <span>{kn ? "ನಿರೀಕ್ಷಿತ" : "Expected"} {rangeOf(p, kn)}</span> : null}
                 </div>
                 {p.scenario && (
-                  <div className="px-scn2">With {p.scenario.event}: <b>{num(p.scenario.lo)} to {num(p.scenario.hi)} cases</b> <i>estimate</i></div>
+                  <div className="px-scn2">{kn
+                    ? <>{p.scenario.event} ಜೊತೆ: <b>{num(p.scenario.lo)}–{num(p.scenario.hi)} ಪ್ರಕರಣಗಳು</b> <i>ಅಂದಾಜು</i></>
+                    : <>With {p.scenario.event}: <b>{num(p.scenario.lo)} to {num(p.scenario.hi)} cases</b> <i>estimate</i></>}</div>
                 )}
                 {p.confidence_level ? (
                   <div className="px-conf2">
-                    <span className={`px-lvl l-${p.confidence_level}`}>{p.confidence_level} confidence</span>
-                    <span>{num(p.basis?.cases_52w)} cases in 52 weeks</span>
+                    <span className={`px-lvl l-${p.confidence_level}`}>{kn ? `ವಿಶ್ವಾಸ: ${lvl(p.confidence_level, true)}` : `${p.confidence_level} confidence`}</span>
+                    <span>{kn ? `52 ವಾರಗಳಲ್ಲಿ ${num(p.basis?.cases_52w)} ಪ್ರಕರಣಗಳು` : `${num(p.basis?.cases_52w)} cases in 52 weeks`}</span>
                   </div>
                 ) : (
                   <div className="px-confbar">
@@ -2012,12 +2126,12 @@ const avgConf = predictions?.length
             ))}
           </div>
           {unitCards.length > 0 && (
-            <div className="px-units" aria-label="Statewide police units">
-              <span className="px-units-k" title="Units that register FIRs statewide under their own name. They are not areas, so they are not ranked with them or put in the plan.">
+            <div className="px-units" aria-label={kn ? "ರಾಜ್ಯಮಟ್ಟದ ಪೊಲೀಸ್ ಘಟಕಗಳು" : "Statewide police units"}>
+              <span className="px-units-k" title={kn ? "ತಮ್ಮದೇ ಹೆಸರಿನಲ್ಲಿ ರಾಜ್ಯಾದ್ಯಂತ FIR ದಾಖಲಿಸುವ ಘಟಕಗಳು. ಇವು ವಲಯಗಳಲ್ಲ, ಆದ್ದರಿಂದ ಅವುಗಳೊಂದಿಗೆ ಶ್ರೇಣೀಕರಿಸುವುದಿಲ್ಲ ಅಥವಾ ಯೋಜನೆಯಲ್ಲಿ ಸೇರಿಸುವುದಿಲ್ಲ." : "Units that register FIRs statewide under their own name. They are not areas, so they are not ranked with them or put in the plan."}>
                 {kn ? "ರಾಜ್ಯಮಟ್ಟದ ಘಟಕಗಳು" : "Statewide units"}
               </span>
               {unitCards.map(({ p, i }) => (
-                <button type="button" key={p.zone} title={`${p.unit || UNIT_NAMES[p.zone]}: ${cap(p.crime_type)}, ${levelOf(p).toLowerCase()}`}
+                <button type="button" key={p.zone} title={kn ? `${p.unit || UNIT_NAMES[p.zone]}: ${crimeOf(p.crime_type, true)}, ${levelOf(p, true)}` : `${p.unit || UNIT_NAMES[p.zone]}: ${cap(p.crime_type)}, ${levelOf(p).toLowerCase()}`}
                         className={`${explainOpen && focusKind === "prediction" && selected === i ? "on" : ""} s-${statusOf(p).k}`}
                         onClick={() => pick("prediction", i)}>
                   <i aria-hidden="true" />{p.zone}
@@ -2042,7 +2156,7 @@ const avgConf = predictions?.length
               const hi = z >= 4;
               // The label had three steps and the class only two, so every "Low" alert
               // was painted with the Medium style. Both come off the same test now.
-              const sevlbl = hi ? "High" : z >= 2.5 ? "Medium" : "Low";
+              const sevlbl = kn ? (hi ? "ಹೆಚ್ಚು" : z >= 2.5 ? "ಮಧ್ಯಮ" : "ಕಡಿಮೆ") : hi ? "High" : z >= 2.5 ? "Medium" : "Low";
               const sev = hi ? "hi" : z >= 2.5 ? "md" : "lo";
               const on = explainOpen && focusKind === "alert" && selAlert === i;
               return (
@@ -2057,12 +2171,12 @@ const avgConf = predictions?.length
                 >
                   <div className="pxd-alert-main">
                     <div className="pxd-alert-ttl">
-                      <span><CrimeName name={a.crime_type} />{count > 1 && <small className="pxd-rep" title="Raised this many times">×{count}</small>}</span>
+                      <span><CrimeName name={a.crime_type} kn={kn} />{count > 1 && <small className="pxd-rep" title={kn ? "ಇಷ್ಟು ಬಾರಿ ಎಚ್ಚರಿಸಲಾಗಿದೆ" : "Raised this many times"}>×{count}</small>}</span>
                       <span className={`pxd-sev ${sev}`}>{sevlbl}</span>
                     </div>
-                    <div className="pxd-alert-sub" title={`Unusual-activity score ${Number(z).toFixed(2)} (2 is unusual, 4 is rare)`}>
-                      {a.zone} · {a.anomaly_type ? (kn ? cap(a.anomaly_type) : (ALERT_KIND[a.anomaly_type] || cap(a.anomaly_type))) : a.direction === "silence" ? (kn ? "ವರದಿ ಮೌನ" : "Reporting drop") : (kn ? "ಅಸಂಗತಿ" : "Unusual activity")}
-                      {z > 0 ? ` · ${levelOf(a).toLowerCase()}` : ` · ${kn ? "ಗಮನದಲ್ಲಿದೆ" : "on watch"}`}
+                    <div className="pxd-alert-sub" title={kn ? `ಅಸಾಮಾನ್ಯತೆ ಅಂಕ ${Number(z).toFixed(2)} (2 ಅಸಾಮಾನ್ಯ, 4 ಅಪರೂಪ)` : `Unusual-activity score ${Number(z).toFixed(2)} (2 is unusual, 4 is rare)`}>
+                      {a.zone} · {a.anomaly_type ? (kn ? (ALERT_KIND_KN[a.anomaly_type] || cap(a.anomaly_type)) : (ALERT_KIND[a.anomaly_type] || cap(a.anomaly_type))) : a.direction === "silence" ? (kn ? "ವರದಿ ಇಳಿಕೆ" : "Reporting drop") : (kn ? "ಅಸಾಮಾನ್ಯ ಚಟುವಟಿಕೆ" : "Unusual activity")}
+                      {z > 0 ? ` · ${kn ? levelOf(a, true) : levelOf(a).toLowerCase()}` : ` · ${kn ? "ಗಮನದಲ್ಲಿದೆ" : "on watch"}`}
                     </div>
                   </div>
                   <span className={`pxd-adot ${sev}`} />
@@ -2071,7 +2185,7 @@ const avgConf = predictions?.length
             })}
             {alertGroups.length > 6 && (
               <button type="button" className="px-linkbtn pxd-more" onClick={() => setAllAlerts((v) => !v)}>
-                {allAlerts ? "Show the strongest six" : `Show all ${alertGroups.length}`}
+                {allAlerts ? (kn ? "ಅತಿ ಪ್ರಬಲ ಆರು ಮಾತ್ರ" : "Show the strongest six") : (kn ? `ಎಲ್ಲಾ ${alertGroups.length} ತೋರಿಸಿ` : `Show all ${alertGroups.length}`)}
               </button>
             )}
           </div>
@@ -2088,7 +2202,7 @@ const avgConf = predictions?.length
         <div className="px-panel-hd">
           <span>{kn ? "ಮುನ್ಸೂಚನೆ ವಿವರಣೆ" : "Why this forecast"}</span>
           <span className="px-hint">
-            {focusKind === "alert" ? (kn ? "ಅಂತರ ಎಚ್ಚರಿಕೆಯಿಂದ" : "From an active alert") : (kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಂದ" : "From the 7-day forecast")}
+            {focusKind === "alert" ? (kn ? "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಯಿಂದ" : "From an active alert") : (kn ? "ಮುಂದಿನ 7 ದಿನಗಳಿಂದ" : "From the 7-day forecast")}
             <button type="button" className="px-explain-x" onClick={() => { setExplainOpen(false); setShowReasoning(false); }}
                     aria-label={kn ? "ಮುಚ್ಚಿ" : "Close the explanation"}>{kn ? "ಮುಚ್ಚಿ" : "Close"} ×</button>
           </span>
@@ -2106,77 +2220,86 @@ const avgConf = predictions?.length
               <div className="px-explain-grid">
                 {/* left: the explanation */}
                 <div key={keyOf(focusItem) + focusKind} className="px-fade">
-                  <div className="px-insp-title">{focusItem.zone}: {cap(focusItem.crime_type)}</div>
-                  {plainCrime(focusItem.crime_type) && <p className="px-insp-plain">{cap(focusItem.crime_type)}: {plainCrime(focusItem.crime_type).toLowerCase()}.</p>}
+                  <div className="px-insp-title">{focusItem.zone}: {crimeOf(focusItem.crime_type, kn)}</div>
+                  {!kn && plainCrime(focusItem.crime_type) && <p className="px-insp-plain">{cap(focusItem.crime_type)}: {plainCrime(focusItem.crime_type).toLowerCase()}.</p>}
                   <div className="px-insp-why">{generateNarrative(focusItem)}</div>
 
                   <div className="px-big">
                     {focusItem.confidence_level
-                      ? <><span className={`n lv l-${focusItem.confidence_level}`}>{focusItem.confidence_level}</span><span className="nl">confidence</span></>
+                      ? <><span className={`n lv l-${focusItem.confidence_level}`}>{lvl(focusItem.confidence_level, kn)}</span><span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confidence"}</span></>
                       : focusItem.fromAlert
-                        ? <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl" title="How sure the scan is that this rise is out of the ordinary. It is not a measure of the 7-day range.">{kn ? "ಇದು ಅಸಾಮಾನ್ಯ ಎಂಬ ಖಚಿತತೆ" : "sure this is unusual"}</span></>
+                        ? <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl" title={kn ? "ಈ ಏರಿಕೆ ಅಸಾಮಾನ್ಯ ಎಂದು ಸ್ಕ್ಯಾನ್ ಎಷ್ಟು ಖಚಿತ. ಇದು 7 ದಿನಗಳ ವ್ಯಾಪ್ತಿಯ ಅಳತೆ ಅಲ್ಲ." : "How sure the scan is that this rise is out of the ordinary. It is not a measure of the 7-day range."}>{kn ? "ಇದು ಅಸಾಮಾನ್ಯ ಎಂಬ ಖಚಿತತೆ" : "sure this is unusual"}</span></>
                         : <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confident"}</span></>}
-                    <span className={`px-risk ${RISK_BADGE[focusItem.risk] || ""}`}>{kn ? focusItem.risk?.toLowerCase() : (RISK_WORD[focusItem.risk] || focusItem.risk)}</span>
+                    <span className={`px-risk ${RISK_BADGE[focusItem.risk] || ""}`}>{kn ? ({ HIGH: "ಹೆಚ್ಚು ಅಪಾಯ", MEDIUM: "ಮಧ್ಯಮ ಅಪಾಯ", LOW: "ಕಡಿಮೆ ಅಪಾಯ" }[focusItem.risk] || focusItem.risk) : (RISK_WORD[focusItem.risk] || focusItem.risk)}</span>
                     {Number(focusItem.z_score) > 0 && (
-                      <span className="z" title="How far recent cases sit from this area's usual level. 2 is unusual, 4 is rare.">{kn ? "ಅಸಾಮಾನ್ಯತೆ ಅಂಕ" : "Unusual-activity score"} {focusItem.z_score}</span>
+                      <span className="z" title={kn ? "ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು ಈ ವಲಯದ ಸಾಮಾನ್ಯ ಮಟ್ಟದಿಂದ ಎಷ್ಟು ದೂರ. 2 ಅಸಾಮಾನ್ಯ, 4 ಅಪರೂಪ." : "How far recent cases sit from this area's usual level. 2 is unusual, 4 is rare."}>{kn ? "ಅಸಾಮಾನ್ಯತೆ ಅಂಕ" : "Unusual-activity score"} {focusItem.z_score}</span>
                     )}
                   </div>
 
                   {rangeOf(focusItem) && (
                     <div className="px-bandbox">
-                      {kn ? "ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ನಿರೀಕ್ಷಿತ" : "Expected in the next 7 days"} <b>{rangeOf(focusItem)}</b>
-                      {coverOf(focusItem.coverage) ? <span>{kn ? `${coverOf(focusItem.coverage)} ವ್ಯಾಪ್ತಿ` : `A range like this holds about ${coverOf(focusItem.coverage)} of the time.`}</span> : null}
+                      {kn ? "ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ನಿರೀಕ್ಷಿತ" : "Expected in the next 7 days"} <b>{rangeOf(focusItem, kn)}</b>
+                      {coverOf(focusItem.coverage) ? <span>{kn ? `ಇಂತಹ ವ್ಯಾಪ್ತಿ ಸುಮಾರು ${coverOf(focusItem.coverage)} ಬಾರಿ ಸರಿಯಾಗುತ್ತದೆ.` : `A range like this holds about ${coverOf(focusItem.coverage)} of the time.`}</span> : null}
                     </div>
                   )}
 
                   {focusItem.confidence_reasons?.length > 0 && (
                     <div className="px-saw">
-                      <h4>Why this confidence</h4>
-                      <ul>{focusItem.confidence_reasons.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                      <h4>{kn ? "ಈ ವಿಶ್ವಾಸಕ್ಕೆ ಕಾರಣ" : "Why this confidence"}</h4>
+                      <ul>{(kn && focusItem.confidence_reasons_kn?.length ? focusItem.confidence_reasons_kn : focusItem.confidence_reasons).map((t, i) => <li key={i}>{t}</li>)}</ul>
                     </div>
                   )}
 
                   {(focusItem.events || []).map((e) => (
                     <div className="px-evin" key={e.key}>
                       <h4>{e.name} <span>{e.when}</span></h4>
-                      {e.effect ? (
+                      {kn ? (e.effect ? (
+                        <p>
+                          ಹಿಂದಿನ {e.effect.years} ವರ್ಷಗಳಲ್ಲಿ, ಉತ್ಸವದ ಸಮಯದಲ್ಲಿ {e.measured_in} ನಲ್ಲಿ {crimeOf(focusItem.crime_type, true)} ಪ್ರಕರಣಗಳು <b>{Math.abs(e.effect.percent)}% {e.effect.percent < 0 ? "ಕಡಿಮೆ" : "ಹೆಚ್ಚು"}</b>
+                          (ನಿರೀಕ್ಷಿತ {num(e.effect.expected >= 20 ? Math.round(e.effect.expected) : e.effect.expected)} ಕ್ಕೆ ಎದುರಾಗಿ {num(e.effect.seen)}).
+                          {e.effect.clear ? "" : " ಇದು ಸಾಮಾನ್ಯ ವಾರದಿಂದ ವಾರದ ಏರಿಳಿತದೊಳಗಿದೆ, ಆದ್ದರಿಂದ ವ್ಯಾಪ್ತಿ ಬದಲಿಸಿಲ್ಲ."}
+                        </p>
+                      ) : <p>ಈ ಉತ್ಸವ ಇಲ್ಲಿ ಈ ಅಪರಾಧದ ಮೇಲೆ ಏನು ಮಾಡುತ್ತದೆ ಎಂದು ಅಳೆಯಲು ಸಾಕಷ್ಟು ಹಿಂದಿನ ಪ್ರಕರಣಗಳಿಲ್ಲ.</p>) : e.effect ? (
                         <p>
                           In {e.effect.years} past years, {cap(focusItem.crime_type).toLowerCase()} cases in {e.measured_in} were <b>{Math.abs(e.effect.percent)}% {e.effect.direction}</b> during the event
                           ({num(e.effect.seen)} against {num(e.effect.expected >= 20 ? Math.round(e.effect.expected) : e.effect.expected)} expected).
                           {e.effect.clear ? "" : " That is within ordinary week-to-week variation, so the range is not moved."}
                         </p>
                       ) : <p>Too few past cases of this type are on record to measure what the event does to it here.</p>}
-                      {e.overall && <p className="dim">All registered cases in this window: {Math.abs(e.overall.percent)}% {e.overall.direction} than the weeks around it.</p>}
-                      {focusItem.scenario && focusItem.scenario.event === e.name && (
-                        <p className="scn">Baseline <b>{rangeOf(focusItem)}</b>. With the event <b>{num(focusItem.scenario.lo)} to {num(focusItem.scenario.hi)} cases</b> <i>inferred from {focusItem.scenario.years} past years</i></p>
+                      {e.overall && <p className="dim">{kn
+                        ? `ಈ ಅವಧಿಯ ಎಲ್ಲಾ ದಾಖಲಾದ ಪ್ರಕರಣಗಳು: ಸುತ್ತಲಿನ ವಾರಗಳಿಗಿಂತ ${Math.abs(e.overall.percent)}% ${e.overall.percent < 0 ? "ಕಡಿಮೆ" : "ಹೆಚ್ಚು"}.`
+                        : `All registered cases in this window: ${Math.abs(e.overall.percent)}% ${e.overall.direction} than the weeks around it.`}</p>}
+                      {focusItem.scenario && focusItem.scenario.event === e.name && (kn
+                        ? <p className="scn">ಸಾಮಾನ್ಯ <b>{rangeOf(focusItem, true)}</b>. ಉತ್ಸವದೊಂದಿಗೆ <b>{num(focusItem.scenario.lo)}–{num(focusItem.scenario.hi)} ಪ್ರಕರಣಗಳು</b> <i>ಹಿಂದಿನ {focusItem.scenario.years} ವರ್ಷಗಳಿಂದ ಅಂದಾಜು</i></p>
+                        : <p className="scn">Baseline <b>{rangeOf(focusItem)}</b>. With the event <b>{num(focusItem.scenario.lo)} to {num(focusItem.scenario.hi)} cases</b> <i>inferred from {focusItem.scenario.years} past years</i></p>
                       )}
                     </div>
                   ))}
 
-                  {sawOf(focusItem).length > 0 && (
+                  {sawOf(focusItem, kn).length > 0 && (
                     <div className="px-saw">
                       <h4>{kn ? "ಮಾದರಿ ಕಂಡದ್ದು" : "What the model saw"}</h4>
-                      <ul>{sawOf(focusItem).map((t, i) => <li key={i}>{t}</li>)}</ul>
+                      <ul>{sawOf(focusItem, kn).map((t, i) => <li key={i}>{t}</li>)}</ul>
                     </div>
                   )}
 
                   <div className="px-tiles">
-                    <div className="px-tile"><div className="tv">{focusItem.evidence_row_ids?.length ?? 0}</div><div className="tl">{kn ? "ಸಾಕ್ಷ್ಯ ಸಾಲುಗಳು" : "Case records used"}</div></div>
-                    <div className="px-tile"><div className="tv">{coverOf(focusItem.coverage) || "—"}</div><div className="tl">{kn ? "ಬ್ಯಾಂಡ್ ವ್ಯಾಪ್ತಿ" : "Range reliability"}</div></div>
+                    <div className="px-tile"><div className="tv">{focusItem.evidence_row_ids?.length ?? 0}</div><div className="tl">{kn ? "ಬಳಸಿದ ಪ್ರಕರಣ ದಾಖಲೆಗಳು" : "Case records used"}</div></div>
+                    <div className="px-tile"><div className="tv">{coverOf(focusItem.coverage) || "—"}</div><div className="tl">{kn ? "ವ್ಯಾಪ್ತಿಯ ವಿಶ್ವಾಸಾರ್ಹತೆ" : "Range reliability"}</div></div>
                     <div className="px-tile"><div className="tv">{focusItem.direction === "silence" ? (kn ? "ಇಳಿಕೆ" : "Drop") : Number(focusItem.z_score) > 0 ? (kn ? "ಏರಿಕೆ" : "Rise") : (kn ? "ಸ್ಥಿರ" : "Steady")}</div><div className="tl">{kn ? "ದಿಕ್ಕು" : "Direction"}</div></div>
-                    <div className="px-tile"><div className="tv">{focusItem.festival_driver ? focusItem.festival_driver.replace(/^Seasonal\s*/i, "") : (kn ? "ಇಲ್ಲ" : "None")}</div><div className="tl">{kn ? "ಋತುಮಾನ ಚಾಲಕ" : "Seasonal effect"}</div></div>
+                    <div className="px-tile"><div className="tv">{focusItem.festival_driver ? focusItem.festival_driver.replace(/^Seasonal\s*/i, "") : (kn ? "ಇಲ್ಲ" : "None")}</div><div className="tl">{kn ? "ಋತುಮಾನದ ಪರಿಣಾಮ" : "Seasonal effect"}</div></div>
                   </div>
 
                   {focusItem.evidence_row_ids?.length > 0 && (
                     <details className="px-more">
                       <summary>{kn ? "ಹಿಂದಿನ ಪ್ರಕರಣ ದಾಖಲೆಗಳನ್ನು ತೋರಿಸಿ" : "Show the case records behind this"}</summary>
                       <div className="px-prov">
-                        <div className="px-prov-hd">{focusItem.evidence_row_ids.length} {kn ? "ಆದಾನ FIR ಸಾಲುಗಳು" : "FIR records were used and are kept for audit"}</div>
+                        <div className="px-prov-hd">{focusItem.evidence_row_ids.length} {kn ? "FIR ದಾಖಲೆಗಳನ್ನು ಬಳಸಲಾಗಿದೆ ಮತ್ತು ಆಡಿಟ್‌ಗಾಗಿ ಇಡಲಾಗಿದೆ" : "FIR records were used and are kept for audit"}</div>
                         <div className="px-prov-ids">
                           {focusItem.evidence_row_ids.slice(0, 4).join(" • ")}{focusItem.evidence_row_ids.length > 4 ? ` • +${focusItem.evidence_row_ids.length - 4}` : ""}
                         </div>
                       </div>
-                      {!kn && <p className="px-method">Method: recent weekly counts are compared with the area's own history, and a range is drawn around the expected count.</p>}
+                      <p className="px-method">{kn ? "ವಿಧಾನ: ಇತ್ತೀಚಿನ ವಾರದ ಸಂಖ್ಯೆಗಳನ್ನು ವಲಯದ ತನ್ನದೇ ಇತಿಹಾಸಕ್ಕೆ ಹೋಲಿಸಿ, ನಿರೀಕ್ಷಿತ ಸಂಖ್ಯೆಯ ಸುತ್ತ ವ್ಯಾಪ್ತಿ ಎಳೆಯಲಾಗುತ್ತದೆ." : "Method: recent weekly counts are compared with the area's own history, and a range is drawn around the expected count."}</p>
                     </details>
                   )}
                 </div>
@@ -2185,33 +2308,33 @@ const avgConf = predictions?.length
                 <div>
                   {stations && stations.zone === focusItem.zone && (
                     <div className="px-stn">
-                      <div className="px-stn-hd">Stations to watch in {stations.scope || focusItem.zone}<i>estimate</i></div>
+                      <div className="px-stn-hd">{kn ? `${stations.scope || focusItem.zone} ನಲ್ಲಿ ಗಮನಿಸಬೇಕಾದ ಠಾಣೆಗಳು` : `Stations to watch in ${stations.scope || focusItem.zone}`}<i>{kn ? "ಅಂದಾಜು" : "estimate"}</i></div>
                       <ol>
                         {stations.items.map((it) => (
                           <li key={it.unit || it.name}>
                             <b>{it.name}</b>
-                            <span>{it.summary}</span>
+                            <span>{(kn && it.summary_kn) || it.summary}</span>
                             {it.unit && it.history !== "thin" && (
                               <button type="button" className="px-linkbtn px-why" aria-expanded={whyUnit === it.unit}
                                       onClick={() => setWhyUnit(whyUnit === it.unit ? null : it.unit)}>
-                                {whyUnit === it.unit ? "Hide the reasons" : "Why this forecast"}
+                                {whyUnit === it.unit ? (kn ? "ಕಾರಣಗಳನ್ನು ಮರೆಮಾಡಿ" : "Hide the reasons") : (kn ? "ಈ ಮುನ್ಸೂಚನೆ ಏಕೆ" : "Why this forecast")}
                               </button>
                             )}
                             {it.unit && (
-                              <button type="button" className="px-linkbtn px-why" onClick={() => setPlanFor(it.unit)}>Shift plan</button>
+                              <button type="button" className="px-linkbtn px-why" onClick={() => setPlanFor(it.unit)}>{kn ? "ಶಿಫ್ಟ್ ಯೋಜನೆ" : "Shift plan"}</button>
                             )}
-                            {whyUnit === it.unit && <ForecastWhy unit={it.unit} />}
+                            {whyUnit === it.unit && <ForecastWhy unit={it.unit} kn={kn} />}
                           </li>
                         ))}
                       </ol>
-                      <p>From the station forecast for the next 7 days, all crime. <button type="button" className="px-linkbtn" onClick={() => router.push(`/map?${new URLSearchParams({ zone: focusItem.zone })}`)}>Open on the map</button></p>
+                      <p>{kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಠಾಣಾ ಮುನ್ಸೂಚನೆಯಿಂದ, ಎಲ್ಲಾ ಅಪರಾಧಗಳು." : "From the station forecast for the next 7 days, all crime."} <button type="button" className="px-linkbtn" onClick={() => router.push(`/map?${new URLSearchParams({ zone: focusItem.zone })}`)}>{kn ? "ನಕ್ಷೆಯಲ್ಲಿ ತೆರೆಯಿರಿ" : "Open on the map"}</button></p>
                     </div>
                   )}
                   {focusItem.suggestion && (
                     <div className="px-suggest">
                       <div className="px-suggest-hd">{kn ? "ಶಿಫಾರಸು" : "Recommended action"}</div>
                       {/* An older server words it "Monitor X for MISSING PERSON."; the register's capitals are not a sentence. */}
-                      <div className="px-suggest-txt">{focusItem.crime_type ? focusItem.suggestion.split(focusItem.crime_type).join(cap(focusItem.crime_type).toLowerCase()) : focusItem.suggestion}</div>
+                      <div className="px-suggest-txt">{kn && focusItem.suggestion_kn ? focusItem.suggestion_kn : focusItem.crime_type ? focusItem.suggestion.split(focusItem.crime_type).join(cap(focusItem.crime_type).toLowerCase()) : focusItem.suggestion}</div>
                       {focusItem.event_context && <div className="px-suggest-ev">{kn ? "ಘಟನೆ" : "Event"}: {focusItem.event_context}</div>}
                     </div>
                   )}
@@ -2223,20 +2346,20 @@ const avgConf = predictions?.length
                           {ackState.busy && ackState.key === keyOf(focusItem) ? (kn ? "ದಾಖಲಿಸಲಾಗುತ್ತಿದೆ…" : "Recording…") : (kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ ಎಂದು ಗುರುತಿಸಿ" : "Mark as reviewed")}
                         </button>}
                     <button className="px-actbtn ask ui-btn ui-btn--secondary" onClick={() => askAntar(focusItem)}>
-                      {kn ? "ಅಂತರ‍ಗೆ ಕೇಳಿ" : "Ask Antar"}
+                      {kn ? "ಅಂತರ್‌ಗೆ ಕೇಳಿ" : "Ask Antar"}
                     </button>
                     <span className="px-acts-sep" aria-hidden="true" />
                     <button className={`px-actbtn ui-btn ui-btn--ghost ui-btn--sm ${showReasoning ? "on" : ""}`} aria-expanded={showReasoning} onClick={() => setShowReasoning((v) => !v)}>
-                      {kn ? "ತರ್ಕ" : "How this was worked out"} {showReasoning ? "▾" : "▸"}
+                      {kn ? "ಹೇಗೆ ಲೆಕ್ಕ ಹಾಕಲಾಯಿತು" : "How this was worked out"} {showReasoning ? "▾" : "▸"}
                     </button>
                     <button className={`px-actbtn ui-btn ui-btn--ghost ui-btn--sm ${showScenario ? "on" : ""}`} aria-expanded={showScenario} onClick={() => setShowScenario((v) => !v)}>
-                      {kn ? "ಸನ್ನಿವೇಶ" : "What if"} {showScenario ? "▾" : "▸"}
+                      {kn ? "ಹೀಗಾದರೆ?" : "What if"} {showScenario ? "▾" : "▸"}
                     </button>
                     <button className="px-actbtn ui-btn ui-btn--ghost ui-btn--sm" disabled={loadingDerivation} onClick={() => openDerivationModal(`board:${focusItem.zone}:${focusItem.crime_type || ""}`)}>
                       {loadingDerivation ? "…" : (kn ? "ಆಡಿಟ್ ಜಾಡು" : "Audit trail")}
                     </button>
                     <button className="px-actbtn ui-btn ui-btn--ghost ui-btn--sm" onClick={() => router.push(mapLink(focusItem))}>
-                      {kn ? "ನಕ್ಷೆ" : "Open on map"}
+                      {kn ? "ನಕ್ಷೆಯಲ್ಲಿ ತೆರೆಯಿರಿ" : "Open on map"}
                     </button>
                   </div>
                   {ackState.err && ackState.key === keyOf(focusItem) && (
@@ -2247,14 +2370,14 @@ const avgConf = predictions?.length
                     scenarioBand?.scenario ? (
                       <div className="px-scn">
                         <div className="px-scn-row">
-                          <span className="px-scn-badge">{cap(scenarioBand.scenario.badge === "inferred" || !scenarioBand.scenario.badge ? "Estimate" : scenarioBand.scenario.badge)} · {kn ? "ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್" : "scenario range"}</span>
-                          <span className="px-scn-val">{scenarioBand.scenario.lo}–{scenarioBand.scenario.hi} {kn ? "ಘಟನೆಗಳು" : "incidents"}</span>
+                          <span className="px-scn-badge">{kn ? "ಅಂದಾಜು" : cap(scenarioBand.scenario.badge === "inferred" || !scenarioBand.scenario.badge ? "Estimate" : scenarioBand.scenario.badge)} · {kn ? "ಸನ್ನಿವೇಶ ವ್ಯಾಪ್ತಿ" : "scenario range"}</span>
+                          <span className="px-scn-val">{scenarioBand.scenario.lo}–{scenarioBand.scenario.hi} {kn ? "ಪ್ರಕರಣಗಳು" : "incidents"}</span>
                           <span className="px-scn-base">({kn ? "ಸಾಮಾನ್ಯ ವ್ಯಾಪ್ತಿ" : "usual range"} {scenarioBand.baseline?.lo}–{scenarioBand.baseline?.hi})</span>
                         </div>
-                        <div className="px-scn-narr">{scenarioBand.narrative}</div>
+                        <div className="px-scn-narr">{(kn && scenarioBand.narrative_kn) || scenarioBand.narrative}</div>
                       </div>
                     ) : (
-                      <div className="px-scn muted">{kn ? "ಈ ವಲಯಕ್ಕೆ ಸನ್ನಿವೇಶ ಬ್ಯಾಂಡ್ ಇಲ್ಲ" : "No scenario range for this area: there is no measured alert to build one on."}</div>
+                      <div className="px-scn muted">{kn ? "ಈ ವಲಯಕ್ಕೆ ಸನ್ನಿವೇಶ ವ್ಯಾಪ್ತಿ ಇಲ್ಲ: ಅದನ್ನು ಕಟ್ಟಲು ಅಳೆದ ಎಚ್ಚರಿಕೆ ಇಲ್ಲ." : "No scenario range for this area: there is no measured alert to build one on."}</div>
                     )
                   )}
                 </div>
@@ -2267,9 +2390,9 @@ const avgConf = predictions?.length
                   initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }} transition={SPRING}>
                   <div className="px-drawer-hd">
-                    <span className="px-dagttl">{kn ? "ತರ್ಕ ಗ್ರಾಫ್" : "How this was worked out"} · <span className="px-dagzone">{focusItem.zone}</span></span>
+                    <span className="px-dagttl">{kn ? "ಹೇಗೆ ಲೆಕ್ಕ ಹಾಕಲಾಯಿತು" : "How this was worked out"} · <span className="px-dagzone">{focusItem.zone}</span></span>
                     {streaming && <span className="px-live"><span className="d" />{kn ? "ಲೈವ್" : "Live"}</span>}
-                    <button className="px-drawer-x" onClick={() => setShowReasoning(false)} aria-label="Close reasoning"></button>
+                    <button className="px-drawer-x" onClick={() => setShowReasoning(false)} aria-label={kn ? "ಮುಚ್ಚಿ" : "Close reasoning"}></button>
                   </div>
                   <div className="px-drawer-body">
                     <div className="px-dag" style={{ height: 320 }}>
@@ -2287,7 +2410,7 @@ const avgConf = predictions?.length
                       </ReactFlow>
                     </div>
                     <div className="px-console">
-                      <div className="px-consolehdr"><span className="px-consolettl">{kn ? "ತರ್ಕ ಟ್ರೇಸ್" : "Step by step"}</span></div>
+                      <div className="px-consolehdr"><span className="px-consolettl">{kn ? "ಹಂತ ಹಂತವಾಗಿ" : "Step by step"}</span></div>
                       <div className="px-consolebody" ref={consoleRef} aria-live="polite" aria-label="Reasoning trace">
                         {traceLines.map((line, i) => {
                           const [agent, ...rest] = line.split(" ▸ ");
@@ -2300,7 +2423,7 @@ const avgConf = predictions?.length
                         })}
                         {streaming && <div className="px-cursor-blink" />}
                         {!streaming && traceLines.length === 0 && (
-                          <div className="px-trace-empty">{kn ? "ತರ್ಕ ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Loading reasoning…"}</div>
+                          <div className="px-trace-empty">{kn ? "ಲೋಡ್ ಆಗುತ್ತಿದೆ…" : "Loading reasoning…"}</div>
                         )}
                       </div>
                     </div>
@@ -2318,12 +2441,12 @@ const avgConf = predictions?.length
       {/* Events ahead, then the investigation leads and how far to trust the forecast */}
       {/* Events ahead: when each falls, and what the real register shows it did before */}
       {eng && eng !== "missing" && (
-        <section className="px-evs" ref={eventsRef} aria-label="Events ahead">
+        <section className="px-evs" ref={eventsRef} aria-label={kn ? "ಮುಂಬರುವ ಉತ್ಸವಗಳು" : "Events ahead"}>
           <div className="px-evs-hd">
             <h2><span className="px-secnum">04</span>{kn ? "ಮುಂಬರುವ ಉತ್ಸವಗಳು · ಬಂದೋಬಸ್ತ್" : "Events ahead"}</h2>
-            <span>{kn ? "ಹಿಂದಿನ ವರ್ಷಗಳ FIR ಗಳಿಂದ ಅಳೆದದ್ದು." : "Festivals and events in the next 3 weeks, and what each did to registered cases in past years. Measured from FIRs, for bandobast planning."}</span>
+            <span>{kn ? "ಮುಂದಿನ 3 ವಾರಗಳ ಉತ್ಸವಗಳು, ಮತ್ತು ಹಿಂದಿನ ವರ್ಷಗಳಲ್ಲಿ ಪ್ರತಿಯೊಂದೂ ದಾಖಲಾದ ಪ್ರಕರಣಗಳ ಮೇಲೆ ಮಾಡಿದ ಪರಿಣಾಮ. ಬಂದೋಬಸ್ತ್ ಯೋಜನೆಗಾಗಿ FIR ಗಳಿಂದ ಅಳೆದದ್ದು." : "Festivals and events in the next 3 weeks, and what each did to registered cases in past years. Measured from FIRs, for bandobast planning."}</span>
           </div>
-          {evsAhead.length === 0 && <p className="px-evs-none">No listed event falls in the next 3 weeks.</p>}
+          {evsAhead.length === 0 && <p className="px-evs-none">{kn ? "ಮುಂದಿನ 3 ವಾರಗಳಲ್ಲಿ ಪಟ್ಟಿಯಲ್ಲಿರುವ ಯಾವುದೇ ಉತ್ಸವ ಇಲ್ಲ." : "No listed event falls in the next 3 weeks."}</p>}
           {evsAhead.map((e) => (
             <EventCard key={e.key} ev={e} kn={kn} areas={P.filter((x) => (e.places || []).includes(x.zone)).slice(0, 4)} onOpen={openItem}
                        onAsk={(q) => { try { sessionStorage.setItem("antar_initial_question", q); localStorage.setItem("antar_initial_question", q); } catch {} router.push("/antar"); }} />
@@ -2337,64 +2460,70 @@ const avgConf = predictions?.length
           <b>{kn ? "ತನಿಖಾ ಸುಳಿವುಗಳು" : "Investigation leads"}{fZone ? ` · ${fZone}` : ""}</b>
           <span>{kn ? "ಆರೋಪಿಗಳ ಸಂಪರ್ಕ ಮತ್ತು ಹಂಚಿದ ವಾಹನ, ಫೋನ್, UPI. ಕೇಳಿದಾಗ ಮಾತ್ರ." : "Links between accused, and FIRs that share a vehicle, phone or UPI id. For the investigating officer; opens on request."}</span>
         </summary>
-      <section className="px-hyp" aria-label="Possible links between accused">
+      <section className="px-hyp" aria-label={kn ? "ಆರೋಪಿಗಳ ನಡುವಿನ ಸಾಧ್ಯ ಸಂಪರ್ಕಗಳು" : "Possible links between accused"}>
         <header>
           <div>
             <h3>{kn ? "ಆರೋಪಿಗಳ ನಡುವಿನ ಸಾಧ್ಯ ಸಂಪರ್ಕಗಳು" : "Possible links between accused"}{fZone ? ` · ${fZone}` : ""}</h3>
-            <p>Possible links between accused in this district, proposed from what they share in the record. Each one is then tested: how many other pairs in the state would look just as linked by chance?</p>
+            <p>{kn ? "ಈ ಜಿಲ್ಲೆಯ ಆರೋಪಿಗಳ ನಡುವಿನ ಸಾಧ್ಯ ಸಂಪರ್ಕಗಳು, ದಾಖಲೆಯಲ್ಲಿ ಅವರು ಹಂಚಿಕೊಂಡದ್ದರಿಂದ ಸೂಚಿಸಲಾಗಿದೆ. ಪ್ರತಿಯೊಂದನ್ನೂ ಪರೀಕ್ಷಿಸಲಾಗುತ್ತದೆ: ರಾಜ್ಯದ ಇನ್ನೆಷ್ಟು ಜೋಡಿಗಳು ಆಕಸ್ಮಿಕವಾಗಿ ಹೀಗೆಯೇ ಸಂಬಂಧಿತವಾಗಿ ಕಾಣುತ್ತವೆ?"
+              : "Possible links between accused in this district, proposed from what they share in the record. Each one is then tested: how many other pairs in the state would look just as linked by chance?"}</p>
           </div>
           <button type="button" onClick={runHypotheses} disabled={!fZone || runningHypotheses}>
-            {runningHypotheses ? "Checking…" : hypothesesList ? "Run again" : "Look for links"}
+            {runningHypotheses ? (kn ? "ಪರಿಶೀಲಿಸುತ್ತಿದೆ…" : "Checking…") : hypothesesList ? (kn ? "ಮತ್ತೆ ನಡೆಸಿ" : "Run again") : (kn ? "ಸಂಪರ್ಕಗಳನ್ನು ಹುಡುಕಿ" : "Look for links")}
           </button>
         </header>
 
-        {!fZone && <p className="px-hyp-empty">Select a district in the forecast list to look for links there.</p>}
+        {!fZone && <p className="px-hyp-empty">{kn ? "ಸಂಪರ್ಕ ಹುಡುಕಲು ಮುನ್ಸೂಚನೆ ಪಟ್ಟಿಯಲ್ಲಿ ಒಂದು ಜಿಲ್ಲೆ ಆರಿಸಿ." : "Select a district in the forecast list to look for links there."}</p>}
         {fZone && !hypothesesList && !runningHypotheses && (
-          <p className="px-hyp-empty">Nothing has been run for {fZone} yet.</p>
+          <p className="px-hyp-empty">{kn ? `${fZone} ಗಾಗಿ ಇನ್ನೂ ಏನೂ ನಡೆಸಿಲ್ಲ.` : `Nothing has been run for ${fZone} yet.`}</p>
         )}
-        {runningHypotheses && <p className="px-hyp-empty">Comparing accused in {fZone} and checking how often each link would turn up by chance…</p>}
+        {runningHypotheses && <p className="px-hyp-empty">{kn ? `${fZone} ನ ಆರೋಪಿಗಳನ್ನು ಹೋಲಿಸಿ, ಪ್ರತಿ ಸಂಪರ್ಕ ಆಕಸ್ಮಿಕವಾಗಿ ಎಷ್ಟು ಬಾರಿ ಕಾಣಬಹುದು ಎಂದು ಪರಿಶೀಲಿಸುತ್ತಿದೆ…` : `Comparing accused in ${fZone} and checking how often each link would turn up by chance…`}</p>}
         {hypothesesList?.error && !runningHypotheses && (
           <p className="px-hyp-empty">{hypothesesList.error === "restart"
-            ? "This needs the server restarted to load it."
-            : "The links could not be read just now. Try again."}</p>
+            ? (kn ? "ಇದನ್ನು ಲೋಡ್ ಮಾಡಲು ಸರ್ವರ್ ಮರುಆರಂಭಿಸಬೇಕು." : "This needs the server restarted to load it.")
+            : (kn ? "ಸಂಪರ್ಕಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : "The links could not be read just now. Try again.")}</p>
         )}
         {hypothesesList && !hypothesesList.error && !runningHypotheses && hypothesesList.hypotheses.length === 0 && (
-          <p className="px-hyp-empty">No link between accused in {hypothesesList.zone} scores high enough to propose. That is a result, not a failure.</p>
+          <p className="px-hyp-empty">{kn ? `${hypothesesList.zone} ನ ಆರೋಪಿಗಳ ನಡುವೆ ಸೂಚಿಸುವಷ್ಟು ಬಲವಾದ ಸಂಪರ್ಕ ಇಲ್ಲ. ಇದು ಒಂದು ಫಲಿತಾಂಶ, ವೈಫಲ್ಯವಲ್ಲ.` : `No link between accused in ${hypothesesList.zone} scores high enough to propose. That is a result, not a failure.`}</p>
         )}
 
         {hypothesesList && !hypothesesList.error && !runningHypotheses && hypothesesList.hypotheses.length > 0 && (() => {
           const list = hypothesesList.hypotheses;
           const stands = list.filter((h) => h.verdict === "SURVIVES").length;
-          const WORD = { SURVIVES: "Stands up", WEAKENED: "Weakened", COLLAPSES: "Does not stand up", UNASSESSABLE: "Could not be checked" };
-          const pct = (p) => (p == null ? null : p < 0.01 ? "under 1%" : p > 0.99 ? "over 99%" : `${Math.round(p * 100)}%`);
+          const WORD = kn
+            ? { SURVIVES: "ನಿಲ್ಲುತ್ತದೆ", WEAKENED: "ದುರ್ಬಲ", COLLAPSES: "ನಿಲ್ಲುವುದಿಲ್ಲ", UNASSESSABLE: "ಪರಿಶೀಲಿಸಲಾಗಲಿಲ್ಲ" }
+            : { SURVIVES: "Stands up", WEAKENED: "Weakened", COLLAPSES: "Does not stand up", UNASSESSABLE: "Could not be checked" };
+          const pct = (p) => (p == null ? null : p < 0.01 ? (kn ? "1% ಕ್ಕಿಂತ ಕಡಿಮೆ" : "under 1%") : p > 0.99 ? (kn ? "99% ಕ್ಕಿಂತ ಹೆಚ್ಚು" : "over 99%") : `${Math.round(p * 100)}%`);
           return (
             <>
-              <p className="px-hyp-sum">
+              <p className="px-hyp-sum">{kn ? <>
+                {list.length} ಸಂಪರ್ಕಗಳನ್ನು ಸೂಚಿಸಲಾಗಿದೆ{hypothesesList.examined > list.length ? ` (${hypothesesList.examined} ರಲ್ಲಿ ಅತಿ ಬಲವಾದವು)` : ""}.{" "}
+                {stands === 0 ? "ಮೂಲ ದರ ಪರಿಶೀಲನೆಯಲ್ಲಿ ಯಾವುದೂ ನಿಲ್ಲುವುದಿಲ್ಲ." : `ಮೂಲ ದರ ಪರಿಶೀಲನೆಯಲ್ಲಿ ${stands} ನಿಲ್ಲುತ್ತವೆ.`}
+              </> : <>
                 {list.length} {list.length === 1 ? "link" : "links"} proposed{hypothesesList.examined > list.length ? ` (the strongest of ${hypothesesList.examined})` : ""}.{" "}
                 {stands === 0 ? "None stands up to the base-rate check." : `${stands} ${stands === 1 ? "stands" : "stand"} up to the base-rate check.`}
-              </p>
+              </>}</p>
               <ul className="px-hyp-list">
                 {list.map((h) => (
                   <li key={h.id} className={`v-${String(h.verdict || "").toLowerCase()}`}>
                     <div className="top">
-                      <b>{(h.subject_ids || []).join(" and ") || h.id}</b>
+                      <b>{(h.subject_ids || []).join(kn ? " ಮತ್ತು " : " and ") || h.id}</b>
                       <span className="verdict"><i aria-hidden="true" />{WORD[h.verdict] || h.verdict}</span>
                     </div>
                     <p className="claim">{h.claim}</p>
                     <dl>
                       <div>
-                        <dt>What they share</dt>
-                        <dd>{(h.signals || []).map((sg) => sg.name).join("; ") || "Not recorded"}</dd>
+                        <dt>{kn ? "ಅವರು ಹಂಚಿಕೊಂಡದ್ದು" : "What they share"}</dt>
+                        <dd>{(h.signals || []).map((sg) => sg.name).join("; ") || (kn ? "ದಾಖಲಾಗಿಲ್ಲ" : "Not recorded")}</dd>
                       </div>
                       <div>
-                        <dt>The check</dt>
+                        <dt>{kn ? "ಪರಿಶೀಲನೆ" : "The check"}</dt>
                         <dd>{h.verdict_reason}
-                          {h.posterior_probability != null && <small>Chance the link is real after the check: {pct(h.posterior_probability)}.</small>}
+                          {h.posterior_probability != null && <small>{kn ? `ಪರಿಶೀಲನೆಯ ನಂತರ ಸಂಪರ್ಕ ನಿಜವಾಗಿರುವ ಸಾಧ್ಯತೆ: ${pct(h.posterior_probability)}.` : `Chance the link is real after the check: ${pct(h.posterior_probability)}.`}</small>}
                         </dd>
                       </div>
                       {(h.falsification_tests || []).length > 0 && (
                         <div>
-                          <dt>What would settle it</dt>
+                          <dt>{kn ? "ಇದನ್ನು ಯಾವುದು ತೀರ್ಮಾನಿಸುತ್ತದೆ" : "What would settle it"}</dt>
                           <dd>
                             <ol>{h.falsification_tests.slice(0, 3).map((t, i) => (
                               <li key={i}>{typeof t === "string" ? t : t.test}{t?.would_disprove && <small>{t.would_disprove}</small>}</li>
@@ -2406,7 +2535,8 @@ const avgConf = predictions?.length
                   </li>
                 ))}
               </ul>
-              <p className="px-hyp-foot">A possible link is a lead, never a finding. It is scored from what the accused share in the record, then checked against how often such a link turns up by chance. No AI model is used in either step.</p>
+              <p className="px-hyp-foot">{kn ? "ಸಾಧ್ಯ ಸಂಪರ್ಕ ಒಂದು ಸುಳಿವು, ತೀರ್ಮಾನವಲ್ಲ. ಆರೋಪಿಗಳು ದಾಖಲೆಯಲ್ಲಿ ಹಂಚಿಕೊಂಡದ್ದರಿಂದ ಅಂಕ ನೀಡಿ, ಅಂತಹ ಸಂಪರ್ಕ ಆಕಸ್ಮಿಕವಾಗಿ ಎಷ್ಟು ಬಾರಿ ಕಾಣುತ್ತದೆ ಎಂಬುದರ ವಿರುದ್ಧ ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ. ಎರಡೂ ಹಂತಗಳಲ್ಲಿ AI ಮಾದರಿ ಬಳಸಿಲ್ಲ."
+                : "A possible link is a lead, never a finding. It is scored from what the accused share in the record, then checked against how often such a link turns up by chance. No AI model is used in either step."}</p>
             </>
           );
         })()}
@@ -2419,15 +2549,19 @@ const avgConf = predictions?.length
       <details className="px-fold" open={relOpen} onToggle={(e) => setRelOpen(e.currentTarget.open)}>
         <summary>
           <b>{kn ? "ಈ ಮುನ್ಸೂಚನೆ ಎಷ್ಟು ವಿಶ್ವಾಸಾರ್ಹ" : "How reliable is this forecast"}</b>
-          <span>
+          <span>{kn ? <>
+            {trackPct ? `ಪರೀಕ್ಷಿಸಿದ ${tr.weeks} ವಾರಗಳಲ್ಲಿ ${trackPct} ರಲ್ಲಿ ನೈಜ ಸಂಖ್ಯೆ ಮುನ್ಸೂಚನೆ ವ್ಯಾಪ್ತಿಯೊಳಗಿತ್ತು. ` : ""}
+            {eng && eng !== "missing" && eng.confidence?.level ? `ಎಂಜಿನ್ ವಿಶ್ವಾಸ: ${lvl(eng.confidence.level, true)}.` : ""}
+            {" "}ಇದು ಯಾವುದರ ಮೇಲೆ ನಿಂತಿದೆ, ಅದರ ದಾಖಲೆ, ಮತ್ತು ಉತ್ಸವ ಕ್ಯಾಲೆಂಡರ್.
+          </> : <>
             {trackPct ? `The real count fell inside the forecast range in ${trackPct} of ${tr.weeks} tested weeks. ` : ""}
             {eng && eng !== "missing" && eng.confidence?.level ? `Engine confidence: ${eng.confidence.level}.` : ""}
             {" "}What it is built on, its record, and the festival calendar.
-          </span>
+          </>}</span>
         </summary>
-        <EngineConfidence eng={eng} open={engOpen} onToggle={() => setEngOpen((v) => !v)} anchor={confRef} />
+        <EngineConfidence eng={eng} open={engOpen} onToggle={() => setEngOpen((v) => !v)} anchor={confRef} kn={kn} />
         <div className="px-built">
-          <KnownData eng={eng} />
+          <KnownData eng={eng} kn={kn} />
           <div className="pxd-card">
             <div className="pxd-hd pxd-hd2">
               <div>
@@ -2439,7 +2573,7 @@ const avgConf = predictions?.length
               ? <VolumeTrend volume={dash.volume} kn={kn} />
               : <div className="pxd-empty">{kn ? "ಅಂತರ್ ಸರ್ವರ್‌ನಲ್ಲಿ ಎಚ್ಚರಗೊಳ್ಳುತ್ತಿದೆ…" : "Antar is waking up on the server…"}</div>}
           </div>
-          <InternetData eng={eng} onEvents={toEvents} />
+          <InternetData eng={eng} onEvents={toEvents} kn={kn} />
         </div>
       </details>
 
@@ -2483,15 +2617,15 @@ const avgConf = predictions?.length
       <AnimatePresence>
       {derivationModalData && (
         <MaterialBackdrop key="derivation" className="px-cardback px-center" onClick={() => setDerivationModalData(null)}>
-          <MaterialPanel className="px-modelcard px-modelcard-m" role="dialog" aria-label="Audit trail" style={{ maxWidth: "680px", width: "92%" }} onClick={(e) => e.stopPropagation()}>
+          <MaterialPanel className="px-modelcard px-modelcard-m" role="dialog" aria-label={kn ? "ಆಡಿಟ್ ಜಾಡು" : "Audit trail"} style={{ maxWidth: "680px", width: "92%" }} onClick={(e) => e.stopPropagation()}>
             <button className="x" onClick={() => setDerivationModalData(null)} aria-label="Close"></button>
             {/* The trail of one forecast: what it read, how it was worked out, who reviewed it.
                 Read from the stored forecast card and the audit chain - nothing here is typed in. */}
             <div style={{ marginBottom: "12px" }}>
               <b style={{ fontSize: "16px" }}>{kn ? "ಆಡಿಟ್ ಜಾಡು" : "Audit trail"}</b>
               <div style={{ fontSize: "12px", color: "var(--muted)" }}>
-                {derivationModalData.product?.zone ? `${derivationModalData.product.zone} · ${cap(derivationModalData.product.crime_type || "")}` : derivationModalData.product_id}
-                {derivationModalData.product?.as_of ? ` · ${kn ? "ದಿನಾಂಕ" : "forecast of"} ${dayOf(derivationModalData.product.as_of)}` : ""}
+                {derivationModalData.product?.zone ? `${derivationModalData.product.zone} · ${crimeOf(derivationModalData.product.crime_type || "", kn)}` : derivationModalData.product_id}
+                {derivationModalData.product?.as_of ? (kn ? ` · ${dayOf(derivationModalData.product.as_of, true)} ರ ಮುನ್ಸೂಚನೆ` : ` · forecast of ${dayOf(derivationModalData.product.as_of)}`) : ""}
               </div>
             </div>
 
@@ -2499,7 +2633,7 @@ const avgConf = predictions?.length
               <div className="sec">
                 <h6>{kn ? "ಹೇಗೆ ಲೆಕ್ಕ ಹಾಕಲಾಯಿತು" : "How it was worked out"}</h6>
                 {derivationModalData.derivation_chain.map((step, i) => (
-                  <p key={i}><b style={{ color: "#22E6F0" }}>{i + 1}. {step.stage}.</b> {step.detail}</p>
+                  <p key={i}><b style={{ color: "#22E6F0" }}>{i + 1}. {(kn && step.stage_kn) || step.stage}.</b> {(kn && step.detail_kn) || step.detail}</p>
                 ))}
               </div>
             )}
@@ -2515,7 +2649,7 @@ const avgConf = predictions?.length
 
             <div className="sec">
               <h6>{kn ? "ವಿಧಾನ" : "Method"}</h6>
-              {(derivationModalData.method_lines || []).map((m, i) => (
+              {((kn && derivationModalData.method_lines_kn) || derivationModalData.method_lines || []).map((m, i) => (
                 <p key={i} style={{ color: "var(--muted)" }}>{m}</p>
               ))}
             </div>
@@ -2525,7 +2659,7 @@ const avgConf = predictions?.length
                 <h6>{kn ? "ಪರಿಶೀಲಿಸಿದವರು" : "Reviewed by"}</h6>
                 {(derivationModalData.audit_events || []).length
                   ? derivationModalData.audit_events.slice(0, 8).map((ev, i) => (
-                      <p key={i} style={{ color: "var(--muted)" }}>{ev.officer} ({ev.role}) · {when(ev.ts)}</p>
+                      <p key={i} style={{ color: "var(--muted)" }}>{ev.officer} ({ev.role}) · {kn ? whenKn(ev.ts) : when(ev.ts)}</p>
                     ))
                   : <p style={{ color: "var(--muted)" }}>{kn ? "ಇನ್ನೂ ಯಾರೂ ಪರಿಶೀಲಿಸಿಲ್ಲ." : "Nobody has marked it reviewed yet."}</p>}
               </div>
@@ -2533,7 +2667,7 @@ const avgConf = predictions?.length
 
             {derivationModalData.chain_hash && (
               <div className="sec" style={{ background: "var(--field-bg)", border: "1px solid rgba(34,230,240,0.25)", padding: "10px", borderRadius: "8px" }}>
-                <h6>{kn ? "ಡಿಜಿಟಲ್ ಮುದ್ರೆ (SHA-256)" : "Fingerprint of this trail (SHA-256)"}</h6>
+                <h6>{kn ? "ಈ ಜಾಡಿನ ಡಿಜಿಟಲ್ ಮುದ್ರೆ (SHA-256)" : "Fingerprint of this trail (SHA-256)"}</h6>
                 <div style={{ fontFamily: "monospace", fontSize: "10px", color: "var(--muted-2)", wordBreak: "break-all" }}>{derivationModalData.chain_hash}</div>
               </div>
             )}

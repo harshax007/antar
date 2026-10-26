@@ -220,11 +220,28 @@ def drivers(row: dict, unit_type: str, horizon: int) -> list[dict]:
         "level": lambda x: (f"Pulled toward the {parent}'s level — a short or unusual record "
                             f"here is not taken at face value"),
     }
+    # The same reasons in Kannada, from the same figures.
+    parent_kn = "ಠಾಣೆ" if unit_type == "beat" else "ಜಿಲ್ಲೆ"
+    peers_kn = "ಬೀಟ್‌ಗಳಲ್ಲಿ" if unit_type == "beat" else "ಠಾಣೆಗಳಲ್ಲಿ"
+    more = lambda x: "ಹೆಚ್ಚು" if x > 1 else "ಕಡಿಮೆ"      # noqa: E731
+    texts_kn = {
+        "recent": lambda x: (f"ಇತ್ತೀಚಿನ ವಾರಗಳು ಸಾಮಾನ್ಯಕ್ಕಿಂತ {more(x)} — ಕಳೆದ 4 ವಾರಗಳಲ್ಲಿ "
+                             f"{_int(row['recent4'])} FIR, ಸಾಮಾನ್ಯವಾಗಿ "
+                             f"{usual4:.1f}" if usual4 < 10 else
+                             f"ಇತ್ತೀಚಿನ ವಾರಗಳು ಸಾಮಾನ್ಯಕ್ಕಿಂತ {more(x)} — ಕಳೆದ 4 ವಾರಗಳಲ್ಲಿ "
+                             f"{_int(row['recent4'])} FIR, ಸಾಮಾನ್ಯವಾಗಿ {usual4:.0f}"),
+        "last_year": lambda x: f"ಕಳೆದ ವರ್ಷದ ಇದೇ ವಾರಗಳಲ್ಲಿ ಸಾಮಾನ್ಯಕ್ಕಿಂತ {more(x)} ಪ್ರಕರಣಗಳು ({row['last_year_h']:.0f})",
+        "neighbours": lambda x: f"ಪಕ್ಕದ {peers_kn} ಸಾಮಾನ್ಯಕ್ಕಿಂತ {more(x)} ಪ್ರಕರಣಗಳು",
+        "area": lambda x: f"ಇಡೀ {parent_kn}ಗೆ ಮುನ್ಸೂಚನೆ {'ಏರಿಕೆ' if x > 1 else 'ಇಳಿಕೆ'}",
+        "season": lambda x: f"ವರ್ಷದ ಈ ಸಮಯ ಸರಾಸರಿಗಿಂತ {more(x)}",
+        "level": lambda x: f"{parent_kn}ಯ ಮಟ್ಟದ ಕಡೆಗೆ ಎಳೆಯಲಾಗಿದೆ — ಇಲ್ಲಿನ ಕಿರು ಅಥವಾ ಅಸಾಮಾನ್ಯ ದಾಖಲೆಯನ್ನು ನೇರವಾಗಿ ಒಪ್ಪಿಲ್ಲ",
+    }
     out = []
     for key in ("recent", "last_year", "neighbours", "area", "season", "level"):
         x = row.get(f"x_{key}") or 1.0
         if x > 0 and abs(math.log(x)) >= math.log(1 + DRIVER_MIN):
-            out.append({"key": key, "factor": round(x, 3), "effect": _pct(x - 1), "text": texts[key](x)})
+            out.append({"key": key, "factor": round(x, 3), "effect": _pct(x - 1), "text": texts[key](x),
+                        "text_kn": texts_kn[key](x)})
     # "level" (shrinkage toward the parent) is true of most small units, so it is listed
     # after the reasons that distinguish this one
     out.sort(key=lambda d: (d["key"] == "level", -abs(math.log(d["factor"]))))
@@ -251,7 +268,9 @@ def why(row: dict, unit_type: str, horizon: int) -> dict | None:
     label = {"recent": "The last 4 weeks", "last_year": "The same weeks last year",
              "neighbours": f"Neighbouring {peers}", "area": f"The {parent} as a whole",
              "season": "The time of year", "level": f"Pull toward the {parent}'s level"}
-    said = {d["key"]: d["text"] for d in drivers(row, unit_type, horizon)}
+    ds = drivers(row, unit_type, horizon)
+    said = {d["key"]: d["text"] for d in ds}
+    said_kn = {d["key"]: d["text_kn"] for d in ds}
     steps, product = [], 1.0
     for key in _WHY_KEYS:
         x = row.get(f"x_{key}") or 1.0
@@ -259,7 +278,7 @@ def why(row: dict, unit_type: str, horizon: int) -> dict | None:
             x = 1.0
         product *= x
         steps.append({"key": key, "label": label[key], "factor": round(x, 3), "effect": _pct(x - 1),
-                      "notable": key in said, "text": said.get(key),
+                      "notable": key in said, "text": said.get(key), "text_kn": said_kn.get(key),
                       "without": round(expected / x, 2)})
     steps.sort(key=lambda d: -abs(math.log(d["factor"])))
     return {
@@ -269,6 +288,8 @@ def why(row: dict, unit_type: str, horizon: int) -> dict | None:
         "reconciles": abs(usual * product / expected - 1) < 0.01,
         "plain": ("Close to a usual period here: no single reason moves it by 10% or more."
                   if not said else None),
+        "plain_kn": ("ಇಲ್ಲಿನ ಸಾಮಾನ್ಯ ಅವಧಿಗೆ ಹತ್ತಿರ: ಯಾವುದೇ ಒಂದು ಕಾರಣ ಇದನ್ನು 10% ಅಥವಾ ಹೆಚ್ಚು ಬದಲಿಸುವುದಿಲ್ಲ."
+                     if not said else None),
     }
 
 
@@ -356,6 +377,16 @@ def global_explanation(conn: sqlite3.Connection, *, unit_type: str = "station", 
                    "period times these six reasons. Ranges are split-conformal, calibrated on weeks the model did not see."),
         "evidence_class": "D",
     }
+
+
+def summary_sentence_kn(row: dict, horizon: int) -> str:
+    lo8, hi8, lo9, hi9 = (_int(row[k]) for k in ("lo80", "hi80", "lo90", "hi90"))
+    rng = (lambda a, b: f"{a}" if a == b else f"{a}–{b}")
+    s = (f"ಮುಂದಿನ {horizon} ದಿನಗಳಲ್ಲಿ ಸಂಭಾವ್ಯ {rng(lo8, hi8)} ಪ್ರಕರಣಗಳು "
+         f"(ಬಹಳ ಸಂಭಾವ್ಯ {rng(lo9, hi9)})")
+    if row["usual_level"] > 0:
+        s += f"; ಸಾಮಾನ್ಯವಾಗಿ {row['usual_level']:.1f}"
+    return s + "."
 
 
 def summary_sentence(row: dict, cat: str, horizon: int) -> str:
@@ -552,6 +583,8 @@ def _item(row: dict, g: dict | None, unit_type: str, cat: str, horizon: int, ran
         "summary": ("Insufficient history for a reliable forecast — fewer than "
                     f"{THIN_N52} FIRs of this kind here in the last year." if thin
                     else summary_sentence(row, cat, horizon)),
+        "summary_kn": (f"ವಿಶ್ವಾಸಾರ್ಹ ಮುನ್ಸೂಚನೆಗೆ ಸಾಕಷ್ಟು ಇತಿಹಾಸವಿಲ್ಲ — ಕಳೆದ ವರ್ಷ ಇಲ್ಲಿ ಈ ರೀತಿಯ FIR "
+                       f"{THIN_N52} ಕ್ಕಿಂತ ಕಡಿಮೆ." if thin else summary_sentence_kn(row, horizon)),
         "history": "thin" if thin else "ok", "fir_last_52w": int(row["n52"] or 0),
         "drivers": drivers(row, unit_type, horizon)[:3],
         "why": why(row, unit_type, horizon),

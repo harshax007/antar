@@ -55,17 +55,27 @@ def weekday_pattern(dates: list[str]) -> dict:
     by_day = [{"day": DAYS[i], "firs": counts.get(i, 0)} for i in range(7)]
     if n < MIN_FOR_PATTERN:
         return {"firs": n, "by_day": by_day, "stands_out": [],
-                "text": f"Too few FIRs in the past year ({n}) to say which days are busier."}
+                "text": f"Too few FIRs in the past year ({n}) to say which days are busier.",
+                "text_kn": f"ಯಾವ ದಿನಗಳು ಹೆಚ್ಚು ಎಂದು ಹೇಳಲು ಕಳೆದ ವರ್ಷದ FIR ಗಳು ತುಂಬಾ ಕಡಿಮೆ ({n})."}
     mean = n / 7
     top = [x for x in sorted(by_day, key=lambda x: -x["firs"]) if x["firs"] >= STANDS_OUT * mean][:2]
     if not top:
         return {"firs": n, "by_day": by_day, "stands_out": [],
-                "text": "No day of the week stands out: registrations are spread evenly."}
+                "text": "No day of the week stands out: registrations are spread evenly.",
+                "text_kn": "ವಾರದ ಯಾವುದೇ ದಿನ ಎದ್ದು ಕಾಣುವುದಿಲ್ಲ: ದಾಖಲಾತಿಗಳು ಸಮವಾಗಿ ಹಂಚಿವೆ."}
     names = " and ".join(x["day"] for x in top)
+    names_kn = " ಮತ್ತು ".join(DAYS_KN.get(x["day"], x["day"]) for x in top)
     share = round(100 * sum(x["firs"] for x in top) / n)
+    even = round(100 * len(top) / 7)
     return {"firs": n, "by_day": by_day, "stands_out": [x["day"] for x in top],
             "text": f"{names} carried {share}% of the past year's {n:,} FIRs here "
-                    f"(an even spread would be {round(100 * len(top) / 7)}%)."}
+                    f"(an even spread would be {even}%).",
+            "text_kn": f"ಇಲ್ಲಿ ಕಳೆದ ವರ್ಷದ {n:,} FIR ಗಳಲ್ಲಿ {share}% {names_kn} ದಾಖಲಾದವು "
+                       f"(ಸಮ ಹಂಚಿಕೆಯಲ್ಲಿ {even}%)."}
+
+
+DAYS_KN = {"Monday": "ಸೋಮವಾರ", "Tuesday": "ಮಂಗಳವಾರ", "Wednesday": "ಬುಧವಾರ", "Thursday": "ಗುರುವಾರ",
+           "Friday": "ಶುಕ್ರವಾರ", "Saturday": "ಶನಿವಾರ", "Sunday": "ಭಾನುವಾರ"}
 
 
 def _station_rows(conn: sqlite3.Connection, station: str, lo: str, hi: str, real_only: bool) -> list[sqlite3.Row]:
@@ -102,7 +112,8 @@ def build(conn: sqlite3.Connection, station: str, as_of: str | None = None) -> d
             beats.append({"name": it["name"], "unit": it["unit"], "expected": it["expected"],
                           "likely": _rng(it.get("band80")), "very_likely": _rng(it.get("band90")),
                           "usual": it.get("usual"),
-                          "reason": (it.get("drivers") or [{}])[0].get("text")})
+                          "reason": (it.get("drivers") or [{}])[0].get("text"),
+                          "reason_kn": (it.get("drivers") or [{}])[0].get("text_kn")})
     except Exception:
         beats = []
 
@@ -127,6 +138,7 @@ def build(conn: sqlite3.Connection, station: str, as_of: str | None = None) -> d
                     "accused_named": int(r.get("Accused_Count") or 0)}
                    for r in (in_beats or open_rows)[:5]],
         "definition": "Under investigation with no accused charge-sheeted, registered in the past year.",
+        "definition_kn": "ಕಳೆದ ವರ್ಷ ದಾಖಲಾಗಿ, ಯಾವುದೇ ಆರೋಪಿಯ ವಿರುದ್ಧ ದೋಷಾರೋಪ ಪಟ್ಟಿ ಇಲ್ಲದೆ ತನಿಖೆಯಲ್ಲಿರುವವು.",
     }
 
     # 5. what is coming: events whose effect the record has measured for this district
@@ -138,12 +150,14 @@ def build(conn: sqlite3.Connection, station: str, as_of: str | None = None) -> d
             if not (d.get("statewide") or district in (d.get("places") or [])):
                 continue
             o = d.get("overall") or {}
-            line = None
+            line = line_kn = None
             if o.get("clear") and o.get("percent") is not None:
                 line = (f"In {o.get('years')} past years, registered cases here ran {abs(o['percent'])}% "
                         f"{'lower' if o['percent'] < 0 else 'higher'} during it.")
+                line_kn = (f"ಹಿಂದಿನ {o.get('years')} ವರ್ಷಗಳಲ್ಲಿ, ಇದರ ಸಮಯದಲ್ಲಿ ಇಲ್ಲಿ ದಾಖಲಾದ ಪ್ರಕರಣಗಳು "
+                           f"{abs(o['percent'])}% {'ಕಡಿಮೆ' if o['percent'] < 0 else 'ಹೆಚ್ಚು'}.")
             watch = [(_title(w.get("crime")), w.get("percent")) for w in (d.get("watch") or [])[:2]]
-            events.append({"name": d["name"], "when": d.get("when"), "effect": line,
+            events.append({"name": d["name"], "when": d.get("when"), "effect": line, "effect_kn": line_kn,
                            "watch": [f"{c} (possibly {p:+d}%)" for c, p in watch if p is not None]})
     except Exception:
         events = []
@@ -159,6 +173,11 @@ def build(conn: sqlite3.Connection, station: str, as_of: str | None = None) -> d
             "A forecast of registered FIRs, not of crime. Where more is policed, more is registered.",
             "The register holds the date of an FIR, not the hour. Days are named; times of day are not.",
             "A suggestion. A deployment needs a supervising officer's approval.",
+        ],
+        "limits_kn": [
+            "ಇದು ದಾಖಲಾದ FIR ಗಳ ಮುನ್ಸೂಚನೆ, ಅಪರಾಧದ್ದಲ್ಲ. ಹೆಚ್ಚು ಪೊಲೀಸಿಂಗ್ ಇರುವಲ್ಲಿ ಹೆಚ್ಚು ದಾಖಲಾಗುತ್ತದೆ.",
+            "ರಿಜಿಸ್ಟರ್‌ನಲ್ಲಿ FIR ದಿನಾಂಕ ಮಾತ್ರ ಇದೆ, ಸಮಯವಿಲ್ಲ. ದಿನಗಳನ್ನು ಹೆಸರಿಸಲಾಗಿದೆ; ದಿನದ ಸಮಯವನ್ನಲ್ಲ.",
+            "ಇದು ಸಲಹೆ. ನಿಯೋಜನೆಗೆ ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ ಬೇಕು.",
         ],
         "evidence_class": "I",
     }

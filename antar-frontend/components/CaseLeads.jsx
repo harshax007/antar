@@ -6,10 +6,11 @@
 import { useEffect, useState } from "react";
 import { fetchAPI } from "@/lib/api";
 import { useLang } from "@/components/Providers";
+import { crimeKn, dateKn } from "@/lib/kn";
 
-const day = (iso) => {
+const day = (iso, kn) => {
   const x = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(x.getTime()) ? iso : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return Number.isNaN(x.getTime()) ? iso : kn ? dateKn(x) : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
 
 export default function CaseLeads({ zone }) {
@@ -54,7 +55,7 @@ export default function CaseLeads({ zone }) {
                     <li key={`${l.key_type}-${l.key}`}>
                       <div className="top"><code>{l.key}</code><span>{l.key_type} · {L(`on ${l.firs} FIRs`, `${l.firs} FIR ಗಳಲ್ಲಿ`)}{l.districts.length > 1 ? L(` in ${l.districts.length} districts`, `, ${l.districts.length} ಜಿಲ್ಲೆಗಳಲ್ಲಿ`) : ""}</span></div>
                       {!l.specific && <p className="weak">{L(`On ${l.firs} FIRs: more likely a common value or a data-entry error than a real link.`, `${l.firs} FIR ಗಳಲ್ಲಿ: ನೈಜ ಸಂಪರ್ಕಕ್ಕಿಂತ ಸಾಮಾನ್ಯ ಮೌಲ್ಯ ಅಥವಾ ದಾಖಲೆ ತಪ್ಪು ಆಗಿರುವ ಸಾಧ್ಯತೆ ಹೆಚ್ಚು.`)}</p>}
-                      <ol>{l.examples.map((e, i) => <li key={i}><code>{e.fir}</code> {e.crime || L("Crime head not recorded", "ಅಪರಾಧ ಶೀರ್ಷಿಕೆ ದಾಖಲಾಗಿಲ್ಲ")} · {e.station} · {day(e.date)}</li>)}</ol>
+                      <ol>{l.examples.map((e, i) => <li key={i}><code>{e.fir}</code> {(lang === "kn" && crimeKn(e.crime)) || e.crime || L("Crime head not recorded", "ಅಪರಾಧ ಶೀರ್ಷಿಕೆ ದಾಖಲಾಗಿಲ್ಲ")} · {e.station} · {day(e.date, lang === "kn")}</li>)}</ol>
                       <p className="settle">{l.would_settle}{l.seeded ? L(" Some of these rows are seeded for the demonstration.", " ಇವುಗಳಲ್ಲಿ ಕೆಲವು ಪ್ರದರ್ಶನಕ್ಕಾಗಿ ಸೇರಿಸಿದ ಸಾಲುಗಳು.") : ""}</p>
                     </li>
                   ))}
@@ -86,7 +87,7 @@ export default function CaseLeads({ zone }) {
                 {nr.supported && (nr.watch?.length ? (
                   <>
                     <p className="cl-count">{L(`Registered in the last ${nr.days} days, so the next days are the ones to watch nearby:`, `ಕಳೆದ ${nr.days} ದಿನಗಳಲ್ಲಿ ದಾಖಲಾದವು; ಆದ್ದರಿಂದ ಮುಂದಿನ ದಿನಗಳಲ್ಲಿ ಹತ್ತಿರ ಗಮನಿಸಬೇಕು:`)}</p>
-                    <ol>{nr.watch.map((w, i) => <li key={i}><code>{w.fir}</code> {w.station} · {w.beat} · {day(w.date)}</li>)}</ol>
+                    <ol>{nr.watch.map((w, i) => <li key={i}><code>{w.fir}</code> {w.station} · {w.beat} · {day(w.date, lang === "kn")}</li>)}</ol>
                   </>
                 ) : <p className="settle">{L(`No burglary was registered here in the last ${nr.days} days.`, `ಕಳೆದ ${nr.days} ದಿನಗಳಲ್ಲಿ ಇಲ್ಲಿ ಯಾವುದೇ ಮನೆಗಳ್ಳತನ ದಾಖಲಾಗಿಲ್ಲ.`)}</p>)}
                 <p className="settle">{L(`Measured on ${nr.basis}. Registration date, not the time of the offence.`, `${nr.basis} ಮೇಲೆ ಅಳೆಯಲಾಗಿದೆ. ದಾಖಲಾದ ದಿನಾಂಕ, ಅಪರಾಧದ ಸಮಯವಲ್ಲ.`)}</p>

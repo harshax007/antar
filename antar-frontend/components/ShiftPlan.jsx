@@ -11,11 +11,13 @@ import { fetchAPI } from "@/lib/api";
 import ProposeAction from "@/components/ProposeAction";
 import UsefulFeedback from "@/components/UsefulFeedback";
 import { MaterialBackdrop, MaterialPanel } from "@/components/ui/MaterialPanel";
+import { crimeKn, dateKn } from "@/lib/kn";
 
-const day = (iso) => {
+const day = (iso, kn) => {
   const x = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(x.getTime()) ? iso : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return Number.isNaN(x.getTime()) ? iso : kn ? dateKn(x) : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
+const DAY_KN = { Monday: "ಸೋಮ", Tuesday: "ಮಂಗಳ", Wednesday: "ಬುಧ", Thursday: "ಗುರು", Friday: "ಶುಕ್ರ", Saturday: "ಶನಿ", Sunday: "ಭಾನು" };
 
 export default function ShiftPlan({ station, onClose, kn = false }) {
   const [p, setP] = useState(null);
@@ -44,7 +46,7 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
   const max = p ? Math.max(1, ...p.days.by_day.map((d) => d.firs)) : 1;
 
   return createPortal(
-    <MaterialBackdrop className="sp-back" role="dialog" aria-modal="true" aria-label={`Shift plan for ${station}`}
+    <MaterialBackdrop className="sp-back" role="dialog" aria-modal="true" aria-label={kn ? `${station} ಪಾಳಿ ಯೋಜನೆ` : `Shift plan for ${station}`}
          onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <MaterialPanel as="section" className="sp">
         <header>
@@ -76,20 +78,20 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
               <div>
                 <dt>{L("Beats to cover first", "ಮೊದಲು ಗಮನಿಸಬೇಕಾದ ಬೀಟ್‌ಗಳು")}</dt>
                 <dd>{p.beats.length ? (
-                  <ol>{p.beats.map((b) => <li key={b.unit}><b>{b.name}</b> {L("likely", "ಸಂಭಾವ್ಯ")} {b.likely}{b.reason && <small>{b.reason}</small>}</li>)}</ol>
+                  <ol>{p.beats.map((b) => <li key={b.unit}><b>{b.name}</b> {L("likely", "ಸಂಭಾವ್ಯ")} {b.likely}{b.reason && <small>{(kn && b.reason_kn) || b.reason}</small>}</li>)}</ol>
                 ) : L("The forecast does not separate this station's beats.", "ಮುನ್ಸೂಚನೆ ಈ ಠಾಣೆಯ ಬೀಟ್‌ಗಳನ್ನು ಪ್ರತ್ಯೇಕಿಸುವುದಿಲ್ಲ.")}</dd>
               </div>
               <div>
                 <dt>{L("Kinds of case expected", "ನಿರೀಕ್ಷಿತ ಪ್ರಕರಣಗಳ ಬಗೆ")}</dt>
-                <dd>{p.kinds.length ? p.kinds.map((k) => `${k.label} (${k.likely})`).join(", ") : L("No kind of case is expected more than now and then.", "ಯಾವುದೇ ಬಗೆಯ ಪ್ರಕರಣ ಆಗಾಗ ಮೀರಿ ನಿರೀಕ್ಷಿತವಿಲ್ಲ.")}</dd>
+                <dd>{p.kinds.length ? p.kinds.map((k) => `${(kn && crimeKn(k.label)) || k.label} (${k.likely})`).join(", ") : L("No kind of case is expected more than now and then.", "ಯಾವುದೇ ಬಗೆಯ ಪ್ರಕರಣ ಆಗಾಗ ಮೀರಿ ನಿರೀಕ್ಷಿತವಿಲ್ಲ.")}</dd>
               </div>
               <div>
                 <dt>{L("Days of the week", "ವಾರದ ದಿನಗಳು")}</dt>
-                <dd>{p.days.text}
+                <dd>{(kn && p.days.text_kn) || p.days.text}
                   {p.days.firs >= 60 && (
                     <span className="sp-days" aria-hidden="true">
-                      {p.days.by_day.map((d) => <i key={d.day} className={p.days.stands_out.includes(d.day) ? "on" : ""} title={`${d.day}: ${d.firs}`}>
-                        <u style={{ height: `${Math.max(2, Math.round((d.firs / max) * 36))}px` }} /><s>{d.day[0]}</s></i>)}
+                      {p.days.by_day.map((d) => <i key={d.day} className={p.days.stands_out.includes(d.day) ? "on" : ""} title={`${kn ? DAY_KN[d.day] || d.day : d.day}: ${d.firs}`}>
+                        <u style={{ height: `${Math.max(2, Math.round((d.firs / max) * 36))}px` }} /><s>{kn ? (DAY_KN[d.day] || d.day).slice(0, 2) : d.day[0]}</s></i>)}
                     </span>
                   )}
                   <small>{L("By the day an FIR was registered. The register does not hold the hour.", "FIR ದಾಖಲಾದ ದಿನದಿಂದ. ದಾಖಲೆಯಲ್ಲಿ ಸಮಯ ಇಲ್ಲ.")}</small>
@@ -100,9 +102,9 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
                 <dd>{p.open_cases.total ? (
                   <>
                     <b>{p.open_cases.total.toLocaleString("en-IN")}</b> FIR{L("s", "")}{p.open_cases.in_listed_beats ? L(`, ${p.open_cases.in_listed_beats} in the beats above`, `, ಮೇಲಿನ ಬೀಟ್‌ಗಳಲ್ಲಿ ${p.open_cases.in_listed_beats}`) : ""}
-                    <small>{p.open_cases.definition}</small>
+                    <small>{(kn && p.open_cases.definition_kn) || p.open_cases.definition}</small>
                     <ul className="sp-open">{p.open_cases.newest.map((c, i) => (
-                      <li key={`${c.fir}-${i}`}><code>{c.fir || L("no number", "ಸಂಖ್ಯೆ ಇಲ್ಲ")}</code><span>{c.crime} · {c.beat}</span><time>{day(c.date)}</time></li>
+                      <li key={`${c.fir}-${i}`}><code>{c.fir || L("no number", "ಸಂಖ್ಯೆ ಇಲ್ಲ")}</code><span>{(kn && crimeKn(c.crime)) || c.crime} · {c.beat}</span><time>{day(c.date, kn)}</time></li>
                     ))}</ul>
                   </>
                 ) : L("No FIR from the past year is under investigation without a charge-sheet.", "ಕಳೆದ ವರ್ಷದ ಯಾವುದೇ FIR ಆರೋಪಪಟ್ಟಿ ಇಲ್ಲದೆ ತನಿಖೆಯಲ್ಲಿಲ್ಲ.")}</dd>
@@ -110,16 +112,16 @@ export default function ShiftPlan({ station, onClose, kn = false }) {
               {p.events.map((e) => (
                 <div key={e.name}>
                   <dt>{e.name}</dt>
-                  <dd>{e.when}.{e.effect ? ` ${e.effect}` : ""}
+                  <dd>{e.when}.{e.effect ? ` ${(kn && e.effect_kn) || e.effect}` : ""}
                     {e.watch?.length > 0 && <small>{L("Less certain:", "ಕಡಿಮೆ ಖಚಿತ:")} {e.watch.join(", ")}.</small>}</dd>
                 </div>
               ))}
             </dl>
 
             {p.accuracy && <p className="sp-acc"><b>{L("How far to trust it.", "ಎಷ್ಟು ನಂಬಬಹುದು.")}</b> {p.accuracy}</p>}
-            <ul className="sp-limits">{p.limits.map((l) => <li key={l}>{l}</li>)}</ul>
+            <ul className="sp-limits">{((kn && p.limits_kn) || p.limits).map((l) => <li key={l}>{l}</li>)}</ul>
             {p.basis && <p className="sp-basis">{p.basis}</p>}
-            <UsefulFeedback kind="shift_plan" unit={p.unit} />
+            <UsefulFeedback kind="shift_plan" unit={p.unit} kn={kn} />
           </div>
         )}
 
