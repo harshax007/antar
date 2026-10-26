@@ -178,8 +178,10 @@ def dated(zone: str, end_date: date, crime_type: str | None = None) -> dict | No
     d7, d30, p30 = anchor - timedelta(days=6), anchor - timedelta(days=29), anchor - timedelta(days=59)
     day = last7 = last30 = prior30 = 0
     crimes: Counter = Counter()
+    from app.services.crime_filter import row_matcher
+    wanted = row_matcher(crime_type)     # the chat's crime resolution, not an exact spelling
     for r in run_query(build_spec("T14", {})):
-        if r.get("zone") != zone or (crime_type and r.get("crime_type") != crime_type):
+        if r.get("zone") != zone or not wanted(r):
             continue
         d = _as_date(r.get("occurred_at"))
         if not d or d > anchor or d < p30:

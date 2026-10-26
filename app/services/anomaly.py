@@ -582,8 +582,10 @@ def gi_star_surface(crime_type: str | None = None, days: int = 30, end_date: dat
 
     # Count crimes in the window per zone
     raw_counts: dict[str, float] = defaultdict(float)
+    from app.services.crime_filter import row_matcher
+    wanted = row_matcher(crime_type)     # "theft" also finds "THEFT"; vehicle theft its sub-headings
     for r in rows:
-        if crime_type and r.get("crime_type") != crime_type:
+        if not wanted(r):
             continue
         d = _as_date(r.get("occurred_at"))
         if d and cutoff <= d <= anchor:

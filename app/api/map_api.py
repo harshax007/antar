@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.core.rate_limiter import rate_limit
 
 from app.services.district_cache import get_all as dc_all, get_district as dc_get
+from app.services.crime_filter import crime_sql
 
 router = APIRouter()
 
@@ -203,23 +204,9 @@ async def repeat_locations_api(crime_type: Optional[str] = None, days: int = 90,
         raise HTTPException(status_code=422, detail="end_date must be an ISO date (YYYY-MM-DD)")
     anchor = min(anchor, today_dt)
     days = max(7, min(int(days or 90), 365))
-    crime_filter = None
-    if crime_type:
-        # the same crime resolution as the chat templates (chain snatching and vehicle theft
-        # include the real register's sub-headings), rendered as parameterised SQL
-        parts, args = [], []
-        for f in _crime_head_filters(SimpleNamespace(crime_types=normalize_crime_types([crime_type]), heads=[]),
-                                     "crime_type", "CrimeHead_Name"):
-            if f.op == "in":
-                parts.append(f"UPPER(TRIM({f.column})) IN ({', '.join('?' * len(f.value))})")
-                args += [str(v).strip().upper() for v in f.value]
-            elif f.op == "head_or":
-                heads, labels, tc = f.value
-                parts.append(f"(UPPER(TRIM(CrimeHead_Name)) IN ({', '.join('?' * len(heads))}) "
-                             f"OR UPPER(TRIM({tc})) IN ({', '.join('?' * len(labels))}))")
-                args += [str(v).strip().upper() for v in heads] + [str(v).strip().upper() for v in labels]
-        if parts:
-            crime_filter = (" AND ".join(parts), args)
+    # the same crime resolution as the chat templates (chain snatching and vehicle theft
+    # include the real register's sub-headings), as parameterised SQL
+    crime_filter = crime_sql(crime_type)
     dists = None
     if district:
         from app.services.zcql_repo import POLICE_UNITS
@@ -281,9 +268,10 @@ async def day_cases(date: Optional[str] = None, crime_type: Optional[str] = None
 
     def read() -> list[dict]:
         where, args = ["SUBSTR(date, 1, 10) = ?", "zone IS NOT NULL"], [day.isoformat()]
-        if crime_type:
-            where.append("crime_type = ?")
-            args.append(crime_type)
+        cf = crime_sql(crime_type)       # was crime_type = ?, which missed the register's spellings
+        if cf:
+            where.append(f"({cf[0]})")
+            args += cf[1]
         con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
         con.row_factory = sqlite3.Row
         try:
