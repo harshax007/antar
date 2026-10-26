@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Polyline, Polygon, Tooltip, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useLang } from "@/components/Providers";
 import { KARNATAKA_GEOJSON_URL, KARNATAKA_TOPOJSON_URL, policeLabel, ZONE_TO_GADM_DISTRICT, ZONE_COORDS, coordFor, aggregateByDistrict } from "@/lib/karnataka";
 import { feature as topoFeature, merge as topoMerge } from "topojson-client";
@@ -279,7 +280,7 @@ function CasePopup({ c, kn }) {
         <div className="mx-case-n">{people.map(([k, v]) => <div key={k}><b>{v}</b><span>{k}</span></div>)}</div>
       )}
       {!c.placed && <p className="mx-case-note">{kn ? "ಸ್ಥಳ ದಾಖಲಾಗಿಲ್ಲ: ಜಿಲ್ಲೆಯ ಕೇಂದ್ರದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ." : "No usable position on the FIR: the dot is at the district's centre."}</p>}
-      {c.fir_id && <a className="mx-case-open" href={`/case/${encodeURIComponent(c.fir_id)}`}>{kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ →" : "Open the case timeline →"}</a>}
+      {c.fir_id && <Link className="mx-case-open" href={`/case?id=${encodeURIComponent(c.fir_id)}`}>{kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ →" : "Open the case timeline →"}</Link>}
     </div>
   );
 }

@@ -9,16 +9,17 @@ export const metadata = {
 };
 
 import { ThemeProvider, LangProvider } from "@/components/Providers";
+import { asset } from "@/lib/assets";
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preload critical local fonts for instant zero-latency paint */}
-        <link rel="preload" href="/fonts/jersey-10-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/inter-600.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/chakra-petch-600.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href={asset("/fonts/jersey-10-latin.woff2")} as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href={asset("/fonts/inter-400.woff2")} as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href={asset("/fonts/inter-600.woff2")} as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href={asset("/fonts/chakra-petch-600.woff2")} as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

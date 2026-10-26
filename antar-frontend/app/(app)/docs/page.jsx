@@ -250,8 +250,8 @@ function AnimSlot({ stage, isActive, isDone, infoText }) {
           <Mascot
             size={74}
             label={`${mascotInfo.name} Core`}
-            directions={`/mascots/sm/${mascotInfo.face}-directions.webp`}
-            reactions={`/mascots/sm/${mascotInfo.face}-reactions.webp`}
+            directions={asset(`/mascots/sm/${mascotInfo.face}-directions.webp`)}
+            reactions={asset(`/mascots/sm/${mascotInfo.face}-reactions.webp`)}
           />
         </motion.div>
       </div>
@@ -744,7 +744,7 @@ function DocsFull() {
         try {
           const here = window.location.pathname.replace(/\/+$/, "");
           if (!here.endsWith(dest.replace(/\/+$/, ""))) {
-            window.location.assign(`/app${dest.startsWith("/") ? dest : "/" + dest}/`);
+            window.location.assign(asset(`${dest.replace(/\/+$/, "")}/`));
           }
         } catch {}
       }, 1000);
@@ -998,7 +998,7 @@ function DocsFull() {
               <AnimatePresence>
                 {phase !== "brand" && (
                   <motion.a
-                    href="/app/antar/"
+                    href={asset("/antar/")}
                     onClick={(e) => { e.preventDefault(); explorePrototype(); }}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 0.9, x: 0 }}

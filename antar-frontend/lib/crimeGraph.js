@@ -607,7 +607,7 @@ export function groupProfile(members) {
     const k = `${crime}|${head || ""}|${f.zone || ""}|${f.year || ""}`;
     const cur = lines.get(k) || { crime, head, zone: f.zone, year: f.year, n: 0, ids: [] };
     cur.n += 1;
-    if (f.rid != null) cur.ids.push(f.rid);       // each FIR opens as a case (/case/B-<id>)
+    if (f.rid != null) cur.ids.push(f.rid);       // each FIR opens as a case (/case?id=B-<id>)
     lines.set(k, cur);
   });
   return {

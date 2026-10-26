@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GeoJSON, useMap } from "react-leaflet";
 import { Mascot } from "page-mascot";
+import { asset } from "@/lib/assets";
 
 export const MAP_AGENTS = [
   { id: "geo", face: "drone", name: "Geo", kn: "ಜಿಯೋ",
@@ -35,7 +36,7 @@ const BY_ID = Object.fromEntries(MAP_AGENTS.map((a) => [a.id, a]));
 const DRAG_TYPE = "application/x-antar-agent";
 
 const Face = ({ agent, size }) => (
-  <Mascot size={size} label={`${agent.name} agent`} directions={`/mascots/sm/${agent.face}-directions.webp`} reactions={`/mascots/sm/${agent.face}-reactions.webp`} />
+  <Mascot size={size} label={`${agent.name} agent`} directions={asset(`/mascots/sm/${agent.face}-directions.webp`)} reactions={asset(`/mascots/sm/${agent.face}-reactions.webp`)} />
 );
 
 // ── the dock ────────────────────────────────────────────────────────────────────

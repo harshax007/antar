@@ -86,7 +86,7 @@ function XwInline({ text }) {
     let last = 0;
     for (const m of str.matchAll(FIR_ID_RE)) {
       if (m.index > last) out.push(<XwInline key={`t${last}`} text={str.slice(last, m.index)} />);
-      out.push(<Link key={`f${m.index}`} href={`/case/${encodeURIComponent(m[1])}`} className="c2-firlink" title="Open the case timeline">{m[1]}</Link>);
+      out.push(<Link key={`f${m.index}`} href={`/case?id=${encodeURIComponent(m[1])}`} className="c2-firlink" title="Open the case timeline">{m[1]}</Link>);
       last = m.index + m[0].length;
     }
     if (last < str.length) out.push(<XwInline key={`t${last}`} text={str.slice(last)} />);
@@ -231,7 +231,7 @@ function InsightRow({ it, kn }) {
         {open && (
           <div className="c2-ins-firs">
             {firs.map((f) => (
-              <Link key={f} href={`/case/${encodeURIComponent(f)}`} className="c2-firlink" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>{f}</Link>
+              <Link key={f} href={`/case?id=${encodeURIComponent(f)}`} className="c2-firlink" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>{f}</Link>
             ))}
           </div>
         )}
@@ -903,7 +903,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
             {(!citations || citations.length === 0) ? (
               <div className="xw-empty">{kn ? "ಈ ಉತ್ತರಕ್ಕೆ ಉಲ್ಲೇಖಗಳಿಲ್ಲ." : "No evidence rows cited for this answer."}</div>
             ) : citations.map((c, i) => (
-              <Link key={i} href={`/case/${encodeURIComponent(c.id || c.fir)}`} className="xw-ref c2-row c2-firrow" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>
+              <Link key={i} href={`/case?id=${encodeURIComponent(c.id || c.fir)}`} className="xw-ref c2-row c2-firrow" title={kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case timeline"}>
                 <span className="c2-idx">{i + 1}</span>
                 <div>
                   <b>FIR {c.fir}</b>{c.station ? <span className="c2-firstn"> · {c.station}</span> : ""}

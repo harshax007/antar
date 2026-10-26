@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mascot } from "page-mascot";
+import { asset } from "@/lib/assets";
 import { fetchAPI } from "@/lib/api";
 import { AGENTS, LENS } from "@/components/AgentStrip";
 
@@ -57,7 +58,7 @@ export default function AgentDoc({ name }) {
       <div className="adoc-in">
         <button className="adoc-back" onClick={() => router.push("/antar")}>← Back to chat</button>
         <header>
-          <Mascot size={112} label={`${title} agent`} directions={`/mascots/sm/${face}-directions.webp`} reactions={`/mascots/sm/${face}-reactions.webp`} />
+          <Mascot size={112} label={`${title} agent`} directions={asset(`/mascots/sm/${face}-directions.webp`)} reactions={asset(`/mascots/sm/${face}-reactions.webp`)} />
           <div>
             <span>Antar agent</span>
             <h1>{title}</h1>

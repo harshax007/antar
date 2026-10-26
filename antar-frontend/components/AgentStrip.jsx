@@ -10,6 +10,7 @@
 // the server and in the browser, which breaks hydration of the whole page.
 
 import { Mascot } from "page-mascot";
+import { asset } from "@/lib/assets";
 
 // What each agent does, in the words of AGENTS.md. The nine that also walk the Brain
 // screen keep the character they have there.
@@ -50,7 +51,7 @@ export default function AgentStrip({ selected = null, onSelect }) {
         <div key={name} className={`ags-a${selected === name ? " on" : ""}`} role="listitem" aria-label={`${name}: ${does}`}
              onClick={onSelect ? () => onSelect(selected === name ? null : name) : undefined}>
           <Mascot className="ags-f" size={40} label={`${name} agent`}
-                  directions={`/mascots/sm/${face}-directions.webp`} reactions={`/mascots/sm/${face}-reactions.webp`} />
+                  directions={asset(`/mascots/sm/${face}-directions.webp`)} reactions={asset(`/mascots/sm/${face}-reactions.webp`)} />
           <span className="ags-t"><b>{name}</b>{does}</span>
         </div>
       ))}

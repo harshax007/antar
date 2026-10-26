@@ -2,6 +2,7 @@
 // Data protection and governance: how Antar handles personal data, written for an officer,
 // a supervisor and an auditor. Every line here describes something the code does; the file
 // it lives in is named beside it so it can be checked, not taken on trust.
+import Link from "next/link";
 import { useLang } from "@/components/Providers";
 import "@/components/editorial-governance.css";
 
@@ -99,7 +100,7 @@ export default function GovernancePage() {
           <p>Antar reads police records about real people. This page says what it does with them: the law it follows, who can see what, what is kept and for how long, and how every step can be checked afterwards.</p>
           <p className="gv-who">For officers who use it, supervisors who answer for it, and auditors who check it. Each claim names the part of the system that makes it true, so it can be verified rather than trusted.</p>
           <div className="gv-cta">
-            <a className="ui-btn ui-btn--primary" href="/trace">See the audit trail</a>
+            <Link className="ui-btn ui-btn--primary" href="/trace">See the audit trail</Link>
             <span>Every request, who made it, and the decision taken</span>
           </div>
           {kn && <p className="gv-kn-note">ಈ ಪುಟದ ವಿವರಗಳು ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿವೆ.</p>}

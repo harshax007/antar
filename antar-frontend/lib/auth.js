@@ -13,6 +13,8 @@
 // The token lives in sessionStorage: it goes when the tab closes, and it expires on the
 // server after one shift whether or not the tab is still open.
 
+import { asset } from "@/lib/assets";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 export const ACCOUNTS = {
@@ -188,7 +190,7 @@ if (typeof window !== "undefined" && !window.__antarFetch) {
     const res = await plain(input, { ...init, headers });
     if (res.status === 401 && !path.startsWith("/api/auth/login")) {
       clearSession();
-      if (!window.location.pathname.startsWith("/login")) window.location.assign("/login");
+      if (!window.location.pathname.includes("/login")) window.location.assign(asset("/"));
     }
     return res;
   };

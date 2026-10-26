@@ -366,7 +366,7 @@ function WithCaseLinks({ text }) {
   let last = 0;
   for (const m of s.matchAll(FIR_ID_RE)) {
     if (m.index > last) out.push(<Highlighted key={`t${last}`} text={s.slice(last, m.index)} />);
-    out.push(<Link key={`f${m.index}`} href={`/case/${encodeURIComponent(m[1])}`} className="cx-firlink" title="Open the case timeline">{m[1]}</Link>);
+    out.push(<Link key={`f${m.index}`} href={`/case?id=${encodeURIComponent(m[1])}`} className="cx-firlink" title="Open the case timeline">{m[1]}</Link>);
     last = m.index + m[0].length;
   }
   if (!out.length) return <Highlighted text={s} />;
@@ -851,7 +851,7 @@ function SourcesPanel({ msg, kn, router }) {
         <div className="nx-srcgrid">
           {cites.map((c, j) => (
             <button type="button" className="nx-srccard" key={j}
-                    onClick={() => router.push(c.id ? `/case/${encodeURIComponent(c.id)}` : `/search?q=${encodeURIComponent(c.fir || "")}`)}
+                    onClick={() => router.push(c.id ? `/case?id=${encodeURIComponent(c.id)}` : `/search?q=${encodeURIComponent(c.fir || "")}`)}
                     title={c.id ? (kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ" : "Open the case: summary and timeline") : (kn ? "ಮೂಲ ದಾಖಲೆ ಹುಡುಕಿ" : "Open this record in Search")}>
               <b>FIR {c.fir}</b>
               <span>{[c.station, c.section].filter(Boolean).join(" · ")}</span>

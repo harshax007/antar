@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { SPRING } from "@/components/ui/MaterialPanel";
 import "./FocusPanel.css";
@@ -340,9 +341,9 @@ export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, on
                   {r.ids?.length > 0 && (
                     <span className="fp-cases">
                       {r.ids.slice(0, 6).map((rid, k) => (
-                        <a key={rid} href={`/case/B-${rid}`} title={L("Open this FIR's case timeline", "ಈ FIR ನ ಪ್ರಕರಣ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ")}>
+                        <Link key={rid} href={`/case?id=B-${rid}`} title={L("Open this FIR's case timeline", "ಈ FIR ನ ಪ್ರಕರಣ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ")}>
                           {r.ids.length === 1 ? L("Case timeline →", "ಪ್ರಕರಣ ಕಾಲರೇಖೆ →") : `${L("Case", "ಪ್ರಕರಣ")} ${k + 1}`}
-                        </a>
+                        </Link>
                       ))}
                       {r.ids.length > 6 && <i>{L(`+${r.ids.length - 6} more`, `+${r.ids.length - 6}`)}</i>}
                     </span>

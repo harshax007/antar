@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { fetchAPI } from "@/lib/api";
 import { ShieldCheck, X, Send, CheckCircle2 } from "lucide-react";
 
@@ -85,7 +86,7 @@ export default function ProposeAction({ open, onClose, type, defaults = {}, evid
               {done.compliance?.status === "FLAGGED" && (kn ? " ಅನುಸರಣೆ ಎಚ್ಚರಿಕೆ ಲಗತ್ತಿಸಲಾಗಿದೆ." : " A compliance flag was attached for the reviewer.")}
             </p>
             <div className="pa-actions">
-              <a className="pa-btn ghost" href="/approvals">{kn ? "ಸರತಿ ನೋಡಿ" : "View queue"}</a>
+              <Link className="pa-btn ghost" href="/approvals">{kn ? "ಸರತಿ ನೋಡಿ" : "View queue"}</Link>
               <button className="pa-btn" onClick={onClose}>{kn ? "ಮುಗಿದಿದೆ" : "Done"}</button>
             </div>
           </div>

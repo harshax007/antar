@@ -182,7 +182,7 @@ export default function MoneyTrail() {
                     <h3>{L("FIRs this account is in", "ಈ ಖಾತೆ ಇರುವ FIR ಗಳು")}</h3>
                     <ul className="mt-firs">
                       {acct.firs.slice(0, 12).map((f) => (
-                        <li key={f.fir_id}><button type="button" onClick={() => router.push(`/case/${encodeURIComponent(f.fir_id)}`)}>
+                        <li key={f.fir_id}><button type="button" onClick={() => router.push(`/case?id=${encodeURIComponent(f.fir_id)}`)}>
                           <b>FIR {f.fir_id}</b><span>{[f.date, f.district, f.crime, f.stage].filter(Boolean).join(" · ")}</span>
                         </button></li>
                       ))}

@@ -4,8 +4,8 @@
 // (app/services/case_timeline.py), which reads the FIR row and counts the register; nothing
 // here is written by a model. Only the registration is dated in the register, so later steps
 // say "date not recorded" instead of showing a date.
-import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLang } from "@/components/Providers";
 import "@/components/editorial-case.css";
 
@@ -21,9 +21,15 @@ const STATE_WORD = {
   done: ["Done", "ಮುಗಿದಿದೆ"], current: ["Now", "ಈಗ"], pending: ["Next", "ಮುಂದೆ"], none: ["Not reached", "ತಲುಪಿಲ್ಲ"],
 };
 
+// The id travels as ?id= rather than a path segment: the site is a static export, which
+// can only hold pages known at build time, and FIR ids are not.
 export default function CasePage() {
-  const { id } = useParams();
+  return <Suspense fallback={null}><CaseView /></Suspense>;
+}
+
+function CaseView() {
   const sp = useSearchParams();
+  const id = sp?.get("id") || "";
   const router = useRouter();
   const { lang } = useLang();
   const kn = lang === "kn";
@@ -34,8 +40,9 @@ export default function CasePage() {
   useEffect(() => {
     const ctrl = new AbortController();
     setData(null); setErr(null);
+    if (!id) { setErr(Object.assign(new Error("no id"), { status: 404 })); return () => ctrl.abort(); }
     const q = sp?.get("station") ? `?station=${encodeURIComponent(sp.get("station"))}` : "";
-    fetch(`${API}/api/case/${encodeURIComponent(decodeURIComponent(id))}${q}`, { signal: ctrl.signal })
+    fetch(`${API}/api/case/${encodeURIComponent(id)}${q}`, { signal: ctrl.signal })
       .then(async (r) => {
         if (r.ok) return r.json();
         const body = await r.json().catch(() => ({}));
@@ -52,7 +59,7 @@ export default function CasePage() {
         <div className="cs-wrap">
           <button type="button" className="cs-back" onClick={() => router.back()}>‹ {L("Back", "ಹಿಂದೆ")}</button>
           <h1 className="cs-title">{L("Case not available", "ಪ್ರಕರಣ ಲಭ್ಯವಿಲ್ಲ")}</h1>
-          <p className="cs-lede">{err.status === 404 ? L(`No FIR ${decodeURIComponent(id)} in the register.`, `ದಾಖಲೆಯಲ್ಲಿ FIR ${decodeURIComponent(id)} ಇಲ್ಲ.`)
+          <p className="cs-lede">{err.status === 404 ? L(`No FIR ${id} in the register.`, `ದಾಖಲೆಯಲ್ಲಿ FIR ${id} ಇಲ್ಲ.`)
             : err.status === 403 ? err.text : L("The case could not be read just now.", "ಪ್ರಕರಣವನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ.")}</p>
         </div>
       </main>
@@ -215,7 +222,7 @@ export default function CasePage() {
                 <ul className="cs-others">
                   {same.firs.map((f) => (
                     <li key={f.fir_id}>
-                      <button type="button" onClick={() => router.push(`/case/${encodeURIComponent(f.fir_id)}`)}>
+                      <button type="button" onClick={() => router.push(`/case?id=${encodeURIComponent(f.fir_id)}`)}>
                         <b>{String(f.fir_id).startsWith("B-") ? L("Record", "ದಾಖಲೆ") : "FIR"} {f.fir_id}</b><span>{[nice(f.date), f.district, f.crime, f.stage].filter(Boolean).join(" · ")}</span>
                       </button>
                     </li>

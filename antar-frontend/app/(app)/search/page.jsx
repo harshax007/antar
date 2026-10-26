@@ -1315,7 +1315,7 @@ function PersonCases({ id, kn }) {
         <ul className="sx-cases">
           {list.map((c) => (
             <li key={c.fir_id}>
-              <button type="button" onClick={() => router.push(`/case/${encodeURIComponent(c.fir_id)}`)} title={kn ? "ಪ್ರಕರಣ ತೆರೆಯಿರಿ" : "Open the case"}>
+              <button type="button" onClick={() => router.push(`/case?id=${encodeURIComponent(c.fir_id)}`)} title={kn ? "ಪ್ರಕರಣ ತೆರೆಯಿರಿ" : "Open the case"}>
                 <b>{c.crime || c.crime_type}</b>
                 <span>{[c.date, c.station, c.district].filter(Boolean).join(" · ")}</span>
                 <em>{[c.stage, c.role].filter(Boolean).join(" · ")}</em>
