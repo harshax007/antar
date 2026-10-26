@@ -85,9 +85,14 @@ def parse_target(raw: Any) -> Target:
 # ── result helpers ───────────────────────────────────────────────────────────────
 
 def _ok(cls: str, bottom: str, *, context: str = "", evidence: list[str] | None = None,
-        limits: list[str] | None = None, nxt: list[str] | None = None) -> dict:
-    return {"status": "ok", "evidence_class": cls, "bottom_line": bottom, "context": context,
-            "evidence": (evidence or [])[:8], "limits": limits or [], "next": nxt or []}
+        limits: list[str] | None = None, nxt: list[str] | None = None, facts: dict | None = None) -> dict:
+    out = {"status": "ok", "evidence_class": cls, "bottom_line": bottom, "context": context,
+           "evidence": (evidence or [])[:8], "limits": limits or [], "next": nxt or []}
+    # The figures behind the sentences, for a screen that words them itself (the Map card,
+    # in English and Kannada). The terminal reads the sentences and ignores this.
+    if facts:
+        out["facts"] = facts
+    return out
 
 
 def _empty(bottom: str, *, limits: list[str] | None = None, nxt: list[str] | None = None) -> dict:
@@ -391,7 +396,11 @@ def _research_place(place: str) -> dict:
                evidence=ev,
                limits=["Being named on many FIRs is a count. It is not a finding about the person.",
                        "I do not choose a subject: the dossier opens only for the id you pick."],
-               nxt=[f"run research {r['id']}" for r in rows])
+               nxt=[f"run research {r['id']}" for r in rows],
+               facts={"kind": "research_place", "place": place,
+                      "people": [{"id": r["id"], "firs": r["n"], "from": r["y0"], "to": r["y1"],
+                                  "groups": [g.strip().lower() for g in str(r["groups"] or "").split(",") if g.strip()][:2]}
+                                 for r in rows]})
 
 
 def _research(t: Target) -> dict:
@@ -542,10 +551,24 @@ def _forecast(t: Target) -> dict:
     basis = (u.get("as_of") or {}).get("basis")
     if basis:
         limits.insert(0, basis[0].upper() + basis[1:])
+    f7 = (u.get("forecast") or {}).get("7") or (u.get("forecast") or {}).get(7) or {}
+    a = u.get("as_of") or {}
+    facts = {"kind": "forecast", "station": u.get("name") or t.station, "district": u.get("district"),
+             "crime": u.get("category_label"), "as_of": a.get("as_of"),
+             "expected": f7.get("expected"), "usual": f7.get("usual"),
+             "likely": [(f7.get("band80") or {}).get("lo"), (f7.get("band80") or {}).get("hi")],
+             "very_likely": [(f7.get("band90") or {}).get("lo"), (f7.get("band90") or {}).get("hi")],
+             "reasons": [{"key": st.get("key"), "label": st.get("label"), "effect": st.get("effect"),
+                          "factor": st.get("factor")}
+                         for st in ((f7.get("why") or {}).get("steps") or []) if st.get("notable")],
+             "real_share": a.get("real_share"), "real_record_ends": a.get("real_record_ends"),
+             "tested_weeks": tr.get("weeks"), "busiest_weeks": tr.get("weeks_flagged"),
+             "busiest_weeks_with_fir": tr.get("weeks_flagged_with_crime")}
     return _ok("I", str(u.get("bottom_line") or f"No forecast is on file for {t.station}."),
                context=f"{u.get('name') or t.station}, {u.get('district')} · {u.get('category_label')}"
                        f" · as of {(u.get('as_of') or {}).get('as_of')}",
-               evidence=ev, limits=limits, nxt=[f"run geo {u.get('district') or ''}".strip()])
+               evidence=ev, limits=limits, nxt=[f"run geo {u.get('district') or ''}".strip()],
+               facts=facts if f7 else None)
 
 
 def _geo(t: Target) -> dict:
@@ -569,7 +592,42 @@ def _geo(t: Target) -> dict:
                context=f"{h.get('scope')} · {h.get('category_label')} · next {h.get('horizon_days')} days"
                        f" · {h.get('units_forecast')} beats forecast",
                evidence=ev, limits=list(h.get("limits") or []),
-               nxt=[f"run forecast {(h.get('items') or [{}])[0].get('station') or ''}".strip()])
+               nxt=[f"run forecast {(h.get('items') or [{}])[0].get('station') or ''}".strip()],
+               facts={"kind": "geo", "district": h.get("scope"), "crime": h.get("category_label"),
+                      "days": h.get("horizon_days"), "beats_forecast": h.get("units_forecast"),
+                      "as_of": (h.get("as_of") or {}).get("as_of") if isinstance(h.get("as_of"), dict) else h.get("as_of"),
+                      "real_share": (h.get("as_of") or {}).get("real_share") if isinstance(h.get("as_of"), dict) else None,
+                      "real_record_ends": (h.get("as_of") or {}).get("real_record_ends") if isinstance(h.get("as_of"), dict) else None,
+                      "beats": [{"name": i.get("name"), "station": i.get("station"), "expected": i.get("expected"),
+                                 "likely": [(i.get("band80") or {}).get("lo"), (i.get("band80") or {}).get("hi")]}
+                                for i in h.get("items") or []]})
+
+
+def _pattern_rows(group: str, place: str | None) -> list[dict]:
+    """The FIRs Pattern clusters: one crime type, the place's own when a place is given, the
+    most recent 10,000. It used to cluster a random 10,000 of the whole state and then keep
+    the clusters in the district: a district held a sliver of its own cases, and the answer
+    changed from one run to the next. The crime type is the FIR's crime group, or failing
+    that a Map key ("vehicle_theft"), read through the shared crime filter."""
+    from app.core.db_path import DB_PATH
+    from app.services.crime_filter import crime_sql
+    con = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    con.row_factory = lambda c, r: {d[0]: v for d, v in zip(c.description, r)}
+    where_place = " AND (zone = ? COLLATE NOCASE OR District_Name = ? COLLATE NOCASE)" if place else ""
+    args_place = [place, place] if place else []
+    try:
+        for cf in (("UPPER(TRIM(CrimeGroup_Name)) = UPPER(TRIM(?))", [group]), crime_sql(group)):
+            if not cf:
+                continue
+            rows = con.execute(
+                "SELECT geo_lat AS lat, geo_lon AS lon, District_Name AS zone, CrimeGroup_Name AS crime_type, "
+                f"date AS occurred_at FROM FIRs WHERE geo_ok = 1 AND ({cf[0]}){where_place} "
+                "ORDER BY date DESC LIMIT 10000", list(cf[1]) + args_place).fetchall()
+            if rows:
+                return rows
+        return []
+    finally:
+        con.close()
 
 
 def _pattern(t: Target) -> dict:
@@ -577,14 +635,10 @@ def _pattern(t: Target) -> dict:
         return _refuse("I can't look for a pattern without a crime type. Drop this agent on a FIR "
                        "so it can take the FIR's crime group.")
     from app.services.patterns import find_clusters
-    from app.services.zcql_local import scan_rows
-    rows = scan_rows(t.crime_group, None)
+    rows = _pattern_rows(t.crime_group, t.district)
     clusters = find_clusters(rows)
-    scope = ""
-    if t.district:
-        clusters = [c for c in clusters if t.district in (c.get("zones") or [])]
-        scope = f" in {t.district}"
-    what = t.crime_group.title()
+    scope = f" in {t.district}" if t.district else ""
+    what = t.crime_group.replace("_", " ").title()
     if not clusters:
         return _empty(f"No space-time cluster of {what} is on record{scope}.",
                       limits=[f"Scanned {len(rows):,} FIRs of this crime group."])
@@ -592,6 +646,12 @@ def _pattern(t: Target) -> dict:
     active = sum(1 for c in clusters if c.get("is_active"))
     return _ok("D", f"{_plural(len(clusters), 'space-time cluster')} of {what} on record{scope}; "
                     f"{active} still active.",
+               facts={"kind": "pattern", "crime": t.crime_group, "place": t.district or None,
+                      "clusters": len(clusters), "active": active, "scanned": len(rows),
+                      "groups": [{"size": c.get("size"), "active": bool(c.get("is_active")),
+                                  "zones": list(c.get("zones") or [])[:3],
+                                  "from": c.get("date_start"), "to": c.get("date_end")}
+                                 for c in clusters[:5]]},
                context=f"Density clustering over {len(rows):,} FIRs of this crime group.",
                evidence=[str(c.get("explanation")) for c in clusters],
                limits=["A cluster is cases close in place and time. It does not show a common offender."],
