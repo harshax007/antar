@@ -167,3 +167,24 @@ html[lang="kn"] .gi-todo span { letter-spacing: normal; text-transform: none; }
 /* one solid button per screen: the report link is an outline, not a second solid */
 .mx-page .mx-stat .t .open { background: none !important; color: var(--text-1) !important; border: 1px solid var(--rule-2) !important; box-shadow: none !important; }
 .mx-page .mx-stat .t .open:hover { border-color: var(--text-3) !important; }
+
+/* Right column tabs stay readable while the summary scrolls under them: the sticky bar was
+   see-through (background: none above), so the panel's title and its cyan rule showed
+   through the tab labels. Same colour as the panel, so it reads as the panel's own top. */
+.mx-page .mx-rtabs { background: #060A12; padding-top: 2px; margin-bottom: 2px; }
+[data-theme="light"] .mx-page .mx-rtabs { background: #fff; }
+
+/* View summary: the two ways on, as rows that wrap (were scrolling tickers) */
+.mx-sum-next { margin-top: 16px; border-top: 1px solid var(--rule-1, rgba(255,255,255,.08)); }
+.mx-sum-next button { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "lab go" "txt txt";
+  gap: 3px 10px; width: 100%; padding: 10px 0; text-align: left; background: none; border: 0;
+  border-bottom: 1px solid var(--rule-1, rgba(255,255,255,.06)); cursor: pointer; color: inherit; font: inherit; }
+.mx-sum-next button:last-child { border-bottom: 0; }
+.mx-sum-next .lab { grid-area: lab; font: 600 11.5px 'Inter', sans-serif; }
+.mx-sum-next .is-brief .lab { color: var(--cyan, #22E6F0); }
+.mx-sum-next .is-week .lab { color: #FFB37A; }
+.mx-sum-next .txt { grid-area: txt; font-size: 12.5px; line-height: 1.5; color: var(--text-2, #CBD5E1); overflow-wrap: anywhere; }
+.mx-sum-next .go { grid-area: go; font: 500 11px 'Inter', sans-serif; color: var(--text-3, #94A3B8); white-space: nowrap; }
+.mx-sum-next button:hover .go, .mx-sum-next button:focus-visible .go { color: var(--text-1, #F8FAFC); }
+.mx-sum-next button:focus-visible { outline: 2px solid var(--accent, #22E6F0); outline-offset: 2px; border-radius: 4px; }
+[data-theme="light"] .mx-sum-next .is-week .lab { color: #B45309; }

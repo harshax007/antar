@@ -2119,28 +2119,33 @@ export default function MapScreen() {
                     )}
                   </dl>
 
-                      {/* Integrated Geo-Intel Ticker */}
-                      <div 
-                        onClick={() => setShowDossier(true)}
-                        style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
-                        title={kn ? "ಜಿಲ್ಲಾ ಮಾಹಿತಿ ಫಲಕ ತೆರೆಯಿರಿ" : "Open the district briefing"}
-                      >
-                        <span style={{ color: "var(--cyan)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>{kn ? "ಮಾಹಿತಿ" : "Briefing"}</span>
-                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "ಜಿಲ್ಲಾ ಮಾಹಿತಿಯನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (intel.length > 0 ? intel.map(i => i.text).join("   •   ") : "Gathering real-time geospatial intelligence...")}
-                        </marquee>
-                      </div>
-                      {/* Integrated Prediction Ticker */}
-                      <div 
-                        onClick={() => setRightTab("where")}
-                        style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", cursor: "pointer" }}
-                        title={kn ? "ಮುಂದೆ ಎಲ್ಲಿ ಫಲಕ ತೆರೆಯಿರಿ" : "Open Where Next Panel"}
-                      >
-                        <span style={{ color: "var(--amber)", fontSize: "11px", fontWeight: "bold", whiteSpace: "nowrap", textDecoration: "underline", width: "65px", flexShrink: 0 }}>{kn ? "ಮುಂದಿನ ವಾರ" : "Next week"}</span>
-                        <marquee scrollamount="2" style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-                          {kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ..." : (fc.hot?.items?.length ? `${fc.hot.items.length} places are likely to be busier than usual in the next 7 days. The busiest is ${fc.hot.items[0]?.name}, with up to ${fc.hot.items[0]?.band80?.hi} cases likely.` : "Preparing the forecast for the next 7 days...")}
-                        </marquee>
-                      </div>
+                      {/* Two ways on, as plain rows that wrap. They were scrolling <marquee>
+                          tickers: cut off at the panel edge, unreadable while moving, and in
+                          Kannada stuck on "preparing" even when the figures were there. */}
+                      {(() => {
+                        // the briefing line: something the rows above do not already say
+                        const brief = intel.find((x) => x.src !== "map hotspots" && x.src !== "alerts") || intel[0];
+                        const top = fc.hot?.items?.[0];
+                        const n = fc.hot?.items?.length || 0;
+                        return (
+                          <div className="mx-sum-next">
+                            <button type="button" className="is-brief" onClick={() => setShowDossier(true)}>
+                              <span className="lab">{kn ? "ಜಿಲ್ಲಾ ಮಾಹಿತಿ" : "Briefing"}</span>
+                              <span className="txt">{brief ? brief.text : (kn ? "ಜಿಲ್ಲಾ ಮಾಹಿತಿ ಸಿದ್ಧವಾಗುತ್ತಿದೆ…" : "The district briefing is being put together…")}</span>
+                              <span className="go" aria-hidden="true">{kn ? "ತೆರೆಯಿರಿ ›" : "Open ›"}</span>
+                            </button>
+                            <button type="button" className="is-week" onClick={() => setRightTab("where")}>
+                              <span className="lab">{kn ? "ಮುಂದಿನ 7 ದಿನ" : "Next 7 days"}</span>
+                              <span className="txt">{!n
+                                ? (kn ? "ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ ಸಿದ್ಧವಾಗುತ್ತಿದೆ…" : "The forecast for the next 7 days is being prepared…")
+                                : kn
+                                  ? `${n} ಸ್ಥಳಗಳು ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು ಕಾರ್ಯನಿರತವಾಗುವ ಸಾಧ್ಯತೆ. ಅತಿ ಹೆಚ್ಚು: ${top?.name}${top?.band80?.hi != null ? `, ${top.band80.hi} ಪ್ರಕರಣಗಳವರೆಗೆ` : ""}.`
+                                  : `${n} ${n === 1 ? "place is" : "places are"} likely to be busier than usual. The busiest is ${top?.name}${top?.band80?.hi != null ? `, with up to ${top.band80.hi} cases` : ""}.`}</span>
+                              <span className="go" aria-hidden="true">{kn ? "ಮುಂದೆ ಎಲ್ಲಿ ›" : "Where next ›"}</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
                 </div>
                 );
               })()}
