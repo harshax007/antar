@@ -165,32 +165,42 @@ const GUIDES = {
 
   search: {
     title: L("Search Guide", "ಹುಡುಕಾಟ ಮಾರ್ಗದರ್ಶಿ"),
-    lead: L("Find a person in the FIR register by name, alias, father's name, phone or vehicle plate, even misspelt, and open their record.",
-            "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ತಂದೆಯ ಹೆಸರು, ಫೋನ್ ಅಥವಾ ವಾಹನ ಸಂಖ್ಯೆಯಿಂದ FIR ದಾಖಲೆಯಲ್ಲಿ ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕಿ, ಕಾಗುಣಿತ ತಪ್ಪಿದ್ದರೂ, ಮತ್ತು ಅವರ ದಾಖಲೆ ತೆರೆಯಿರಿ."),
+    lead: L("Search has four views, picked at the top: People finds a person in the FIR register, Money trail follows money between accounts named in FIRs, Social insights compares districts, and OSINT checks an identifier on the open web.",
+            "ಹುಡುಕಾಟದಲ್ಲಿ ನಾಲ್ಕು ನೋಟಗಳು, ಮೇಲೆ ಆರಿಸಿ: ವ್ಯಕ್ತಿಗಳು FIR ದಾಖಲೆಯಲ್ಲಿ ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕುತ್ತದೆ, ಹಣದ ಜಾಡು FIR ಖಾತೆಗಳ ನಡುವೆ ಹಣ ಅನುಸರಿಸುತ್ತದೆ, ಸಾಮಾಜಿಕ ಒಳನೋಟ ಜಿಲ್ಲೆಗಳನ್ನು ಹೋಲಿಸುತ್ತದೆ, OSINT ಒಂದು ಗುರುತನ್ನು ಮುಕ್ತ ವೆಬ್‌ನಲ್ಲಿ ಪರಿಶೀಲಿಸುತ್ತದೆ."),
     blocks: [
-      { h: L("Searching", "ಹುಡುಕುವುದು"), items: [
-        [L("People · Money trail", "ವ್ಯಕ್ತಿಗಳು · ಹಣದ ಜಾಡು"), L("Two views at the top: find a person, or follow money between accounts named in FIRs.", "ಮೇಲೆ ಎರಡು ನೋಟಗಳು: ವ್ಯಕ್ತಿಯನ್ನು ಹುಡುಕಿ, ಅಥವಾ FIR ಖಾತೆಗಳ ನಡುವೆ ಹಣ ಅನುಸರಿಸಿ.")],
-        [L("The box", "ಪೆಟ್ಟಿಗೆ"), L("Type, or press the mic and say the name. Close spellings and sound-alike names match too.", "ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಮೈಕ್ ಒತ್ತಿ ಹೆಸರು ಹೇಳಿ. ಹತ್ತಿರದ ಕಾಗುಣಿತ ಮತ್ತು ಒಂದೇ ಉಚ್ಚಾರದ ಹೆಸರುಗಳೂ ಹೊಂದುತ್ತವೆ.")],
-        [L("All · Name · Alias · Father · Phone", "ಎಲ್ಲಾ · ಹೆಸರು · ಅಡ್ಡಹೆಸರು · ತಂದೆ · ಫೋನ್"), L("Limit the search to one field.", "ಹುಡುಕಾಟವನ್ನು ಒಂದು ಕ್ಷೇತ್ರಕ್ಕೆ ಸೀಮಿತಗೊಳಿಸಿ.")],
-        [L("Results", "ಫಲಿತಾಂಶಗಳು"), L("Sorted by risk. Each row shows the alias, ID, area, risk tier and FIR count.", "ಅಪಾಯದ ಪ್ರಕಾರ. ಪ್ರತಿ ಸಾಲು ಅಡ್ಡಹೆಸರು, ID, ಪ್ರದೇಶ, ಅಪಾಯ, FIR ಸಂಖ್ಯೆ ತೋರಿಸುತ್ತದೆ.")],
-        [L("No match", "ಹೊಂದಿಕೆ ಇಲ್ಲ"), L("Try fewer letters or an alias. A name that is not on record can be tracked as an unknown lead.", "ಕಡಿಮೆ ಅಕ್ಷರ ಅಥವಾ ಅಡ್ಡಹೆಸರು ಪ್ರಯತ್ನಿಸಿ. ದಾಖಲೆಯಲ್ಲಿಲ್ಲದ ಹೆಸರನ್ನು ಅಜ್ಞಾತ ಸುಳಿವಾಗಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಬಹುದು.")],
+      { h: L("People · finding someone", "ವ್ಯಕ್ತಿಗಳು · ಹುಡುಕುವುದು"), items: [
+        [L("The box", "ಹುಡುಕಾಟ ಪೆಟ್ಟಿಗೆ"), L("Type a name, alias, father's name, phone or vehicle plate, or press the mic and say it. Close spellings and sound-alike names match too.", "ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ತಂದೆಯ ಹೆಸರು, ಫೋನ್ ಅಥವಾ ವಾಹನ ಸಂಖ್ಯೆ ಟೈಪ್ ಮಾಡಿ, ಅಥವಾ ಮೈಕ್ ಒತ್ತಿ ಹೇಳಿ. ಹತ್ತಿರದ ಕಾಗುಣಿತ ಮತ್ತು ಒಂದೇ ಉಚ್ಚಾರದ ಹೆಸರುಗಳೂ ಹೊಂದುತ್ತವೆ.")],
+        [L("All · Name · Alias · Father (s/o) · Phone", "ಎಲ್ಲಾ · ಹೆಸರು · ಅಡ್ಡಹೆಸರು · ತಂದೆ · ಫೋನ್"), L("Search one field only, when a common name brings too many people.", "ಸಾಮಾನ್ಯ ಹೆಸರಿಗೆ ತುಂಬಾ ಜನ ಬಂದಾಗ, ಒಂದೇ ಕ್ಷೇತ್ರದಲ್ಲಿ ಹುಡುಕಿ.")],
+        [L("Results", "ಫಲಿತಾಂಶಗಳು"), L("Highest risk first. Each row: name and alias, ID, area, risk and how many FIRs. Click one to open the record.", "ಹೆಚ್ಚು ಅಪಾಯ ಮೊದಲು. ಪ್ರತಿ ಸಾಲು: ಹೆಸರು, ಅಡ್ಡಹೆಸರು, ID, ಪ್ರದೇಶ, ಅಪಾಯ, FIR ಸಂಖ್ಯೆ. ದಾಖಲೆ ತೆರೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+        [L("No match", "ಹೊಂದಿಕೆ ಇಲ್ಲ"), L("Try fewer letters or an alias. A name that is not on record can be kept as an unknown lead.", "ಕಡಿಮೆ ಅಕ್ಷರ ಅಥವಾ ಅಡ್ಡಹೆಸರು ಪ್ರಯತ್ನಿಸಿ. ದಾಖಲೆಯಲ್ಲಿಲ್ಲದ ಹೆಸರನ್ನು ಅಜ್ಞಾತ ಸುಳಿವಾಗಿ ಇಡಬಹುದು.")],
       ] },
-      { h: L("The record", "ದಾಖಲೆ"), items: [
-        [L("Risk score", "ಅಪಾಯ ಅಂಕ"), L("Out of 100, from how recent, how frequent and how serious their cases are, and their links. Why this risk score shows each part.", "100 ರಲ್ಲಿ, ಪ್ರಕರಣಗಳು ಎಷ್ಟು ಇತ್ತೀಚಿನವು, ಎಷ್ಟು ಬಾರಿ, ಎಷ್ಟು ಗಂಭೀರ, ಮತ್ತು ಸಂಪರ್ಕಗಳಿಂದ. ಪ್ರತಿ ಭಾಗ 'ಏಕೆ ಈ ಅಂಕ' ದಲ್ಲಿ.")],
-        [L("Key figures", "ಮುಖ್ಯ ಅಂಕಿಗಳು"), L("Linked cases, days since the last FIR, associates and prior counts.", "ಸಂಬಂಧಿತ ಪ್ರಕರಣ, ಕೊನೆಯ FIR ನಿಂದ ದಿನ, ಸಹಚರರು, ಹಿಂದಿನ ಪ್ರಕರಣ.")],
-        [L("Numbered sections", "ಸಂಖ್ಯೆಯ ವಿಭಾಗಗಳು"), L("Record details, why this risk score, how they operate, recommended next steps, known associates, similar past cases.", "ದಾಖಲೆ ವಿವರ, ಏಕೆ ಈ ಅಂಕ, ಕಾರ್ಯವಿಧಾನ, ಮುಂದಿನ ಹೆಜ್ಜೆ, ಸಹಚರರು, ಹೋಲುವ ಪ್ರಕರಣಗಳು.")],
-        [L("Actions", "ಕ್ರಮಗಳು"), L("Show in Brain, Ask Antar, Map, and Watchlist. A watchlist request needs a supervising officer's approval.", "ಬ್ರೈನ್‌ನಲ್ಲಿ, Antar ಕೇಳಿ, ನಕ್ಷೆ, ವೀಕ್ಷಣಾ ಪಟ್ಟಿ. ವೀಕ್ಷಣಾ ಪಟ್ಟಿಗೆ ಮೇಲ್ವಿಚಾರಕರ ಅನುಮೋದನೆ ಬೇಕು.")],
-        [L("Identity hypotheses", "ಗುರುತಿನ ಊಹೆಗಳು"), L("When two records may be the same person, an Inspector or above can confirm or reject it.", "ಎರಡು ದಾಖಲೆ ಒಂದೇ ವ್ಯಕ್ತಿ ಇರಬಹುದಾದಾಗ, ಇನ್ಸ್‌ಪೆಕ್ಟರ್ ಅಥವಾ ಮೇಲಿನವರು ದೃಢೀಕರಿಸಬಹುದು ಅಥವಾ ತಿರಸ್ಕರಿಸಬಹುದು.")],
+      { h: L("People · the record", "ವ್ಯಕ್ತಿಗಳು · ದಾಖಲೆ"), items: [
+        [L("Risk score", "ಅಪಾಯ ಅಂಕ"), L("Out of 100: how recent, how frequent and how serious their cases are, and their links to others. Why this risk score shows each part.", "100 ರಲ್ಲಿ: ಪ್ರಕರಣಗಳು ಎಷ್ಟು ಇತ್ತೀಚಿನವು, ಎಷ್ಟು ಬಾರಿ, ಎಷ್ಟು ಗಂಭೀರ, ಮತ್ತು ಇತರರೊಂದಿಗಿನ ಸಂಪರ್ಕ. ಪ್ರತಿ ಭಾಗ “ಏಕೆ ಈ ಅಂಕ” ದಲ್ಲಿ.")],
+        [L("What is inside", "ಒಳಗೆ ಏನಿದೆ"), L("Record details, how they operate (MO), the FIRs naming them, known associates, accounts they hold in the money trail, similar past cases and recommended next steps.", "ದಾಖಲೆ ವಿವರ, ಕಾರ್ಯವಿಧಾನ (MO), ಅವರನ್ನು ಹೆಸರಿಸುವ FIR ಗಳು, ಸಹಚರರು, ಹಣದ ಜಾಡಿನಲ್ಲಿ ಅವರ ಖಾತೆಗಳು, ಹೋಲುವ ಹಿಂದಿನ ಪ್ರಕರಣಗಳು, ಮುಂದಿನ ಹೆಜ್ಜೆಗಳು.")],
+        [L("Actions", "ಕ್ರಮಗಳು"), L("Show in Brain, Ask Antar, Map. Request watchlist goes to a supervising officer, and nothing is watched until they approve.", "ಬ್ರೈನ್‌ನಲ್ಲಿ ತೋರಿಸಿ, ಅಂತರ್‌ಗೆ ಕೇಳಿ, ನಕ್ಷೆ. ವೀಕ್ಷಣಾ ಪಟ್ಟಿ ವಿನಂತಿ ಮೇಲ್ವಿಚಾರಕರಿಗೆ ಹೋಗುತ್ತದೆ; ಅವರು ಅನುಮೋದಿಸುವವರೆಗೆ ಏನೂ ವೀಕ್ಷಣೆಯಲ್ಲಿಲ್ಲ.")],
+        [L("Same person?", "ಒಂದೇ ವ್ಯಕ್ತಿಯೇ?"), L("When two records may be one person, it is shown as a guess. An Inspector or above confirms or rejects it.", "ಎರಡು ದಾಖಲೆಗಳು ಒಬ್ಬರೇ ಇರಬಹುದಾದಾಗ ಊಹೆಯಾಗಿ ತೋರಿಸಲಾಗುತ್ತದೆ. ಇನ್ಸ್‌ಪೆಕ್ಟರ್ ಅಥವಾ ಮೇಲಿನವರು ದೃಢೀಕರಿಸುತ್ತಾರೆ ಅಥವಾ ತಿರಸ್ಕರಿಸುತ್ತಾರೆ.")],
       ] },
-      { h: L("Open-source checks (OSINT)", "ಮುಕ್ತ ಮೂಲ ಪರಿಶೀಲನೆ (OSINT)"), items: [
-        [L("What you can check", "ಏನನ್ನು ಪರಿಶೀಲಿಸಬಹುದು"), L("A phone, UPI ID, vehicle number, bank account or IFSC, IMEI, website, email, username or name. Only the identifier leaves Antar.", "ಫೋನ್, UPI, ವಾಹನ ಸಂಖ್ಯೆ, ಬ್ಯಾಂಕ್ ಖಾತೆ/IFSC, IMEI, ವೆಬ್‌ಸೈಟ್, ಇಮೇಲ್, ಬಳಕೆದಾರ ಹೆಸರು ಅಥವಾ ಹೆಸರು. ಗುರುತು ಮಾತ್ರ ಹೊರಹೋಗುತ್ತದೆ.")],
-        [L("Only real mentions", "ನೈಜ ಉಲ್ಲೇಖಗಳು ಮಾತ್ರ"), L("A page is kept only if it actually contains what you searched. Everything found is unverified.", "ನೀವು ಹುಡುಕಿದ್ದನ್ನು ನಿಜವಾಗಿ ಹೊಂದಿರುವ ಪುಟ ಮಾತ್ರ. ಸಿಕ್ಕಿದ್ದೆಲ್ಲವೂ ಪರಿಶೀಲಿಸಿಲ್ಲ.")],
-        [L("Checks and notices", "ಪರಿಶೀಲನೆ ಮತ್ತು ನೋಟಿಸ್"), L("Live checks (IFSC branch, website age, IMEI), the official portals to check next, and a drafted notice to whoever holds the records.", "ನೇರ ಪರಿಶೀಲನೆ, ಮುಂದಿನ ಅಧಿಕೃತ ಪೋರ್ಟಲ್‌ಗಳು, ಮತ್ತು ದಾಖಲೆ ಹೊಂದಿರುವವರಿಗೆ ಕರಡು ನೋಟಿಸ್.")],
+      { h: L("Money trail", "ಹಣದ ಜಾಡು"), items: [
+        [L("What it shows", "ಏನು ತೋರಿಸುತ್ತದೆ"), L("Money from a complainant's account through the UPI IDs named in FIRs to where it ended up.", "ದೂರುದಾರರ ಖಾತೆಯಿಂದ FIR ಗಳಲ್ಲಿ ಹೆಸರಿಸಿದ UPI ಮೂಲಕ ಹಣ ಎಲ್ಲಿಗೆ ಹೋಯಿತು.")],
+        [L("Accounts worth a look", "ಗಮನಿಸಬೇಕಾದ ಖಾತೆಗಳು"), L("Most warning signs first: collects from many accounts, passes money on within 48 hours, amounts just under Rs 50,000, named in several FIRs, cash taken out.", "ಹೆಚ್ಚು ಎಚ್ಚರಿಕೆ ಸೂಚನೆ ಮೊದಲು: ಹಲವು ಖಾತೆಗಳಿಂದ ಸಂಗ್ರಹ, 48 ಗಂಟೆಯೊಳಗೆ ಮುಂದೆ ಕಳುಹಿಸುವುದು, Rs 50,000 ಕ್ಕಿಂತ ಸ್ವಲ್ಪ ಕಡಿಮೆ ಮೊತ್ತ, ಹಲವು FIR ಗಳಲ್ಲಿ ಹೆಸರು, ನಗದು ಹಿಂಪಡೆತ.")],
+        [L("The graph", "ಗ್ರಾಫ್"), L("Arrows go from payer to payee; thicker means more money. Show 1, 2 or 3 steps out, and click an account to read it.", "ಬಾಣಗಳು ಪಾವತಿದಾರರಿಂದ ಸ್ವೀಕರಿಸುವವರಿಗೆ; ದಪ್ಪ ಎಂದರೆ ಹೆಚ್ಚು ಹಣ. 1, 2 ಅಥವಾ 3 ಹಂತ ತೋರಿಸಿ, ಓದಲು ಖಾತೆ ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+        [L("The account", "ಖಾತೆ"), L("Money in and out, every FIR naming it, and a CSV export for a bank or financial-intelligence request.", "ಒಳಬಂದ ಮತ್ತು ಹೊರಹೋದ ಹಣ, ಅದನ್ನು ಹೆಸರಿಸುವ ಪ್ರತಿ FIR, ಮತ್ತು ಬ್ಯಾಂಕ್ ವಿನಂತಿಗೆ CSV ರಫ್ತು.")],
+      ] },
+      { h: L("Social insights", "ಸಾಮಾಜಿಕ ಒಳನೋಟ"), items: [
+        [L("What it shows", "ಏನು ತೋರಿಸುತ್ತದೆ"), L("How crime in Karnataka's 30 districts lines up with things like urbanisation, education, child marriage and alcohol use (Census 2011, NFHS-5), and who the victims are by sex, age and occupation.", "30 ಜಿಲ್ಲೆಗಳ ಅಪರಾಧ ನಗರೀಕರಣ, ಶಿಕ್ಷಣ, ಬಾಲ್ಯವಿವಾಹ, ಮದ್ಯಪಾನ ಮುಂತಾದವುಗಳೊಂದಿಗೆ ಹೇಗೆ ಹೊಂದುತ್ತದೆ (ಜನಗಣತಿ 2011, NFHS-5), ಮತ್ತು ಸಂತ್ರಸ್ತರು ಲಿಂಗ, ವಯಸ್ಸು, ಉದ್ಯೋಗದ ಪ್ರಕಾರ.")],
+        [L("Reading a link", "ಸಂಬಂಧ ಓದುವುದು"), L("ρ runs from -1 to +1: further from 0 is stronger. p below 0.05 means it is unlikely to be chance. \"Urbanisation held constant\" means it is not only a city effect.", "ρ -1 ರಿಂದ +1: 0 ಯಿಂದ ದೂರ ಎಂದರೆ ಬಲವಾದದ್ದು. p 0.05 ಕ್ಕಿಂತ ಕಡಿಮೆ ಎಂದರೆ ಆಕಸ್ಮಿಕವಲ್ಲ. “ನಗರೀಕರಣ ಸ್ಥಿರ” ಎಂದರೆ ಕೇವಲ ನಗರದ ಪರಿಣಾಮವಲ್ಲ.")],
+        [L("Districts, not people", "ಜಿಲ್ಲೆಗಳು, ವ್ಯಕ್ತಿಗಳಲ್ಲ"), L("A link between districts says nothing about anyone living in them, and is never a reason to target, stop or suspect anyone.", "ಜಿಲ್ಲೆಗಳ ನಡುವಿನ ಸಂಬಂಧ ಅಲ್ಲಿ ವಾಸಿಸುವ ಯಾರ ಬಗ್ಗೆಯೂ ಏನನ್ನೂ ಹೇಳುವುದಿಲ್ಲ; ಯಾರನ್ನೂ ಗುರಿಯಾಗಿಸಲು, ತಡೆಯಲು ಅಥವಾ ಶಂಕಿಸಲು ಕಾರಣವಲ್ಲ.")],
+      ] },
+      { h: L("OSINT · open-source checks", "OSINT · ಮುಕ್ತ ಮೂಲ ಪರಿಶೀಲನೆ"), items: [
+        [L("Where", "ಎಲ್ಲಿ"), L("The small grey OSINT at the top right, for Inspector and above. Read the card, then I understand · Start.", "ಮೇಲಿನ ಬಲದಲ್ಲಿ ಸಣ್ಣ ಬೂದು OSINT, ಇನ್ಸ್‌ಪೆಕ್ಟರ್ ಮತ್ತು ಮೇಲಿನವರಿಗೆ. ಕಾರ್ಡ್ ಓದಿ, ನಂತರ “ಅರ್ಥವಾಯಿತು · ಪ್ರಾರಂಭಿಸಿ”.")],
+        [L("What you can check", "ಏನನ್ನು ಪರಿಶೀಲಿಸಬಹುದು"), L("A phone, UPI ID, vehicle number, bank account or IFSC, IMEI, website, email, username or name. Narrow it to Open web, News, Social media, Government, Marketplace or Court and legal pages.", "ಫೋನ್, UPI, ವಾಹನ ಸಂಖ್ಯೆ, ಬ್ಯಾಂಕ್ ಖಾತೆ/IFSC, IMEI, ವೆಬ್‌ಸೈಟ್, ಇಮೇಲ್, ಬಳಕೆದಾರ ಹೆಸರು ಅಥವಾ ಹೆಸರು. ಮುಕ್ತ ವೆಬ್, ಸುದ್ದಿ, ಸಾಮಾಜಿಕ ಮಾಧ್ಯಮ, ಸರ್ಕಾರ, ಮಾರುಕಟ್ಟೆ ಅಥವಾ ನ್ಯಾಯಾಲಯ ಪುಟಗಳಿಗೆ ಸೀಮಿತಗೊಳಿಸಿ.")],
+        [L("What comes back", "ಏನು ಸಿಗುತ್ತದೆ"), L("What the identifier is, only pages that really contain it, live registry checks (IFSC branch, website age, IMEI), the official portals to check next and a drafted notice. Copy it all as a lead sheet.", "ಗುರುತು ಏನು, ಅದನ್ನು ನಿಜವಾಗಿ ಹೊಂದಿರುವ ಪುಟಗಳು ಮಾತ್ರ, ನೇರ ನೋಂದಣಿ ಪರಿಶೀಲನೆ (IFSC ಶಾಖೆ, ವೆಬ್‌ಸೈಟ್ ವಯಸ್ಸು, IMEI), ಮುಂದಿನ ಅಧಿಕೃತ ಪೋರ್ಟಲ್‌ಗಳು ಮತ್ತು ಕರಡು ನೋಟಿಸ್. ಎಲ್ಲವನ್ನೂ ಸುಳಿವು ಹಾಳೆಯಾಗಿ ನಕಲಿಸಿ.")],
+        [L("Kept safe", "ಸುರಕ್ಷಿತ"), L("Only the identifier you type leaves Antar; no FIR is read. Everything found is unverified. Each search is logged against you, the identifier kept only as a fingerprint.", "ನೀವು ಟೈಪ್ ಮಾಡುವ ಗುರುತು ಮಾತ್ರ ಹೊರಹೋಗುತ್ತದೆ; ಯಾವುದೇ FIR ಓದುವುದಿಲ್ಲ. ಸಿಕ್ಕಿದ್ದೆಲ್ಲವೂ ಪರಿಶೀಲಿಸದ್ದು. ಪ್ರತಿ ಹುಡುಕಾಟ ನಿಮ್ಮ ಹೆಸರಿನಲ್ಲಿ ದಾಖಲಾಗುತ್ತದೆ, ಗುರುತನ್ನು ಬೆರಳಚ್ಚಾಗಿ ಮಾತ್ರ ಇಡಲಾಗುತ್ತದೆ.")],
       ] },
     ],
     examples: { en: ["Yelappa", "KA-05-EZ-7878"], kn: ["Yelappa", "KA-05-EZ-7878"] },
+    tip: L("On Money trail and Social insights, the ? button opens that view's own longer guide.", "ಹಣದ ಜಾಡು ಮತ್ತು ಸಾಮಾಜಿಕ ಒಳನೋಟದಲ್ಲಿ, ? ಗುಂಡಿ ಆ ನೋಟದ ವಿವರವಾದ ಮಾರ್ಗದರ್ಶಿ ತೆರೆಯುತ್ತದೆ."),
   },
-
   trace: {
     title: L("Observability & Trace Guide", "ವೀಕ್ಷಣೆ ಮತ್ತು ಜಾಡು ಮಾರ್ಗದರ್ಶಿ"),
     lead: L("Every question asked in Antar, the query that ran, the FIR rows it read and the checks it passed. For supervisors and auditors checking an answer before it goes into a case file.",
