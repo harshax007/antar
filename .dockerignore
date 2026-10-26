@@ -84,7 +84,10 @@ catalyst-debug.log
 
 # -- Not part of the running service --------------------------------------------------
 # A second copy of the registry and its vectors (1.5 GB). The image ships main.db.gz only.
-data/
+data/*
+# ...except the district indicators app/services/social_indicators.py reads (Social view).
+!data/district_indicators.csv
+!data/district_indicators_meta.csv
 # Officer accounts and local sign-in notes. Set ANTAR_USERS in the Catalyst console
 # instead - nothing in the image should be a credential.
 auth_users.json

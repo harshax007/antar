@@ -1,9 +1,13 @@
 "use client";
 // The Money trail lives in Search now (/search?view=money). This keeps old links working.
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function MoneyRedirect() {
+  return <Suspense fallback={null}><Redirect /></Suspense>;
+}
+
+function Redirect() {
   const router = useRouter();
   const sp = useSearchParams();
   useEffect(() => {
