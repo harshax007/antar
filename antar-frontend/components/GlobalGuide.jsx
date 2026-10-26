@@ -59,39 +59,43 @@ const GUIDES = {
 
   predict: {
     title: L("Predict Guide", "ಮುನ್ಸೂಚನೆ ಮಾರ್ಗದರ್ಶಿ"),
-    lead: L("Where crime is likely to rise in the next 7 days, area by area, so patrols and bandobast can be planned before the cases come in.",
-            "ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಎಲ್ಲಿ ಅಪರಾಧ ಹೆಚ್ಚಾಗಬಹುದು, ಪ್ರದೇಶವಾರು - ಪ್ರಕರಣಗಳು ಬರುವ ಮೊದಲೇ ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ಯೋಜಿಸಲು."),
+    lead: L("Where crime is likely to rise in the next 7 days, area by area, so patrols and bandobast can be planned before the cases come in. Read it top to bottom: the week's plan first, then the forecast behind it.",
+            "ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಎಲ್ಲಿ ಅಪರಾಧ ಹೆಚ್ಚಾಗಬಹುದು, ಪ್ರದೇಶವಾರು - ಪ್ರಕರಣಗಳು ಬರುವ ಮೊದಲೇ ಗಸ್ತು ಮತ್ತು ಬಂದೋಬಸ್ತ್ ಯೋಜಿಸಲು. ಮೇಲಿನಿಂದ ಕೆಳಗೆ ಓದಿ: ಮೊದಲು ವಾರದ ಯೋಜನೆ, ನಂತರ ಅದರ ಹಿಂದಿನ ಮುನ್ಸೂಚನೆ."),
     blocks: [
       { h: L("The top of the page", "ಪುಟದ ಮೇಲ್ಭಾಗ"), items: [
-        [L("See this week's plan", "ಈ ವಾರದ ಯೋಜನೆ"), L("Jumps to 01, the actions for this week.", "01 ಕ್ಕೆ, ಈ ವಾರದ ಕ್ರಮಗಳಿಗೆ ಹೋಗುತ್ತದೆ.")],
-        [L("The line under it", "ಅದರ ಕೆಳಗಿನ ಸಾಲು"), L("When it was assessed, how many areas, and how often past ranges held. Click the last to see the track record.", "ಯಾವಾಗ ಮೌಲ್ಯಮಾಪನ, ಎಷ್ಟು ಪ್ರದೇಶಗಳು, ಮತ್ತು ಹಿಂದಿನ ವ್ಯಾಪ್ತಿಗಳು ಎಷ್ಟು ಬಾರಿ ಸರಿಯಾದವು. ದಾಖಲೆ ನೋಡಲು ಕೊನೆಯದನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ.")],
-        [L("The five figures", "ಐದು ಅಂಕಿಗಳು"), L("High-risk areas, above normal, reporting drops, active alerts and events in 3 weeks. Coloured means it needs a look; click one to go to it.", "ಹೆಚ್ಚು ಅಪಾಯ, ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು, ವರದಿ ಇಳಿಕೆ, ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆ, 3 ವಾರಗಳಲ್ಲಿ ಉತ್ಸವ. ಬಣ್ಣ ಇದ್ದರೆ ಗಮನಿಸಿ; ಹೋಗಲು ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+        [L("See this week's plan", "ಈ ವಾರದ ಯೋಜನೆ ನೋಡಿ"), L("Jumps to 01, the actions for this week. How it works opens this guide.", "01 ಕ್ಕೆ, ಈ ವಾರದ ಕ್ರಮಗಳಿಗೆ ಹೋಗುತ್ತದೆ. “ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ” ಈ ಮಾರ್ಗದರ್ಶಿಯನ್ನು ತೆರೆಯುತ್ತದೆ.")],
+        [L("The line under it", "ಅದರ ಕೆಳಗಿನ ಸಾಲು"), L("How many areas (and statewide units) are forecast, and “Range held in N% of tested weeks”: how often the real count fell inside the range on past weeks. Click it for the details.", "ಎಷ್ಟು ಪ್ರದೇಶಗಳು (ಮತ್ತು ರಾಜ್ಯಮಟ್ಟದ ಘಟಕಗಳು), ಮತ್ತು ಹಿಂದಿನ ವಾರಗಳಲ್ಲಿ ನಿಜವಾದ ಎಣಿಕೆ ವ್ಯಾಪ್ತಿಯೊಳಗೆ ಎಷ್ಟು ಬಾರಿ ಬಿತ್ತು. ವಿವರಕ್ಕೆ ಕ್ಲಿಕ್ ಮಾಡಿ.")],
+        [L("The five figures", "ಐದು ಅಂಕಿಗಳು"), L("High-risk areas, Above normal, Reporting drops, Active alerts, Events in 3 weeks. Anything but zero needs a look: click it and the list below opens on just those.", "ಹೆಚ್ಚು ಅಪಾಯ, ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು, ವರದಿ ಇಳಿಕೆ, ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆ, 3 ವಾರಗಳಲ್ಲಿ ಉತ್ಸವ. ಸೊನ್ನೆ ಅಲ್ಲದ್ದನ್ನು ಗಮನಿಸಿ: ಕ್ಲಿಕ್ ಮಾಡಿದರೆ ಕೆಳಗಿನ ಪಟ್ಟಿ ಅವುಗಳನ್ನೇ ತೋರಿಸುತ್ತದೆ.")],
       ] },
       { h: L("01 · This week's plan", "01 · ಈ ವಾರದ ಯೋಜನೆ"), items: [
-        [L("One line per action", "ಪ್ರತಿ ಕ್ರಮಕ್ಕೆ ಒಂದು ಸಾಲು"), L("Strongest first: where to add patrols, which station to check, which event to plan for. Open a line for the reason and the stations.", "ಮುಖ್ಯವಾದದ್ದು ಮೊದಲು: ಎಲ್ಲಿ ಗಸ್ತು, ಯಾವ ಠಾಣೆ ಪರಿಶೀಲನೆ, ಯಾವ ಉತ್ಸವಕ್ಕೆ ಯೋಜನೆ. ಕಾರಣ ಮತ್ತು ಠಾಣೆಗಳಿಗೆ ಸಾಲು ತೆರೆಯಿರಿ.")],
-        [L("Copy for the briefing note", "ಬ್ರೀಫಿಂಗ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ"), L("Copies the whole week as plain text for a briefing.", "ಇಡೀ ವಾರವನ್ನು ಸರಳ ಪಠ್ಯವಾಗಿ ನಕಲಿಸುತ್ತದೆ.")],
+        [L("Up to four actions", "ನಾಲ್ಕು ಕ್ರಮಗಳವರೆಗೆ"), L("Strongest first: where to add beat visits, which station to check for a drop in reporting, which event to plan bandobast for. Open a line for the reason and the stations.", "ಮುಖ್ಯವಾದದ್ದು ಮೊದಲು: ಎಲ್ಲಿ ಹೆಚ್ಚು ಬೀಟ್ ಭೇಟಿ, ವರದಿ ಇಳಿಕೆಗೆ ಯಾವ ಠಾಣೆ ಪರಿಶೀಲಿಸಬೇಕು, ಯಾವ ಉತ್ಸವಕ್ಕೆ ಬಂದೋಬಸ್ತ್. ಕಾರಣ ಮತ್ತು ಠಾಣೆಗಳಿಗೆ ಸಾಲು ತೆರೆಯಿರಿ.")],
+        [L("Copy for the briefing note", "ಬ್ರೀಫಿಂಗ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ"), L("The whole week as plain text, ready to paste into a roll-call or briefing note.", "ಇಡೀ ವಾರ ಸರಳ ಪಠ್ಯವಾಗಿ, ರೋಲ್-ಕಾಲ್ ಅಥವಾ ಬ್ರೀಫಿಂಗ್ ಟಿಪ್ಪಣಿಗೆ ಅಂಟಿಸಲು ಸಿದ್ಧ.")],
       ] },
-      { h: L("02 · Forecast · 03 · Alerts", "02 · ಮುನ್ಸೂಚನೆ · 03 · ಎಚ್ಚರಿಕೆಗಳು"), items: [
-        [L("Forecast cards", "ಮುನ್ಸೂಚನೆ ಕಾರ್ಡ್‌ಗಳು"), L("Each card is an area: the crime most likely to move, how far from normal, and the cases expected in the next 7 days.", "ಪ್ರತಿ ಕಾರ್ಡ್ ಒಂದು ಪ್ರದೇಶ: ಹೆಚ್ಚು ಬದಲಾಗಬಹುದಾದ ಅಪರಾಧ, ಸಾಮಾನ್ಯದಿಂದ ಎಷ್ಟು ದೂರ, ಮುಂದಿನ 7 ದಿನಗಳ ನಿರೀಕ್ಷಿತ ಪ್ರಕರಣಗಳು.")],
-        [L("Filters and search", "ಫಿಲ್ಟರ್ ಮತ್ತು ಹುಡುಕಾಟ"), L("Needs attention, High risk, Above normal, Reporting drops, Event this week, High confidence; or type an area or crime.", "ಗಮನ ಬೇಕು, ಹೆಚ್ಚು ಅಪಾಯ, ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು, ವರದಿ ಇಳಿಕೆ, ಈ ವಾರ ಉತ್ಸವ, ಹೆಚ್ಚು ವಿಶ್ವಾಸ; ಅಥವಾ ಪ್ರದೇಶ/ಅಪರಾಧ ಟೈಪ್ ಮಾಡಿ.")],
+      { h: L("02 · Forecast for the next 7 days", "02 · ಮುಂದಿನ 7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ"), items: [
+        [L("One card per area", "ಪ್ರತಿ ಪ್ರದೇಶಕ್ಕೆ ಒಂದು ಕಾರ್ಡ್"), L("The crime most likely to move there, the cases expected in the next 7 days as a range, rise or drop, and how confident the forecast is.", "ಅಲ್ಲಿ ಹೆಚ್ಚು ಬದಲಾಗಬಹುದಾದ ಅಪರಾಧ, ಮುಂದಿನ 7 ದಿನಗಳ ನಿರೀಕ್ಷಿತ ಪ್ರಕರಣಗಳ ವ್ಯಾಪ್ತಿ, ಏರಿಕೆ ಅಥವಾ ಇಳಿಕೆ, ಮತ್ತು ಮುನ್ಸೂಚನೆಯ ವಿಶ್ವಾಸ.")],
+        [L("Filters", "ಫಿಲ್ಟರ್‌ಗಳು"), L("Opens on Needs attention (high risk, above normal, a reporting drop or an event). Also: High risk, All areas, Above normal, Reporting drops, Event this week, High confidence. Or find an area or crime type by name.", "“ಗಮನ ಬೇಕು” ಮೇಲೆ ತೆರೆಯುತ್ತದೆ (ಹೆಚ್ಚು ಅಪಾಯ, ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು, ವರದಿ ಇಳಿಕೆ ಅಥವಾ ಉತ್ಸವ). ಜೊತೆಗೆ: ಹೆಚ್ಚು ಅಪಾಯ, ಎಲ್ಲಾ ಪ್ರದೇಶ, ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು, ವರದಿ ಇಳಿಕೆ, ಈ ವಾರ ಉತ್ಸವ, ಹೆಚ್ಚು ವಿಶ್ವಾಸ. ಅಥವಾ ಪ್ರದೇಶ/ಅಪರಾಧವನ್ನು ಹೆಸರಿನಿಂದ ಹುಡುಕಿ.")],
+        [L("Above normal", "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು"), L("The unusual-activity score is 2 or more: recent cases sit well above the area's usual level. 2 is unusual, 4 is rare.", "ಅಸಾಮಾನ್ಯತೆ ಅಂಕ 2 ಅಥವಾ ಹೆಚ್ಚು: ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ತುಂಬಾ ಹೆಚ್ಚು. 2 ಅಸಾಮಾನ್ಯ, 4 ಅಪರೂಪ.")],
         [L("Reporting drop", "ವರದಿ ಇಳಿಕೆ"), L("Far fewer FIRs than usual. Often slower registration, not less crime: check the station.", "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ತುಂಬಾ ಕಡಿಮೆ FIR. ಹೆಚ್ಚಾಗಿ ತಡವಾದ ದಾಖಲಾತಿ, ಕಡಿಮೆ ಅಪರಾಧ ಅಲ್ಲ: ಠಾಣೆ ಪರಿಶೀಲಿಸಿ.")],
-        [L("Active alerts", "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು"), L("Recent cases that broke an area's usual pattern. Pick one to see why.", "ಪ್ರದೇಶದ ಸಾಮಾನ್ಯ ಮಾದರಿ ಮುರಿದ ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು. ಕಾರಣಕ್ಕೆ ಒಂದನ್ನು ಆರಿಸಿ.")],
-        [L("Statewide units", "ರಾಜ್ಯಮಟ್ಟದ ಘಟಕಗಳು"), L("Units like CID or Railways register FIRs statewide. They are listed apart, not ranked with areas.", "CID, ರೈಲ್ವೆ ಮುಂತಾದ ಘಟಕಗಳು ರಾಜ್ಯಾದ್ಯಂತ FIR ದಾಖಲಿಸುತ್ತವೆ. ಪ್ರತ್ಯೇಕವಾಗಿ ಪಟ್ಟಿ, ಪ್ರದೇಶಗಳೊಂದಿಗೆ ಶ್ರೇಣಿ ಇಲ್ಲ.")],
+        [L("Statewide units", "ರಾಜ್ಯಮಟ್ಟದ ಘಟಕಗಳು"), L("Units like CID or Railways register FIRs across the state. They are listed apart, not ranked with areas.", "CID, ರೈಲ್ವೆ ಮುಂತಾದ ಘಟಕಗಳು ರಾಜ್ಯಾದ್ಯಂತ FIR ದಾಖಲಿಸುತ್ತವೆ. ಪ್ರತ್ಯೇಕವಾಗಿ ಪಟ್ಟಿ, ಪ್ರದೇಶಗಳೊಂದಿಗೆ ಶ್ರೇಣಿ ಇಲ್ಲ.")],
       ] },
       { h: L("Opening a forecast", "ಮುನ್ಸೂಚನೆ ತೆರೆಯುವುದು"), items: [
-        [L("Why this forecast", "ಏಕೆ ಈ ಮುನ್ಸೂಚನೆ"), L("The expected range, why the confidence is what it is, and what the model saw. Stations to watch and the recommended action sit on the right.", "ನಿರೀಕ್ಷಿತ ವ್ಯಾಪ್ತಿ, ವಿಶ್ವಾಸದ ಕಾರಣ, ಮಾದರಿ ಕಂಡದ್ದು. ಗಮನಿಸಬೇಕಾದ ಠಾಣೆಗಳು ಮತ್ತು ಶಿಫಾರಸು ಬಲಭಾಗದಲ್ಲಿ.")],
-        [L("Mark as reviewed", "ಪರಿಶೀಲಿಸಲಾಗಿದೆ"), L("Records that you have looked at it. Ask Antar sends it to Chat.", "ನೀವು ನೋಡಿದ್ದೀರಿ ಎಂದು ದಾಖಲಿಸುತ್ತದೆ. Ask Antar ಅದನ್ನು ಚಾಟ್‌ಗೆ ಕಳುಹಿಸುತ್ತದೆ.")],
-        [L("Quiet tools", "ಇತರ ಸಾಧನಗಳು"), L("How this was worked out (the reasoning graph), What if (an event's effect), Audit trail, Open on map.", "ಹೇಗೆ ಲೆಕ್ಕ ಹಾಕಲಾಯಿತು, ಹೀಗಾದರೆ (ಉತ್ಸವದ ಪರಿಣಾಮ), ಆಡಿಟ್ ಜಾಡು, ನಕ್ಷೆಯಲ್ಲಿ ತೆರೆಯಿರಿ.")],
+        [L("Why this forecast", "ಏಕೆ ಈ ಮುನ್ಸೂಚನೆ"), L("Expected in the next 7 days, what the model saw, the case records used, range reliability, direction and any seasonal effect. Show the case records behind this lists the FIRs.", "ಮುಂದಿನ 7 ದಿನಗಳ ನಿರೀಕ್ಷೆ, ಮಾದರಿ ಕಂಡದ್ದು, ಬಳಸಿದ ಪ್ರಕರಣ ದಾಖಲೆಗಳು, ವ್ಯಾಪ್ತಿಯ ವಿಶ್ವಾಸಾರ್ಹತೆ, ದಿಕ್ಕು ಮತ್ತು ಋತುಮಾನ ಪರಿಣಾಮ. ಹಿಂದಿನ ಪ್ರಕರಣ ದಾಖಲೆಗಳನ್ನು ತೆರೆದರೆ FIR ಗಳು ಕಾಣುತ್ತವೆ.")],
+        [L("Recommended action", "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ"), L("What to do this week and which stations to put it on. Mark as reviewed records that you have read it; Ask Antar takes the question to Chat.", "ಈ ವಾರ ಏನು ಮಾಡಬೇಕು ಮತ್ತು ಯಾವ ಠಾಣೆಗಳಲ್ಲಿ. “ಪರಿಶೀಲಿಸಲಾಗಿದೆ” ನೀವು ಓದಿದ್ದನ್ನು ದಾಖಲಿಸುತ್ತದೆ; “ಅಂತರ್‌ಗೆ ಕೇಳಿ” ಪ್ರಶ್ನೆಯನ್ನು ಚಾಟ್‌ಗೆ ಒಯ್ಯುತ್ತದೆ.")],
+        [L("Quiet tools", "ಇತರ ಸಾಧನಗಳು"), L("How this was worked out (step by step), What if (a second range if the area's measured alert carries on; only where there is one), Audit trail, Open on map.", "ಹೇಗೆ ಲೆಕ್ಕ ಹಾಕಲಾಯಿತು (ಹಂತ ಹಂತವಾಗಿ), ಹೀಗಾದರೆ (ಅಳತೆಯಾದ ಎಚ್ಚರಿಕೆ ಮುಂದುವರಿದರೆ ಇನ್ನೊಂದು ವ್ಯಾಪ್ತಿ; ಇದ್ದಲ್ಲಿ ಮಾತ್ರ), ಆಡಿಟ್ ಜಾಡು, ನಕ್ಷೆಯಲ್ಲಿ ತೆರೆಯಿರಿ.")],
       ] },
-      { h: L("04 · Events and the fold-outs", "04 · ಉತ್ಸವಗಳು ಮತ್ತು ಇತರೆ"), items: [
-        [L("Events ahead", "ಮುಂಬರುವ ಉತ್ಸವಗಳು"), L("Festivals in the next 3 weeks and what each did to registered cases in past years. Copy a bandobast note from here.", "ಮುಂದಿನ 3 ವಾರಗಳ ಉತ್ಸವಗಳು ಮತ್ತು ಹಿಂದಿನ ವರ್ಷಗಳಲ್ಲಿ ಅವುಗಳ ಪರಿಣಾಮ. ಇಲ್ಲಿಂದ ಬಂದೋಬಸ್ತ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ.")],
-        [L("Investigation leads", "ತನಿಖಾ ಸುಳಿವುಗಳು"), L("FIRs that share an accused, vehicle, phone or UPI ID. Opens on request.", "ಆರೋಪಿ, ವಾಹನ, ಫೋನ್ ಅಥವಾ UPI ಹಂಚಿಕೊಳ್ಳುವ FIR ಗಳು. ಕೇಳಿದಾಗ ತೆರೆಯುತ್ತದೆ.")],
-        [L("How reliable is this forecast", "ಮುನ್ಸೂಚನೆ ಎಷ್ಟು ನಂಬಲರ್ಹ"), L("How often the real count fell inside the range on past weeks, the engine's confidence and what it is built on.", "ಹಿಂದಿನ ವಾರಗಳಲ್ಲಿ ನಿಜವಾದ ಎಣಿಕೆ ವ್ಯಾಪ್ತಿಯೊಳಗೆ ಎಷ್ಟು ಬಾರಿ ಬಿತ್ತು, ಎಂಜಿನ್ ವಿಶ್ವಾಸ ಮತ್ತು ಆಧಾರ.")],
+      { h: L("03 · Active alerts", "03 · ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು"), items: [
+        [L("Cases that broke a pattern", "ಮಾದರಿ ಮುರಿದ ಪ್ರಕರಣಗಳು"), L("Recent cases well above an area's usual level for that crime, with the unusual-activity score. Pick one to see why.", "ಆ ಅಪರಾಧಕ್ಕೆ ಪ್ರದೇಶದ ಸಾಮಾನ್ಯ ಮಟ್ಟಕ್ಕಿಂತ ತುಂಬಾ ಹೆಚ್ಚಿನ ಇತ್ತೀಚಿನ ಪ್ರಕರಣಗಳು, ಅಸಾಮಾನ್ಯತೆ ಅಂಕದೊಂದಿಗೆ. ಕಾರಣಕ್ಕೆ ಒಂದನ್ನು ಆರಿಸಿ.")],
+      ] },
+      { h: L("04 · Events ahead", "04 · ಮುಂಬರುವ ಉತ್ಸವಗಳು"), items: [
+        [L("Festivals in the next 3 weeks", "ಮುಂದಿನ 3 ವಾರಗಳ ಉತ್ಸವಗಳು"), L("What each did to registered cases in past years, crime by crime. Copy a bandobast note, or Ask Antar about past years.", "ಹಿಂದಿನ ವರ್ಷಗಳಲ್ಲಿ ಪ್ರತಿಯೊಂದು ದಾಖಲಾದ ಪ್ರಕರಣಗಳ ಮೇಲೆ ಬೀರಿದ ಪರಿಣಾಮ, ಅಪರಾಧವಾರು. ಬಂದೋಬಸ್ತ್ ಟಿಪ್ಪಣಿ ನಕಲಿಸಿ, ಅಥವಾ ಹಿಂದಿನ ವರ್ಷಗಳ ಬಗ್ಗೆ ಅಂತರ್‌ಗೆ ಕೇಳಿ.")],
+      ] },
+      { h: L("At the bottom, opened on request", "ಕೆಳಭಾಗ, ಕೇಳಿದಾಗ ತೆರೆಯುವುದು"), items: [
+        [L("Investigation leads", "ತನಿಖಾ ಸುಳಿವುಗಳು"), L("For the investigating officer. Pick a district in the forecast, then Look for links: possible links between accused, each tested against how many other pairs in the state would look as linked by chance. Confirm or reject each one.", "ತನಿಖಾಧಿಕಾರಿಗೆ. ಮುನ್ಸೂಚನೆಯಲ್ಲಿ ಜಿಲ್ಲೆ ಆರಿಸಿ, ನಂತರ “ಸಂಪರ್ಕ ಹುಡುಕಿ”: ಆರೋಪಿಗಳ ನಡುವಿನ ಸಾಧ್ಯ ಸಂಪರ್ಕಗಳು, ಪ್ರತಿಯೊಂದನ್ನೂ ಆಕಸ್ಮಿಕ ಹೋಲಿಕೆಯ ವಿರುದ್ಧ ಪರೀಕ್ಷಿಸಲಾಗಿದೆ. ಪ್ರತಿಯೊಂದನ್ನು ದೃಢೀಕರಿಸಿ ಅಥವಾ ತಿರಸ್ಕರಿಸಿ.")],
+        [L("How reliable is this forecast", "ಮುನ್ಸೂಚನೆ ಎಷ್ಟು ವಿಶ್ವಾಸಾರ್ಹ"), L("FIRs registered each month (the history it is measured against), how often past ranges held, and the model card: what it is built on and what it is for.", "ಪ್ರತಿ ತಿಂಗಳು ದಾಖಲಾದ FIR (ಹೋಲಿಸುವ ಇತಿಹಾಸ), ಹಿಂದಿನ ವ್ಯಾಪ್ತಿಗಳು ಎಷ್ಟು ಬಾರಿ ಸರಿಯಾದವು, ಮತ್ತು ಮಾದರಿ ಕಾರ್ಡ್: ಆಧಾರ ಮತ್ತು ಉದ್ದೇಶ.")],
       ] },
     ],
-    note: L("A forecast is an estimate to plan patrols with. It is not evidence and not a reason to act against any person.", "ಮುನ್ಸೂಚನೆ ಗಸ್ತು ಯೋಜನೆಗೆ ಅಂದಾಜು ಮಾತ್ರ. ಇದು ಸಾಕ್ಷ್ಯವಲ್ಲ, ಯಾವುದೇ ವ್ಯಕ್ತಿಯ ವಿರುದ್ಧ ಕ್ರಮಕ್ಕೆ ಕಾರಣವಲ್ಲ."),
+    note: L("A forecast is a range to plan patrols with: decision support, not a verdict. It is not evidence and never a reason to act against any person or group.", "ಮುನ್ಸೂಚನೆ ಗಸ್ತು ಯೋಜನೆಗೆ ಒಂದು ವ್ಯಾಪ್ತಿ: ನಿರ್ಧಾರಕ್ಕೆ ಸಹಾಯ, ತೀರ್ಪಲ್ಲ. ಇದು ಸಾಕ್ಷ್ಯವಲ್ಲ, ಯಾವುದೇ ವ್ಯಕ್ತಿ ಅಥವಾ ಗುಂಪಿನ ವಿರುದ್ಧ ಕ್ರಮಕ್ಕೆ ಕಾರಣವಲ್ಲ."),
   },
-
   brain: {
     title: L("Brain Guide", "ಬ್ರೈನ್ ಮಾರ್ಗದರ್ಶಿ"),
     lead: L("FIRs drawn as dots, joined where they share an accused, vehicle, UPI ID or IP address. Below the graph, the data overview counts what is on screen.",

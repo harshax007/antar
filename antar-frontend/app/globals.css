@@ -3365,8 +3365,11 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
 .gd { display: grid; gap: 16px; }
 .gd-lead { margin: 0; max-width: 70ch; font-size: 14.5px; line-height: 1.55; color: rgba(255, 255, 255, 0.86); }
 .gd-blocks { display: grid; gap: 18px 28px; }
-.gd-cols { grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+/* Sections flow down columns, each kept whole. A grid sized every row by its tallest
+   section, so a short one beside a long one left a hole (the Predict guide was mostly gaps). */
+.gd-blocks.gd-cols { display: block; columns: 3 240px; column-gap: 28px; }
 .gd-block { min-width: 0; }
+.gd-cols > .gd-block { break-inside: avoid; page-break-inside: avoid; margin-bottom: 20px; }
 .gd-h {
   margin: 0 0 9px;
   font: 600 10.5px/1.2 'JetBrains Mono', monospace;
