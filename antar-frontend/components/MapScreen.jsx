@@ -870,12 +870,16 @@ export default function MapScreen() {
   }, [boot]);
   const [keyRoom, setKeyRoom] = useState(260);   // px of empty space left of the state, for the key
   // Opens on my district: the first fit goes straight to it (FitToKarnataka), no second flight.
-  const startBounds = useMemo(() => (geo && myGadm && !deepLinked && !openedMine.current ? gadmBounds(myGadm) : null),
+  // A link that names an area (Predict's "Open on map": ?zone=Bagalkot) opens on that area
+  // instead; before, it only stopped the map opening on mine and then showed the whole state.
+  const linkZone = sp?.get("zone") || sp?.get("district") || "";
+  const startGadm = linkZone ? (ZONE_TO_GADM_DISTRICT[linkZone] || linkZone) : (!deepLinked ? myGadm : null);
+  const startBounds = useMemo(() => (geo && startGadm && !openedMine.current ? gadmBounds(startGadm) : null),
     [geo]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (openedMine.current || !geo) return;
     openedMine.current = true;
-    if (startBounds) setSelectedDistrict(myGadm);
+    if (startBounds) setSelectedDistrict(startGadm);
   }, [geo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function closeDistrict() {

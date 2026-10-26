@@ -245,6 +245,23 @@ function Count({ n, suffix = "" }) {
 const pct = (c) => Math.round((c || 0) * 100);
 const keyOf = (it) => (it ? `${it.zone}|${it.crime_type}` : "");
 
+// The Map opens on the area (?zone=) and, where the Map has a filter for the crime type, on
+// that type (?crime= takes MapScreen's pill keys). A type it has no filter for, such as
+// missing person, opens on all crime rather than on a filter that does not exist.
+const MAP_CRIME = [
+  [/vehicle|motor/, "vehicle_theft"], [/snatch/, "chain_snatching"], [/burglar|house break/, "burglary"],
+  [/robbery|dacoity/, "robbery"], [/theft/, "theft"], [/cyber/, "cybercrime"], [/cheat|fraud|forgery/, "cheating_fraud"],
+  [/kidnap|abduct/, "kidnapping"], [/murder/, "murder"], [/hurt|assault/, "assault"],
+  [/cruelty|dowry|domestic/, "domestic_violence"], [/ndps|narcotic|drug/, "ndps"], [/riot/, "rioting"],
+];
+function mapLink(it) {
+  const q = new URLSearchParams({ zone: it.zone });
+  const ct = String(it.crime_type || "").toLowerCase();
+  const hit = MAP_CRIME.find(([re]) => re.test(ct));
+  if (hit) q.set("crime", hit[1]);
+  return `/map?${q}`;
+}
+
 // Real /api/alerts objects don't carry {risk, band, festival_driver, why} - the
 // fields this screen renders - so derive them from the real anomaly-detection
 // fields the backend does return (z_score, conformal_band, seasonal, trace).
@@ -973,6 +990,9 @@ const PREDICT_MODERN_STYLES = `
 .px-stn ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
 .px-stn li b { display: block; font-size: 14px; font-weight: 600; color: #EEF3FA; }
 .px-stn li span { font-size: 13px; line-height: 1.45; color: #B4C2D6; }
+.px-stn li > span { display: block; }
+.px-stn li .px-linkbtn { display: inline-block; margin: 4px 16px 0 0; }
+.px-ackerr { margin: 8px 0 0; font-size: 12.5px; color: #F87171; }
 .px-stn p { margin: 12px 0 0; font-size: 12px; color: #8A99AD; }
 
 @media (max-width: 1200px) {
@@ -1405,7 +1425,6 @@ function PredictScreen() {
   const [showReasoning, setShowReasoning] = useState(false); // click-only
   const [derivationModalData, setDerivationModalData] = useState(null);
   const [loadingDerivation, setLoadingDerivation] = useState(false);
-  const [officerRole, setOfficerRole] = useState("Inspector");
   const [confirmToast, setConfirmToast] = useState("");
   const [dash, setDash] = useState(null);            // dashboard cards | "offline"
   const [alertList, setAlertList] = useState([]);    // real /api/alerts
@@ -1486,8 +1505,16 @@ function PredictScreen() {
 
   // Whatever is being explained below - a ranked prediction or a clicked alert.
   const rawAlert = alertList[selAlert];
+  // An alert opens with the forecast card for the same area and crime where there is one:
+  // the card carries the graded confidence, its reasons and the risk the board ranked it at.
+  // Without it the alert's own 0.50-0.99 "confidence" (a curve over the anomaly score) read
+  // as "99% confident" in the forecast, which it is not.
+  const alertCard = focusKind === "alert" && rawAlert
+    ? (predictions || []).find((x) => x.zone === rawAlert.zone && x.crime_type === rawAlert.crime_type) : null;
   const focusItem = !explainOpen ? null : focusKind === "alert" && rawAlert
-    ? { ...alertToPrediction(rawAlert), suggestion: rawAlert.suggestion, event_context: rawAlert.event_context }
+    ? (alertCard
+        ? { ...alertCard, suggestion: rawAlert.suggestion, event_context: rawAlert.event_context }
+        : { ...alertToPrediction(rawAlert), fromAlert: true, suggestion: rawAlert.suggestion, event_context: rawAlert.event_context })
     : predictions?.[selected];
   const fZone = focusItem?.zone || null;
   const fCrime = focusItem?.crime_type || null;
@@ -1607,36 +1634,23 @@ function PredictScreen() {
   // a result belongs to the district it was asked for
   useEffect(() => { setHypothesesList(null); }, [fZone]);
 
-  async function handleHypothesisAction(hypothesisId, action) {
-    try {
-      const res = await fetch(`${API}/api/hypothesis/${encodeURIComponent(hypothesisId)}/${action}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ officer: "OF-1004", role: officerRole, reason: `${action} via Derivation Inspector` }),
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setConfirmToast(`Successfully ${action}ed hypothesis ${hypothesisId} (Audit Hash: ${d.audit_entry?.hash?.slice(0, 12)}...)`);
-      } else {
-        const err = await res.json();
-        setConfirmToast(`RBAC Error: ${err.detail || "Inspector+ required"}`);
-      }
-    } catch (e) {
-      setConfirmToast("Network error performing action.");
-    }
-    setTimeout(() => setConfirmToast(""), 4500);
-  }
 
+  // Recorded on the audit chain under the signed-in officer (from the token, not the page).
+  // It reads "Marked as reviewed" only once the server has written it.
+  const [ackState, setAckState] = useState({ key: "", busy: false, err: false });
   async function acknowledge(item) {
-    if (!item?.zone) return;
+    if (!item?.zone || ackState.busy) return;
+    const k = keyOf(item);
+    setAckState({ key: k, busy: true, err: false });
     try {
-      await fetch(`${API}/api/audit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "acknowledge", zone: item.zone, officer: "OF-1004", role: "Inspector" }),
-      });
-    } catch {}
-    setAcked((prev) => new Set(prev).add(keyOf(item)));
+      const q = item.crime_type ? `?crime_type=${encodeURIComponent(item.crime_type)}` : "";
+      const r = await fetch(`${API}/api/predict/${encodeURIComponent(item.zone)}/reviewed${q}`, { method: "POST" });
+      if (!r.ok) throw new Error(String(r.status));
+      setAcked((prev) => new Set(prev).add(k));
+      setAckState({ key: k, busy: false, err: false });
+    } catch {
+      setAckState({ key: k, busy: false, err: true });
+    }
   }
 
   // Hand the focused warning to the Antar chat as a real question.
@@ -1669,7 +1683,9 @@ function PredictScreen() {
     return `${ctype} cases in ${name} are ${levelOf(item).toLowerCase().replace(/^at its/, "at their")} for this area.`
       + (range ? ` The model expects ${range} in the next 7 days.` : "")
       + ` It rates this ${(RISK_WORD[item.risk] || "risk").toLowerCase()}`
-      + (item.confidence_level ? `, with ${item.confidence_level.toLowerCase()} confidence.` : ` and is ${pct(item.confidence)}% confident.`)
+      + (item.confidence_level ? `, with ${item.confidence_level.toLowerCase()} confidence.`
+        : item.fromAlert ? `; the scan is ${pct(item.confidence)}% sure the rise is out of the ordinary.`
+        : ` and is ${pct(item.confidence)}% confident.`)
       + (item.festival_driver ? ` Season: ${item.festival_driver.replace(/^Seasonal\s*/i, "").trim()} at this time of year.` : "");
   };
 
@@ -2097,7 +2113,9 @@ const avgConf = predictions?.length
                   <div className="px-big">
                     {focusItem.confidence_level
                       ? <><span className={`n lv l-${focusItem.confidence_level}`}>{focusItem.confidence_level}</span><span className="nl">confidence</span></>
-                      : <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confident"}</span></>}
+                      : focusItem.fromAlert
+                        ? <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl" title="How sure the scan is that this rise is out of the ordinary. It is not a measure of the 7-day range.">{kn ? "ಇದು ಅಸಾಮಾನ್ಯ ಎಂಬ ಖಚಿತತೆ" : "sure this is unusual"}</span></>
+                        : <><span className="n">{pct(focusItem.confidence)}%</span><span className="nl">{kn ? "ವಿಶ್ವಾಸ" : "confident"}</span></>}
                     <span className={`px-risk ${RISK_BADGE[focusItem.risk] || ""}`}>{kn ? focusItem.risk?.toLowerCase() : (RISK_WORD[focusItem.risk] || focusItem.risk)}</span>
                     {Number(focusItem.z_score) > 0 && (
                       <span className="z" title="How far recent cases sit from this area's usual level. 2 is unusual, 4 is rare.">{kn ? "ಅಸಾಮಾನ್ಯತೆ ಅಂಕ" : "Unusual-activity score"} {focusItem.z_score}</span>
@@ -2186,13 +2204,14 @@ const avgConf = predictions?.length
                           </li>
                         ))}
                       </ol>
-                      <p>From the station forecast for the next 7 days, all crime. <button type="button" className="px-linkbtn" onClick={() => router.push(`/map?zone=${encodeURIComponent(focusItem.zone)}`)}>Open on the map</button></p>
+                      <p>From the station forecast for the next 7 days, all crime. <button type="button" className="px-linkbtn" onClick={() => router.push(`/map?${new URLSearchParams({ zone: focusItem.zone })}`)}>Open on the map</button></p>
                     </div>
                   )}
                   {focusItem.suggestion && (
                     <div className="px-suggest">
                       <div className="px-suggest-hd">{kn ? "ಶಿಫಾರಸು" : "Recommended action"}</div>
-                      <div className="px-suggest-txt">{focusItem.suggestion}</div>
+                      {/* An older server words it "Monitor X for MISSING PERSON."; the register's capitals are not a sentence. */}
+                      <div className="px-suggest-txt">{focusItem.crime_type ? focusItem.suggestion.split(focusItem.crime_type).join(cap(focusItem.crime_type).toLowerCase()) : focusItem.suggestion}</div>
                       {focusItem.event_context && <div className="px-suggest-ev">{kn ? "ಘಟನೆ" : "Event"}: {focusItem.event_context}</div>}
                     </div>
                   )}
@@ -2200,7 +2219,9 @@ const avgConf = predictions?.length
                   <div className="px-acts">
                     {isAcked
                       ? <span className="px-ackdone"> {kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ" : "Marked as reviewed"}</span>
-                      : <button className="px-actbtn ack ui-btn ui-btn--primary" onClick={() => acknowledge(focusItem)}>{kn ? "ಸ್ವೀಕರಿಸಿ" : "Mark as reviewed"}</button>}
+                      : <button className="px-actbtn ack ui-btn ui-btn--primary" disabled={ackState.busy} onClick={() => acknowledge(focusItem)}>
+                          {ackState.busy && ackState.key === keyOf(focusItem) ? (kn ? "ದಾಖಲಿಸಲಾಗುತ್ತಿದೆ…" : "Recording…") : (kn ? "ಪರಿಶೀಲಿಸಲಾಗಿದೆ ಎಂದು ಗುರುತಿಸಿ" : "Mark as reviewed")}
+                        </button>}
                     <button className="px-actbtn ask ui-btn ui-btn--secondary" onClick={() => askAntar(focusItem)}>
                       {kn ? "ಅಂತರ‍ಗೆ ಕೇಳಿ" : "Ask Antar"}
                     </button>
@@ -2211,13 +2232,16 @@ const avgConf = predictions?.length
                     <button className={`px-actbtn ui-btn ui-btn--ghost ui-btn--sm ${showScenario ? "on" : ""}`} aria-expanded={showScenario} onClick={() => setShowScenario((v) => !v)}>
                       {kn ? "ಸನ್ನಿವೇಶ" : "What if"} {showScenario ? "▾" : "▸"}
                     </button>
-                    <button className="px-actbtn ui-btn ui-btn--ghost ui-btn--sm" onClick={() => openDerivationModal(focusItem.id || focusItem.zone || "HYP-101")}>
-                      {loadingDerivation ? "…" : (kn ? "ಡೆರಿವೇಷನ್ ಆಡಿಟ್" : "Audit trail")}
+                    <button className="px-actbtn ui-btn ui-btn--ghost ui-btn--sm" disabled={loadingDerivation} onClick={() => openDerivationModal(`board:${focusItem.zone}:${focusItem.crime_type || ""}`)}>
+                      {loadingDerivation ? "…" : (kn ? "ಆಡಿಟ್ ಜಾಡು" : "Audit trail")}
                     </button>
-                    <button className="px-actbtn ui-btn ui-btn--ghost ui-btn--sm" onClick={() => router.push(`/map?zone=${encodeURIComponent(focusItem.zone)}&crime_type=${focusItem.crime_type}`)}>
+                    <button className="px-actbtn ui-btn ui-btn--ghost ui-btn--sm" onClick={() => router.push(mapLink(focusItem))}>
                       {kn ? "ನಕ್ಷೆ" : "Open on map"}
                     </button>
                   </div>
+                  {ackState.err && ackState.key === keyOf(focusItem) && (
+                    <p className="px-ackerr" role="alert">{kn ? "ದಾಖಲಿಸಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : "Could not record the review. Try again in a moment."}</p>
+                  )}
 
                   {showScenario && (
                     scenarioBand?.scenario ? (
@@ -2459,62 +2483,60 @@ const avgConf = predictions?.length
       <AnimatePresence>
       {derivationModalData && (
         <MaterialBackdrop key="derivation" className="px-cardback px-center" onClick={() => setDerivationModalData(null)}>
-          <MaterialPanel className="px-modelcard px-modelcard-m" role="dialog" aria-label="Derivation & Audit Inspector" style={{ maxWidth: "680px", width: "92%" }} onClick={(e) => e.stopPropagation()}>
+          <MaterialPanel className="px-modelcard px-modelcard-m" role="dialog" aria-label="Audit trail" style={{ maxWidth: "680px", width: "92%" }} onClick={(e) => e.stopPropagation()}>
             <button className="x" onClick={() => setDerivationModalData(null)} aria-label="Close"></button>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", background: "rgba(34,230,240,0.14)", color: "#22E6F0", padding: "4px 8px", borderRadius: "4px", border: "1px solid rgba(34,230,240,0.45)" }}>[AUDIT-GATE]</span>
-              <div>
-                <b style={{ fontSize: "16px" }}>{kn ? "ಚಾರ್ಜ್‌ಶೀಟ್ ಡೆರಿವೇಷನ್ ಮತ್ತು ಆಡಿಟ್" : "Chargesheet Derivation & Audit Inspector"}</b>
-                <div style={{ fontSize: "11px", color: "#22E6F0", fontFamily: "monospace" }}>ID: {derivationModalData.product_id}</div>
+            {/* The trail of one forecast: what it read, how it was worked out, who reviewed it.
+                Read from the stored forecast card and the audit chain - nothing here is typed in. */}
+            <div style={{ marginBottom: "12px" }}>
+              <b style={{ fontSize: "16px" }}>{kn ? "ಆಡಿಟ್ ಜಾಡು" : "Audit trail"}</b>
+              <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                {derivationModalData.product?.zone ? `${derivationModalData.product.zone} · ${cap(derivationModalData.product.crime_type || "")}` : derivationModalData.product_id}
+                {derivationModalData.product?.as_of ? ` · ${kn ? "ದಿನಾಂಕ" : "forecast of"} ${dayOf(derivationModalData.product.as_of)}` : ""}
               </div>
             </div>
 
             {(derivationModalData.derivation_chain || []).length > 0 && (
               <div className="sec">
-                <h6>{kn ? "ಡೆರಿವೇಷನ್ ಹಂತಗಳು" : "Derivation Pipeline Stages"}</h6>
+                <h6>{kn ? "ಹೇಗೆ ಲೆಕ್ಕ ಹಾಕಲಾಯಿತು" : "How it was worked out"}</h6>
                 {derivationModalData.derivation_chain.map((step, i) => (
-                  <p key={i}><b style={{ color: "#22E6F0" }}>[{step.stage}]</b> {step.detail}</p>
+                  <p key={i}><b style={{ color: "#22E6F0" }}>{i + 1}. {step.stage}.</b> {step.detail}</p>
                 ))}
               </div>
             )}
 
-            <div className="sec">
-              <h6>{kn ? "ವಿಧಾನಗಳು ಮತ್ತು ಸೂತ್ರಗಳು" : "Methodology & Algorithms"}</h6>
-              {(derivationModalData.method_lines || []).map((m, i) => (
-                <p key={i} style={{ color: "var(--muted)" }}> {m}</p>
-              ))}
-            </div>
-
-            {derivationModalData.chain_hash && (
-              <div className="sec" style={{ background: "var(--field-bg)", border: "1px solid rgba(34,230,240,0.25)", padding: "10px", borderRadius: "8px" }}>
-                <h6>{kn ? "ಡಿಜಿಟಲ್ ವಾಟರ್‌ಮಾರ್ಕ್ (SHA-256)" : "Evidentiary Cryptographic Watermark"}</h6>
-                <div style={{ fontFamily: "monospace", fontSize: "10px", color: "var(--muted-2)", wordBreak: "break-all" }}>SHA-256: {derivationModalData.chain_hash}</div>
+            {(derivationModalData.evidence_rows || []).length > 0 && (
+              <div className="sec">
+                <h6>{kn ? "ಬಳಸಿದ FIR ಗಳು" : "FIRs it rests on"} ({derivationModalData.evidence_rows.length})</h6>
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "var(--muted)", wordBreak: "break-all" }}>
+                  {derivationModalData.evidence_rows.slice(0, 12).join(" · ")}{derivationModalData.evidence_rows.length > 12 ? ` · +${derivationModalData.evidence_rows.length - 12}` : ""}
+                </p>
               </div>
             )}
 
-            <div className="sec" style={{ borderTop: "1px solid var(--glass-border)", paddingTop: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>{kn ? "ಅಧಿಕಾರಿ ಪಾತ್ರ:" : "Officer Rank:"}</span>
-                  <select value={officerRole} onChange={(e) => setOfficerRole(e.target.value)}
-                    style={{ background: "var(--field-bg)", color: "var(--text)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "4px 8px", fontSize: "12px" }}>
-                    <option value="Inspector">Inspector (Authorized)</option>
-                    <option value="ACP">ACP / SP (Authorized)</option>
-                    <option value="Constable">Constable (RBAC Guard / Demo Block)</option>
-                  </select>
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={() => handleHypothesisAction(derivationModalData.product_id, "confirm")}
-                    style={{ background: "rgba(34,230,240,0.14)", color: "#22E6F0", border: "1px solid rgba(34,230,240,0.5)", padding: "6px 12px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
-                     {kn ? "ಖಚಿತಪಡಿಸಿ" : "Confirm link"}
-                  </button>
-                  <button onClick={() => handleHypothesisAction(derivationModalData.product_id, "reject")}
-                    style={{ background: "rgba(225,64,56,0.14)", color: "#E14038", border: "1px solid rgba(225,64,56,0.5)", padding: "6px 12px", borderRadius: "7px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
-                     {kn ? "ತಿರಸ್ಕರಿಸಿ" : "Reject link"}
-                  </button>
-                </div>
-              </div>
+            <div className="sec">
+              <h6>{kn ? "ವಿಧಾನ" : "Method"}</h6>
+              {(derivationModalData.method_lines || []).map((m, i) => (
+                <p key={i} style={{ color: "var(--muted)" }}>{m}</p>
+              ))}
             </div>
+
+            {!derivationModalData.unavailable && (
+              <div className="sec">
+                <h6>{kn ? "ಪರಿಶೀಲಿಸಿದವರು" : "Reviewed by"}</h6>
+                {(derivationModalData.audit_events || []).length
+                  ? derivationModalData.audit_events.slice(0, 8).map((ev, i) => (
+                      <p key={i} style={{ color: "var(--muted)" }}>{ev.officer} ({ev.role}) · {when(ev.ts)}</p>
+                    ))
+                  : <p style={{ color: "var(--muted)" }}>{kn ? "ಇನ್ನೂ ಯಾರೂ ಪರಿಶೀಲಿಸಿಲ್ಲ." : "Nobody has marked it reviewed yet."}</p>}
+              </div>
+            )}
+
+            {derivationModalData.chain_hash && (
+              <div className="sec" style={{ background: "var(--field-bg)", border: "1px solid rgba(34,230,240,0.25)", padding: "10px", borderRadius: "8px" }}>
+                <h6>{kn ? "ಡಿಜಿಟಲ್ ಮುದ್ರೆ (SHA-256)" : "Fingerprint of this trail (SHA-256)"}</h6>
+                <div style={{ fontFamily: "monospace", fontSize: "10px", color: "var(--muted-2)", wordBreak: "break-all" }}>{derivationModalData.chain_hash}</div>
+              </div>
+            )}
           </MaterialPanel>
         </MaterialBackdrop>
       )}
