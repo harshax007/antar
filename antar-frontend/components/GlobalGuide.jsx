@@ -418,7 +418,9 @@ function pickGuide(path, expertOn) {
   if (path.startsWith("/antarBrain")) return "brain";
   if (path.startsWith("/antar")) return expertOn ? "expert" : "chat";
   // the Money trail is a view of Search (/search?view=money)
-  if (path.startsWith("/search") && typeof window !== "undefined" && /[?&]view=money/.test(window.location.search)) return "money";
+  if (path.startsWith("/search") && typeof window !== "undefined" && /[?&]view=money\b/.test(window.location.search)) return "money";
+  // and so is Social insights (/search?view=social)
+  if (path.startsWith("/search") && typeof window !== "undefined" && /[?&]view=social\b/.test(window.location.search)) return "social";
   for (const key of ["predict", "map", "search", "trace", "approvals", "account", "network", "trends", "profiles", "social", "money", "case", "governance"]) {
     if (path.startsWith(`/${key}`)) return key;
   }
