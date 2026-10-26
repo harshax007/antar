@@ -140,3 +140,9 @@ html[lang="kn"] .sx-eyebrow { letter-spacing: normal; text-transform: none; font
   .sx-page .mt-head--split .mt-stats { justify-self: start; }
   .sx-page .so-head--split .so-caveats { padding-left: 0; border-left: 0; }
 }
+
+/* Social insights loading on the Search screen: the page has no height of its own here
+   (min-height: 0 above), so the loader sat in a strip under the tabs. While it loads, the
+   page takes the screen below the tabs and the loader sits in its middle. */
+.sx-page--social .so-page.is-loading { min-height: calc(100vh - 250px); min-height: calc(100dvh - 250px); }
+@media (max-width: 480px) { .so-page.is-loading .brl-step { white-space: normal; max-width: calc(100vw - 48px); } }

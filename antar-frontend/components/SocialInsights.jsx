@@ -30,10 +30,10 @@ function Bars({ rows, total }) {
 
 // The loader the Map uses, with this screen's own steps
 const SOCIAL_STEPS = {
-  en: ["Reading the district figures", "Matching crime to each district", "Measuring the links", "Almost ready"],
-  kn: ["ಜಿಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ", "ಅಪರಾಧವನ್ನು ಜಿಲ್ಲೆಗೆ ಹೊಂದಿಸಲಾಗುತ್ತಿದೆ", "ಸಂಬಂಧಗಳನ್ನು ಅಳೆಯಲಾಗುತ್ತಿದೆ", "ಬಹುತೇಕ ಸಿದ್ಧ"],
+  en: ["Reading the 30 districts' social indicators", "Lining them up with each district's crime", "Measuring which ones move together", "Counting victims by sex, age and occupation", "Almost ready"],
+  kn: ["30 ಜಿಲ್ಲೆಗಳ ಸಾಮಾಜಿಕ ಸೂಚಕಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ", "ಪ್ರತಿ ಜಿಲ್ಲೆಯ ಅಪರಾಧದೊಂದಿಗೆ ಹೋಲಿಸಲಾಗುತ್ತಿದೆ", "ಯಾವುವು ಜೊತೆಯಾಗಿ ಬದಲಾಗುತ್ತವೆ ಎಂದು ಅಳೆಯಲಾಗುತ್ತಿದೆ", "ಸಂತ್ರಸ್ತರನ್ನು ಲಿಂಗ, ವಯಸ್ಸು, ಉದ್ಯೋಗದ ಪ್ರಕಾರ ಎಣಿಸಲಾಗುತ್ತಿದೆ", "ಬಹುತೇಕ ಸಿದ್ಧ"],
 };
-const SOCIAL_ORBS = ["searching", "connecting", "solving", "working"];
+const SOCIAL_ORBS = ["searching", "connecting", "solving", "searching", "working"];
 
 const median = (a) => { const v = a.filter((x) => x != null).sort((p, q) => p - q); const n = v.length; return n ? (n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2) : null; };
 // A round axis that starts near the data, not at a tick far below it
@@ -138,7 +138,7 @@ export default function SocialInsights() {
   }, [d, cat, sort]);
 
   if (err) return <main className="so-page"><div className="so-wrap"><h1 className="so-title">{L(<>Search · <em>Social Insights</em></>, <>ಹುಡುಕಾಟ · <em>ಸಾಮಾಜಿಕ ಒಳನೋಟಗಳು</em></>)}</h1><p className="so-lede">{L("The district figures could not be read just now.", "ಜಿಲ್ಲಾ ಅಂಕಿಅಂಶಗಳನ್ನು ಈಗ ಓದಲಾಗಲಿಲ್ಲ.")}</p></div></main>;
-  if (!d) return <main className="so-page" style={{ position: "relative" }}><BrainLoader kn={kn} steps={SOCIAL_STEPS} orbs={SOCIAL_ORBS} /></main>;
+  if (!d) return <main className="so-page is-loading" style={{ position: "relative" }}><BrainLoader kn={kn} steps={SOCIAL_STEPS} orbs={SOCIAL_ORBS} /></main>;
 
   const head = (key, label) => (
     <th scope="col"><button type="button" onClick={() => setSort((s) => ({ key, dir: s.key === key ? -s.dir : -1 }))} aria-sort={sort.key === key ? (sort.dir < 0 ? "descending" : "ascending") : "none"}>
