@@ -17,6 +17,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchAPI } from "@/lib/api";
+import { asset } from "@/lib/assets";
 
 // The character each agent has everywhere else (AgentStrip, the Brain screen).
 export const FACE = {
@@ -51,7 +52,7 @@ function Face({ id, size = 26 }) {
   if (!face) return null;
   // The middle cell of the 3x3 sheet: the character looking straight ahead.
   return <i className="wa-face" aria-hidden="true"
-            style={{ width: size, height: size, backgroundImage: `url(/mascots/sm/${face}-directions.webp)` }} />;
+            style={{ width: size, height: size, backgroundImage: `url(${asset(`/mascots/sm/${face}-directions.webp`)})` }} />;
 }
 
 // How a typed target is read. Shape only, the same rule the backend applies - nothing is

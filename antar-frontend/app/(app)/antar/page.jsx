@@ -703,7 +703,7 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
     const face = AGENT_FACE[String(id || "").toLowerCase()];
     return (
       <span className="ag">
-        {face && <i className="wa-face" aria-hidden="true" style={{ backgroundImage: `url(/mascots/sm/${face}-directions.webp)` }} />}
+        {face && <i className="wa-face" aria-hidden="true" style={{ backgroundImage: `url(${asset(`/mascots/sm/${face}-directions.webp`)})` }} />}
         {id}
       </span>
     );
@@ -721,7 +721,7 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
             <Orb agent={current?.agent} label={current ? stepLabel(current) : "Thinking"} />
             <span className="cx-think-faces" aria-hidden="true">
               {[...new Set(visible.map((v) => String(v.agent || "").toLowerCase()))].filter((a) => AGENT_FACE[a]).map((a) => (
-                <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(/mascots/sm/${AGENT_FACE[a]}-directions.webp)` }} />
+                <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(${asset(`/mascots/sm/${AGENT_FACE[a]}-directions.webp`)})` }} />
               ))}
             </span>
             <span key={current ? stepLabel(current) : "start"} className="lbl">
@@ -790,7 +790,7 @@ function ReasoningTerminal({ msg, kn, send, deepThink }) {
         if (!who.length) return null;
         return (
           <p className="cx-think-check">
-            {who.map((a) => <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(/mascots/sm/${AGENT_FACE[a]}-directions.webp)` }} />)}
+            {who.map((a) => <i key={a} className="wa-face" title={a} style={{ backgroundImage: `url(${asset(`/mascots/sm/${AGENT_FACE[a]}-directions.webp`)})` }} />)}
             <span>{kn ? `${who.length} ಏಜೆಂಟ್‌ಗಳು ಕೆಲಸ ಮಾಡಿವೆ`
               : `${who.length} ${who.length === 1 ? "agent" : "agents"} worked on this`}</span>
           </p>

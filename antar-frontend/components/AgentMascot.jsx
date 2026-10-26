@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAPI } from "@/lib/api";
+import { asset } from "@/lib/assets";
 
 // Presentation only: what an agent IS comes from the backend identity pack. One colour for
 // all of them - an agent is told apart by its face, glyph and name, and state is shown by motion.
@@ -118,8 +119,8 @@ function RoamingFace({ face, size, label, busy = false }) {
   const layer = { position: "absolute", inset: 0, backgroundSize: "300% 300%", backgroundRepeat: "no-repeat" };
   return (
     <span className="bt-face" role="img" aria-label={label} style={{ position: "relative", display: "block", width: size, height: size }}>
-      <span style={{ ...layer, backgroundImage: `url(/mascots/${face}-directions.webp)`, ...cellOf(busy ? 4 : dir), opacity: blink ? 0 : 1 }} />
-      <span style={{ ...layer, backgroundImage: `url(/mascots/${face}-reactions.webp)`, ...cellOf(0), opacity: blink ? 1 : 0 }} />
+      <span style={{ ...layer, backgroundImage: `url(${asset(`/mascots/${face}-directions.webp`)})`, ...cellOf(busy ? 4 : dir), opacity: blink ? 0 : 1 }} />
+      <span style={{ ...layer, backgroundImage: `url(${asset(`/mascots/${face}-reactions.webp`)})`, ...cellOf(0), opacity: blink ? 1 : 0 }} />
     </span>
   );
 }

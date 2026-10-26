@@ -8,6 +8,7 @@ import { fetchAPI } from "@/lib/api";
 import WorkspaceAgents, { FACE, agentsUsed } from "@/components/WorkspaceAgents";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { asset } from "@/lib/assets";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
@@ -661,7 +662,7 @@ export default function ExpertWorkspace({ answer, question, citations = [], susp
                       aria-label={`Agents used: ${used.join(", ")}. Go to the agents for this answer.`}>
                 <em>{kn ? "ಬಳಸಿದ ಏಜೆಂಟ್‌ಗಳು" : "Agents used"}</em>
                 {used.map((a, i) => (
-                  <i key={a} className="wa-face" style={{ backgroundImage: `url(/mascots/sm/${FACE[a]}-directions.webp)`, animationDelay: `${i * -0.45}s` }} />
+                  <i key={a} className="wa-face" style={{ backgroundImage: `url(${asset(`/mascots/sm/${FACE[a]}-directions.webp`)})`, animationDelay: `${i * -0.45}s` }} />
                 ))}
               </button>
             );
