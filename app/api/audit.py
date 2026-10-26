@@ -53,6 +53,8 @@ async def get_trace(reasoning_id: str) -> dict:
 @derivation_router.get("/{target_id}")
 async def get_derivation_chain(target_id: str) -> dict:
     """Walks product -> inputs -> rows to return the full chargesheet-grade derivation chain."""
+    if target_id.startswith("board:"):
+        return _forecast_derivation(target_id)
     p = (
         get_product(target_id)
         or get_product(f"hypothesis:{target_id}")
@@ -92,6 +94,69 @@ async def get_derivation_chain(target_id: str) -> dict:
         "audit_events": matching_audits,
         "verified_timestamp": datetime.now(timezone.utc).isoformat(),
         "export_url": f"/report/derivation/{target_id}",
+    }
+    payload["chain_hash"] = hash_event("DERIVATION", payload)
+    return payload
+
+
+def _forecast_derivation(target_id: str) -> dict:
+    """The audit trail of one Predict card ("board:<zone>:<crime type>"), from the stored card.
+
+    Every line is read off the card the screen showed - its FIRs, its score, its range and
+    the reasons for its confidence - and the officers who marked it reviewed come from the
+    audit chain. The generic chain above names steps (ZCQL, Vigil) that a forecast does not
+    run, so a forecast never falls through to it. A card that is not stored says so.
+    """
+    _, _, rest = target_id.partition(":")
+    zone, _, crime = rest.partition(":")
+    card = get_product(f"warning_ledger:board:{zone}:{crime}")
+    if not isinstance(card, dict):
+        return {"product_id": target_id, "unavailable": True, "derivation_chain": [],
+                "evidence_rows": [], "audit_events": [], "chain_hash": None,
+                "method_lines": [f"No stored forecast for {zone} · {crime.lower()} today. "
+                                 "The forecast board is rebuilt each day; reopen Predict to compile it."]}
+
+    ct = (crime or "crime").lower()
+    rows = card.get("evidence_row_ids") or []
+    z = card.get("z_score") or 0
+    lo, hi, cov = card.get("conformal_lo"), card.get("conformal_hi"), card.get("coverage")
+    # coverage is stored as "91%" (the conformal target for this series), sometimes as 0.91
+    try:
+        cov_pct = None if cov in (None, "") else round(float(str(cov).rstrip("%")) * (100 if float(str(cov).rstrip("%")) <= 1 else 1))
+    except ValueError:
+        cov_pct = None
+    chain = [
+        {"step": 1, "stage": "Records read",
+         "detail": (f"{len(rows)} FIRs of {ct} in {zone} make up the recent count." if rows
+                    else "No individual FIRs are attached: nothing unusual was measured, so this is the area's usual level.")},
+        {"step": 2, "stage": "Compared with usual",
+         "detail": (f"The recent weekly count was compared with {zone}'s own history: unusual-activity score {z} (2 is unusual, 4 is rare)."
+                    if z else f"The recent weekly count was compared with {zone}'s own history and was within its usual range.")},
+        {"step": 3, "stage": "Range drawn",
+         "detail": (f"{lo} to {hi} cases expected in the next 7 days, from how past weeks varied"
+                    + (f"; it is drawn wide enough to cover about {cov_pct}% of weeks like these." if cov_pct is not None else ".")
+                    if lo is not None else "No range drawn: there is no measured change to draw one from.")},
+        {"step": 4, "stage": "Confidence",
+         "detail": f"{card.get('confidence_level') or 'Not graded'}. " + " ".join(card.get("confidence_reasons") or [])},
+    ]
+    reviews = []
+    for r in audit_store.query(limit=5000):
+        fr = (r.get("scope") or {}).get("forecast_review")
+        if fr and fr.get("zone") == zone and (fr.get("crime_type") or "") == crime and r.get("status") == 200:
+            reviews.append({"officer": r.get("officer"), "role": r.get("role"), "ts": r.get("ts")})
+    payload = {
+        "product_id": target_id,
+        "kind": "forecast",
+        "product": {"zone": zone, "crime_type": crime, "as_of": card.get("as_of")},
+        "evidence_rows": rows,
+        "method_lines": [
+            "Weekly case counts for this area and crime type are compared with the area's own past weeks (a median-based score, so one odd week does not move the baseline).",
+            "The expected range is a split-conformal band over the area's last 13 weeks: its width comes from how far those weeks strayed from the usual level.",
+            "No language model is involved in these numbers; every figure above is read from the stored forecast.",
+        ],
+        "derivation_chain": chain,
+        "audit_events": reviews,
+        "verified_timestamp": datetime.now(timezone.utc).isoformat(),
     }
     payload["chain_hash"] = hash_event("DERIVATION", payload)
     return payload

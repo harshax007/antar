@@ -718,6 +718,22 @@ async def predict_briefing() -> dict:
     return out
 
 
+@router.post("/predict/{zone}/reviewed")
+async def predict_reviewed(zone: str, crime_type: str | None = None) -> dict:
+    """An officer marks a forecast as read. Nothing about the forecast changes: the request
+    is the record. The audit middleware writes it to the hash chain under the signed-in
+    officer, and the scope names the forecast, so the forecast's audit trail can list who
+    reviewed it and when. (The button used to POST to /api/audit, which has no POST route:
+    the screen said "Marked as reviewed" and nothing was recorded.)"""
+    from datetime import datetime, timezone
+    from app.core import security_context
+    ctx = security_context.current()
+    if ctx is not None:
+        ctx.scope = {"forecast_review": {"zone": zone, "crime_type": crime_type}}
+    return {"reviewed": True, "zone": zone, "crime_type": crime_type,
+            "officer": ctx.officer if ctx else None, "at": datetime.now(timezone.utc).isoformat()}
+
+
 @router.get("/predict/{zone}/scenario")
 async def predict_scenario(
     zone: str,

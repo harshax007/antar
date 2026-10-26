@@ -34,14 +34,16 @@ async def list_alerts(limit: int = 50) -> dict:
         crime_type = a.get("crime_type", "unknown")
         events = get_events_for_date(current_date, zone)
         
-        suggestion = f"Monitor {zone} for {crime_type}. "
+        # The register spells crime types in capitals ("MISSING PERSON"); a sentence does not.
+        ct = str(crime_type).replace("_", " ").lower()
+        suggestion = f"Watch for {ct} cases in {zone} this week."
         if events:
             for e in events:
                 if crime_type.lower() in e["risk_types"] or crime_type == "unknown":
                     a["event_context"] = e["name"]
                     break
             if a.get("event_context"):
-                suggestion = f"{a['event_context']} + {crime_type} anomaly → Saturate {zone} with targeted patrols."
+                suggestion = f"{a['event_context']} and a rise in {ct} cases: put targeted patrols on {zone}."
         a["suggestion"] = suggestion
 
     return {"alerts": alerts, "active": alerts_store.active_count()}
