@@ -3759,6 +3759,17 @@ html[data-chatnav="1"] .xw { top: 60px !important; height: calc(100vh - 60px) !i
 .ov-kpi.is-loading:hover { transform: none; }
 @media (prefers-reduced-motion: reduce) { .ov-kpi .ov-skel { animation: none; } }
 
+/* Range filter in flight: a status line by the filters, and the figures below fade until
+   the new range's numbers land - old totals must not read as the new range's. */
+.ov-rf-busy { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: #22D3EE; white-space: nowrap; }
+.ov-rf-busy i { width: 13px; height: 13px; flex: none; border-radius: 50%; border: 2px solid rgba(34,211,238,.25); border-top-color: #22D3EE; animation: ovSpin .8s linear infinite; }
+@keyframes ovSpin { to { transform: rotate(360deg); } }
+.ov-page .ov-stages, .ov-page .ov-officer, .ov-page .ov-charts, .ov-page .ov-tablewrap { transition: opacity .2s ease; }
+.ov-page.is-updating .ov-stages, .ov-page.is-updating .ov-officer, .ov-page.is-updating .ov-charts,
+.ov-page.rows-updating .ov-tablewrap { opacity: .35; pointer-events: none; }
+@media (max-width: 640px) { .ov-rf-busy { white-space: normal; flex-basis: 100%; } }
+@media (prefers-reduced-motion: reduce) { .ov-rf-busy i { animation: none; } }
+
 /* ══════════════════════════════════════════════════════════════════════════════
    Minimal chat + expert console (2026-09-18)
    One palette: near-black surfaces, white type in three weights of grey, and the brand

@@ -85,6 +85,17 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
   const [yTo, setYTo] = useState("");
   const [idFrom, setIdFrom] = useState("");
   const [idTo, setIdTo] = useState("");
+  // The FIR-id boxes are typed digit by digit; each digit would start a full-register count.
+  // The query waits until typing pauses.
+  const [ids, setIds] = useState({ from: "", to: "" });
+  useEffect(() => {
+    const t = setTimeout(() => setIds({ from: String(idFrom).trim(), to: String(idTo).trim() }), 450);
+    return () => clearTimeout(t);
+  }, [idFrom, idTo]);
+  // A new range is counted server-side and can take seconds; until it lands the old totals
+  // must not pass for the new range's.
+  const [fullBusy, setFullBusy] = useState(false);
+  const [rowsBusy, setRowsBusy] = useState(false);
   const YEARS = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
   const filtered = useMemo(() => (recs ? filterRecords(recs, sel) : []), [recs, sel]);
@@ -107,13 +118,16 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
     if (sel.district) p.set("district", sel.district);
     if (groupParam) p.set("groups", groupParam);
     if (isFull) {
-      if (yFrom) p.set("year_from", yFrom);
-      if (yTo) p.set("year_to", yTo);
-      if (String(idFrom).trim()) p.set("id_from", String(idFrom).trim());
-      if (String(idTo).trim()) p.set("id_to", String(idTo).trim());
+      // A reversed range (2022 to 2019) means the same span, not an empty one.
+      const [y1, y2] = yFrom && yTo && Number(yFrom) > Number(yTo) ? [yTo, yFrom] : [yFrom, yTo];
+      const [i1, i2] = ids.from && ids.to && Number(ids.from) > Number(ids.to) ? [ids.to, ids.from] : [ids.from, ids.to];
+      if (y1) p.set("year_from", y1);
+      if (y2) p.set("year_to", y2);
+      if (i1) p.set("id_from", i1);
+      if (i2) p.set("id_to", i2);
     }
     return p.toString();
-  }, [sel.year, sel.district, groupParam, isFull, yFrom, yTo, idFrom, idTo]);
+  }, [sel.year, sel.district, groupParam, isFull, yFrom, yTo, ids]);
 
   // Any range-filter change returns to page 1 so the table isn't stranded past the end.
   useEffect(() => { setPage(0); }, [yFrom, yTo, idFrom, idTo]);
@@ -122,10 +136,12 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
   useEffect(() => {
     if (!isFull) return;
     let alive = true;
+    setFullBusy(true);
     fetch(`${API}/api/dataset/summary${filterQS ? `?${filterQS}` : ""}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => { if (alive) { setFull(d); setFullErr(false); } })
-      .catch(() => { if (alive) setFullErr(true); });
+      .catch(() => { if (alive) setFullErr(true); })
+      .finally(() => { if (alive) setFullBusy(false); });
     return () => { alive = false; };
   }, [isFull, filterQS]);
 
@@ -146,6 +162,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
   useEffect(() => {
     if (!isFull) return;
     let alive = true;
+    setRowsBusy(true);
     const t = setTimeout(() => {
       const p = new URLSearchParams(filterQS);
       p.set("limit", PAGE);
@@ -158,7 +175,8 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
           setFullRows({ ...d, rows: d.rows.map((r) => ({ ...r, _cat: categorize(r.CrimeGroup_Name) })) });
           setFullErr(false);
         })
-        .catch(() => { if (alive) setFullErr(true); });
+        .catch(() => { if (alive) setFullErr(true); })
+        .finally(() => { if (alive) setRowsBusy(false); });
     }, 280);
     return () => { alive = false; clearTimeout(t); };
   }, [isFull, filterQS, page, q]);
@@ -251,7 +269,10 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
   // While the full-dataset summary is in flight `view` is built from `?? 0` fallbacks, so
   // every tile read "0 FIRs total · 0% arrest rate" - indistinguishable from an empty
   // database. Loading renders as a placeholder instead; a real zero stays a zero.
-  const loadingFull = isFull && !full && !fullErr;
+  // A filter change counts as loading too: the previous range's totals stay hidden until
+  // the new range's arrive.
+  const loadingFull = isFull && (!full || fullBusy) && !fullErr;
+  const rangeOn = Boolean(yFrom || yTo || ids.from || ids.to);
 
   const pctOf = (a, b) => (b ? Math.round((100 * a) / b) : 0);
   const kpis = !isFull ? [
@@ -334,7 +355,7 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
   const stageMax = Math.max(...stages.map((s) => s.n), 1);
 
   return (
-    <section className="ov-page" id="data-overview" style={{ scrollMarginTop: "20px" }}>
+    <section className={`ov-page${isFull && full && fullBusy ? " is-updating" : ""}${isFull && rowsBusy ? " rows-updating" : ""}`} id="data-overview" style={{ scrollMarginTop: "20px" }}>
       <div className="ov-head">
         <div>
           <div className="ov-eyebrow">{kn ? "02 · FIR ದತ್ತಾಂಶ ಅವಲೋಕನ" : "02 · FIR data overview"}</div>
@@ -408,6 +429,16 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
                 <button onClick={() => { setYFrom(""); setYTo(""); setIdFrom(""); setIdTo(""); }}>
                   {kn ? "ವ್ಯಾಪ್ತಿ ತೆರವು" : "Clear range"}
                 </button>
+              )}
+              {full && (fullBusy || rowsBusy) && (
+                <span className="ov-rf-busy" role="status" aria-live="polite">
+                  <i aria-hidden="true" />
+                  {fullBusy
+                    ? (rangeOn
+                        ? (kn ? "ಈ ವ್ಯಾಪ್ತಿಯ FIR ಗಳನ್ನು ಎಣಿಸಲಾಗುತ್ತಿದೆ…" : "Counting FIRs in this range…")
+                        : (kn ? "ಎಲ್ಲಾ FIR ಗಳನ್ನು ಎಣಿಸಲಾಗುತ್ತಿದೆ…" : "Counting every FIR…"))
+                    : (kn ? "ದಾಖಲೆಗಳನ್ನು ತರಲಾಗುತ್ತಿದೆ…" : "Fetching records…")}
+                </span>
               )}
             </div>
           )}
