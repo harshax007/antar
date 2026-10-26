@@ -136,33 +136,40 @@ const GUIDES = {
 
   map: {
     title: L("Map Guide", "ನಕ್ಷೆ ಮಾರ್ಗದರ್ಶಿ"),
-    lead: L("Karnataka by district for the day or period you pick: each dot is one FIR, and the panels say where crime is concentrated and where to look next.",
-            "ನೀವು ಆರಿಸಿದ ದಿನ ಅಥವಾ ಅವಧಿಗೆ ಜಿಲ್ಲಾವಾರು ಕರ್ನಾಟಕ: ಪ್ರತಿ ಚುಕ್ಕೆ ಒಂದು FIR, ಮತ್ತು ಅಪರಾಧ ಎಲ್ಲಿ ಕೇಂದ್ರೀಕೃತ, ಮುಂದೆ ಎಲ್ಲಿ ನೋಡಬೇಕು ಎಂದು ಫಲಕಗಳು ಹೇಳುತ್ತವೆ."),
+    lead: L("Karnataka by district for the day or period you pick: where crime was recorded, where it is concentrated, and where to look next.",
+            "ನೀವು ಆರಿಸುವ ದಿನ ಅಥವಾ ಅವಧಿಗೆ ಜಿಲ್ಲಾವಾರು ಕರ್ನಾಟಕ: ಅಪರಾಧ ಎಲ್ಲಿ ದಾಖಲಾಗಿದೆ, ಎಲ್ಲಿ ಕೇಂದ್ರೀಕೃತವಾಗಿದೆ, ಮತ್ತು ಮುಂದೆ ಎಲ್ಲಿ ನೋಡಬೇಕು."),
     blocks: [
-      { h: L("Choose what to see", "ಏನನ್ನು ನೋಡಬೇಕು"), items: [
-        [L("Crime types", "ಅಪರಾಧ ಪ್ರಕಾರ"), L("The words along the top: All Crimes, Theft, Robbery and more. More lists the rest.", "ಮೇಲಿನ ಪದಗಳು: ಎಲ್ಲಾ, ಕಳ್ಳತನ, ದರೋಡೆ ಇತ್ಯಾದಿ. More ಉಳಿದವು.")],
-        [L("01 · Calendar", "01 · ಕ್ಯಾಲೆಂಡರ್"), L("Pick a day, then Day, 7 days or 28 days. TODAY jumps to the latest date.", "ದಿನ ಆರಿಸಿ, ನಂತರ ದಿನ, 7 ದಿನ ಅಥವಾ 28 ದಿನ. TODAY ಇತ್ತೀಚಿನ ದಿನಾಂಕಕ್ಕೆ.")],
-        [L("District", "ಜಿಲ್ಲೆ"), L("Choose from the box on the map, or click a district. Its card opens on the right.", "ನಕ್ಷೆಯ ಪೆಟ್ಟಿಗೆಯಿಂದ ಆರಿಸಿ ಅಥವಾ ಜಿಲ್ಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ. ಬಲಭಾಗದಲ್ಲಿ ಕಾರ್ಡ್ ತೆರೆಯುತ್ತದೆ.")],
+      { h: L("Choose what to see", "ಏನು ನೋಡಬೇಕು ಆರಿಸಿ"), items: [
+        [L("Crime type", "ಅಪರಾಧ ಪ್ರಕಾರ"), L("The words along the top: All Crimes, Theft, Robbery, Chain-snatching, Burglary, Vehicle theft. More ▾ lists the rest.", "ಮೇಲಿನ ಪದಗಳು: ಎಲ್ಲಾ ಅಪರಾಧ, ಕಳ್ಳತನ, ದರೋಡೆ, ಸರಗಳ್ಳತನ, ಮನೆಗಳ್ಳತನ, ವಾಹನ ಕಳ್ಳತನ. “ಇನ್ನಷ್ಟು ▾” ಉಳಿದವು.")],
+        [L("Calendar", "ಕ್ಯಾಲೆಂಡರ್"), L("Pick a day. Day is that morning's review, 7 days the weekly review, 28 days the hotspot picture; each ends on the day picked. TODAY jumps to the latest date.", "ದಿನ ಆರಿಸಿ. “ದಿನ” ಬೆಳಗಿನ ಪರಿಶೀಲನೆ, “7 ದಿನ” ವಾರದ ಪರಿಶೀಲನೆ, “28 ದಿನ” ಹಾಟ್‌ಸ್ಪಾಟ್ ಚಿತ್ರ; ಪ್ರತಿಯೊಂದೂ ಆರಿಸಿದ ದಿನದಂದು ಕೊನೆಗೊಳ್ಳುತ್ತದೆ. “ಇಂದು” ಇತ್ತೀಚಿನ ದಿನಕ್ಕೆ.")],
+        [L("A district", "ಜಿಲ್ಲೆ"), L("Click it on the map. Its card opens at the top of the right column; ‹ Karnataka goes back.", "ನಕ್ಷೆಯಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ. ಅದರ ಕಾರ್ಡ್ ಬಲ ಕಾಲಂನ ಮೇಲೆ ತೆರೆಯುತ್ತದೆ; “‹ ಕರ್ನಾಟಕ” ಹಿಂದಕ್ಕೆ.")],
+        [L("My district", "ನನ್ನ ಜಿಲ್ಲೆ"), L("The box on the map: the district the map opens on for you. Your posting, if your sign-in has one.", "ನಕ್ಷೆಯ ಮೇಲಿನ ಪೆಟ್ಟಿಗೆ: ನಿಮಗೆ ನಕ್ಷೆ ತೆರೆಯುವ ಜಿಲ್ಲೆ. ಸೈನ್-ಇನ್‌ನಲ್ಲಿ ನಿಯೋಜನೆ ಇದ್ದರೆ ಅದೇ.")],
       ] },
-      { h: L("The left column", "ಎಡ ಕಾಲಮ್"), items: [
-        [L("02 · Karnataka Crime Report", "02 · ಕರ್ನಾಟಕ ಅಪರಾಧ ವರದಿ"), L("Cases for the period, against the day before and the last 30 days. Open report gives the full breakdown.", "ಅವಧಿಯ ಪ್ರಕರಣಗಳು, ಹಿಂದಿನ ದಿನ ಮತ್ತು 30 ದಿನಗಳೊಂದಿಗೆ. Open report ಪೂರ್ಣ ವಿವರ.")],
-        [L("03 · Police districts with most cases", "03 · ಹೆಚ್ಚು ಪ್ರಕರಣದ ಜಿಲ್ಲೆಗಳು"), L("The busiest districts for the period.", "ಅವಧಿಯ ಅತಿ ಹೆಚ್ಚು ಪ್ರಕರಣದ ಜಿಲ್ಲೆಗಳು.")],
-        [L("Repeat locations", "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು"), L("Spots with 3 or more FIRs on different days in 90 days. Active means a case in the last 14 days; click one for its card.", "90 ದಿನಗಳಲ್ಲಿ ಬೇರೆ ದಿನಗಳಲ್ಲಿ 3+ FIR ಇರುವ ಸ್ಥಳಗಳು. ಸಕ್ರಿಯ = ಕಳೆದ 14 ದಿನಗಳಲ್ಲಿ ಪ್ರಕರಣ.")],
+      { h: L("Reading the map", "ನಕ್ಷೆ ಓದುವುದು"), items: [
+        [L("Dots on Day", "“ದಿನ” ದಲ್ಲಿ ಚುಕ್ಕೆಗಳು"), L("Each dot is one FIR registered that day. A FIR with no usable position sits at its district's centre.", "ಪ್ರತಿ ಚುಕ್ಕೆ ಆ ದಿನ ದಾಖಲಾದ ಒಂದು FIR. ಸ್ಥಳ ಇಲ್ಲದ FIR ಜಿಲ್ಲೆಯ ಮಧ್ಯದಲ್ಲಿ.")],
+        [L("Dots on 7 or 28 days", "“7/28 ದಿನ” ದಲ್ಲಿ ಚುಕ್ಕೆಗಳು"), L("Each dot is a police station, or a beat once a district is open. Bigger and redder means more FIRs expected in the next 7 days. A forecast, not a record.", "ಪ್ರತಿ ಚುಕ್ಕೆ ಒಂದು ಠಾಣೆ, ಜಿಲ್ಲೆ ತೆರೆದಾಗ ಬೀಟ್. ದೊಡ್ಡ ಮತ್ತು ಕೆಂಪು ಎಂದರೆ ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಹೆಚ್ಚು FIR ನಿರೀಕ್ಷೆ. ಇದು ಮುನ್ಸೂಚನೆ, ದಾಖಲೆಯಲ್ಲ.")],
+        [L("Shading", "ಛಾಯೆ"), L("A darker district recorded more FIRs in the period.", "ಗಾಢ ಜಿಲ್ಲೆ ಆ ಅವಧಿಯಲ್ಲಿ ಹೆಚ್ಚು FIR ದಾಖಲಿಸಿದೆ.")],
+        [L("Repeat locations", "ಪುನರಾವರ್ತಿತ ಸ್ಥಳಗಳು"), L("The button on the map: places (about 100 m across) with 3 or more FIRs on 2 or more days in the 90 days to the date picked. Active means a case in the last 14 days. Methodology & Exclusions, at its foot, says which records are left out.", "ನಕ್ಷೆಯ ಗುಂಡಿ: ಆರಿಸಿದ ದಿನದವರೆಗಿನ 90 ದಿನಗಳಲ್ಲಿ 2 ಅಥವಾ ಹೆಚ್ಚು ದಿನ 3 ಅಥವಾ ಹೆಚ್ಚು FIR ಇರುವ ಸುಮಾರು 100 ಮೀ ಸ್ಥಳಗಳು. “ಸಕ್ರಿಯ” ಎಂದರೆ ಕಳೆದ 14 ದಿನಗಳಲ್ಲಿ ಪ್ರಕರಣ. ಕೆಳಗಿನ “ಲೆಕ್ಕಾಚಾರದ ವಿಧಾನ” ಯಾವ ದಾಖಲೆ ಹೊರಗಿಡಲಾಗಿದೆ ಎಂದು ಹೇಳುತ್ತದೆ.")],
       ] },
-      { h: L("The right column", "ಬಲ ಕಾಲಮ್"), items: [
-        [L("View summary", "ವೀಕ್ಷಣೆ ಸಾರಾಂಶ"), L("In short at the top, then confirmed hotspots, any place above its usual level, the next 7 days and patrol to consider.", "ಮೇಲೆ ಸಂಕ್ಷಿಪ್ತ, ನಂತರ ಖಚಿತ ಹಾಟ್‌ಸ್ಪಾಟ್, ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು, ಮುಂದಿನ 7 ದಿನ, ಗಸ್ತು ಸಲಹೆ.")],
-        [L("Where next", "ಮುಂದೆ ಎಲ್ಲಿ"), L("The forecast on the map: the units likely to see the most cases, each with a range.", "ನಕ್ಷೆಯಲ್ಲಿ ಮುನ್ಸೂಚನೆ: ಹೆಚ್ಚು ಪ್ರಕರಣ ಸಾಧ್ಯತೆಯ ಘಟಕಗಳು, ವ್ಯಾಪ್ತಿಯೊಂದಿಗೆ.")],
-        [L("Confirmed hotspot", "ಖಚಿತ ಹಾಟ್‌ಸ್ಪಾಟ್"), L("An area with clearly more cases than its neighbours, by a margin unlikely to be chance.", "ನೆರೆಯವುಗಳಿಗಿಂತ ಸ್ಪಷ್ಟವಾಗಿ ಹೆಚ್ಚು ಪ್ರಕರಣ, ಆಕಸ್ಮಿಕವಲ್ಲ.")],
+      { h: L("The left column", "ಎಡ ಕಾಲಂ"), items: [
+        [L("Karnataka Crime Report", "ಕರ್ನಾಟಕ ಅಪರಾಧ ವರದಿ"), L("Cases in the period, against the period before, and the last 30 days. Open report → gives the full breakdown.", "ಅವಧಿಯ ಪ್ರಕರಣಗಳು, ಹಿಂದಿನ ಅವಧಿಗೆ ಹೋಲಿಕೆ, ಮತ್ತು ಕಳೆದ 30 ದಿನ. “ವರದಿ ತೆರೆಯಿರಿ →” ಪೂರ್ಣ ವಿವರ.")],
+        [L("Police districts with most cases", "ಹೆಚ್ಚು ಪ್ರಕರಣಗಳ ಪೊಲೀಸ್ ಜಿಲ್ಲೆಗಳು"), L("The busiest districts for the period, as bars.", "ಅವಧಿಯ ಅತಿ ನಿರತ ಜಿಲ್ಲೆಗಳು, ಪಟ್ಟಿಗಳಾಗಿ.")],
       ] },
-      { h: L("On the map", "ನಕ್ಷೆಯ ಮೇಲೆ"), items: [
-        [L("Agents", "ಏಜೆಂಟ್‌ಗಳು"), L("Open Agents and drag one onto a district; it runs there for the selected date.", "Agents ತೆರೆದು ಒಂದನ್ನು ಜಿಲ್ಲೆಯ ಮೇಲೆ ಎಳೆಯಿರಿ; ಆಯ್ದ ದಿನಾಂಕಕ್ಕೆ ಅಲ್ಲಿ ನಡೆಯುತ್ತದೆ.")],
-        [L("Dots and shading", "ಚುಕ್ಕೆ ಮತ್ತು ಬಣ್ಣ"), L("Each dot is one FIR; darker shading means more FIRs in the district.", "ಪ್ರತಿ ಚುಕ್ಕೆ ಒಂದು FIR; ಗಾಢ ಬಣ್ಣ ಎಂದರೆ ಜಿಲ್ಲೆಯಲ್ಲಿ ಹೆಚ್ಚು FIR.")],
-        [L("Methodology & Exclusions", "ವಿಧಾನ ಮತ್ತು ಹೊರಗಿಡುವಿಕೆ"), L("At the foot of the left column: how points are placed and which records are left out.", "ಎಡ ಕಾಲಮ್ ಕೆಳಗೆ: ಚುಕ್ಕೆಗಳನ್ನು ಹೇಗೆ ಇಡಲಾಗಿದೆ, ಯಾವ ದಾಖಲೆ ಹೊರಗಿಡಲಾಗಿದೆ.")],
+      { h: L("The right column", "ಬಲ ಕಾಲಂ"), items: [
+        [L("District card", "ಜಿಲ್ಲಾ ಕಾರ್ಡ್"), L("When a district is open: its cases, the 30 days before, its activity level and most recorded crimes. Propose patrol deployment sends a request; nothing is sent until a supervising officer approves it.", "ಜಿಲ್ಲೆ ತೆರೆದಾಗ: ಪ್ರಕರಣಗಳು, ಹಿಂದಿನ 30 ದಿನ, ಚಟುವಟಿಕೆ ಮಟ್ಟ, ಹೆಚ್ಚು ದಾಖಲಾದ ಅಪರಾಧಗಳು. “ಗಸ್ತು ನಿಯೋಜನೆ ಪ್ರಸ್ತಾಪಿಸಿ” ವಿನಂತಿ ಕಳುಹಿಸುತ್ತದೆ; ಮೇಲ್ವಿಚಾರಕರು ಅನುಮೋದಿಸುವವರೆಗೆ ಏನೂ ಹೋಗುವುದಿಲ್ಲ.")],
+        [L("View summary", "ವೀಕ್ಷಣೆಯ ಸಾರಾಂಶ"), L("In short at the top, then confirmed hotspots, any place above its usual level, the next 7 days and patrol to consider. Briefing and Next 7 days at the foot open the details.", "ಮೇಲೆ ಸಂಕ್ಷಿಪ್ತ, ನಂತರ ಖಚಿತ ಹಾಟ್‌ಸ್ಪಾಟ್, ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು, ಮುಂದಿನ 7 ದಿನ, ಗಸ್ತು ಸಲಹೆ. ಕೆಳಗಿನ “ಜಿಲ್ಲಾ ಮಾಹಿತಿ” ಮತ್ತು “ಮುಂದಿನ 7 ದಿನ” ವಿವರ ತೆರೆಯುತ್ತವೆ.")],
+        [L("Confirmed hotspot", "ಖಚಿತ ಹಾಟ್‌ಸ್ಪಾಟ್"), L("An area with clearly more cases than its neighbours, by a margin unlikely to be chance.", "ನೆರೆಯವರಿಗಿಂತ ಸ್ಪಷ್ಟವಾಗಿ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳಿರುವ ಪ್ರದೇಶ, ಆಕಸ್ಮಿಕವಲ್ಲದ ಅಂತರದಿಂದ.")],
+        [L("Where next", "ಮುಂದೆ ಎಲ್ಲಿ"), L("The places likely to see the most cases in the next 7 days, each with a range; pick one for why. The Geo-intel dashboard shows links between districts.", "ಮುಂದಿನ 7 ದಿನಗಳಲ್ಲಿ ಹೆಚ್ಚು ಪ್ರಕರಣ ಸಾಧ್ಯತೆಯ ಸ್ಥಳಗಳು, ವ್ಯಾಪ್ತಿಯೊಂದಿಗೆ; ಕಾರಣಕ್ಕೆ ಒಂದನ್ನು ಆರಿಸಿ. ಜಿಯೋ-ಇಂಟೆಲ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಜಿಲ್ಲೆಗಳ ನಡುವಿನ ಸಂಪರ್ಕ ತೋರಿಸುತ್ತದೆ.")],
+      ] },
+      { h: L("Agents on the map", "ನಕ್ಷೆಯಲ್ಲಿ ಏಜೆಂಟ್‌ಗಳು"), items: [
+        [L("How", "ಹೇಗೆ"), L("Open Agents and drag one onto a district. It runs there for the date and crime type picked.", "ಏಜೆಂಟ್‌ಗಳನ್ನು ತೆರೆದು ಒಂದನ್ನು ಜಿಲ್ಲೆಯ ಮೇಲೆ ಎಳೆಯಿರಿ. ಆರಿಸಿದ ದಿನ ಮತ್ತು ಅಪರಾಧಕ್ಕೆ ಅಲ್ಲಿ ಚಲಿಸುತ್ತದೆ.")],
+        [L("Geo · Forecast", "ಜಿಯೋ · ಮುನ್ಸೂಚನೆ"), L("Geo ranks the district's beats by cases expected in the next 7 days. Forecast gives the likely range at its busiest station.", "ಜಿಯೋ ಮುಂದಿನ 7 ದಿನಗಳ ನಿರೀಕ್ಷೆಯಂತೆ ಬೀಟ್‌ಗಳನ್ನು ಶ್ರೇಣೀಕರಿಸುತ್ತದೆ. ಮುನ್ಸೂಚನೆ ಅತಿ ನಿರತ ಠಾಣೆಯ ಸಾಧ್ಯ ವ್ಯಾಪ್ತಿ ನೀಡುತ್ತದೆ.")],
+        [L("Pattern · Research", "ಮಾದರಿ · ಸಂಶೋಧನೆ"), L("Pattern finds clusters of the crime, close in place and time. Research lists who is named on the most FIRs there and opens a dossier on the one you pick.", "ಮಾದರಿ ಸ್ಥಳ ಮತ್ತು ಸಮಯದಲ್ಲಿ ಹತ್ತಿರದ ಗುಚ್ಛಗಳನ್ನು ಹುಡುಕುತ್ತದೆ. ಸಂಶೋಧನೆ ಅಲ್ಲಿ ಹೆಚ್ಚು FIR ಗಳಲ್ಲಿ ಹೆಸರಿಸಿದವರನ್ನು ಪಟ್ಟಿ ಮಾಡಿ, ಆರಿಸಿದವರ ದಾಖಲೆ ತೆರೆಯುತ್ತದೆ.")],
       ] },
     ],
     tip: L("Pick a district, switch to 28 days, then open Where next.", "ಜಿಲ್ಲೆ ಆರಿಸಿ, 28 ದಿನಕ್ಕೆ ಬದಲಿಸಿ, ನಂತರ ಮುಂದೆ ಎಲ್ಲಿ ತೆರೆಯಿರಿ."),
+    note: L("A hotspot or forecast says where to look, not who did anything. It is never a reason to act against a person.", "ಹಾಟ್‌ಸ್ಪಾಟ್ ಅಥವಾ ಮುನ್ಸೂಚನೆ ಎಲ್ಲಿ ನೋಡಬೇಕು ಎಂದು ಹೇಳುತ್ತದೆ, ಯಾರು ಮಾಡಿದರು ಎಂದಲ್ಲ. ಯಾವುದೇ ವ್ಯಕ್ತಿಯ ವಿರುದ್ಧ ಕ್ರಮಕ್ಕೆ ಕಾರಣವಲ್ಲ."),
   },
-
   search: {
     title: L("Search Guide", "ಹುಡುಕಾಟ ಮಾರ್ಗದರ್ಶಿ"),
     lead: L("Search has four views, picked at the top: People finds a person in the FIR register, Money trail follows money between accounts named in FIRs, Social insights compares districts, and OSINT checks an identifier on the open web.",

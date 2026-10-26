@@ -3369,7 +3369,13 @@ html[data-chatnav="1"] .ax-topnav, html[data-chatnav="1"] .ax-subnav { display: 
    section, so a short one beside a long one left a hole (the Predict guide was mostly gaps). */
 .gd-blocks.gd-cols { display: block; columns: 3 240px; column-gap: 28px; }
 .gd-block { min-width: 0; }
-.gd-cols > .gd-block { break-inside: avoid; page-break-inside: avoid; margin-bottom: 20px; }
+/* A long section may carry on into the next column between items, so a few long sections
+   still fill three columns (kept whole, four sections left the third column empty). An
+   item never splits, and a heading never sits alone at the foot of a column. */
+.gd-cols > .gd-block { margin-bottom: 20px; }
+.gd-cols .gd-item { break-inside: avoid; page-break-inside: avoid; }
+.gd-cols .gd-h { break-after: avoid; page-break-after: avoid; }
+.gd-cols .gd-h + .gd-list > .gd-item:first-child { break-before: avoid; }
 .gd-h {
   margin: 0 0 9px;
   font: 600 10.5px/1.2 'JetBrains Mono', monospace;
