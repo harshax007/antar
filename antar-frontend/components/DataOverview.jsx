@@ -265,13 +265,16 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
     { v: nf(links.crossDistrict), l: kn ? "ಜಿಲ್ಲೆಗಳಾದ್ಯಂತ ಸಂಪರ್ಕಗಳು" : "Links across districts", accent: true,
       h: kn ? "ಇನ್ನೊಂದು ಠಾಣೆಯ ಸುಳಿವು" : "another station's lead" },
   ] : [
-    { v: nf(view.total), l: isFull ? (kn ? "ಒಟ್ಟು FIR" : "Total FIRs") : (kn ? "FIR ಗಳು" : "FIRs in view"), accent: true },
-    { v: nf(view.victims), l: kn ? "ಸಂತ್ರಸ್ತರು" : "Victims" },
-    { v: nf(view.accused), l: kn ? "ಆರೋಪಿಗಳು" : "Accused" },
-    { v: nf(view.arrested), l: kn ? "ಬಂಧಿತರು" : "Arrested" },
-    { v: nf(view.chargesheeted), l: kn ? "ದೋಷಾರೋಪ" : "Charge-sheeted" },
-    { v: nf(view.convictions), l: kn ? "ಶಿಕ್ಷೆಗಳು" : "Convictions" },
-    { v: `${view.arrestRate}%`, l: kn ? "ಬಂಧನ ದರ" : "Arrest rate", accent: true },
+    // One plain line under each figure. The people counts are added up FIR by FIR
+    // (app/api/dataset.py sums each FIR's count), so one person in two FIRs counts twice.
+    { v: nf(view.total), l: isFull ? (kn ? "ಒಟ್ಟು FIR" : "Total FIRs") : (kn ? "FIR ಗಳು" : "FIRs in view"), accent: true,
+      h: kn ? "ದಾಖಲಾದ ಪ್ರಕರಣಗಳು" : "Cases registered" },
+    { v: nf(view.victims), l: kn ? "ಸಂತ್ರಸ್ತರು" : "Victims", h: kn ? "ಹಾನಿಗೊಳಗಾದವರು, ಪ್ರತಿ FIR ಗೆ ಎಣಿಕೆ" : "People harmed, counted per FIR" },
+    { v: nf(view.accused), l: kn ? "ಆರೋಪಿಗಳು" : "Accused", h: kn ? "FIR ಗಳಲ್ಲಿ ಹೆಸರಿಸಿದವರು, ಪ್ರತಿ FIR ಗೆ" : "People named in FIRs, per FIR" },
+    { v: nf(view.arrested), l: kn ? "ಬಂಧಿತರು" : "Arrested", h: kn ? "ವಶಕ್ಕೆ ಪಡೆದ ಆರೋಪಿಗಳು" : "Accused taken into custody" },
+    { v: nf(view.chargesheeted), l: kn ? "ದೋಷಾರೋಪ" : "Charge-sheeted", h: kn ? "ನ್ಯಾಯಾಲಯಕ್ಕೆ ಕಳುಹಿಸಿದ ಆರೋಪಿಗಳು" : "Accused sent to court" },
+    { v: nf(view.convictions), l: kn ? "ಶಿಕ್ಷೆಗಳು" : "Convictions", h: kn ? "ತಪ್ಪಿತಸ್ಥರೆಂದು ತೀರ್ಮಾನ" : "Accused found guilty" },
+    { v: `${view.arrestRate}%`, l: kn ? "ಬಂಧನ ದರ" : "Arrest rate", accent: true, h: kn ? "ಆರೋಪಿಗಳಲ್ಲಿ ಬಂಧಿತರ ಪಾಲು" : "Share of accused arrested" },
   ];
 
   // Suggested searches, typed into the empty box: real accused ids from the rows on this
