@@ -87,8 +87,17 @@ def _win(w, kn: bool) -> str:
     return _mon(a, kn) if a == b else f"{_mon(a, kn)}–{_mon(b, kn)}"
 
 
-def _date(v) -> str:
-    return str(v or "")[:10]
+def _date(v, kn=None) -> str:
+    """ISO day with no language given (for sorting and comparing); '17 Apr 2016' or
+    '17 ಏಪ್ರಿಲ್ 2016' when the line is read by an officer."""
+    d = str(v or "")[:10]
+    if kn is None:
+        return d
+    try:
+        y, m, dd = d.split("-")
+        return f"{int(dd)} {(_MONTH_KN if kn else _MONTH_EN)[int(m) - 1]} {y}"
+    except (ValueError, IndexError):
+        return d
 
 
 # Raw status spellings that are the same stage ('ChargeSheeted' / 'charge_sheeted').
@@ -506,7 +515,7 @@ def _w_trend(rows, kn, params, template_id):
                      f"[COMPUTED] {what.capitalize()} cases in {where} peaked in **{_mon(pm, kn)}** — "
                      f"**{_fmt(pn)}**, {above}% above the monthly average of {_fmt(round(avg))}.")
         for m, n in done[-12:]:
-            lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {'ಪ್ರಕರಣಗಳು' if kn else ('case' if n == 1 else 'cases')}")
+            lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {('ಪ್ರಕರಣ' if n == 1 else 'ಪ್ರಕರಣಗಳು') if kn else ('case' if n == 1 else 'cases')}")
         return lines
     if d and d.get("few"):
         tot = sum(n for _, n in done)
@@ -535,7 +544,7 @@ def _w_trend(rows, kn, params, template_id):
                      f"[COMPUTED] Only one complete month is on record for {what} in {where} "
                      f"({_mon(m, kn)}: {_fmt(n)} cases) — not enough to call a direction.")
     for m, n in done[-12:]:
-        lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {'ಪ್ರಕರಣಗಳು' if kn else ('case' if n == 1 else 'cases')}")
+        lines.append(f"• {_mon(m, kn)}: {_fmt(n)} {('ಪ್ರಕರಣ' if n == 1 else 'ಪ್ರಕರಣಗಳು') if kn else ('case' if n == 1 else 'cases')}")
     if done:
         pm, pn = max(done, key=lambda x: x[1])
         lines.append(f"ಗರಿಷ್ಠ: {_mon(pm, kn)} ({_fmt(pn)})." if kn else f"Peak: {_mon(pm, kn)} with {_fmt(pn)} cases.")
@@ -723,15 +732,15 @@ def _w_linked(rows, kn, params, template_id):
     r0 = ranked[0]
     fir = r0.get("fir_number") or r0.get("crime_id")
     lead = (f"[VERIFIED] **{sid}** **{len(rows)}** ಪ್ರಕರಣಗಳಿಗೆ ಸಂಬಂಧಿಸಿದ್ದಾರೆ; ಇತ್ತೀಚಿನದು FIR {fir} — "
-            f"{_crime_word(r0.get('crime_type'), True)}, {r0.get('zone')}, {_date(r0.get('occurred_at'))}." if kn else
+            f"{_crime_word(r0.get('crime_type'), True)}, {r0.get('zone')}, {_date(r0.get('occurred_at'), True)}." if kn else
             f"[VERIFIED] **{sid}** is linked to **{len(rows)}** case{'s' if len(rows) != 1 else ''}; the most recent is "
-            f"FIR {fir} — {_crime_word(r0.get('crime_type'), False)}, {r0.get('zone')}, {_date(r0.get('occurred_at'))}.")
+            f"FIR {fir} — {_crime_word(r0.get('crime_type'), False)}, {r0.get('zone')}, {_date(r0.get('occurred_at'), False)}.")
     lines = [lead, "ಸಂಬಂಧಿತ ಪ್ರಕರಣಗಳು:" if kn else "Linked cases:"]
     for i, r in enumerate(ranked[:10], 1):
         f = r.get("fir_number") or r.get("crime_id")
         ct = _crime_word(r.get("crime_type"), True) if kn else _crime_en(r.get("crime_type"))
         st = f" · {_status(r.get('status'), kn)}" if r.get("status") else ""
-        lines.append(f"{i}. FIR {f} — {ct}, {r.get('zone')}, {_date(r.get('occurred_at'))}{st}")
+        lines.append(f"{i}. FIR {f} — {ct}, {r.get('zone')}, {_date(r.get('occurred_at'), kn)}{st}")
     return lines
 
 
@@ -762,7 +771,7 @@ def _w_list(rows, kn, params, template_id):
     # count of anything: with no filters left, the total would be the whole register.
     total = None if params.get("related_only") else _total_like(template_id, params)
     r0 = rows[0]
-    latest, zone0 = _date(r0.get("occurred_at")), r0.get("zone") or "—"
+    latest, zone0 = _date(r0.get("occurred_at"), kn), r0.get("zone") or "—"
     scoped = bool(params.get("date_from") or params.get("period"))
     if kn:
         what = ((", ".join(_crime_word(c, True) for c in cts) + " ಪ್ರಕರಣಗಳು") if cts else "ಪ್ರಕರಣಗಳು") + _absq(params, True)
@@ -799,7 +808,7 @@ def _w_list(rows, kn, params, template_id):
         f = r.get("fir_number") or r.get("crime_id") or "—"
         ct = _crime_word(r.get("crime_type"), True) if kn else _crime_en(r.get("crime_type"))
         st = f" · {_status(r.get('status'), kn)}" if r.get("status") else ""
-        lines.append(f"{i}. FIR {f} — {ct}, {r.get('zone') or '—'}, {_date(r.get('occurred_at'))}{st}"
+        lines.append(f"{i}. FIR {f} — {ct}, {r.get('zone') or '—'}, {_date(r.get('occurred_at'), kn)}{st}"
                      f"{elapsed(r.get('occurred_at')) if elapsed else ''}{_accused_note(r, kn)}")
     return lines
 
@@ -983,7 +992,7 @@ def _w_count(rows, kn, params, template_id):
         for i, r in enumerate(rows[:3], 1):
             f = r.get("fir_number") or r.get("crime_id") or "—"
             ct = _crime_word(r.get("crime_type"), True) if kn else _crime_en(r.get("crime_type"))
-            lines.append(f"{i}. FIR {f} — {ct}, {r.get('zone') or '—'}, {_date(r.get('occurred_at'))}")
+            lines.append(f"{i}. FIR {f} — {ct}, {r.get('zone') or '—'}, {_date(r.get('occurred_at'), kn)}")
     return lines
 
 
@@ -1110,7 +1119,7 @@ def _fir_lines(rows, kn: bool, limit: int = 10) -> list[str]:
         raw = r.get("status") or r.get("FIR_Stage")
         st = f" · {_status(raw, kn)}" if raw else ""
         out.append(f"{i}. FIR {_fir_no(r)} — {ct}, {r.get('zone') or '—'}, "
-                   f"{_date(r.get('date') or r.get('occurred_at'))}{st}")
+                   f"{_date(r.get('date') or r.get('occurred_at'), kn)}{st}")
     return out
 
 
@@ -1130,7 +1139,7 @@ def _w_ident(rows, kn, params, template_id):
                         if r.get("district_norm") or r.get("zone"))
     nd = len(districts)
     label_en, label_kn = _IDENT_LABEL[kt]
-    ct0, place0, d0 = _crime_word(r0.get("crime_type"), kn), r0.get("zone") or "—", _date(r0.get("date"))
+    ct0, place0, d0 = _crime_word(r0.get("crime_type"), kn), r0.get("zone") or "—", _date(r0.get("date"), kn)
     if kn:
         spread = f", **{nd}** ಜಿಲ್ಲೆಗಳಲ್ಲಿ" if nd > 1 else ""
         lead = (f"[VERIFIED] {label_kn} **{value}** **{_fmt(total)}** FIR ಗಳಲ್ಲಿ ದಾಖಲಾಗಿದೆ{spread}; "
@@ -1227,9 +1236,9 @@ def _w_shared(rows, kn, params, template_id):
         dl = ", ".join(x.strip() for x in str(r.get("district_list") or "").split(",") if x.strip())
         if kn:
             return (f"{i}. {r['key_value']} — {_fmt(r['firs'])} FIR · {r['districts']} ಜಿಲ್ಲೆಗಳು: {dl}"
-                    f" · ಕೊನೆಯದು {_date(r.get('last_date'))}")
+                    f" · ಕೊನೆಯದು {_date(r.get('last_date'), True)}")
         return (f"{i}. {r['key_value']} — {_fmt(r['firs'])} FIRs · {r['districts']} districts: {dl}"
-                f" · last seen {_date(r.get('last_date'))}")
+                f" · last seen {_date(r.get('last_date'), False)}")
 
     def hint(t, key):
         ask = f"cases for {key}" if t == "accused" else f"FIRs for {key}"
@@ -1519,6 +1528,16 @@ def _days_word(d: int, kn: bool) -> str:
     return f"{d} ದಿನ" if kn else f"{d} days"
 
 
+def _more_than_kn(d: int) -> str:
+    """'more than 3 months' in Kannada: the noun takes the comparative ending
+    ('3 ತಿಂಗಳಿಗಿಂತ'), it is not a separate word ('3 ತಿಂಗಳು ಗಿಂತ')."""
+    if d >= 365 and d % 365 == 0:
+        return f"{d // 365} ವರ್ಷಕ್ಕಿಂತ"
+    if d >= 30 and d % 30 == 0:
+        return f"{d // 30} ತಿಂಗಳಿಗಿಂತ"
+    return f"{d} ದಿನಗಳಿಗಿಂತ"
+
+
 def _what(cts, heads, kn: bool) -> str:
     """The crime the answer is about, in the officer's words (sub-heading first)."""
     from app.services.zcql_repo import head_label
@@ -1554,7 +1573,7 @@ def _w_stages(rows, kn, params, template_id):
             if trial:
                 lead = f"[COMPUTED] {_in_loc(where, True)} {what} ({scope}): **{_fmt(pt)}** ವಿಚಾರಣೆ ಬಾಕಿ / ದೋಷಾರೋಪ ಪಟ್ಟಿ ಹಂತದಲ್ಲಿವೆ — {_fmt(firs)} FIR ಗಳಲ್ಲಿ {_pct(pt, firs)}%."
             elif older:
-                lead = f"[COMPUTED] {_in_loc(where, True)} {what} ({scope}): **{_fmt(oo)}** {_days_word(older, True)} ಗಿಂತ ಹೆಚ್ಚು ಕಾಲದಿಂದ ತನಿಖೆಯಲ್ಲಿವೆ."
+                lead = f"[COMPUTED] {_in_loc(where, True)} {what} ({scope}): **{_fmt(oo)}** {_more_than_kn(older)} ಹೆಚ್ಚು ಕಾಲದಿಂದ ತನಿಖೆಯಲ್ಲಿವೆ."
             else:
                 lead = f"[COMPUTED] {_in_loc(where, True)} {what} ({scope}): **{_fmt(ui)}** ತನಿಖೆಯಲ್ಲಿವೆ — {_fmt(o365)} ಒಂದು ವರ್ಷಕ್ಕಿಂತ ಹಳೆಯವು."
         else:
@@ -1569,8 +1588,8 @@ def _w_stages(rows, kn, params, template_id):
                         f"{_fmt(o90)} for more than 90 days and {_fmt(o365)} for more than a year.")
         lines = [lead]
         if r.get("oldest_open") and not trial:
-            lines.append(f"• ಅತಿ ಹಳೆಯ ತೆರೆದ ತನಿಖೆ: {_date(r['oldest_open'])} ರಿಂದ" if kn else
-                         f"• Oldest open investigation: registered {_date(r['oldest_open'])}")
+            lines.append(f"• ಅತಿ ಹಳೆಯ ತೆರೆದ ತನಿಖೆ: {_date(r['oldest_open'], True)} ರಿಂದ" if kn else
+                         f"• Oldest open investigation: registered {_date(r['oldest_open'], False)}")
         lines.append(f"ಪ್ರಕರಣ ಹಂತಗಳು ({_fmt(firs)} FIR):" if kn else f"Case stages ({_fmt(firs)} FIRs):")
         i = 0
         for k, c in sorted(((k, r.get(k) or 0) for k in _STAGE_KEYS), key=lambda x: -x[1]):
@@ -1598,7 +1617,7 @@ def _w_stages(rows, kn, params, template_id):
     unit_kn = {"station": "ಠಾಣೆ", "district": "ಜಿಲ್ಲೆ", "crime_type": "ಅಪರಾಧ ಪ್ರಕಾರ"}[dim]
     state_en = (f"under investigation for more than {_days_word(older, False)}" if older else
                 "pending trial or charge-sheeted" if trial else "under investigation")
-    state_kn = (f"{_days_word(older, True)} ಗಿಂತ ಹೆಚ್ಚು ಕಾಲದಿಂದ ತನಿಖೆಯಲ್ಲಿ" if older else
+    state_kn = (f"{_more_than_kn(older)} ಹೆಚ್ಚು ಕಾಲದಿಂದ ತನಿಖೆಯಲ್ಲಿ" if older else
                 "ವಿಚಾರಣೆ ಬಾಕಿ" if trial else "ತನಿಖೆಯಲ್ಲಿ")
     total = sum((r.get(key) or 0) for r in rows)
     if kn:
@@ -1725,26 +1744,44 @@ def _w_time(rows, kn, params, template_id):
     order = sorted(rs, key=lambda r: r.get("slot_index") or 0)
     if weekday:
         even = round(100 / 7)
-        lead = (f"[COMPUTED] {_in_loc(where, True)} {what} ಹೆಚ್ಚು ದಾಖಲಾಗುವ ದಿನ **{hi['slot']}** — {_fmt(hi['n'])} "
-                f"({_pct(hi['n'], total)}%); ಕಡಿಮೆ {lo['slot']} — {_fmt(lo['n'])}, {gap}% ಕಡಿಮೆ ({scope})." if kn else
+        lead = (f"[COMPUTED] {_in_loc(where, True)} {what} ಹೆಚ್ಚು ದಾಖಲಾಗುವ ದಿನ **{_slot(hi['slot'], True)}** — {_fmt(hi['n'])} "
+                f"({_pct(hi['n'], total)}%); ಕಡಿಮೆ {_slot(lo['slot'], True)} — {_fmt(lo['n'])}, {gap}% ಕಡಿಮೆ ({scope})." if kn else
                 f"[COMPUTED] **{hi['slot']}** is the busiest day for {what} in {where}: **{_fmt(hi['n'])}** FIRs "
                 f"({_pct(hi['n'], total)}% of the week, against an even {even}%). The quietest is {lo['slot']} with "
                 f"{_fmt(lo['n'])}, {gap}% fewer ({scope}).")
     else:
-        lead = (f"[COMPUTED] {_in_loc(where, True)} {what} ಹೆಚ್ಚು ದಾಖಲಾಗುವ ತಿಂಗಳು **{hi['slot']}** — {_fmt(hi['n'])}; "
-                f"ಕಡಿಮೆ {lo['slot']} — {_fmt(lo['n'])} ({scope})." if kn else
+        lead = (f"[COMPUTED] {_in_loc(where, True)} {what} ಹೆಚ್ಚು ದಾಖಲಾಗುವ ತಿಂಗಳು **{_slot(hi['slot'], True)}** — {_fmt(hi['n'])}; "
+                f"ಕಡಿಮೆ {_slot(lo['slot'], True)} — {_fmt(lo['n'])} ({scope})." if kn else
                 f"[COMPUTED] **{hi['slot']}** is the busiest month of the year for {what} in {where}: "
                 f"**{_fmt(hi['n'])}** FIRs across the years on record; the quietest is {lo['slot']} with {_fmt(lo['n'])}, "
                 f"{gap}% fewer ({scope}).")
     lines = [lead, ("ದಿನವಾರು:" if weekday else "ತಿಂಗಳುವಾರು:") if kn else ("By day of the week:" if weekday else "By month of the year:")]
     for r in order:
-        lines.append(f"• {r['slot']} — {_fmt(r['n'])} ({_pct(r['n'], total)}%)")
+        lines.append(f"• {_slot(r['slot'], kn)} — {_fmt(r['n'])} ({_pct(r['n'], total)}%)")
     lines.append("• FIR ದಾಖಲಾದ ದಿನಾಂಕದ ಪ್ರಕಾರ; ಅಪರಾಧ ನಡೆದ ದಿನ ಅಥವಾ ಸಮಯ ದಾಖಲೆಯಲ್ಲಿಲ್ಲ." if kn else
                  "• By the date each FIR was registered; the register does not hold the day or time of the offence itself.")
     if not weekday:
         lines.append("• ವರ್ಷಗಳ ವ್ಯಾಪ್ತಿ ಸಮಾನವಾಗಿಲ್ಲ (2016–2022 ಭಾಗಶಃ ದಾಖಲೆ), ಆದ್ದರಿಂದ ತಿಂಗಳುಗಳ ಹೋಲಿಕೆ ಸೂಚಕ ಮಾತ್ರ." if kn else
                      "• Years are not covered evenly (2016–2022 are a partial extract), so read the months as a pattern, not exact totals.")
     return lines
+
+
+_DAY_KN = {"sunday": "ಭಾನುವಾರ", "monday": "ಸೋಮವಾರ", "tuesday": "ಮಂಗಳವಾರ", "wednesday": "ಬುಧವಾರ",
+           "thursday": "ಗುರುವಾರ", "friday": "ಶುಕ್ರವಾರ", "saturday": "ಶನಿವಾರ"}
+
+
+def _slot(v, kn: bool) -> str:
+    """A weekday or month slot in the officer's language ('Wednesday' -> 'ಬುಧವಾರ')."""
+    t = str(v or "")
+    if not kn:
+        return t
+    low = t.strip().lower()
+    if low in _DAY_KN:
+        return _DAY_KN[low]
+    for i, m in enumerate(_MONTH_EN):
+        if low[:3] == m.lower() and low.isalpha():
+            return _MONTH_KN[i]
+    return t
 
 
 def _w_link(rows, kn, params, template_id):

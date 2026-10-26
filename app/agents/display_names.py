@@ -28,6 +28,39 @@ _KN_CRIME = {
     "NDPS": "ಮಾದಕ ವಸ್ತು (NDPS)", "RIOTS": "ಗಲಭೆ", "PUBLIC SAFETY": "ಸಾರ್ವಜನಿಕ ಸುರಕ್ಷತೆ",
     "DOWRY": "ವರದಕ್ಷಿಣೆ",
 }
+# The register's other common crime heads (by FIR count). Without them a Kannada answer
+# printed "karnataka police act 1963" or "Burglary - Day" in English, lowercased.
+_KN_CRIME.update({
+    "KARNATAKA POLICE ACT 1963": "ಕರ್ನಾಟಕ ಪೊಲೀಸ್ ಕಾಯ್ದೆ 1963",
+    "KARNATAKA STATE LOCAL ACT": "ಕರ್ನಾಟಕ ರಾಜ್ಯ ಸ್ಥಳೀಯ ಕಾಯ್ದೆ",
+    "CRPC": "ಸಿಆರ್‌ಪಿಸಿ (CrPC)",
+    "MOLESTATION": "ಲೈಂಗಿಕ ಕಿರುಕುಳ",
+    "BURGLARY - NIGHT": "ರಾತ್ರಿ ಮನೆಗಳ್ಳತನ", "BURGLARY - DAY": "ಹಗಲು ಮನೆಗಳ್ಳತನ",
+    "NARCOTIC DRUGS & PSHYCOTROPIC SUBSTANCES": "ಮಾದಕ ವಸ್ತು (NDPS)", "NARCOTICS": "ಮಾದಕ ವಸ್ತು",
+    "POCSO": "ಪೋಕ್ಸೋ (POCSO)",
+    "CRUELTY BY HUSBAND": "ಪತಿಯಿಂದ ಕ್ರೌರ್ಯ",
+    "NEGLIGENT ACT": "ನಿರ್ಲಕ್ಷ್ಯದ ಕೃತ್ಯ",
+    "CRIMINAL INTIMIDATION": "ಕ್ರಿಮಿನಲ್ ಬೆದರಿಕೆ",
+    "CRIMES RELATED TO WOMEN": "ಮಹಿಳೆಯರಿಗೆ ಸಂಬಂಧಿಸಿದ ಅಪರಾಧಗಳು",
+    "CRIMINAL TRESPASS": "ಅಕ್ರಮ ಪ್ರವೇಶ",
+    "SCHEDULED CASTE AND THE SCHEDULED TRIBES": "ಪರಿಶಿಷ್ಟ ಜಾತಿ ಮತ್ತು ಪರಿಶಿಷ್ಟ ಪಂಗಡ ಕಾಯ್ದೆ",
+    "OFFENCES AGAINST PUBLIC SERVANTS (PUBLIC SERVANT IS A VICTIM)": "ಸಾರ್ವಜನಿಕ ನೌಕರರ ವಿರುದ್ಧ ಅಪರಾಧಗಳು",
+    "SUICIDE": "ಆತ್ಮಹತ್ಯೆ",
+    "ELECTION": "ಚುನಾವಣಾ ಅಪರಾಧಗಳು",
+    "CRIMINAL BREACH OF TRUST": "ನಂಬಿಕೆ ದ್ರೋಹ",
+    "FORGERY": "ನಕಲಿ ದಾಖಲೆ (ಫೋರ್ಜರಿ)",
+    "DEATHS DUE TO RASHNESS/NEGLIGENCE": "ನಿರ್ಲಕ್ಷ್ಯದಿಂದ ಸಾವು",
+    "IMMORAL TRAFFIC": "ಅನೈತಿಕ ಸಾಗಣೆ",
+    "ARSON": "ಬೆಂಕಿ ಹಚ್ಚುವಿಕೆ",
+    "DOWRY DEATHS": "ವರದಕ್ಷಿಣೆ ಸಾವು",
+    "ASSAULT": "ಆಕ್ರಮಣ",
+    "CULPABLE HOMICIDE NOT AMOUNTING TO MURDER": "ಕೊಲೆಯಲ್ಲದ ಅಪರಾಧಿಕ ನರಹತ್ಯೆ",
+    "ARMS ACT 1959": "ಶಸ್ತ್ರಾಸ್ತ್ರ ಕಾಯ್ದೆ 1959",
+    "EXPLOSIVES": "ಸ್ಫೋಟಕಗಳು",
+    "CHILDREN ACT": "ಮಕ್ಕಳ ಕಾಯ್ದೆ",
+    "PUBLIC NUISANCE": "ಸಾರ್ವಜನಿಕ ಉಪದ್ರವ",
+    "CHAIN SNATCHING": "ಸರಗಳ್ಳತನ",
+})
 
 # Direction words
 _DIR_EN = {"UPWARD": "Rising", "DOWNWARD": "Falling", "STABLE": "Steady"}
@@ -40,7 +73,9 @@ _DIM_KN = {"zone": "ಜಿಲ್ಲೆಗಳು", "district": "ಜಿಲ್ಲ�
            "station": "ಠಾಣೆಗಳು", "city": "ನಗರಗಳು"}
 
 # Acronyms that stay uppercase even in sentence case
-_ACRONYMS = {"FIR", "UPI", "IP", "KSP", "BNS", "OSINT", "NDPS", "POCSO", "SC", "ST"}
+_ACRONYMS = {"FIR", "UPI", "IP", "KSP", "BNS", "OSINT", "NDPS", "POCSO", "SC", "ST", "COTPA"}
+# Names that keep their capital inside a sentence: "Karnataka police act 1963", not "karnataka …".
+_PROPER = {"KARNATAKA": "Karnataka", "CRPC": "CrPC", "INDIAN": "Indian"}
 
 
 def _normalise(raw: str) -> str:
@@ -94,6 +129,8 @@ def _to_sentence(s: str, *, capitalize: bool = False) -> str:
     for i, w in enumerate(words):
         if w in _ACRONYMS:
             out.append(w)
+        elif w in _PROPER:
+            out.append(_PROPER[w])
         elif i == 0 and capitalize:
             out.append(w.capitalize())
         else:

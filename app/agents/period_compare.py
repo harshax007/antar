@@ -105,14 +105,26 @@ def _by_type(zones, d0: date, d1: date) -> dict[str, int]:
     return out
 
 
-def _nice(d: date) -> str:
+def _nice(d: date, kn: bool = False) -> str:
+    if kn:
+        from app.agents.answer_writer import _MONTH_KN
+        return f"{d.day} {_MONTH_KN[d.month - 1]}"
     return f"{d.day} {d.strftime('%b')}"
 
 
-def _span(a: date, b: date) -> str:
+def _span(a: date, b: date, kn: bool = False) -> str:
     if a == b:
-        return _nice(a)
-    return f"{_nice(a)}–{_nice(b)} {b.year}" if a.year == b.year else f"{_nice(a)} {a.year}–{_nice(b)} {b.year}"
+        return _nice(a, kn)
+    return (f"{_nice(a, kn)}–{_nice(b, kn)} {b.year}" if a.year == b.year
+            else f"{_nice(a, kn)} {a.year}–{_nice(b, kn)} {b.year}")
+
+
+def _label(k: str, kn: bool) -> str:
+    """A crime head as the movers list prints it: Kannada where there is a name for it."""
+    if kn:
+        from app.agents.display_names import _KN_CRIME, _normalise
+        return _KN_CRIME.get(_normalise(k)) or k.title()
+    return k.title()
 
 
 def _verdict(now: int, before: int) -> tuple[str, str]:
@@ -159,18 +171,19 @@ def answer(text: str, unit: str, ents: dict, lang: str = "en") -> dict:
         word_kn = {"up": "**ಏರಿಕೆ**", "down": "**ಇಳಿಕೆ**", "flat": "**ಸುಮಾರು ಅಷ್ಟೇ**", "few": "**ಹೇಳಲು ಪ್ರಕರಣಗಳು ಕಡಿಮೆ**"}[way]
         what_kn = (", ".join(_crime_word(c, True) for c in cts) + " ಪ್ರಕರಣಗಳು") if cts else "FIR ಗಳು"
         where_kn = f"{', '.join(zones)} ನಲ್ಲಿ" if zones else "ಕರ್ನಾಟಕದಲ್ಲಿ"
-        lead = (f"[COMPUTED] {where_kn} {what_kn}: {word_kn} — {_span(a0, a1)} ರಲ್ಲಿ **{now:,}**, "
-                f"ಹಿಂದಿನ ಅವಧಿ {_span(b0, b1)} ರಲ್ಲಿ **{before:,}** "
+        lead = (f"[COMPUTED] {where_kn} {what_kn}: {word_kn} — {_span(a0, a1, True)} ರಲ್ಲಿ **{now:,}**, "
+                f"ಹಿಂದಿನ ಅವಧಿ {_span(b0, b1, True)} ರಲ್ಲಿ **{before:,}** "
                 f"({pct.split(' on ')[0].replace('none in the window before', 'ಹಿಂದಿನ ಅವಧಿಯಲ್ಲಿ ಯಾವುದೂ ಇಲ್ಲ').replace('none in either window', 'ಎರಡೂ ಅವಧಿಯಲ್ಲಿ ಇಲ್ಲ')}).")
     else:
-        lead = (f"[COMPUTED] {what[0].upper() + what[1:]}{where} are {word}: **{now:,}** in {_span(a0, a1)} "
-                f"against **{before:,}** in {_span(b0, b1)} ({pct}).")
+        on = "on" if a0 == a1 else "in"     # "62 on 26 Oct", "46 in 20 Oct–26 Oct 2026"
+        lead = (f"[COMPUTED] {what[0].upper() + what[1:]}{where} are {word}: **{now:,}** {on} {_span(a0, a1)} "
+                f"against **{before:,}** {on} {_span(b0, b1)} ({pct}).")
     lines = [lead]
     if unit == "day":
         days = [_count(cts, zones, today - timedelta(days=i), today - timedelta(days=i)) for i in range(1, 29)]
         usual = statistics.median(days) if days else 0
         if usual:
-            lines.append(f"- ಹಿಂದಿನ 4 ವಾರಗಳ ಸಾಮಾನ್ಯ ದಿನ: **{usual:g}** (ಮಧ್ಯಮ); {_nice(a1)} ಅದರ **{now / usual:.1f}×**." if kn else
+            lines.append(f"- ಹಿಂದಿನ 4 ವಾರಗಳ ಸಾಮಾನ್ಯ ದಿನ: **{usual:g}** (ಮಧ್ಯಮ); {_nice(a1, True)} ಅದರ **{now / usual:.1f}×**." if kn else
                          f"- A usual day over the 4 weeks before: **{usual:g}** FIRs (median); "
                          f"{_nice(a1)} is **{now / usual:.1f}×** that.")
     if not cts:
@@ -184,7 +197,7 @@ def answer(text: str, unit: str, ents: dict, lang: str = "en") -> dict:
         def _mv(k):
             b, a = prev.get(k, 0), cur.get(k, 0)
             pc = f", {'+' if a > b else ''}{round(100 * (a - b) / b)}%" if b >= 10 else ""
-            return f"{k.title()} ({b:,} → {a:,}{pc})"
+            return f"{_label(k, kn)} ({b:,} → {a:,}{pc})"
         # "which crime types rose the most": the ranking is the answer, so it is longer
         many = 5 if _WHICH_TYPES.search(text) else 3
         ups = [_mv(k) for k, d in moves if d > 0][:many]
@@ -196,7 +209,7 @@ def answer(text: str, unit: str, ents: dict, lang: str = "en") -> dict:
         if relabel:
             lines.append(("- ಒಂದೇ ಅವಧಿಯಲ್ಲಿ ಮಾತ್ರ ದಾಖಲಾದ ವರ್ಗಗಳು (ಹೆಸರು ಬದಲಾವಣೆ ಸಾಧ್ಯ): " if kn else
                           "- Recorded in one window only, likely a change of label rather than of crime: ")
-                         + "; ".join(f"{k.title()} ({prev.get(k, 0):,} → {cur.get(k, 0):,})" for k in relabel) + ".")
+                         + "; ".join(f"{_label(k, kn)} ({prev.get(k, 0):,} → {cur.get(k, 0):,})" for k in relabel) + ".")
     lines.append("ಇವು ಪ್ರತಿ ಅವಧಿಯಲ್ಲಿ ದಾಖಲಾದ FIR ಗಳು; ಚಿಕ್ಕ ಅವಧಿ ಕೆಲವೇ ಪ್ರಕರಣಗಳಿಂದ ಹೆಚ್ಚು ಬದಲಾಗುತ್ತದೆ." if kn else
                  "Counts are FIRs registered in each window, not incidents; a short window moves a lot "
                  "on a few cases, so read it with the monthly trend.")

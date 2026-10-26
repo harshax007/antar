@@ -56,7 +56,31 @@ _STAGES = {
     "UNDETECTED": ("investigation", "Closed as undetected"),
     "FALSE CASE": ("investigation", "Closed as a false case"),
     "OTHER DISPOSAL": ("investigation", "Disposed of otherwise"),
+    # The 2026 demonstration rows spell stages their own way (CHARGE_SHEETED, UN TRACED,
+    # DISPOSED). Unlisted, a charge-sheeted case read as "still under investigation", and
+    # 167 Robbery cases at a station "0% reached court".
+    "CHARGE SHEETED": ("court", None),
+    "CHARGESHEETED": ("court", None),
+    "UN TRACED": ("investigation", "Closed as undetected"),
+    "DISPOSED": ("investigation", "Disposed of otherwise"),
 }
+
+
+def _stage(v) -> str:
+    """A register stage as a _STAGES key: 'Under_Investigation' -> 'UNDER INVESTIGATION'."""
+    return " ".join(str(v or "").upper().replace("_", " ").split())
+
+
+def _by_stage(rows) -> dict:
+    by: dict = {}
+    for x in rows:
+        k = _stage(x["st"])
+        by[k] = by.get(k, 0) + x["n"]
+    return by
+
+
+def _undetected(by: dict) -> int:
+    return sum(n for k, n in by.items() if _STAGES.get(k, ("", None))[1] == "Closed as undetected")
 _STEPS = ("registered", "investigation", "arrest", "chargesheet", "court")
 _ENDED_KN = {
     "Convicted": "ಶಿಕ್ಷೆಯಾಗಿದೆ",
@@ -77,12 +101,25 @@ def _int(v) -> int:
         return 0
 
 
-def _nice(iso: str | None) -> str:
+_MONTH_KN = ("ಜನವರಿ", "ಫೆಬ್ರವರಿ", "ಮಾರ್ಚ್", "ಏಪ್ರಿಲ್", "ಮೇ", "ಜೂನ್", "ಜುಲೈ", "ಆಗಸ್ಟ್",
+             "ಸೆಪ್ಟೆಂಬರ್", "ಅಕ್ಟೋಬರ್", "ನವೆಂಬರ್", "ಡಿಸೆಂಬರ್")
+
+
+def _nice(iso: str | None, kn: bool = False) -> str:
     try:
         d = date.fromisoformat(str(iso)[:10])
     except ValueError:
         return str(iso or "")
+    if kn:
+        return f"{d.day} {_MONTH_KN[d.month - 1]} {d.year}"
     return f"{d.day} {d.strftime('%b %Y')}"          # %-d is not portable to Windows
+
+
+def _crime_kn(label: str) -> str:
+    """The crime in Kannada where the display map has it; the register's own words otherwise."""
+    from app.agents.display_names import display_crime
+    k = display_crime(label, "kn")
+    return label if k == str(label).lower() else k
 
 
 def _crime_label(group: str | None, head: str | None) -> str:
@@ -147,7 +184,7 @@ def _similar(con: sqlite3.Connection, r: sqlite3.Row) -> dict | None:
         total = sum(x["n"] for x in rows)
         if total < MIN_SIMILAR and scope != "state":
             continue
-        by = {x["st"] or "": x["n"] for x in rows}
+        by = _by_stage(rows)
         open_inv = sum(by.get(k, 0) for k in ("UNDER INVESTIGATION", "TRANSFERRED - UNDER INVESTIGATION", "TRACED"))
         reached_court = sum(n for k, n in by.items() if _STAGES.get(k, ("", None))[0] == "court")
         decided = by.get("CONVICTED", 0) + by.get("DIS/ACQ", 0)
@@ -158,7 +195,7 @@ def _similar(con: sqlite3.Connection, r: sqlite3.Row) -> dict | None:
             "crime_head": _crime_label(r["CrimeGroup_Name"], head),
             "still_under_investigation": pct(open_inv, total),
             "reached_court": pct(reached_court, total),
-            "undetected": pct(by.get("UNDETECTED", 0), total),
+            "undetected": pct(_undetected(by), total),
             "convicted_of_decided": pct(by.get("CONVICTED", 0), decided) if decided >= MIN_DECIDED else None,
             "convicted": by.get("CONVICTED", 0),
             "decided": decided,
@@ -252,7 +289,7 @@ def _brain_similar(con: sqlite3.Connection, r: dict) -> dict | None:
         total = sum(x["n"] for x in rows)
         if total < MIN_SIMILAR and scope != "state":
             continue
-        by = {x["st"] or "": x["n"] for x in rows}
+        by = _by_stage(rows)
         open_inv = sum(by.get(k, 0) for k in ("UNDER INVESTIGATION", "TRANSFERRED - UNDER INVESTIGATION", "TRACED"))
         reached_court = sum(n for k, n in by.items() if _STAGES.get(k, ("", None))[0] == "court")
         decided = by.get("CONVICTED", 0) + by.get("DIS/ACQ", 0)
@@ -260,7 +297,7 @@ def _brain_similar(con: sqlite3.Connection, r: dict) -> dict | None:
         return {"scope": scope, "where": {"station": r["UnitName"], "district": r["District_Name"], "state": "the Brain dataset"}[scope],
                 "cases": total, "crime_head": _crime_label(group, None),
                 "still_under_investigation": pct(open_inv, total), "reached_court": pct(reached_court, total),
-                "undetected": pct(by.get("UNDETECTED", 0), total),
+                "undetected": pct(_undetected(by), total),
                 "convicted_of_decided": pct(by.get("CONVICTED", 0), decided) if decided >= MIN_DECIDED else None,
                 "convicted": by.get("CONVICTED", 0), "decided": decided,
                 "stages": sorted(({"stage": k.title(), "n": n} for k, n in by.items() if k), key=lambda x: -x["n"])[:8]}
@@ -329,7 +366,7 @@ def build(con: sqlite3.Connection, r, brain: bool = False) -> dict:
         age = (today - date.fromisoformat(reg)).days
     except ValueError:
         age = None
-    stage_raw = " ".join(str(r["FIR_Stage"] or r["status"] or "").upper().replace("_", " ").split())
+    stage_raw = _stage(r["FIR_Stage"] or r["status"])
     reached, ended = _STAGES.get(stage_raw, ("investigation", None))
     accused, arrested = _int(r["Accused_Count"]), _int(r["Arrested_Count_No_"])
     charged, convicted = _int(r["Accused_ChargeSheeted_Count"]), _int(r["Conviction_Count"])
@@ -397,7 +434,7 @@ def build(con: sqlite3.Connection, r, brain: bool = False) -> dict:
              date_missing=True)
     elif open_inv:
         due = f" Day 60 falls on {_nice(mark60)}, day 90 on {_nice(mark90)}." if mark60 else ""
-        due_kn = f" 60ನೇ ದಿನ {_nice(mark60)}, 90ನೇ ದಿನ {_nice(mark90)}." if mark60 else ""
+        due_kn = f" 60ನೇ ದಿನ {_nice(mark60, True)}, 90ನೇ ದಿನ {_nice(mark90, True)}." if mark60 else ""
         step("chargesheet", "Charge-sheet", "ದೋಷಾರೋಪ ಪಟ್ಟಿ", "pending", "Not filed yet." + due, "ಇನ್ನೂ ಸಲ್ಲಿಸಿಲ್ಲ." + due_kn)
     else:
         step("chargesheet", "Charge-sheet", "ದೋಷಾರೋಪ ಪಟ್ಟಿ", "none", "Not filed.", "ಸಲ್ಲಿಸಿಲ್ಲ.")
@@ -418,7 +455,7 @@ def build(con: sqlite3.Connection, r, brain: bool = False) -> dict:
     head = _crime_label(r["CrimeGroup_Name"], r["CrimeHead_Name"] or r["crime_type"])
     secs = ", ".join(sections[:3])
     bits = [f"{head} registered at {station} on {_nice(reg)}" + (f" under {secs}" if sections else "") + "."]
-    bits_kn = [f"{head}: {station} ನಲ್ಲಿ {_nice(reg)} ರಂದು" + (f" {secs} ಅಡಿ" if sections else "") + " ದಾಖಲಾಗಿದೆ."]
+    bits_kn = [f"{_crime_kn(head)}: {station} ನಲ್ಲಿ {_nice(reg, True)} ರಂದು" + (f" {secs} ಅಡಿ" if sections else "") + " ದಾಖಲಾಗಿದೆ."]
     if accused:
         bits.append(f"{accused} accused named; {arrested} arrested, {charged} charge-sheeted"
                     + (f", {convicted} convicted" if convicted else "") + ".")

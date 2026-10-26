@@ -161,71 +161,104 @@ def answer(text: str, lang: str = "en") -> dict:
     # where the case is: the step it is at, or, once it has closed, the last step it reached
     now = next((s for s in d["steps"] if s["state"] == "current"), None) \
         or next((s for s in reversed(d["steps"]) if s["state"] == "done"), d["steps"][-1])
+    # In the officer's language: the timeline already carries every line in Kannada.
+    kn = lang == "kn"
+    from app.agents.answer_writer import _date
+
+    def L(x: dict, key: str) -> str:
+        return (x.get(key + "_kn") or x.get(key) or "") if kn else (x.get(key) or "")
+
     lines = []
     if len(found) > 1:
-        lines.append(f"{len(found)} FIRs carry {fir}: "
-                     + "; ".join(f"{x['fir_id']} at {x['station']}, {x['registered']}" for x in found)
-                     + ". The first is shown; open the others from Search.\n")
-    lines.append(d["summary"])
+        many = "; ".join(f"{x['fir_id']} — {x['station']}, {_date(x['registered'], kn)}" for x in found)
+        lines.append(f"{len(found)} FIR ಗಳಲ್ಲಿ {fir} ಇದೆ: {many}. ಮೊದಲನೆಯದನ್ನು ತೋರಿಸಲಾಗಿದೆ; ಉಳಿದವನ್ನು ಹುಡುಕಾಟದಿಂದ ತೆರೆಯಿರಿ.\n"
+                     if kn else
+                     f"{len(found)} FIRs carry {fir}: {many}. The first is shown; open the others from Search.\n")
+    lines.append(L(d, "summary"))
     if d.get("demonstration"):
-        lines.append("This is a demonstration record, not a registered FIR.")
-    lines += ["", f"**Where it is now:** {now['title']}" + (f" — {now['detail']}" if now.get("detail") else "")]
+        lines.append("ಇದು ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆ, ನೋಂದಾಯಿತ FIR ಅಲ್ಲ." if kn else
+                     "This is a demonstration record, not a registered FIR.")
+    lines += ["", f"**{'ಈಗಿನ ಸ್ಥಿತಿ' if kn else 'Where it is now'}:** {L(now, 'title')}"
+              + (f" — {L(now, 'detail')}" if now.get("detail") else "")]
     for s in d["steps"]:
         mark = {"done": "✓", "current": "●", "pending": "○", "none": "–"}.get(s["state"], "·")
-        when = f" ({s['date']})" if s.get("date") else (" (date not recorded)" if s.get("date_missing") else "")
-        lines.append(f"{mark} {s['title']}{when}: {s.get('detail') or ''}".rstrip(": "))
+        when = (f" ({_date(s['date'], kn)})" if s.get("date") else
+                ((" (ದಿನಾಂಕ ದಾಖಲಾಗಿಲ್ಲ)" if kn else " (date not recorded)") if s.get("date_missing") else ""))
+        lines.append(f"{mark} {L(s, 'title')}{when}: {L(s, 'detail')}".rstrip(": "))
 
     c = d["counts"]
     same = d.get("same_accused")
-    rec = [f"**Acts and sections:** {', '.join(d['sections']) if d['sections'] else 'none recorded'}"]
+    T = (lambda en, k: k) if kn else (lambda en, k: en)   # noqa: E731
+    sections = ", ".join(d["sections"]) if d["sections"] else T("none recorded", "ದಾಖಲಾಗಿಲ್ಲ")
+    rec = [f"**{T('Acts and sections', 'ಕಾಯ್ದೆ ಮತ್ತು ಕಲಂಗಳು')}:** {sections}"]
     if d.get("crime_no"):
-        rec.append(f"**Crime number:** {d['crime_no']} (register id {d['fir_id']})")
+        rec.append(f"**{T('Crime number', 'ಅಪರಾಧ ಸಂಖ್ಯೆ')}:** {d['crime_no']} ({T('register id', 'ರಿಜಿಸ್ಟರ್ ಐಡಿ')} {d['fir_id']})")
     else:
-        rec.append(f"**Register id:** {d['fir_id']}")      # no crime number: the id is the only name it has
+        rec.append(f"**{T('Register id', 'ರಿಜಿಸ್ಟರ್ ಐಡಿ')}:** {d['fir_id']}")      # no crime number: the id is the only name it has
     if d.get("place"):
-        rec.append(f"**Place:** {d['place']}")
+        rec.append(f"**{T('Place', 'ಸ್ಥಳ')}:** {d['place']}")
     if d.get("io"):
-        rec.append(f"**Investigating officer:** {' '.join(str(d['io']).split())}")
+        rec.append(f"**{T('Investigating officer', 'ತನಿಖಾಧಿಕಾರಿ')}:** {' '.join(str(d['io']).split())}")
     if c.get("accused"):
-        rec.append(f"**Accused:** {c['accused']} named, {c['arrested']} arrested, {c['chargesheeted']} charge-sheeted, "
+        rec.append(f"**ಆರೋಪಿಗಳು:** {c['accused']} ಹೆಸರಿಸಲಾಗಿದೆ, {c['arrested']} ಬಂಧನ, {c['chargesheeted']} ದೋಷಾರೋಪ ಪಟ್ಟಿ, "
+                   f"{c['convicted']} ಶಿಕ್ಷೆ" + (f"; ಆರೋಪಿ ಐಡಿ {same['accused_id']}" if same else "") if kn else
+                   f"**Accused:** {c['accused']} named, {c['arrested']} arrested, {c['chargesheeted']} charge-sheeted, "
                    f"{c['convicted']} convicted" + (f"; accused id {same['accused_id']}" if same else ""))
     if c.get("victims"):
         vb = c.get("victims_by") or {}
-        one = {"men": "man", "women": "woman", "boys": "boy", "girls": "girl"}
-        parts = [f"{vb[k]} {one[k] if vb[k] == 1 else k}" for k in ("men", "women", "boys", "girls") if vb.get(k)]
-        rec.append(f"**Victims:** {c['victims']}" + (f" ({', '.join(parts)})" if parts else "")
-                   + ", recorded by sex and age group; no names or addresses")
+        if kn:
+            word = {"men": "ಪುರುಷರು", "women": "ಮಹಿಳೆಯರು", "boys": "ಬಾಲಕರು", "girls": "ಬಾಲಕಿಯರು"}
+            parts = [f"{word[k]} {vb[k]}" for k in ("men", "women", "boys", "girls") if vb.get(k)]
+            rec.append(f"**ಸಂತ್ರಸ್ತರು:** {c['victims']}" + (f" ({', '.join(parts)})" if parts else "")
+                       + ", ಲಿಂಗ ಮತ್ತು ವಯೋಗುಂಪಿನ ಪ್ರಕಾರ ದಾಖಲು; ಹೆಸರು ಅಥವಾ ವಿಳಾಸ ಇಲ್ಲ")
+        else:
+            one = {"men": "man", "women": "woman", "boys": "boy", "girls": "girl"}
+            parts = [f"{vb[k]} {one[k] if vb[k] == 1 else k}" for k in ("men", "women", "boys", "girls") if vb.get(k)]
+            rec.append(f"**Victims:** {c['victims']}" + (f" ({', '.join(parts)})" if parts else "")
+                       + ", recorded by sex and age group; no names or addresses")
     if d.get("mo"):
-        rec.append(f"**Modus operandi:** {' '.join(str(d['mo']).split())[:200]}")
+        rec.append(f"**{T('Modus operandi', 'ಕಾರ್ಯವಿಧಾನ')}:** {' '.join(str(d['mo']).split())[:200]}")
     if d.get("upi"):
         rec.append(f"**UPI id:** {d['upi']}")
     lines.append("")
     lines += [f"• {x}" for x in rec]
     if same and same.get("count"):
-        lines.append(f"• The same accused id is on {same['count']} other FIR{'s' if same['count'] != 1 else ''}"
-                     + (f" ({', '.join(same['districts'])})" if same.get("districts") else "")
-                     + ": " + ", ".join(f["fir_id"] for f in same["firs"][:4]) + ".")
+        dist = f" ({', '.join(same['districts'])})" if same.get("districts") else ""
+        firs = ", ".join(f["fir_id"] for f in same["firs"][:4])
+        lines.append(f"• ಇದೇ ಆರೋಪಿ ಐಡಿ ಇನ್ನೂ {same['count']} FIR ಗಳಲ್ಲಿದೆ{dist}: {firs}." if kn else
+                     f"• The same accused id is on {same['count']} other FIR{'s' if same['count'] != 1 else ''}"
+                     f"{dist}: {firs}.")
     sim = d.get("similar")
     if sim and sim.get("reached_court") is not None:
-        lines.append(f"\nOf {sim['cases']:,} other {sim['crime_head']} cases "
-                     f"{'across Karnataka' if sim['scope'] == 'state' else 'at ' + str(sim['where'])}, "
-                     f"{sim['reached_court']}% reached court and {sim['undetected']}% were closed as undetected"
-                     + (f"; {sim['convicted_of_decided']}% of those decided ended in conviction"
-                        if sim.get("convicted_of_decided") is not None else "")
-                     + ".")
+        conv = sim.get("convicted_of_decided")
+        if kn:
+            where = "ಕರ್ನಾಟಕದಾದ್ಯಂತ" if sim["scope"] == "state" else f"{sim['where']} ನಲ್ಲಿ"
+            lines.append(f"\n{where} ಇತರ {sim['cases']:,} {case_timeline._crime_kn(sim['crime_head'])} ಪ್ರಕರಣಗಳಲ್ಲಿ {sim['reached_court']}% "
+                         f"ನ್ಯಾಯಾಲಯ ತಲುಪಿವೆ, {sim['undetected']}% ಪತ್ತೆಯಾಗದೆ ಮುಚ್ಚಲಾಗಿದೆ"
+                         + (f"; ತೀರ್ಮಾನವಾದವುಗಳಲ್ಲಿ {conv}% ಶಿಕ್ಷೆಯಲ್ಲಿ ಕೊನೆಗೊಂಡಿವೆ" if conv is not None else "") + ".")
+        else:
+            where = ("across Karnataka" if sim["scope"] == "state" else
+                     ("at " if sim["scope"] == "station" else "in ") + str(sim["where"]))
+            lines.append(f"\nOf {sim['cases']:,} other {sim['crime_head']} cases {where}, "
+                         f"{sim['reached_court']}% reached court and {sim['undetected']}% were closed as undetected"
+                         + (f"; {conv}% of those decided ended in conviction" if conv is not None else "") + ".")
     near = []
     if _SIMILAR.search(low):
         near, how = _nearest(d["fir_id"])
         if near:
-            lines.append(f"\n**{len(near)} similar cases** ({how}):")
-            lines += [f"{i}. FIR {x['crime_no'] or x['fir_id']} — {x['station']}, {x['date']}"
+            lines.append(f"\n**{len(near)} ಹೋಲುವ ಪ್ರಕರಣಗಳು** (ಅದೇ ಅಪರಾಧ, ಹತ್ತಿರದ ದಿನಾಂಕ):" if kn else
+                         f"\n**{len(near)} similar cases** ({how}):")
+            lines += [f"{i}. FIR {x['crime_no'] or x['fir_id']} — {x['station']}, {_date(x['date'], kn)}"
                       + (f" · {x['stage']}" if x["stage"] else "")
                       + (f" · same {' and '.join(x['same'])}" if x["same"] else "")
                       for i, x in enumerate(near, 1)]
-            lines.append("Similar on the record is not a link: no shared accused, vehicle, phone or account is "
+            lines.append("ಹೋಲಿಕೆ ಸಂಬಂಧವಲ್ಲ: ಹಂಚಿಕೊಂಡ ಆರೋಪಿ, ವಾಹನ, ಫೋನ್ ಅಥವಾ ಖಾತೆ ಇದೆ ಎಂದು ಹೇಳುತ್ತಿಲ್ಲ. "
+                         "ಎರಡನ್ನು ಸಂಬಂಧಿತ ಎನ್ನುವ ಮೊದಲು ಪ್ರಕರಣ ಕಡತಗಳನ್ನು ಹೋಲಿಸಿ." if kn else
+                         "Similar on the record is not a link: no shared accused, vehicle, phone or account is "
                          "claimed. Compare the case files before treating any two as connected.")
         else:
-            lines.append("\nNo other FIR of the same crime type is on record at this station or district.")
+            lines.append("\nಇದೇ ಠಾಣೆ ಅಥವಾ ಜಿಲ್ಲೆಯಲ್ಲಿ ಇದೇ ಅಪರಾಧದ ಬೇರೆ FIR ದಾಖಲಾಗಿಲ್ಲ." if kn else
+                         "\nNo other FIR of the same crime type is on record at this station or district.")
     not_held = [label for rx, label in _NOT_HELD if re.search(rx, low)]
     if not_held:
         lines.append("\n**Not held in the FIR register:** " + "; ".join(not_held)

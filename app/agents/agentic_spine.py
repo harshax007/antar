@@ -314,6 +314,15 @@ def _synthesize(base: str, results: dict, claims: list[dict], lang: str = "en") 
     readable at a glance, in the officer's language (was "Profile: …; Network: 7 nodes")."""
     kn = lang == "kn"
     parts = [base] if base else []
+    # The places the officer asked about. An alert or a patrol tip from somewhere else is
+    # not part of the answer: "night patrol in Bengaluru City" used to end with spikes in
+    # Bagalkot and "saturate patrols in Kodagu".
+    asked = [str(z).lower() for z in (((results.get("query") or {}).get("params") or {}).get("zones") or [])]
+
+    def _here(zone) -> bool:
+        z = str(zone or "").lower()
+        return not asked or any(a in z or (z and z in a) for a in asked)
+
     prof = results.get("profile")
     if prof:
         name, sid = prof.get("full_name") or prof.get("suspect_id"), prof.get("suspect_id")
@@ -346,28 +355,36 @@ def _synthesize(base: str, results: dict, claims: list[dict], lang: str = "en") 
         parts.append("\n".join(lines))
     alert_suggest = results.get("alert_suggest")
     if alert_suggest:
+        from app.agents.display_names import display_crime
         head = "**ಎಚ್ಚರಿಕೆಗಳು ಮತ್ತು ಗಸ್ತು ಸಲಹೆಗಳು**" if kn else "**Alerts & patrol suggestions**"
-        alerts = alert_suggest.get("alerts") or []
+        every = alert_suggest.get("alerts") or []
+        alerts = [a for a in every if _here(a.get("zone"))]
         lines = [head]
         for i, a in enumerate(alerts[:3], 1):
             try:
                 z = float(a.get("z_score") or 0)
             except (TypeError, ValueError):
                 z = 0.0
-            ct = str(a.get("crime_type") or "crime").replace("_", " ").title()
-            dirn = (("ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು" if z > 0 else "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಕಡಿಮೆ") if kn
-                    else ("above normal" if z > 0 else "below normal"))
-            ev = f" · {a['event_context']}" if a.get("event_context") else ""
-            lines.append(f"{i}. {a.get('zone')} — {ct}: {dirn} (z = {z:+.1f}){ev}")
-        if not alerts:
+            ct = display_crime(a.get("crime_type") or "crime", "kn" if kn else "en")
+            dirn = (("ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳು" if z > 0 else "ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಕಡಿಮೆ ಪ್ರಕರಣಗಳು") if kn
+                    else ("more cases than usual" if z > 0 else "fewer cases than usual"))
+            ev = f" · {a['event_context']}" if a.get("event_context") and not kn else ""
+            lines.append(f"{i}. {a.get('zone')} — {ct}: {dirn}{ev}")
+        if not alerts and not every:
             lines.append("• ಈಗ ಯಾವುದೇ ಅಸಾಮಾನ್ಯ ಚಟುವಟಿಕೆ ಇಲ್ಲ." if kn else "• No unusual activity right now.")
-        parts.append("\n".join(lines))
+        if alerts or not every:
+            parts.append("\n".join(lines))
     if results.get("social"):
         parts.append("ಗಮನಿಸಿ: ಸಾಮಾಜಿಕ ಒಳನೋಟ ಒಟ್ಟು ಸಂಬಂಧ ಮಾತ್ರ — ಯಾವುದೇ ಗುಂಪನ್ನು ಗುರಿಯಾಗಿಸಲು ಆಧಾರವಲ್ಲ." if kn else
                      "Note: social insight is aggregate correlation only, not a basis to target any group.")
     geo = results.get("geo")
-    if geo and geo.get("beat_suggestions"):
-        parts.append(f"• {'ಗಸ್ತು ಸಲಹೆ' if kn else 'Patrol tip'}: {geo['beat_suggestions'][0]['suggestion']}")
+    tip = ((geo or {}).get("beat_suggestions") or [{}])[0]
+    if tip.get("zone") and asked and _here(tip["zone"]):
+        import re as _re
+        n = _re.search(r"\((\d+) cases?\)", str(tip.get("suggestion") or ""))
+        n = f" ({n.group(1)} FIR)" if n else ""
+        parts.append(f"• ಗಸ್ತು ಸಲಹೆ: ಇತ್ತೀಚಿನ ತಿಂಗಳಲ್ಲಿ ಹೆಚ್ಚು ಪ್ರಕರಣಗಳು {tip['zone']} ನಲ್ಲಿ{n}." if kn else
+                     f"• Patrol tip: {tip['zone']} had the most cases in the latest month{n}.")
     pat = results.get("pattern")
     if pat and pat.get("summary"):
         parts.append(f"• {'ಮಾದರಿಗಳು' if kn else 'Patterns'}: {pat['summary']}")

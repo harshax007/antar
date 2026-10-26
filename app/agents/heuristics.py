@@ -48,6 +48,11 @@ _KN_ZONES.update({
     "ಮಂಗಳೂರು": "Mangalore", "ಹುಬ್ಬಳ್ಳಿ": "Hubli", "ಕಲಬುರಗಿ": "Kalaburagi", "ತುಮಕೂರು": "Tumakuru",
     "ಶಿವಮೊಗ್ಗ": "Shivamogga", "ಬಳ್ಳಾರಿ": "Ballari", "ಉಡುಪಿ": "Udupi", "ಮಂಡ್ಯ": "Mandya",
     "ಹಾಸನ": "Hassan",
+    # "ಮೈಸೂರು ನಗರದಲ್ಲಿ" is the city commissionerate, not the whole of Mysuru: without these
+    # the Kannada question counted Mysuru City and Mysuru Dist together and disagreed with
+    # the same question asked in English.
+    "ಮೈಸೂರು ನಗರ": "Mysuru City", "ಮಂಗಳೂರು ನಗರ": "Mangaluru City", "ಬೆಳಗಾವಿ ನಗರ": "Belagavi City",
+    "ಕಲಬುರಗಿ ನಗರ": "Kalaburagi City", "ಹುಬ್ಬಳ್ಳಿ ಧಾರವಾಡ": "Hubballi Dharwad City",
 })
 
 # Words that follow "in/at/from" but are not places ("in 2023", "in the last month").

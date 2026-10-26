@@ -46,27 +46,41 @@ def answer(text: str, ents: dict, lang: str = "en") -> dict:
     scope += (" in " + ", ".join(ents.get("zones"))) if zones else ""
     kn = lang == "kn"
     if not rows:
-        msg = (f"[COMPUTED] {window}: ಯಾವುದೇ ಅಸಾಮಾನ್ಯ ಏರಿಕೆ ಕಂಡುಬಂದಿಲ್ಲ; ಎಲ್ಲವೂ ಹಿಂದಿನ 13 ವಾರಗಳ ಸಾಮಾನ್ಯ ಮಟ್ಟದಲ್ಲಿದೆ." if kn else
+        msg = (f"[COMPUTED] {({'this week': 'ಈ ವಾರ', 'last week': 'ಕಳೆದ ವಾರ'}).get(window, window)}: ಯಾವುದೇ ಅಸಾಮಾನ್ಯ ಏರಿಕೆ ಕಂಡುಬಂದಿಲ್ಲ; ಎಲ್ಲವೂ ಹಿಂದಿನ 13 ವಾರಗಳ ಸಾಮಾನ್ಯ ಮಟ್ಟದಲ್ಲಿದೆ." if kn else
                f"[COMPUTED] No unusual rise is flagged{scope} for the {window}: every crime type and area is "
                f"within its usual range against the 13 weeks before.")
         return {"answer": msg, "rows": [], "citations": [], "template_id": "ALERTS", "params": {"n": 0},
                 "agent": "query", "suggested_followups": ["Where should I patrol next week?", "most crimes?"],
                 "llm_answer": False, "reasoning": [{"step": "anomaly", "detail": f"Scan: 0 flags{scope}."}]}
-    lines = [f"[COMPUTED] **{len(rows)}** ಅಸಾಮಾನ್ಯ ಏರಿಕೆಗಳು ಗುರುತಾಗಿವೆ ({window}), ಪ್ರತಿಯೊಂದೂ ತನ್ನ ಹಿಂದಿನ 13 ವಾರಗಳ ವಿರುದ್ಧ:"
+    window_kn = {"this week": "ಈ ವಾರ", "last week": "ಕಳೆದ ವಾರ", "this month": "ಈ ತಿಂಗಳು"}.get(window, window)
+    import re as _re
+    from app.agents.answer_writer import _date
+    m = _re.fullmatch(r"week ending (\d{4}-\d{2}-\d{2})", str(window))
+    if m:                                    # "week ending 2026-10-26" -> "week ending 26 Oct 2026"
+        window = f"week ending {_date(m.group(1), False)}"
+        window_kn = f"{_date(m.group(1), True)} ಕ್ಕೆ ಕೊನೆಗೊಂಡ ವಾರ"
+    lines = [f"[COMPUTED] **{len(rows)}** ಅಸಾಮಾನ್ಯ ಏರಿಕೆಗಳು ಗುರುತಾಗಿವೆ ({window_kn}), ಪ್ರತಿಯೊಂದೂ ತನ್ನ ಹಿಂದಿನ 13 ವಾರಗಳ ವಿರುದ್ಧ:"
              if kn else
              f"[COMPUTED] **{len(rows)}** unusual rise{'s' if len(rows) != 1 else ''} flagged{scope}, {window}, "
              f"each against its own last 13 weeks:"]
+    from app.agents.display_names import display_crime
+    # In words an officer reads at a glance. The z-score and the "confidence" (a logistic of
+    # that same z, not a measured hit rate) used to be printed here; neither tells an officer
+    # anything the two counts do not, and "confidence 50%" reads as a coin toss.
+    kinds = {"spike": ("a sudden jump", "ಹಠಾತ್ ಏರಿಕೆ"),
+             "seasonal_surge": ("more than this time of year usually brings", "ಈ ಕಾಲದ ಸಾಮಾನ್ಯಕ್ಕಿಂತ ಹೆಚ್ಚು"),
+             "hotspot": ("a confirmed hotspot", "ದೃಢಪಟ್ಟ ಹಾಟ್‌ಸ್ಪಾಟ್"),
+             "spatial_spike": ("a jump in one place", "ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ ಏರಿಕೆ")}
     for i, r in enumerate(rows[:8], 1):
-        ct = str(r.get("crime_type") or "crime").replace("_", " ").title()
+        ct = display_crime(r.get("crime_type") or "crime", "kn" if kn else "en")
         obs, exp = r.get("observed"), r.get("expected")
-        conf = r.get("confidence")
-        kind = {"spike": "spike", "seasonal_surge": "above its seasonal level", "hotspot": "confirmed hotspot",
-                "spatial_spike": "local spike"}.get(r.get("anomaly_type"), "rise")
-        lines.append(f"{i}. **{ct}** in **{r.get('zone')}** — {obs} FIRs against a usual {exp:g} "
-                     f"({kind}, z {float(r.get('z_score') or 0):.1f}"
-                     + (f", confidence {round(100 * float(conf))}%" if conf is not None else "") + ")")
+        kind = kinds.get(r.get("anomaly_type"), ("a rise", "ಏರಿಕೆ"))[1 if kn else 0]
+        usual = f"{exp:g}" if isinstance(exp, (int, float)) else str(exp)
+        lines.append(f"{i}. **{r.get('zone')}** ನಲ್ಲಿ **{ct}** — {obs} FIR, ಸಾಮಾನ್ಯವಾಗಿ {usual} ({kind})" if kn else
+                     f"{i}. **{ct}** in **{r.get('zone')}** — {obs} FIRs where {usual} is usual ({kind})")
     if len(rows) > 8:
-        lines.append(f"…and {len(rows) - 8} more on the Predict screen.")
+        lines.append(f"…ಇನ್ನೂ {len(rows) - 8} Predict ಪರದೆಯಲ್ಲಿ." if kn else
+                     f"…and {len(rows) - 8} more on the Predict screen.")
     lines.append("ಗುರುತು ಎಂದರೆ ಪರಿಶೀಲಿಸಬೇಕಾದ ಸಂಕೇತ, ತೀರ್ಮಾನ ಅಲ್ಲ; ಕಡಿಮೆ ಸಂಖ್ಯೆಗಳಲ್ಲಿ ಒಂದೆರಡು ಪ್ರಕರಣಗಳೇ ಅದನ್ನು ಎಬ್ಬಿಸಬಹುದು." if kn else
                  "A flag is a signal to look at, not a finding: on small counts one or two cases can raise it. "
                  "Open the area on the Map to read the FIRs behind it.")
