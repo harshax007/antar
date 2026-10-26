@@ -10,31 +10,6 @@ const CYAN = "#22E6F0";
 const AMBER = "#FFB020";
 const SLATE = "#5d6b80";
 
-// Fallback generator so any suspect ID (S0805, S0001, etc.) renders a stunning 3D case network
-function generateFallbackGraph(id) {
-  const label = id === "S0805" ? "Manjunath R." : id === "S0001" ? "Raju K." : `Suspect ${id}`;
-  const alias = id === "S0805" ? "Manju / Kalla" : id === "S0001" ? "Yellappa" : "Known Alias";
-  return {
-    nodes: [
-      { id, label, alias, type: "seed", zone: "East Zone · Indiranagar", risk: 84 },
-      { id: `${id}-X1`, label: "Yellappa S.", alias: "Yellu", type: "associate", cross_case: true, zone: "Whitefield", risk: 78 },
-      { id: `${id}-X2`, label: "Kumar V.", alias: "Viji", type: "associate", cross_case: true, zone: "Koramangala", risk: 71 },
-      { id: `${id}-A1`, label: "Pradeep K.", alias: "Pradeep", type: "associate", cross_case: false, zone: "Indiranagar", risk: 42 },
-      { id: `${id}-A2`, label: "Sunil M.", alias: "Suni", type: "associate", cross_case: false, zone: "Halasuru", risk: 38 },
-      { id: `${id}-A3`, label: "Ramesh P.", alias: "Ramu", type: "associate", cross_case: false, zone: "Indiranagar", risk: 45 },
-    ],
-    edges: [
-      { id: "e1", source: id, target: `${id}-X1`, cross_case: true, label: "Shared Phone Hash" },
-      { id: "e2", source: id, target: `${id}-X2`, cross_case: true, label: "Co-accused FIR-2025-0412" },
-      { id: "e3", source: id, target: `${id}-A1`, cross_case: false, label: "Associate" },
-      { id: "e4", source: id, target: `${id}-A2`, cross_case: false, label: "Associate" },
-      { id: "e5", source: id, target: `${id}-A3`, cross_case: false, label: "Associate" },
-      { id: "e6", source: `${id}-X1`, target: `${id}-A1`, cross_case: true, label: "Financing Link" },
-    ],
-    brain_banner: `CROSS-CASE INTELLIGENCE: High-confidence phonetic & IMEI crossover detected between ${id} and unlinked FIR records.`,
-  };
-}
-
 export default function CaseBrain({ suspectId }) {
   const router = useRouter();
   const { lang } = useLang();
@@ -53,17 +28,10 @@ export default function CaseBrain({ suspectId }) {
       fetch(`${API}/api/profile/${encodeURIComponent(suspectId)}`).then((r) => r.ok ? r.json() : null).catch(() => null),
     ]).then(([g, p]) => {
       if (!alive) return;
-      const graphData = (g && g.nodes && g.nodes.length > 0) ? g : generateFallbackGraph(suspectId);
-      setData(graphData);
-      setProfile(p || {
-        suspect_id: suspectId,
-        full_name: graphData.nodes.find((n) => n.type === "seed")?.label || suspectId,
-        alias: graphData.nodes.find((n) => n.type === "seed")?.alias || "",
-        address_zone: graphData.nodes.find((n) => n.type === "seed")?.zone || "Bengaluru East",
-        risk_score: graphData.nodes.find((n) => n.type === "seed")?.risk || 84,
-        prior_count: 4,
-        status: "ACTIVE INVESTIGATION",
-      });
+      // Nothing in the register for this id: say so. Nothing is drawn or scored that the
+      // register does not hold.
+      setData(g?.nodes?.length ? g : { nodes: [], edges: [], missing: true });
+      setProfile(p || null);
     });
     return () => { alive = false; };
   }, [suspectId]);
@@ -80,9 +48,10 @@ export default function CaseBrain({ suspectId }) {
       const validNodeIds = new Set(nodes.map(n => n.id));
       const links = (data.edges || [])
         .map((e) => ({
-          source: e.source || e.a,
-          target: e.target || e.b,
           ...e,
+          fir: e.a != null ? e.source : undefined,
+          source: e.a ?? e.from ?? e.source,
+          target: e.b ?? e.to ?? e.target,
         }))
         .filter((l) => validNodeIds.has(l.source) && validNodeIds.has(l.target));
 
@@ -108,6 +77,8 @@ export default function CaseBrain({ suspectId }) {
   }, [data]);
 
   const seed = data?.nodes?.find((n) => n.type === "seed");
+  const risk = profile?.risk_score ?? seed?.risk;
+  const zone = seed?.zone || profile?.address_zone;
   const crossNodes = data?.nodes?.filter((n) => n.cross_case) || [];
   const crossEdges = data?.edges?.filter((e) => e.cross_case) || [];
 
@@ -115,6 +86,11 @@ export default function CaseBrain({ suspectId }) {
     <div className="cb-page">
       <div className="cb-canvas-wrap">
         {!data && <div className="bs-loading"><div className="signal-pulse" style={{ width: 200 }} /><span>{kn ? "ಪ್ರಕರಣ ಜಾಲ ನಿರ್ಮಿಸಲಾಗುತ್ತಿದೆ…" : "Building case network…"}</span></div>}
+        {data?.missing && (
+          <div className="bs-loading">
+            <span>{kn ? `${suspectId} ಗೆ ರಿಜಿಸ್ಟರ್‌ನಲ್ಲಿ ಯಾವುದೇ ಜೋಡಿತ ದಾಖಲೆ ಇಲ್ಲ.` : `The register holds no linked records for ${suspectId}.`}</span>
+          </div>
+        )}
         <div ref={containerRef} className="cb-3d" style={{ opacity: data ? 1 : 0 }} />
         {/* Deterministic exit: router.back() dead-ends when the case view was deep-linked
             (no in-app history), which forced a manual refresh. Always return to the Brain. */}
@@ -198,7 +174,7 @@ export default function CaseBrain({ suspectId }) {
                 fontFamily: "JetBrains Mono",
               }}
             >
-              BIOMETRIC 
+              {kn ? "ಫೋಟೋ ಇಲ್ಲ" : "NO PHOTO"}
             </div>
           </div>
 
@@ -219,7 +195,7 @@ export default function CaseBrain({ suspectId }) {
               >
                 ID: {suspectId}
               </span>
-              <span
+              {risk != null && <span
                 style={{
                   fontSize: "10px",
                   fontWeight: 700,
@@ -230,8 +206,8 @@ export default function CaseBrain({ suspectId }) {
                   border: "1px solid rgba(255,176,32,0.3)",
                 }}
               >
-                RISK: {profile?.risk_score || seed?.risk || 84}%
-              </span>
+                {kn ? "ಅಪಾಯ" : "RISK"}: {risk}%
+              </span>}
             </div>
 
             <h2
@@ -251,18 +227,20 @@ export default function CaseBrain({ suspectId }) {
 
             {(profile?.alias || seed?.alias) && (
               <div style={{ fontSize: "12.5px", color: "#38BDF8", fontWeight: 600, marginBottom: "4px" }}>
-                Alias: «{profile?.alias || seed?.alias}»
+                {kn ? "ಅಡ್ಡಹೆಸರು" : "Alias"}: «{profile?.alias || seed?.alias}»
               </div>
             )}
 
-            <div style={{ fontSize: "11.5px", color: "#94A3B8" }}>
-              {profile?.address_zone || seed?.zone || "Bengaluru · KSP Jurisdiction"}
-            </div>
+            {zone && <div style={{ fontSize: "11.5px", color: "#94A3B8" }}>{zone}</div>}
           </div>
         </div>
 
         {data?.brain_banner && (
-          <div className="cb-banner">{String(data.brain_banner)}</div>
+          <div className="cb-banner">{kn
+            ? (crossEdges.length
+                ? `ಎರಡನೇ ಮಿದುಳು: ಹಂಚಿಕೊಂಡ ಫೋನ್ ಸಂಖ್ಯೆಯ ಮೂಲಕ ${crossEdges.length} ಅಡ್ಡ-ಪ್ರಕರಣ ಕೊಂಡಿ ಕಂಡುಬಂದಿದೆ; ಇವುಗಳನ್ನು ಔಪಚಾರಿಕವಾಗಿ ಜೋಡಿಸಿಲ್ಲ.`
+                : "ಎರಡನೇ ಮಿದುಳು: ಈ ವ್ಯಕ್ತಿಗೆ ಸಾಕ್ಷ್ಯ ದಾಖಲೆಯಿಂದ ಜಿಲ್ಲಾ ಕೊಂಡಿಗಳು.")
+            : String(data.brain_banner)}</div>
         )}
 
         <div className="cb-how">
@@ -291,16 +269,13 @@ export default function CaseBrain({ suspectId }) {
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ color: "#D8B4FE", fontWeight: 700, fontFamily: "JetBrains Mono" }}>
-              {kn ? "ಸೆಕ್ಷನ್ 91 ಸಾಕ್ಷ್ಯ ಆಡಿಟ್" : "§ 91 BNSS EVIDENCE AUDIT"}
-            </span>
-            <span style={{ fontSize: "10px", color: "#22E6F0", fontFamily: "JetBrains Mono" }}>
-              VERIFIED
+              {kn ? "ಕೊಂಡಿಗಳು ಎಲ್ಲಿಂದ" : "WHERE THE LINKS COME FROM"}
             </span>
           </div>
           <div style={{ fontSize: "10.5px", color: "#94A3B8", lineHeight: 1.3 }}>
             {kn
-              ? "ಪ್ರತಿ ನೋಡ್ ಮತ್ತು ಕೊಂಡಿಯು ನೈಜ FIR ಸಾಕ್ಷ್ಯ ದಾಖಲೆಗಳಿಂದ ದೃಢೀಕರಿಸಲ್ಪಟ್ಟಿದೆ."
-              : "Every node and cross-case edge is backed by verifiable FIR evidence rows."}
+              ? "ಪ್ರತಿ ಕೊಂಡಿ: ಒಂದೇ FIR ನಲ್ಲಿ ಹೆಸರಿಸಲಾದ ಇಬ್ಬರು, ಅಥವಾ ದಾಖಲೆಯಲ್ಲಿ ಒಂದೇ ಫೋನ್ ಸಂಖ್ಯೆ. ಕೊಂಡಿ ತನಿಖೆಯ ಸುಳಿವು, ಅಪರಾಧದ ಪುರಾವೆ ಅಲ್ಲ."
+              : "Each link is two people named in the same FIR, or the same phone number on record. A link is a lead to check, not proof."}
           </div>
         </div>
 
@@ -308,7 +283,7 @@ export default function CaseBrain({ suspectId }) {
           <div className="cb-picked">
             <b>{picked.label}</b>{picked.alias ? ` «${picked.alias}»` : ""}
             {picked.zone && <div>{kn ? "ವಲಯ" : "Zone"}: {picked.zone}</div>}
-            {picked.risk != null && <div>{kn ? "ಅಪಾಯ" : "Risk"}: {picked.risk}</div>}
+            {picked.risk != null && <div>{kn ? "ಅಪಾಯ" : "Risk"}: {picked.risk}%</div>}
             <div>{picked.type === "seed" ? (kn ? "ಪ್ರಶ್ನಿಸಿದ ವ್ಯಕ್ತಿ" : "Queried profile") : picked.cross_case ? (kn ? "ಅಡ್ಡ-ಪ್ರಕರಣ ಕೊಂಡಿ" : "Cross-case link") : (kn ? "ಸಹಚರ" : "Associate")}</div>
           </div>
         )}

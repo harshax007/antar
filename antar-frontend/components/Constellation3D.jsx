@@ -2,22 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildConstellation, aliasFor, CATEGORIES, groupProfile } from "@/lib/crimeGraph";
+import { groupWhys, nodeCard, linkCard, unsubName } from "@/lib/brainCards";
 
 // 3D evidence globe — same data, order, grouping, colors and interactions as
 // the 2D Constellation, rendered on 3d-force-graph (drag-rotate / zoom / click
 // to select). Node/link semantics are identical; the flat leader-line group
 // callouts are replaced by floating sprite labels on named nodes (WebGL-safe).
-
-function linkWhy(l) {
-  const key = l.key ? ` — ${l.key}` : "";
-  if (l.kind === "repeat") return `Repeat offender: same accused${key}`;
-  if (l.kind === "ring") return `Ring: shared place / vehicle${key}`;
-  if (l.kind === "cyber") return `Cyber: shared UPI / IP${key}`;
-  if (l.kind === "inferred") return `Predicted Edge (Inferred Link)${key}`;
-  if (l.kind === "unsub") return `UNSUB Cluster Member${key}`;
-  if (l.kind === "agent") return "Antar agent cluster — learns & predicts over this graph";
-  return `Linked${key}`;
-}
 
 const ROLE_COLOR = {
   dust: "#566072", linked: "#2BB3A3", hub: "#E8A33D", top: "#18D69A",
@@ -27,34 +17,6 @@ const LINK_BASE = "rgba(148,163,184,.22)";
 const LINK_DIM = "rgba(148,163,184,.05)";
 const LINK_AGENT = "rgba(0,245,212,.35)";
 const golden = Math.PI * (3 - Math.sqrt(5));
-
-// Tooltip HTML — identical to the 2D component so hover parity is preserved.
-function nodeTooltip(n) {
-  if (n.kind === "agent") {
-    return `<div style="background:rgba(0,0,0,0.95); border:1px solid rgba(0,245,212,0.6); padding:10px 14px; border-radius:2px; box-shadow:0 8px 30px rgba(0,245,212,0.2); font:11px 'JetBrains Mono', monospace; color:#E2E8F0; text-transform:uppercase; letter-spacing:0.5px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,245,212,0.3); padding-bottom:6px; margin-bottom:8px;">
-        <b style="color:#00F5D4; font-size:13px; font-weight:700;">${n.label || "SYSTEM AGENT"}</b>
-        <span style="color:#10B981; font-size:9px; font-weight:700;">● ACTIVE</span>
-      </div>
-      <div style="color:#94A3B8; font-size:10px; line-height:1.4;">Autonomous reasoning &amp; inference protocol.</div>
-      <div style="margin-top:10px; background:rgba(0,245,212,0.1); border:1px solid rgba(0,245,212,0.3); padding:4px 8px; color:#00F5D4; font-weight:700; font-size:10px; text-align:center;">[ INSPECT LOGS ]</div>
-    </div>`;
-  }
-  if (n.kind === "unsub") {
-    return `<div style="background:rgba(15,10,25,0.96); border:1px solid rgba(168,85,247,0.6); padding:12px 15px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.9); font:12px Inter, sans-serif; color:#E9D5FF;"><b style="color:#C084FC; font-size:13px; font-family:'Chakra Petch', sans-serif;">${n.name || "UNSUB Profile"}</b><div style="margin-top:6px; color:#D8B4FE; font-size:11px;">SYNTHETIC INVESTIGATIVE PROFILE</div><div style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); font-size:11px; color:#CBD5E1;">Knowledge Boundary: <b>100% Gap (UNSUB)</b></div></div>`;
-  }
-  return `<div style="background:rgba(6,11,18,0.96); border:1px solid ${n.role === "top" ? "rgba(24,214,154,0.6)" : n.role === "hub" ? "rgba(232,163,61,0.6)" : "rgba(43,179,163,0.4)"}; padding:12px 15px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.9); font:12px Inter, sans-serif; color:#E2E8F0; max-width:300px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px;">
-        <b style="color:${n.role === "top" ? "#34EEB6" : n.role === "hub" ? "#FFC048" : "#22E6F0"}; font-size:13px; font-family:'Chakra Petch', sans-serif; text-transform:uppercase;">${n.crimeHead || n.crimeGroup || "FIR Record"}</b>
-        ${n.stage ? `<span style="font-size:10px; background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; color:#A7F3D0; white-space:nowrap;">${n.stage}</span>` : ""}
-      </div>
-      <div style="color:#94A3B8; font-size:11px; margin-bottom:6px;">${n.zone || ""}${n.district && n.district !== n.zone ? `, ${n.district}` : ""} · ${n.year || "2026"}</div>
-      ${n.accused ? `<div style="background:rgba(232,163,61,0.12); border-left:3px solid #E8A33D; padding:5px 8px; margin:6px 0; border-radius:0 4px 4px 0;"><span style="color:#FDE68A; font-weight:600;">${aliasFor(n.accused) || "Suspect"}</span> <span style="color:#94A3B8; font-family:'JetBrains Mono'; font-size:11px;">[${n.accused}]</span></div>` : ""}
-      ${n.vehicle ? `<div style="color:#38BDF8; font-size:11px; margin-top:4px; font-family:'JetBrains Mono';">Getaway Veh: <b>${n.vehicle}</b></div>` : ""}
-      ${n.mo ? `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); font-size:11px; color:#CBD5E1; line-height:1.4;"><b>Explainable MO:</b><br/>${n.mo}</div>` : ""}
-      ${n.role === "top" ? '<div style="margin-top:8px; font-size:11px; color:#34EEB6; font-weight:600;">MOST CONNECTED APEX HUB IN VIEW</div>' : n.role === "hub" ? '<div style="margin-top:8px; font-size:11px; color:#FFC048; font-weight:600;">KEY ACCUSED — HEAVILY LINKED IN SYNDICATE</div>' : n.comm ? '<div style="margin-top:8px; font-size:11px; color:#22E6F0; font-weight:600;">PART OF EVIDENCE-LINKED COMMUNITY</div>' : ""}
-    </div>`;
-}
 
 // Cache for label sprites so we don't recreate Three.js CanvasTextures on every frame/selection
 const spriteCache = new Map();
@@ -118,7 +80,7 @@ function makeLabelSprite(THREE, text, sub, color) {
 
 const INTRO_MS = 3500;      // length of the opening zoom-in
 
-export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
+export default function Constellation3D({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady, kn = false }) {
   const containerRef = useRef(null);
   const fgRef = useRef(null);
   const introUntil = useRef(0);      // until when the arrival owns the camera
@@ -132,6 +94,8 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
   const groupByRef = useRef(groupBy);
   const dataRef = useRef(null);
   const flightRef = useRef(null);
+  const knRef = useRef(kn);          // read by the tooltips and sprite labels at draw time
+  knRef.current = kn;
 
   const constel = useMemo(() => (graph ? buildConstellation(graph, { groupBy }) : null), [graph, groupBy]);
 
@@ -169,14 +133,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       : n.comm ? dataRef.current.nodes.filter((m) => m.comm === n.comm) : [n];
     focusRef.current = new Set(members.map((m) => m.id));
 
-    const whys = [], seen = new Set();
-    dataRef.current.links.forEach((l) => {
-      const sid = typeof l.source === "object" ? l.source.id : l.source;
-      const tid = typeof l.target === "object" ? l.target.id : l.target;
-      if (!focusRef.current.has(sid) || !focusRef.current.has(tid)) return;
-      const w = linkWhy(l);
-      if (!seen.has(w)) { seen.add(w); whys.push({ kind: l.kind, text: w }); }
-    });
+    const whys = groupWhys(dataRef.current.links, focusRef.current);
     const catCount = new Map(); const districts = new Set();
     let yMin = Infinity, yMax = -Infinity;
     members.forEach((m) => {
@@ -274,13 +231,13 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         .nodeColor(nodeColor)
         .nodeVisibility(nodeVisible)
         .nodeOpacity(0.92)
-        .nodeLabel(nodeTooltip)
+        .nodeLabel((n) => nodeCard(n, knRef.current))
         .nodeThreeObjectExtend(true)
         .nodeThreeObject((n) => {
           if (focusRef.current && !focusRef.current.has(n.id)) return null;
           let text = "", sub = "", color = "#FFFFFF";
           if (n.kind === "agent" && n.label) { text = n.label; color = "#00F5D4"; }
-          else if (n.kind === "unsub") { text = n.name || "UNSUB"; color = "#E9D5FF"; }
+          else if (n.kind === "unsub") { text = unsubName(n, knRef.current); color = "#E9D5FF"; }
           else if (n.role === "top" || n.role === "hub") {
             text = n.label || ""; sub = n.sub || "";
             color = n.role === "top" ? "#34EEB6" : "#FFFFFF";
@@ -298,7 +255,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         .linkDirectionalParticleSpeed(0.012)
         .linkDirectionalParticleWidth(1.4)
         .linkDirectionalParticleColor(() => "rgba(255,255,255,0.85)")
-        .linkLabel((l) => `<div style="background:rgba(6,11,18,0.94); border:1px solid rgba(255,140,66,0.4); padding:5px 9px; border-radius:6px; font:11px 'JetBrains Mono', monospace; color:#FFB020; box-shadow:0 6px 16px rgba(0,0,0,0.85);">${linkWhy(l)}</div>`)
+        .linkLabel((l) => linkCard(l, knRef.current))
         .onNodeClick((n) => {
           if (n.kind === "agent") { onAgent?.(n.agent); return; }
           focusComponent(n);

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLang } from "@/components/Providers";
-import { buildCrimeGraph, filterRecords, isFutureRecord, dayGrid, aliasFor, CATEGORIES, LINK_COLORS, soften } from "@/lib/crimeGraph";
+import { buildCrimeGraph, filterRecords, isFutureRecord, dayGrid, aliasFor, CATEGORIES, LINK_COLORS, soften, catLabel } from "@/lib/crimeGraph";
 import { fastRun } from "@/lib/fastRun";
 import { AnimatePresence, motion } from "framer-motion";
 import { MaterialBackdrop, MaterialPanel } from "@/components/ui/MaterialPanel";
@@ -56,6 +56,7 @@ function CustomDropdown({ value, options, onChange, label, ariaLabel }) {
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_KN = ["ಜನ", "ಫೆಬ್ರ", "ಮಾರ್ಚ್", "ಏಪ್ರಿ", "ಮೇ", "ಜೂನ್", "ಜುಲೈ", "ಆಗ", "ಸೆಪ್ಟೆಂ", "ಅಕ್ಟೋ", "ನವೆಂ", "ಡಿಸೆಂ"];
 const HEAT = ["#11203a", "#10405a", "#127a88", "#1bb0bf", "#22E6F0"];
 
 async function fetchJson(url, ms = 2500) {
@@ -113,6 +114,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
   const router = useRouter();
   const { lang } = useLang();
   const kn = lang === "kn";
+  const MON = kn ? MONTHS_KN : MONTHS;
   const controlRef = useRef(null);
 
   const [active, setActive] = useState(null);          // visible categories (null = all)
@@ -384,7 +386,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     else parts.push(kn ? "ಎಲ್ಲಾ ವರ್ಷ" : "All years");
     if (sel.district) parts.push(sel.district);
     if (calMode !== "full" && sel.month) {
-      parts.push(sel.day ? `${sel.day} ${MONTHS[sel.month - 1]} ${sel.year}` : `${MONTHS[sel.month - 1]} ${sel.year}`);
+      parts.push(sel.day ? `${sel.day} ${MON[sel.month - 1]} ${sel.year}` : `${MON[sel.month - 1]} ${sel.year}`);
     }
     return parts.join(" · ");
   }
@@ -532,9 +534,9 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
     : calMode === "full"
     ? `${(fullDay?.grand || 0).toLocaleString()} ${kn ? "ಒಟ್ಟು" : "in dataset"}`
     : sel.day && sel.month
-    ? `${sel.day} ${MONTHS[sel.month - 1]} · ${filtered.length.toLocaleString()} ${evWord}`
+    ? `${sel.day} ${MON[sel.month - 1]} · ${filtered.length.toLocaleString()} ${evWord}`
     : sel.month
-    ? `${MONTHS[sel.month - 1]} ${sel.year} · ${filtered.length.toLocaleString()} ${evWord}`
+    ? `${MON[sel.month - 1]} ${sel.year} · ${filtered.length.toLocaleString()} ${evWord}`
     : "";
 
   const CELL = 6.8, GAP = 1.8, X0 = 4, Y0 = 15;
@@ -605,11 +607,11 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
           {dim3d ? (
             <Constellation3D graph={graph} groupBy={groupBy} active={active} kinds={kinds} controlRef={controlRef}
                              onFocus={setFocus} onStats={setOvStats} onAgent={runThink} focusId={focusId} legendFocus={legendFocus}
-                             onReady={handleGraphReady} />
+                             onReady={handleGraphReady} kn={kn} />
           ) : (
             <Constellation graph={graph} groupBy={groupBy} active={active} kinds={kinds} controlRef={controlRef}
                            onFocus={setFocus} onStats={setOvStats} onAgent={runThink} focusId={focusId} legendFocus={legendFocus}
-                           onReady={handleGraphReady} />
+                           onReady={handleGraphReady} kn={kn} />
           )}
         </div>
       )}
@@ -632,7 +634,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
               overridePlaceholder={noHit ? (kn ? "ಪತ್ತೆಯಾಗಿಲ್ಲ - ACC-id ಯತ್ನಿಸಿ." : "no match - try an ACC-id.") : ""}
               ariaLabel={kn ? "ACC-id ಅಥವಾ ಶಂಕಿತ ಐಡಿ ಹುಡುಕಿ" : "Search an ACC-id or suspect id"}
               onChange={(e) => { setSearch(e.target.value); setFallbackQ(null); setNoHit(false); }} onKeyDown={(e) => { if (e.key === "Enter") runFind(); }} />
-            <button className="bs-searchbtn" onClick={() => runFind()} aria-label="Find">
+            <button className="bs-searchbtn" onClick={() => runFind()} aria-label={kn ? "ಹುಡುಕಿ" : "Find"}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
             </button>
           </div>
@@ -689,14 +691,14 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                       controlRef.current?.spin?.();
                       const c = graph?.categories?.find((x) => x.cat === cat);
                       setFilterNote(cat
-                        ? { label: c?.label || cat, n: c?.count || 0 }
+                        ? { label: catLabel(cat, kn), n: c?.count || 0 }
                         : { label: kn ? "ಎಲ್ಲಾ ಅಪರಾಧಗಳು" : "All crimes",
                             n: graph?.categories?.reduce((s, x) => s + (x.count || 0), 0) || 0 });
                     }}
                     aria-label={kn ? "ಅಪರಾಧ ಪ್ರಕಾರ ಆಯ್ಕೆಮಾಡಿ" : "Select a crime type"}>
               <option value="">{kn ? "ಎಲ್ಲಾ ಅಪರಾಧಗಳು" : "All crimes"}</option>
               {graph.categories.map((c) => (
-                <option key={c.cat} value={c.cat}>{c.label} ({(c.count || 0).toLocaleString()})</option>
+                <option key={c.cat} value={c.cat}>{catLabel(c.cat, kn)} ({(c.count || 0).toLocaleString()})</option>
               ))}
             </select>
           </label>
@@ -748,7 +750,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                     const on = active === null || active.has(c.cat);
                     return (
                       <div key={c.cat} className="bsx-lrow">
-                        <span className="lbl"><span className="bsx-dot" style={{ background: soften(c.color) }} />{c.label}</span>
+                        <span className="lbl"><span className="bsx-dot" style={{ background: soften(c.color) }} />{catLabel(c.cat, kn)}</span>
                         <button className={`bsx-sw ${on ? "on" : ""}`} aria-pressed={on} onClick={() => toggleCat(c.cat)}><b /></button>
                       </div>
                     );
@@ -774,7 +776,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                         {k === "repeat" ? (kn ? "ಪುನರಾವರ್ತಿತ" : "Repeat offender") :
                          k === "ring" ? (kn ? "ರಿಂಗ್" : "Ring") :
                          k === "cyber" ? (kn ? "ಸೈಬರ್" : "Cyber") :
-                         k === "inferred" ? "Predicted Edges" : "UNSUB Profiles"}
+                         k === "inferred" ? (kn ? "ಊಹಿತ ಕೊಂಡಿಗಳು" : "Predicted links") : (kn ? "ಅಪರಿಚಿತ ಶಂಕಿತರ ಗುಂಪುಗಳು" : "Unidentified-suspect groups")}
                       </span>
                       <button className={`bsx-sw ${kinds.has(k) ? "on" : ""}`} aria-pressed={kinds.has(k)} onClick={() => toggleKind(k)}><b /></button>
                     </div>
@@ -825,8 +827,10 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                 {/* accurate claim: the GRAPH is dataset-derived, but person names are aliases */}
                 {ovStats && <span className="cx-badge-k" title={kn
                   ? "ಪ್ರತಿ ನೋಡ್ ಮತ್ತು ಕೊಂಡಿ FIR ದಾಖಲೆಯಿಂದ; ವ್ಯಕ್ತಿಗಳ ಹೆಸರುಗಳು ACC-id ಯ ಸಿಂಥೆಟಿಕ್ ಅಲಿಯಾಸ್"
-                  : "Every node and link is derived from the FIR records; person names shown are synthetic aliases of the real ACC-ids"}>K · From records</span>}
-                <span>{ovStats ? `${ovStats.nodes.toLocaleString()} records · ${ovStats.links.toLocaleString()} evidence links · ${ovStats.groups} groups` : "…"}</span>
+                  : "Every node and link is derived from the FIR records; person names shown are synthetic aliases of the real ACC-ids"}>{kn ? "K · ದಾಖಲೆಯಿಂದ" : "K · From records"}</span>}
+                <span>{ovStats ? (kn
+                  ? `${ovStats.nodes.toLocaleString()} ದಾಖಲೆಗಳು · ${ovStats.links.toLocaleString()} ಸಾಕ್ಷ್ಯ ಕೊಂಡಿಗಳು · ${ovStats.groups} ಗುಂಪುಗಳು`
+                  : `${ovStats.nodes.toLocaleString()} records · ${ovStats.links.toLocaleString()} evidence links · ${ovStats.groups} groups`) : "…"}</span>
               </div>
             </div>
           )}
@@ -1118,8 +1122,8 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
         )}
         {!minActivity && !focus && (
           <>
-            <svg width="468" height="78" role="grid" aria-label="Case activity calendar" style={{ opacity: calLoading ? 0.45 : 1, transition: "opacity 0.2s", marginTop: "8px" }}>
-              {MONTHS.map((m, i) => (
+            <svg width="468" height="78" role="grid" aria-label={kn ? "ಪ್ರಕರಣ ಚಟುವಟಿಕೆ ಕ್ಯಾಲೆಂಡರ್" : "Case activity calendar"} style={{ opacity: calLoading ? 0.45 : 1, transition: "opacity 0.2s", marginTop: "8px" }}>
+              {MON.map((m, i) => (
                 <text key={m} x={X0 + Math.round((i * 53) / 12) * (CELL + GAP)} y="10" fill="#5d6b80" fontSize="8" fontFamily="JetBrains Mono">{m}</text>
               ))}
               {calDisplay.cells.map((c) => {
@@ -1129,7 +1133,7 @@ export default function BrainStructure({ focusId = "", recs, sel = {}, setSel = 
                         width={CELL} height={CELL} rx="1.5" fill={HEAT[level(c.n)]}
                         stroke={on ? "#fff" : "none"} strokeWidth={on ? 1.5 : 0}
                         style={{ cursor: "pointer" }} onClick={() => pickDay(c)}>
-                    <title>{`${c.d} ${MONTHS[c.m - 1]} ${year} · ${c.n} FIRs`}</title>
+                    <title>{`${c.d} ${MON[c.m - 1]} ${year} · ${c.n} FIR${kn ? "" : "s"}`}</title>
                   </rect>
                 );
               })}

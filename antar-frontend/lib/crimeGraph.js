@@ -4,22 +4,25 @@
 
 // ── crime taxonomy: CrimeGroup_Name → analytic category ──
 export const CATEGORIES = {
-  VIOLENT:   { label: "Violent Crimes",           color: "#FF453A" },
-  MURDER:    { label: "Murder",                   color: "#FF2A55" },
-  KIDNAP:    { label: "Kidnapping & Abduction",   color: "#FF8A00" },
-  WOMEN:     { label: "Crimes vs Women",          color: "#F92672" },
-  CHILDREN:  { label: "Crimes vs Children",       color: "#BF5AF2" },
-  SCST:      { label: "SC/ST Atrocities",         color: "#892CDC" },
-  ECONOMIC:  { label: "Economic Offences",        color: "#FFD60A" },
-  CYBER:     { label: "Cyber Crimes",             color: "#00F5D4" },
-  PROPERTY:  { label: "Property Crimes",          color: "#30D158" },
-  NARCOTICS: { label: "Narcotics & Seizures",     color: "#00C7BE" },
-  MISSING:   { label: "Missing Persons",          color: "#64D2FF" },
-  CORRUPTION:{ label: "Corruption / Public Servants", color: "#D4AF37" },
-  FOREIGN:   { label: "Crimes vs/by Foreigners",  color: "#0A84FF" },
-  ENVIRON:   { label: "Environment Offences",     color: "#A4DE02" },
-  OTHER:     { label: "Other",                    color: "#98989D" },
+  VIOLENT:   { label: "Violent Crimes", kn: "ಹಿಂಸಾತ್ಮಕ ಅಪರಾಧಗಳು", color: "#FF453A" },
+  MURDER:    { label: "Murder", kn: "ಕೊಲೆ", color: "#FF2A55" },
+  KIDNAP:    { label: "Kidnapping & Abduction", kn: "ಅಪಹರಣ", color: "#FF8A00" },
+  WOMEN:     { label: "Crimes vs Women", kn: "ಮಹಿಳೆಯರ ವಿರುದ್ಧ ಅಪರಾಧಗಳು", color: "#F92672" },
+  CHILDREN:  { label: "Crimes vs Children", kn: "ಮಕ್ಕಳ ವಿರುದ್ಧ ಅಪರಾಧಗಳು", color: "#BF5AF2" },
+  SCST:      { label: "SC/ST Atrocities", kn: "ಪ.ಜಾ/ಪ.ಪಂ ದೌರ್ಜನ್ಯ", color: "#892CDC" },
+  ECONOMIC:  { label: "Economic Offences", kn: "ಆರ್ಥಿಕ ಅಪರಾಧಗಳು", color: "#FFD60A" },
+  CYBER:     { label: "Cyber Crimes", kn: "ಸೈಬರ್ ಅಪರಾಧಗಳು", color: "#00F5D4" },
+  PROPERTY:  { label: "Property Crimes", kn: "ಆಸ್ತಿ ಅಪರಾಧಗಳು", color: "#30D158" },
+  NARCOTICS: { label: "Narcotics & Seizures", kn: "ಮಾದಕ ವಸ್ತು ಮತ್ತು ಜಪ್ತಿ", color: "#00C7BE" },
+  MISSING:   { label: "Missing Persons", kn: "ಕಾಣೆಯಾದ ವ್ಯಕ್ತಿಗಳು", color: "#64D2FF" },
+  CORRUPTION:{ label: "Corruption / Public Servants", kn: "ಭ್ರಷ್ಟಾಚಾರ / ಸಾರ್ವಜನಿಕ ಸೇವಕರು", color: "#D4AF37" },
+  FOREIGN:   { label: "Crimes vs/by Foreigners", kn: "ವಿದೇಶಿಯರ ವಿರುದ್ಧ/ಮೂಲಕ ಅಪರಾಧಗಳು", color: "#0A84FF" },
+  ENVIRON:   { label: "Environment Offences", kn: "ಪರಿಸರ ಅಪರಾಧಗಳು", color: "#A4DE02" },
+  OTHER:     { label: "Other", kn: "ಇತರೆ", color: "#98989D" },
 };
+
+// The category's name in the officer's language.
+export const catLabel = (cat, kn) => (kn && CATEGORIES[cat]?.kn) || CATEGORIES[cat]?.label || cat;
 
 export function categorize(group) {
   const g = (group || "").toUpperCase();

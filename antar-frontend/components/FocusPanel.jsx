@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { SPRING } from "@/components/ui/MaterialPanel";
+import { catLabel } from "@/lib/crimeGraph";
 import "./FocusPanel.css";
 
 // The Brain's focus card: one linked group of FIRs, read the way a case officer reads a
@@ -146,7 +147,7 @@ export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, on
     }
     if (intent === "links") {
       const rows = keys.map((k) => `${KEY_LABEL[k.kind]?.[kn ? 1 : 0] || k.kind} ${k.name} · ${kn ? `${k.n} FIR` : `in ${firsWord(k.n)}`}`);
-      const why = (focus.whys || []).map((w) => w.text);
+      const why = (focus.whys || []).map((w) => (kn && w.text_kn) || w.text);
       return {
         lead: keys.length
           ? (kn ? `ಹಂಚಿಕೊಂಡ ${keys.length} ಗುರುತು ಈ ಪ್ರಕರಣಗಳನ್ನು ಜೋಡಿಸುತ್ತದೆ - ಇದು ಗಟ್ಟಿ ಸಂಪರ್ಕ.` : `${keys.length === 1 ? "One shared identifier" : `${keys.length} shared identifiers`} tie these cases together. That is a hard link: the same account, device or vehicle appears in more than one FIR.`)
@@ -259,7 +260,7 @@ export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, on
             {Donut && <div className="fp-donut"><Donut cats={c.cats} total={c.size} /></div>}
             <ul>
               {c.cats.slice(0, 6).map((x) => (
-                <li key={x.cat}><i style={{ background: x.color }} /><span>{x.label}</span><b>{x.n}</b><em>{pct(x.n)}%</em></li>
+                <li key={x.cat}><i style={{ background: x.color }} /><span>{catLabel(x.cat, kn)}</span><b>{x.n}</b><em>{pct(x.n)}%</em></li>
               ))}
             </ul>
           </div>
@@ -362,7 +363,7 @@ export default function FocusPanel({ focus, name, kn, Donut, linkColors = {}, on
         {focus.whys?.length > 0 && (
           <Section id="why" title={L("How they are connected", "ಹೇಗೆ ಸಂಪರ್ಕಿತ")} count={focus.whys.length} open={open.why} onToggle={toggle}>
             <ul className="fp-links">
-              {focus.whys.map((w, i) => <li key={i}><i style={{ background: linkColors[w.kind] || "rgba(255,255,255,0.25)" }} /><span>{w.text}</span></li>)}
+              {focus.whys.map((w, i) => <li key={i}><i style={{ background: linkColors[w.kind] || "rgba(255,255,255,0.25)" }} /><span>{(kn && w.text_kn) || w.text}</span></li>)}
             </ul>
           </Section>
         )}

@@ -185,22 +185,22 @@ export default function BrainHub() {
           <div style={{ position: "fixed", bottom: "64px", right: "20px", zIndex: 10, display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
             <button
               onClick={() => scrollToSection("top")}
-              title="Scroll to Top"
+              title={kn ? "ಮೇಲಕ್ಕೆ ಹೋಗಿ" : "Scroll to Top"}
               style={{ background: "transparent", border: "none", color: "#FFFFFF", textShadow: "0 0 10px rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, transform 0.25s ease, scale 0.25s ease", fontFamily: "'Chakra Petch', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}
               onMouseOver={(e) => { e.currentTarget.style.textShadow = "0 0 16px rgba(255,255,255,0.8)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseOut={(e) => { e.currentTarget.style.textShadow = "0 0 10px rgba(255,255,255,0.4)"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              Top Brain
+              {kn ? "ಮೇಲೆ · ಬ್ರೈನ್" : "Top Brain"}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6" /></svg>
             </button>
             <button
               onClick={() => scrollToSection("bottom")}
-              title="Scroll to Data Overview"
+              title={kn ? "ದತ್ತಾಂಶ ಅವಲೋಕನಕ್ಕೆ ಹೋಗಿ" : "Scroll to Data Overview"}
               style={{ background: "transparent", border: "none", color: "#FFFFFF", textShadow: "0 0 10px rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, transform 0.25s ease, scale 0.25s ease", fontFamily: "'Chakra Petch', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}
               onMouseOver={(e) => { e.currentTarget.style.textShadow = "0 0 16px rgba(255,255,255,0.8)"; e.currentTarget.style.transform = "translateY(2px)"; }}
               onMouseOut={(e) => { e.currentTarget.style.textShadow = "0 0 10px rgba(255,255,255,0.4)"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              Bottom Data Overview
+              {kn ? "ಕೆಳಗೆ · ದತ್ತಾಂಶ ಅವಲೋಕನ" : "Bottom Data Overview"}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
           </div>

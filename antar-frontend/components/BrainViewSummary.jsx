@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { aliasFor } from "@/lib/crimeGraph";
+import { aliasFor, catLabel } from "@/lib/crimeGraph";
 
 // "View summary" - the brain view, in sentences an officer can read aloud.
 //
@@ -81,7 +81,7 @@ export default function BrainViewSummary({ graph, stats, focus, active, kinds, g
       // Focused group: say WHO is connected, HOW, and WHERE - the question an officer is
       // actually asking when they click a node.
       const people = (focus.comp?.people || []).map((p) => p.name || aliasFor(p.id)).slice(0, 4);
-      const whys = (focus.whys || []).map((w) => w.text).slice(0, 3);
+      const whys = (focus.whys || []).map((w) => (kn && w.text_kn) || w.text).slice(0, 3);
       const dists = focus.comp?.districts || [];
       const yrs = focus.comp?.years;
 
@@ -103,7 +103,7 @@ export default function BrainViewSummary({ graph, stats, focus, active, kinds, g
       const mainCat = focus.comp?.cats?.[0];
       if (mainCat) {
         out.push([kn ? "ಹೆಚ್ಚಿನವು" : "Mostly",
-                  `${mainCat.label} (${mainCat.n}/${focus.comp.size})`]);
+                  `${catLabel(mainCat.cat, kn)} (${mainCat.n}/${focus.comp.size})`]);
       }
       out.push(kn ? "ಇದು ದಾಖಲೆಗಳಿಂದ ಬಂದ ಸಂಪರ್ಕ; ಅಪರಾಧದ ಪುರಾವೆ ಅಲ್ಲ - ತನಿಖೆಯ ಸುಳಿವು."
                   : "These are record links, not proof of guilt - a lead to investigate.");
@@ -139,7 +139,7 @@ export default function BrainViewSummary({ graph, stats, focus, active, kinds, g
 
     if (top && total) {
       out.push([kn ? "ದೊಡ್ಡ ಗುಂಪು" : "Largest",
-                `${top.label} — ${(top.count || 0).toLocaleString()}`
+                `${catLabel(top.cat, kn)} — ${(top.count || 0).toLocaleString()}`
                 + ` (${Math.round((100 * (top.count || 0)) / total)}%)`]);
     }
 

@@ -2,18 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildConstellation, aliasFor, CATEGORIES , soften, groupProfile } from "@/lib/crimeGraph";
-
-// Every drawn edge exists because two FIRs share a real key - name it.
-function linkWhy(l) {
-  const key = l.key ? ` - ${l.key}` : "";
-  if (l.kind === "repeat") return `Repeat offender: same accused${key}`;
-  if (l.kind === "ring") return `Ring: shared place / vehicle${key}`;
-  if (l.kind === "cyber") return `Cyber: shared UPI / IP${key}`;
-  if (l.kind === "inferred") return `Predicted Edge (Inferred Link)${key}`;
-  if (l.kind === "unsub") return `UNSUB Cluster Member${key}`;
-  if (l.kind === "agent") return "Antar intelligence cluster - learns & predicts over this graph";
-  return `Linked${key}`;
-}
+import { groupWhys, nodeCard, linkCard, unsubName } from "@/lib/brainCards";
 
 // Node palette per the constellation reference: teal linked records, orange
 // named hubs, gray dust, green apex, purple Antar agents.
@@ -33,7 +22,7 @@ function bubbleRadius(ms, cx, cy) {
   return d.length ? d[Math.min(d.length - 1, Math.floor(d.length * 0.85))] : 0;
 }
 
-export default function Constellation({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady }) {
+export default function Constellation({ graph, groupBy = "evidence", active, kinds, controlRef, onFocus, onStats, onAgent, focusId, legendFocus, onReady, kn = false }) {
   const containerRef = useRef(null);
   const fgRef = useRef(null);
   const introUntil = useRef(0);      // until when the opening zoom-in owns the view
@@ -47,6 +36,8 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
   const kindsRef = useRef(kinds);
   const dataRef = useRef(null);
   const flightRef = useRef(null);    // rAF id of the agent think-flight
+  const knRef = useRef(kn);          // read by the tooltips and canvas labels at draw time
+  knRef.current = kn;
   const metaRef = useRef(null);      // group callout metadata (live node refs)
   const hoverCompRef = useRef(null); // component id under the pointer
   const focusCompRef = useRef(null); // component id currently focused
@@ -84,14 +75,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
     focusCompRef.current = n.comm ?? null;
 
     // evidence: the shared keys holding this group together
-    const whys = [], seen = new Set();
-    dataRef.current.links.forEach((l) => {
-      const sid = typeof l.source === "object" ? l.source.id : l.source;
-      const tid = typeof l.target === "object" ? l.target.id : l.target;
-      if (!focus.has(sid) || !focus.has(tid)) return;
-      const w = linkWhy(l);
-      if (!seen.has(w)) { seen.add(w); whys.push({ kind: l.kind, text: w }); }
-    });
+    const whys = groupWhys(dataRef.current.links, focus);
 
     // composition analytics for the Focus panel (ref-2 style what/why)
     const catCount = new Map();
@@ -158,21 +142,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
           return dimmed(n) ? "rgba(77,90,112,.10)" : soften(n.color || ROLE_COLOR[n.role] || ROLE_COLOR.dust);
         })
         .nodeVisibility(visible)
-        .nodeLabel((n) => n.kind === "agent"
-          ? `<div style="background:rgba(10,15,24,0.96); border:1px solid rgba(167,139,250,0.45); padding:10px 14px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.85); font:12px 'Chakra Petch', Inter, sans-serif; color:#E2E8F0;"><b style="color:#C4B5FD; font-size:13px; letter-spacing:0.5px;">${n.label || "Antar Intelligence"}</b><br/><span style="color:#94A3B8; font-size:11px;">Autonomous Intelligence & Forecasting</span><br/><div style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); color:#38BDF8; font-weight:600;">▶ Click to inspect reasoning logs</div></div>`
-          : n.kind === "unsub"
-          ? `<div style="background:rgba(15,10,25,0.96); border:1px solid rgba(168,85,247,0.6); padding:12px 15px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.9); font:12px Inter, sans-serif; color:#E9D5FF;"><b style="color:#C084FC; font-size:13px; font-family:'Chakra Petch', sans-serif;">${n.name || "UNSUB Profile"}</b><div style="margin-top:6px; color:#D8B4FE; font-size:11px;">SYNTHETIC INVESTIGATIVE PROFILE</div><div style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); font-size:11px; color:#CBD5E1;">Knowledge Boundary: <b>100% Gap (UNSUB)</b></div></div>`
-          : `<div style="background:rgba(6,11,18,0.96); border:1px solid ${n.role === "top" ? "rgba(24,214,154,0.6)" : n.role === "hub" ? "rgba(232,163,61,0.6)" : "rgba(43,179,163,0.4)"}; padding:12px 15px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.9); font:12px Inter, sans-serif; color:#E2E8F0; max-width:300px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px;">
-                <b style="color:${n.role === "top" ? "#34EEB6" : n.role === "hub" ? "#FFC048" : "#22E6F0"}; font-size:13px; font-family:'Chakra Petch', sans-serif; text-transform:uppercase;">${n.crimeHead || n.crimeGroup || "FIR Record"}</b>
-                ${n.stage ? `<span style="font-size:10px; background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; color:#A7F3D0; white-space:nowrap;">${n.stage}</span>` : ""}
-              </div>
-              <div style="color:#94A3B8; font-size:11px; margin-bottom:6px;">${n.zone || ""}${n.district && n.district !== n.zone ? `, ${n.district}` : ""} · ${n.year || "2026"}</div>
-              ${n.accused ? `<div style="background:rgba(232,163,61,0.12); border-left:3px solid #E8A33D; padding:5px 8px; margin:6px 0; border-radius:0 4px 4px 0;"><span style="color:#FDE68A; font-weight:600;">${aliasFor(n.accused) || "Suspect"}</span> <span style="color:#94A3B8; font-family:'JetBrains Mono'; font-size:11px;">[${n.accused}]</span></div>` : ""}
-              ${n.vehicle ? `<div style="color:#38BDF8; font-size:11px; margin-top:4px; font-family:'JetBrains Mono';">Getaway Veh: <b>${n.vehicle}</b></div>` : ""}
-              ${n.mo ? `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); font-size:11px; color:#CBD5E1; line-height:1.4;"><b>Explainable MO:</b><br/>${n.mo}</div>` : ""}
-              ${n.role === "top" ? '<div style="margin-top:8px; font-size:11px; color:#34EEB6; font-weight:600;">MOST CONNECTED APEX HUB IN VIEW</div>' : n.role === "hub" ? '<div style="margin-top:8px; font-size:11px; color:#FFC048; font-weight:600;">KEY ACCUSED - HEAVILY LINKED IN SYNDICATE</div>' : n.comm ? '<div style="margin-top:8px; font-size:11px; color:#22E6F0; font-weight:600;">PART OF EVIDENCE-LINKED COMMUNITY</div>' : ""}
-            </div>`)
+        .nodeLabel((n) => nodeCard(n, knRef.current))
         .linkColor((l) => {
           const lf = legendFocusRef.current;
           if (lf && lf !== "line" && lf !== "agent") return "rgba(77,90,112,0.05)";
@@ -192,7 +162,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
         .linkDirectionalParticleSpeed(0.0045)
         .linkDirectionalParticleWidth(2.2)
         .linkDirectionalParticleColor(() => "rgba(255,255,255,0.85)")
-        .linkLabel((l) => `<div style="background:rgba(6,11,18,0.94); border:1px solid rgba(255,140,66,0.4); padding:5px 9px; border-radius:6px; font:11px 'JetBrains Mono', monospace; color:#FFB020; box-shadow:0 6px 16px rgba(0,0,0,0.85);">${linkWhy(l)}</div>`)
+        .linkLabel((l) => linkCard(l, knRef.current))
         .nodeCanvasObjectMode((n) => (n.kind === "unsub" || n.kind === "category") ? "replace" : (n.label && !dimmed(n) ? "after" : undefined))
         .nodeCanvasObject((n, ctx, scale) => {
           const fs = Math.max(3.2, 10 / scale);
@@ -229,7 +199,7 @@ export default function Constellation({ graph, groupBy = "evidence", active, kin
             ctx.fill();
             ctx.font = `600 ${fs}px Inter`;
             ctx.fillStyle = "#E9D5FF";
-            ctx.fillText(n.name || "UNSUB", n.x, n.y - 16 / scale);
+            ctx.fillText(unsubName(n, knRef.current), n.x, n.y - 16 / scale);
             ctx.restore();
             return;
           }

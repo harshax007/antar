@@ -43,6 +43,29 @@ const KN_CRIME = {
   "CHILDREN ACT": "ಮಕ್ಕಳ ಕಾಯ್ದೆ",
   "PUBLIC NUISANCE": "ಸಾರ್ವಜನಿಕ ಉಪದ್ರವ",
   "CYBERCRIME": "ಸೈಬರ್ ಅಪರಾಧ",
+  // The rest of the register's crime groups.
+  "OFFENCES BY PUBLIC SERVANTS (EXCEPT CORRUPTION) (PUBLIC SERVANT IS ACCUSED)": "ಸಾರ್ವಜನಿಕ ಸೇವಕರಿಂದ ಅಪರಾಧ (ಭ್ರಷ್ಟಾಚಾರ ಹೊರತು)",
+  "ANIMAL": "ಪ್ರಾಣಿ ಸಂಬಂಧಿತ ಅಪರಾಧ",
+  "COTPA, CIGARETTES AND OTHER TOBACCO PRODUCTS": "ಕೋಟ್ಪಾ (ತಂಬಾಕು ಉತ್ಪನ್ನಗಳು)",
+  "FOREIGNER": "ವಿದೇಶಿಯರ ಕಾಯ್ದೆ",
+  "WRONGFUL RESTRAINT/CONFINEMENT": "ಅಕ್ರಮ ತಡೆ / ಬಂಧನ",
+  "COPY RIGHT ACT 1957": "ಕೃತಿಸ್ವಾಮ್ಯ ಕಾಯ್ದೆ 1957",
+  "FAILURE TO APPEAR TO COURT": "ನ್ಯಾಯಾಲಯಕ್ಕೆ ಹಾಜರಾಗದಿರುವುದು",
+  "COMMUNAL / RELIGION": "ಕೋಮು / ಧಾರ್ಮಿಕ",
+  "AFFRAY": "ಸಾರ್ವಜನಿಕ ಹೊಡೆದಾಟ",
+  "REPRESENTATION OF PEOPLE ACT 1951 & 1988": "ಜನಪ್ರತಿನಿಧಿ ಕಾಯ್ದೆ 1951 ಮತ್ತು 1988",
+  "INSULTING MODESTY OF WOMEN (EVE TEASING)": "ಮಹಿಳೆಯ ಗೌರವಕ್ಕೆ ಧಕ್ಕೆ (ಚುಡಾಯಿಸುವಿಕೆ)",
+  "EXTORTION": "ಸುಲಿಗೆ",
+  "EXPOSURE AND ABANDONMENT OF CHILD": "ಮಗುವನ್ನು ತ್ಯಜಿಸುವುದು",
+  "ATTEMPTING TO COMMIT OFFENCES": "ಅಪರಾಧ ಎಸಗುವ ಯತ್ನ",
+  "ARMS ACT": "ಶಸ್ತ್ರಾಸ್ತ್ರ ಕಾಯ್ದೆ",
+  "DISOBEDIENCE TO ORDER PROMULGATED BY PUBLICSERVAN": "ಸಾರ್ವಜನಿಕ ಸೇವಕರ ಆದೇಶ ಉಲ್ಲಂಘನೆ",
+  "CONSUMER": "ಗ್ರಾಹಕ ಸಂಬಂಧಿತ",
+  "ATTEMPT TO CULPABLE HOMICIDE NOT AMOUNTING TO MURDER": "ಕೊಲೆಯಲ್ಲದ ಅಪರಾಧಿಕ ನರಹತ್ಯೆ ಯತ್ನ",
+  "PREVENTION OF DAMAGE TO PUBLIC PROPERTY ACT 1984": "ಸಾರ್ವಜನಿಕ ಆಸ್ತಿ ಹಾನಿ ತಡೆ ಕಾಯ್ದೆ 1984",
+  "OFFENCES RELATED TO MARRIAGE": "ವಿವಾಹ ಸಂಬಂಧಿತ ಅಪರಾಧಗಳು",
+  "MISCHIEF": "ಕಿಡಿಗೇಡಿತನ",
+  "ADULTERATION": "ಕಲಬೆರಕೆ",
 };
 
 const key = (s) => String(s || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
@@ -66,3 +89,14 @@ export function monthKn(v) {
   if (Number.isNaN(d.getTime())) return String(v ?? "");
   return `${MONTH_KN[d.getMonth()]} ${d.getFullYear()}`;
 }
+
+// Case stages as the register writes them (FIR_Stage).
+const KN_STAGE = {
+  "PENDING TRIAL": "ವಿಚಾರಣೆ ಬಾಕಿ", "UNDER INVESTIGATION": "ತನಿಖೆಯಲ್ಲಿ", "CONVICTED": "ಶಿಕ್ಷೆಯಾಗಿದೆ",
+  "UNDETECTED": "ಪತ್ತೆಯಾಗಿಲ್ಲ", "UN TRACED": "ಪತ್ತೆಯಾಗಿಲ್ಲ", "TRACED": "ಪತ್ತೆಯಾಗಿದೆ", "DIS/ACQ": "ವಜಾ / ಖುಲಾಸೆ",
+  "FALSE CASE": "ಸುಳ್ಳು ಪ್ರಕರಣ", "BOUNDOVER": "ಮುಚ್ಚಳಿಕೆ", "CHARGE SHEETED": "ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಕೆ",
+  "CHARGESHEETED": "ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಕೆ", "CLOSED": "ಮುಕ್ತಾಯ", "DISPOSED": "ವಿಲೇವಾರಿ",
+};
+
+/** The Kannada name of a case stage, or null when there is none. */
+export const stageKn = (stage) => KN_STAGE[key(stage)] || null;
