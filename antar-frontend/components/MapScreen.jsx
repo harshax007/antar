@@ -1283,6 +1283,13 @@ export default function MapScreen() {
                 <span aria-hidden="true" />
               </div>
             )}
+            {/* What is being counted, while it is counted: a new crime type or date takes a
+                moment, and the 2px line alone was easy to miss. */}
+            {giLoading && boot === "off" && (
+              <div className="mx-fetching" aria-hidden="true">
+                <i />{(() => { const d = new Date(`${endDate}T00:00:00`).toLocaleDateString(kn ? "kn-IN" : "en-IN", { day: "numeric", month: "short", year: "numeric" }); const w = win === 1 ? d : `${W.list} ${kn ? "" : "to "}${d}`; return kn ? `${crimeLabel} · ${w} ಎಣಿಸಲಾಗುತ್ತಿದೆ…` : `Counting ${crimeLabel.toLowerCase()} · ${w}…`; })()}
+              </div>
+            )}
             <MapContainer center={[15.317, 75.713]} zoom={7} zoomSnap={0.25} zoomDelta={0.5} zoomControl={false} minZoom={6} maxZoom={12} scrollWheelZoom style={{ height: "100%", width: "100%", transition: "filter 0.4s ease", filter: giLoading ? "grayscale(0.5) brightness(0.8)" : "none" }}>
             <TileLayer 
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" 
@@ -1779,8 +1786,12 @@ export default function MapScreen() {
         )}
         {/* Simple Bar Chart Legend */}
         {Object.keys(districtFirTotals).length > 0 && (
-          <div inert={reportOpen || showDossier ? "" : undefined} className="mx-panel" style={{ marginTop: "12px", padding: "16px", background: "rgba(6,11,20,0.85)", border: "1px solid var(--glass-border)", borderRadius: "12px", pointerEvents: "auto", backdropFilter: "blur(10px)", zIndex: 10 }}>
+          <div inert={reportOpen || showDossier ? "" : undefined} className={`mx-panel mx-toplist${giLoading ? " is-loading" : ""}`} aria-busy={giLoading} style={{ marginTop: "12px", padding: "16px", background: "rgba(6,11,20,0.85)", border: "1px solid var(--glass-border)", borderRadius: "12px", pointerEvents: "auto", backdropFilter: "blur(10px)", zIndex: 10 }}>
             <div className="mx-bars-h">{kn ? "ಅಗ್ರ ಪೊಲೀಸ್ ಜಿಲ್ಲೆಗಳು" : "Police districts with most cases"}<small>{W.list}</small></div>
+            {/* Five zero bars in alphabetical order read like a ranking; an empty view says so. */}
+            {!Object.values(districtFirTotals).some((n) => n > 0) ? (
+              <p className="mx-toplist-none">{giLoading ? (kn ? "ಎಣಿಸಲಾಗುತ್ತಿದೆ…" : "Counting…") : (kn ? "ಈ ವೀಕ್ಷಣೆಯಲ್ಲಿ ಯಾವುದೇ ಪ್ರಕರಣಗಳಿಲ್ಲ." : "No cases in this view.")}</p>
+            ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {Object.entries(districtFirTotals)
                 .sort((a, b) => b[1] - a[1])
@@ -1795,6 +1806,7 @@ export default function MapScreen() {
                   </div>
               ))}
             </div>
+            )}
           </div>
         )}
         </div>
