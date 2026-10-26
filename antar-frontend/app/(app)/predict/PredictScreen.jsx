@@ -1261,7 +1261,7 @@ html[lang="kn"] .px-eyebrow { letter-spacing: normal; text-transform: none; font
 .px-hero .px-title em { font-style: normal; color: var(--accent); }
 .px-hero .px-sub { margin: var(--sp-4) 0 0; max-width: 62ch; font: 400 13.5px/1.55 'Inter', sans-serif; color: var(--text-3); }
 .px-hero-cta { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
-.px-hero-cta .ui-btn { min-height: 44px; padding: 0 var(--sp-5); font-size: var(--fs-body); }
+.px-hero-cta .ui-btn { min-height: 38px; padding: 0 var(--sp-4); font-size: 14px; }
 .px-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-5); margin: 0; font: 500 var(--fs-label)/1.4 'JetBrains Mono', monospace; color: var(--text-3); }
 .px-meta b { color: var(--text-1); font-weight: 600; }
 .px-meta-btn { padding: 0; font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px dashed var(--rule-2); cursor: pointer; }
