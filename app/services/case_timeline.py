@@ -24,7 +24,7 @@ and then the state when the station has too few to be worth a percentage.
 from __future__ import annotations
 
 import sqlite3
-from datetime import date
+from datetime import date, timedelta
 
 from app.core.db_path import DB_PATH, registry_connect
 
@@ -58,6 +58,16 @@ _STAGES = {
     "OTHER DISPOSAL": ("investigation", "Disposed of otherwise"),
 }
 _STEPS = ("registered", "investigation", "arrest", "chargesheet", "court")
+_ENDED_KN = {
+    "Convicted": "ಶಿಕ್ಷೆಯಾಗಿದೆ",
+    "Discharged or acquitted": "ಬಿಡುಗಡೆ ಅಥವಾ ಖುಲಾಸೆ",
+    "Compounded (settled between the parties)": "ರಾಜಿ (ಪಕ್ಷಗಳ ನಡುವೆ ಇತ್ಯರ್ಥ)",
+    "Bound over": "ಮುಚ್ಚಳಿಕೆ ಮೇಲೆ ಬಿಡುಗಡೆ",
+    "Abated (the accused died)": "ಕೊನೆಗೊಂಡಿದೆ (ಆರೋಪಿ ಮೃತಪಟ್ಟಿದ್ದಾರೆ)",
+    "Closed as undetected": "ಪತ್ತೆಯಾಗದೆ ಮುಚ್ಚಲಾಗಿದೆ",
+    "Closed as a false case": "ಸುಳ್ಳು ಪ್ರಕರಣವೆಂದು ಮುಚ್ಚಲಾಗಿದೆ",
+    "Disposed of otherwise": "ಬೇರೆ ರೀತಿಯಲ್ಲಿ ವಿಲೇವಾರಿ",
+}
 
 
 def _int(v) -> int:
@@ -292,6 +302,8 @@ def brain_timeline(case_id: str) -> dict | None:
         d["keys"] = {k: v for k, v in (("vehicle", r["_vehicle"]), ("upi", r["UPI_ID"]), ("ip", r["_ip"])) if v}
         d["recorded"] = ("A record of the Brain's curated dataset, not a row of the FIR register. Only the "
                          "registration is dated; arrests, charge-sheets and verdicts are counts.")
+        d["recorded_kn"] = ("ಇದು ಬ್ರೈನ್‌ನ ಆಯ್ದ ದತ್ತಾಂಶದ ದಾಖಲೆ, FIR ರಿಜಿಸ್ಟರ್‌ನ ಸಾಲಲ್ಲ. ದಾಖಲಾತಿಗೆ ಮಾತ್ರ ದಿನಾಂಕ ಇದೆ; "
+                            "ಬಂಧನ, ದೋಷಾರೋಪ ಪಟ್ಟಿ ಮತ್ತು ತೀರ್ಪುಗಳು ಎಣಿಕೆಗಳು.")
         return d
     finally:
         con.close()
@@ -325,71 +337,112 @@ def build(con: sqlite3.Connection, r, brain: bool = False) -> dict:
     open_inv = reached == "investigation" and ended is None
     in_court = reached == "court"
 
+    station = r["station"] or r["UnitName"]
+    district = r["district_norm"] or r["District_Name"]
+    ended_kn = _ENDED_KN.get(ended, ended) if ended else None
+    # the 60- and 90-day marks as dates, for the clock on the page and the charge-sheet step
+    try:
+        d0 = date.fromisoformat(reg)
+        mark60, mark90 = (d0 + timedelta(days=LIMIT_SHORT)).isoformat(), (d0 + timedelta(days=LIMIT_LONG)).isoformat()
+    except ValueError:
+        mark60 = mark90 = None
+
+    # Every line in English and Kannada (title_kn, detail_kn): the page shows the reader's language.
     steps = []
-    steps.append({"key": "registered", "title": "FIR registered", "state": "done", "date": reg,
-                  "detail": f"At {r['station'] or r['UnitName']}, {r['district_norm'] or r['District_Name']}."
-                            + (f" {r['FIR_Type']}." if r["FIR_Type"] else "")})
+
+    def step(key, title, title_kn, state, detail, detail_kn, **extra):
+        steps.append({"key": key, "title": title, "title_kn": title_kn, "state": state,
+                      "detail": detail, "detail_kn": detail_kn, **extra})
+
+    step("registered", "FIR registered", "FIR ದಾಖಲಾಗಿದೆ", "done",
+         f"At {station}, {district}." + (f" {r['FIR_Type']}." if r["FIR_Type"] else ""),
+         f"{station}, {district} ನಲ್ಲಿ." + (f" {r['FIR_Type']}." if r["FIR_Type"] else ""), date=reg)
+    clock = None
     if open_inv:
-        clock = None
+        en = kn = None
         if age is not None:
             if age < LIMIT_SHORT:
-                clock = f"Day {age}. The 60-day mark is in {LIMIT_SHORT - age} days, the 90-day mark in {LIMIT_LONG - age}."
+                en = f"Day {age}. The 60-day mark is in {LIMIT_SHORT - age} days, the 90-day mark in {LIMIT_LONG - age}."
+                kn = f"{age}ನೇ ದಿನ. 60 ದಿನಗಳ ಮಿತಿಗೆ ಇನ್ನೂ {LIMIT_SHORT - age} ದಿನ, 90 ದಿನಗಳ ಮಿತಿಗೆ {LIMIT_LONG - age} ದಿನ."
             elif age < LIMIT_LONG:
-                clock = f"Day {age}. Past the 60-day mark; the 90-day mark is in {LIMIT_LONG - age} days."
+                en = f"Day {age}. Past the 60-day mark; the 90-day mark is in {LIMIT_LONG - age} days."
+                kn = f"{age}ನೇ ದಿನ. 60 ದಿನಗಳ ಮಿತಿ ದಾಟಿದೆ; 90 ದಿನಗಳ ಮಿತಿಗೆ ಇನ್ನೂ {LIMIT_LONG - age} ದಿನ."
             else:
-                clock = f"Day {age}. Past both the 60- and 90-day marks."
-        steps.append({"key": "investigation", "title": "Under investigation", "state": "current",
-                      "detail": clock or "Open.", "days_open": age,
-                      "note": "BNSS s.187(3): an accused in custody gets default bail if the investigation "
-                              "is not complete in 60 days, or 90 for the gravest offences."})
+                en = f"Day {age}. Past both the 60- and 90-day marks."
+                kn = f"{age}ನೇ ದಿನ. 60 ಮತ್ತು 90 ದಿನಗಳ ಎರಡೂ ಮಿತಿಗಳು ದಾಟಿವೆ."
+            clock = {"day": age, "short": LIMIT_SHORT, "long": LIMIT_LONG, "short_date": mark60, "long_date": mark90}
+        step("investigation", "Under investigation", "ತನಿಖೆಯಲ್ಲಿದೆ", "current", en or "Open.", kn or "ತೆರೆದಿದೆ.",
+             days_open=age,
+             note="BNSS s.187(3): if the investigation is not finished in 60 days (90 for the gravest offences), "
+                  "an accused in custody gets bail by default.",
+             note_kn="BNSS ಸೆ.187(3): 60 ದಿನಗಳಲ್ಲಿ (ಅತಿ ಗಂಭೀರ ಅಪರಾಧಗಳಿಗೆ 90 ದಿನ) ತನಿಖೆ ಮುಗಿಯದಿದ್ದರೆ, "
+                     "ಬಂಧನದಲ್ಲಿರುವ ಆರೋಪಿಗೆ ಡೀಫಾಲ್ಟ್ ಜಾಮೀನು ಸಿಗುತ್ತದೆ.")
     else:
-        steps.append({"key": "investigation", "title": "Investigation", "state": "done",
-                      "detail": f"{ended}." if (reached == "investigation" and ended) else "Completed.",
-                      "date_missing": True})
+        closed_here = reached == "investigation" and ended
+        step("investigation", "Investigation", "ತನಿಖೆ", "done",
+             f"{ended}." if closed_here else "Completed.", f"{ended_kn}." if closed_here else "ಪೂರ್ಣಗೊಂಡಿದೆ.",
+             date_missing=True)
     if accused:
-        steps.append({"key": "arrest", "title": "Arrests", "state": "done" if arrested else ("current" if open_inv else "none"),
-                      "detail": f"{arrested} of {accused} accused arrested.", "date_missing": bool(arrested)})
+        step("arrest", "Arrests", "ಬಂಧನಗಳು", "done" if arrested else ("current" if open_inv else "none"),
+             f"{arrested} of {accused} accused arrested.", f"{accused} ಆರೋಪಿಗಳಲ್ಲಿ {arrested} ಬಂಧಿತರು.",
+             date_missing=bool(arrested))
     else:
-        steps.append({"key": "arrest", "title": "Arrests", "state": "none",
-                      "detail": "No accused named in the FIR." if not open_inv else "No accused named yet."})
+        step("arrest", "Arrests", "ಬಂಧನಗಳು", "none",
+             "No accused named yet." if open_inv else "No accused named in the FIR.",
+             "ಇನ್ನೂ ಯಾವುದೇ ಆರೋಪಿಯನ್ನು ಹೆಸರಿಸಿಲ್ಲ." if open_inv else "FIR ನಲ್ಲಿ ಯಾವುದೇ ಆರೋಪಿಯನ್ನು ಹೆಸರಿಸಿಲ್ಲ.")
     if charged or in_court:
-        steps.append({"key": "chargesheet", "title": "Charge-sheet filed", "state": "done",
-                      "detail": f"{charged} of {accused or charged} accused charge-sheeted." if charged else "Filed.",
-                      "date_missing": True})
+        step("chargesheet", "Charge-sheet filed", "ದೋಷಾರೋಪ ಪಟ್ಟಿ ಸಲ್ಲಿಸಲಾಗಿದೆ", "done",
+             f"{charged} of {accused or charged} accused charge-sheeted." if charged else "Filed.",
+             f"{accused or charged} ಆರೋಪಿಗಳಲ್ಲಿ {charged} ವಿರುದ್ಧ ದೋಷಾರೋಪ ಪಟ್ಟಿ." if charged else "ಸಲ್ಲಿಸಲಾಗಿದೆ.",
+             date_missing=True)
+    elif open_inv:
+        due = f" Day 60 falls on {_nice(mark60)}, day 90 on {_nice(mark90)}." if mark60 else ""
+        due_kn = f" 60ನೇ ದಿನ {_nice(mark60)}, 90ನೇ ದಿನ {_nice(mark90)}." if mark60 else ""
+        step("chargesheet", "Charge-sheet", "ದೋಷಾರೋಪ ಪಟ್ಟಿ", "pending", "Not filed yet." + due, "ಇನ್ನೂ ಸಲ್ಲಿಸಿಲ್ಲ." + due_kn)
     else:
-        steps.append({"key": "chargesheet", "title": "Charge-sheet", "state": "pending" if open_inv else "none",
-                      "detail": "Not filed yet." if open_inv else "Not filed."})
+        step("chargesheet", "Charge-sheet", "ದೋಷಾರೋಪ ಪಟ್ಟಿ", "none", "Not filed.", "ಸಲ್ಲಿಸಿಲ್ಲ.")
     if in_court:
-        steps.append({"key": "court", "title": ended or "Pending trial", "state": "done" if ended else "current",
-                      "detail": (f"{convicted} convicted." if convicted else "") if ended == "Convicted"
-                                else ("Before the court; no verdict recorded yet." if not ended else ""),
-                      "date_missing": bool(ended)})
+        if ended == "Convicted":
+            det, det_kn = (f"{convicted} convicted." if convicted else ""), (f"{convicted} ಮಂದಿಗೆ ಶಿಕ್ಷೆ." if convicted else "")
+        elif not ended:
+            det, det_kn = "Before the court; no verdict recorded yet.", "ನ್ಯಾಯಾಲಯದಲ್ಲಿದೆ; ಇನ್ನೂ ತೀರ್ಪು ದಾಖಲಾಗಿಲ್ಲ."
+        else:
+            det = det_kn = ""
+        step("court", ended or "Pending trial", ended_kn or "ವಿಚಾರಣೆ ಬಾಕಿ", "done" if ended else "current",
+             det, det_kn, date_missing=bool(ended))
     else:
-        steps.append({"key": "court", "title": "Court", "state": "pending" if open_inv else "none",
-                      "detail": "Not reached."})
+        step("court", "Court", "ನ್ಯಾಯಾಲಯ", "pending" if open_inv else "none", "Not reached.", "ತಲುಪಿಲ್ಲ.")
 
     sections = _sections(r["ActSection"])
     where = r["Place_of_Offence"] or r["Village_Area_Name"] or r["Beat_Name"]
     head = _crime_label(r["CrimeGroup_Name"], r["CrimeHead_Name"] or r["crime_type"])
-    bits = [f"{head} registered at {r['station'] or r['UnitName']} on {_nice(reg)}"
-            + (f" under {', '.join(sections[:3])}" if sections else "") + "."]
+    secs = ", ".join(sections[:3])
+    bits = [f"{head} registered at {station} on {_nice(reg)}" + (f" under {secs}" if sections else "") + "."]
+    bits_kn = [f"{head}: {station} ನಲ್ಲಿ {_nice(reg)} ರಂದು" + (f" {secs} ಅಡಿ" if sections else "") + " ದಾಖಲಾಗಿದೆ."]
     if accused:
         bits.append(f"{accused} accused named; {arrested} arrested, {charged} charge-sheeted"
                     + (f", {convicted} convicted" if convicted else "") + ".")
+        bits_kn.append(f"{accused} ಆರೋಪಿಗಳನ್ನು ಹೆಸರಿಸಲಾಗಿದೆ; {arrested} ಬಂಧಿತರು, {charged} ವಿರುದ್ಧ ದೋಷಾರೋಪ ಪಟ್ಟಿ"
+                       + (f", {convicted} ಮಂದಿಗೆ ಶಿಕ್ಷೆ" if convicted else "") + ".")
     else:
         bits.append("No accused named in the FIR.")
+        bits_kn.append("FIR ನಲ್ಲಿ ಯಾವುದೇ ಆರೋಪಿಯನ್ನು ಹೆಸರಿಸಿಲ್ಲ.")
     if victims:
         bits.append(f"{victims} {'victim' if victims == 1 else 'victims'} recorded.")
+        bits_kn.append(f"{victims} ಸಂತ್ರಸ್ತರು ದಾಖಲಾಗಿದ್ದಾರೆ.")
     if open_inv:
         bits.append(f"Still under investigation, day {age}." if age is not None else "Still under investigation.")
+        bits_kn.append(f"ಇನ್ನೂ ತನಿಖೆಯಲ್ಲಿದೆ, {age}ನೇ ದಿನ." if age is not None else "ಇನ್ನೂ ತನಿಖೆಯಲ್ಲಿದೆ.")
     elif ended:
         bits.append(f"{ended}.")
+        bits_kn.append(f"{ended_kn}.")
     elif in_court:
         bits.append("Pending trial.")
+        bits_kn.append("ವಿಚಾರಣೆ ಬಾಕಿ.")
 
     return {
         "fir_id": r["fir_id"], "crime_no": r["CrimeNo"], "registered": reg, "zone": r["zone"],
-        "station": r["station"] or r["UnitName"], "district": r["district_norm"] or r["District_Name"],
+        "station": station, "district": district,
         "crime_group": r["CrimeGroup_Name"], "crime_head": head, "sections": sections,
         "place": where, "io": r["IOName"], "stage": " ".join(str(r["FIR_Stage"] or r["status"] or "").replace("_", " ").split()).title(),
         "counts": {"accused": accused, "arrested": arrested, "chargesheeted": charged,
@@ -400,10 +453,14 @@ def build(con: sqlite3.Connection, r, brain: bool = False) -> dict:
         "upi": (r["UPI_ID"] or "").strip() or None,
         "victims": [] if brain else _victims(con, r["fir_id"]),
         "summary": " ".join(bits),
+        "summary_kn": " ".join(bits_kn),
         "steps": steps,
+        "clock": clock,
         "similar": _brain_similar(con, r) if brain else _similar(con, r),
         "same_accused": _brain_others(con, r) if brain else _other_firs(con, r),
         "demonstration": bool(r["is_synthetic_row"]),
         "recorded": "Only the registration is dated in the register. Arrests, charge-sheets and "
                     "verdicts are recorded as counts, so their dates are shown as not recorded.",
+        "recorded_kn": "ರಿಜಿಸ್ಟರ್‌ನಲ್ಲಿ ದಾಖಲಾತಿಯ ದಿನಾಂಕ ಮಾತ್ರ ಇದೆ. ಬಂಧನ, ದೋಷಾರೋಪ ಪಟ್ಟಿ ಮತ್ತು ತೀರ್ಪುಗಳು "
+                       "ಎಣಿಕೆಗಳಾಗಿ ಮಾತ್ರ ದಾಖಲಾಗಿವೆ, ಆದ್ದರಿಂದ ಅವುಗಳ ದಿನಾಂಕ ತೋರಿಸಲಾಗಿಲ್ಲ.",
     }

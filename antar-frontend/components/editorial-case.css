@@ -115,3 +115,45 @@ html[lang="kn"] .cs-now span { letter-spacing: normal; text-transform: none; fon
   .cs-title, .cs-summary p, .cs-now b, .cs-step b, .cs-facts dd, .cs-bars b, .cs-others b, .cs-victims b { color: #000 !important; }
   .cs-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* The investigation clock under "Where it stands": registration, today, day 60 and day 90. */
+.cs-clock { margin: var(--sp-3) 0 0; max-width: 720px; }
+.cs-clock-track { position: relative; height: 8px; border-radius: 999px; background: rgba(255,255,255,.07); }
+.cs-clock-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); }
+.cs-clock.warn .cs-clock-track i { background: #F5B94A; }
+.cs-clock.late .cs-clock-track i { background: #F26B5B; }
+.cs-clock-track .mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--text-3); }
+.cs-clock-track .today { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+  background: var(--void, #060910); border: 3px solid var(--accent); box-shadow: 0 0 0 4px rgba(34,230,240,.15); }
+.cs-clock.warn .cs-clock-track .today { border-color: #F5B94A; }
+.cs-clock.late .cs-clock-track .today { border-color: #F26B5B; }
+.cs-clock-legend { position: relative; height: 36px; margin-top: 8px; font-size: var(--fs-label); line-height: 1.35; color: var(--text-3); }
+.cs-clock-legend span { position: absolute; top: 0; white-space: nowrap; }
+.cs-clock-legend span:first-child { left: 0; }
+.cs-clock-legend span[style] { transform: translateX(-50%); text-align: center; }
+.cs-clock-legend span.end { right: 0; text-align: right; }
+.cs-clock-legend b { font-weight: 600; color: var(--text-2); }
+
+/* The timeline: the step the case is at stands out; the others read as done or still ahead. */
+.cs-block > .cs-sub + .cs-steps { margin-top: var(--sp-3); }
+.cs-step .body { min-width: 0; }
+.cs-step.current .body { margin: -6px 0 0; padding: 8px 12px 10px; border-radius: 10px;
+  background: rgba(34,230,240,.06); border: 1px solid rgba(34,230,240,.28); }
+.cs-step.current .dot { box-shadow: 0 0 0 5px rgba(34,230,240,.16); }
+.cs-step.done .dot { position: relative; width: 14px; height: 14px; margin: 4px 0 0 4px; }
+.cs-step.done .dot::after { content: ""; position: absolute; left: 3px; top: 0; width: 4px; height: 7px;
+  border: solid var(--void, #060910); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.cs-step.pending .dot { border-style: dashed; }
+.cs-step.none .dot { opacity: .5; }
+.cs-state { padding: 0 8px; border-radius: 999px; border: 1px solid var(--rule-2); }
+.cs-state.done { color: var(--text-2); }
+.cs-state.current { border-color: rgba(34,230,240,.45); background: rgba(34,230,240,.08); }
+.cs-state.pending { border-style: dashed; }
+@media (max-width: 640px) {
+  .cs-clock-legend { height: auto; display: flex; justify-content: space-between; gap: 8px; }
+  .cs-clock-legend span, .cs-clock-legend span[style] { position: static; transform: none; text-align: left; white-space: normal; }
+}
+@media print {
+  .cs-clock-track { background: #ddd; }
+  .cs-step.current .body { background: none; border-color: #999; }
+}

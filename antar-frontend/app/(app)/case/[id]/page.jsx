@@ -87,8 +87,29 @@ export default function CasePage() {
           <h1 className="cs-title">{data.crime_head}</h1>
           <p className="cs-meta">{[data.station, data.district, `${L("registered", "ದಾಖಲು")} ${nice(data.registered)}`].filter(Boolean).join(" · ")}</p>
           {now && (
-            <p className="cs-now"><span>{L("Where it stands", "ಈಗಿನ ಸ್ಥಿತಿ")}</span><b>{now.title}</b>{now.detail ? <em>{now.detail}</em> : null}</p>
+            <p className="cs-now"><span>{L("Where it stands", "ಈಗಿನ ಸ್ಥಿತಿ")}</span><b>{L(now.title, now.title_kn || now.title)}</b>{now.detail ? <em>{L(now.detail, now.detail_kn || now.detail)}</em> : null}</p>
           )}
+          {/* The investigation clock: today against the 60- and 90-day marks, with their dates. */}
+          {data.clock && (() => {
+            const k = data.clock, pos = (d) => `${Math.min(100, (100 * d) / k.long)}%`;
+            const tone = k.day >= k.long ? "late" : k.day >= k.short ? "warn" : "ok";
+            return (
+              <div className={`cs-clock ${tone}`} role="img"
+                   aria-label={L(`Day ${k.day} of the investigation. Day 60 is ${nice(k.short_date)}, day 90 is ${nice(k.long_date)}.`,
+                                 `ತನಿಖೆಯ ${k.day}ನೇ ದಿನ. 60ನೇ ದಿನ ${nice(k.short_date)}, 90ನೇ ದಿನ ${nice(k.long_date)}.`)}>
+                <div className="cs-clock-track">
+                  <i style={{ width: pos(k.day) }} />
+                  <span className="mark" style={{ left: pos(k.short) }} />
+                  <span className="today" style={{ left: pos(k.day) }} />
+                </div>
+                <div className="cs-clock-legend">
+                  <span>{L("Registered", "ದಾಖಲು")}<br /><b>{nice(data.registered)}</b></span>
+                  <span style={{ left: pos(k.short) }}>{L("Day 60", "60ನೇ ದಿನ")}<br /><b>{nice(k.short_date)}</b></span>
+                  <span className="end">{L("Day 90", "90ನೇ ದಿನ")}<br /><b>{nice(k.long_date)}</b></span>
+                </div>
+              </div>
+            );
+          })()}
           <dl className="cs-figs">
             <div><dt>{L("Accused named", "ಹೆಸರಿಸಿದ ಆರೋಪಿಗಳು")}</dt><dd>{c.accused}</dd></div>
             <div><dt>{L("Arrested", "ಬಂಧಿತರು")}</dt><dd>{c.arrested}</dd></div>
@@ -108,24 +129,26 @@ export default function CasePage() {
 
         <section className="cs-summary" aria-labelledby="cs-h-sum">
           <h2 id="cs-h-sum"><span className="cs-n" aria-hidden="true" />{L("Summary", "ಸಾರಾಂಶ")}</h2>
-          <p>{data.summary}</p>
+          <p>{L(data.summary, data.summary_kn || data.summary)}</p>
         </section>
 
         <div className="cs-grid">
           <section className="cs-block">
             <h2><span className="cs-n" aria-hidden="true" />{L("Investigation timeline", "ತನಿಖೆಯ ಕಾಲರೇಖೆ")}</h2>
+            <p className="cs-sub">{L("From the FIR to the court, step by step. The highlighted step is where the case is now.",
+                                     "FIR ನಿಂದ ನ್ಯಾಯಾಲಯದವರೆಗೆ, ಹಂತ ಹಂತವಾಗಿ. ಎದ್ದು ಕಾಣುವ ಹಂತದಲ್ಲಿ ಪ್ರಕರಣ ಈಗ ಇದೆ.")}</p>
             <ol className="cs-steps">
               {data.steps.map((s) => (
                 <li key={s.key} className={`cs-step ${s.state}`}>
                   <span className="dot" aria-hidden="true" />
                   <div className="body">
                     <div className="row">
-                      <b>{s.title}</b>
+                      <b>{L(s.title, s.title_kn || s.title)}</b>
                       <span className={`cs-state ${s.state}`}>{L(...STATE_WORD[s.state])}</span>
                     </div>
                     <span className="when">{s.date ? nice(s.date) : s.date_missing ? L("Date not recorded", "ದಿನಾಂಕ ದಾಖಲಾಗಿಲ್ಲ") : ""}</span>
-                    {s.detail && <p>{s.detail}</p>}
-                    {s.note && <small>{s.note}</small>}
+                    {s.detail && <p>{L(s.detail, s.detail_kn || s.detail)}</p>}
+                    {s.note && <small>{L(s.note, s.note_kn || s.note)}</small>}
                   </div>
                 </li>
               ))}
@@ -203,7 +226,7 @@ export default function CasePage() {
           </div>
         </div>
 
-        <p className="cs-note">{data.recorded} {L("Counts are of registered FIRs. A named accused is not a convicted person.", "ಎಣಿಕೆಗಳು ನೋಂದಾಯಿತ FIR ಗಳದ್ದು. ಹೆಸರಿಸಿದ ಆರೋಪಿ ಶಿಕ್ಷಿತ ವ್ಯಕ್ತಿಯಲ್ಲ.")}</p>
+        <p className="cs-note">{L(data.recorded, data.recorded_kn || data.recorded)} {L("Counts are of registered FIRs. A named accused is not a convicted person.", "ಎಣಿಕೆಗಳು ನೋಂದಾಯಿತ FIR ಗಳದ್ದು. ಹೆಸರಿಸಿದ ಆರೋಪಿ ಶಿಕ್ಷಿತ ವ್ಯಕ್ತಿಯಲ್ಲ.")}</p>
       </div>
     </main>
   );

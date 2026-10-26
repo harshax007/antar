@@ -93,3 +93,24 @@ class TestBrainRecords:
     def test_an_unknown_brain_record_is_404(self):
         from main import app
         assert TestClient(app).get("/api/case/B-99999999", headers={"X-Role": "Inspector"}).status_code == 404
+
+
+class TestKannada:
+    def test_every_line_of_the_case_comes_in_kannada_too(self):
+        for stage in ("Convicted", "Under Investigation", "Undetected", "Pending Trial"):
+            d = ct.timeline(_fir(stage))
+            assert d["summary_kn"] and d["recorded_kn"] and d["summary_kn"] != d["summary"]
+            for s in d["steps"]:
+                assert s["title_kn"] and s["title_kn"] != s["title"]
+                assert bool(s["detail_kn"]) == bool(s["detail"])
+                assert ("note" in s) == ("note_kn" in s)
+
+    def test_the_open_case_clock_dates_the_60_and_90_day_marks(self):
+        from datetime import date, timedelta
+        d = ct.timeline(_fir("Under Investigation"))
+        k = d["clock"]
+        reg = date.fromisoformat(d["registered"])
+        assert k["short_date"] == (reg + timedelta(days=60)).isoformat()
+        assert k["long_date"] == (reg + timedelta(days=90)).isoformat()
+        assert k["day"] == next(s for s in d["steps"] if s["key"] == "investigation")["days_open"]
+        assert ct.timeline(_fir("Convicted"))["clock"] is None
