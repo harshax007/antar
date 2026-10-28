@@ -38,6 +38,20 @@ cd D:\Project
 python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
+## Run the Lab
+
+Antar Lab runs on the expanded ~19-lakh FIR database with the clock pinned to the real record end:
+
+```powershell
+$env:TMP="D:\tmp"; $env:TEMP="D:\tmp"
+$env:ANTAR_EDITION="lab"
+$env:ANTAR_DB="main_lab.db"
+$env:ANTAR_TODAY="real"
+$env:ANTAR_FORECAST_AS_OF="real"
+$env:ANTAR_SCALE_DIR="D:\Project\scale"
+D:\Project\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
 Without activating, call the interpreter by path — this is the safer habit:
 
 ```powershell

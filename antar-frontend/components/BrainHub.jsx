@@ -54,12 +54,12 @@ export default function BrainHub() {
     let alive = true;
 
     // Intelligent Data (the constellation) = the curated, densely-linked world from
-    // intelligent.db (3,500 rows) served by /api/dataset/graph. Falls back to the
+    // intelligent.db (10,000 rows) served by /api/dataset/graph. Falls back to the
     // bundled fir_synthetic.csv if the API is unreachable (e.g. static-only deploy).
     getBrainCache().then((cached) => {
       if (cached && alive) setRecs(prepare(cached));
 
-      fetchAPI("/api/dataset/graph?limit=3500")
+      fetchAPI("/api/dataset/graph?limit=10000")
         .then((d) => {
           if (!d?.rows) return;
           sigRef.current = rowsSignature(d.rows);
@@ -92,7 +92,7 @@ export default function BrainHub() {
       if (busy || document.hidden) return;
       busy = true;
       last = Date.now();
-      fetchAPI("/api/dataset/graph?limit=3500")
+      fetchAPI("/api/dataset/graph?limit=10000")
         .then((d) => {
           if (!alive || !d?.rows) return;
           const next = rowsSignature(d.rows);

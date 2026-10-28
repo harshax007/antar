@@ -152,11 +152,18 @@ def find(con: sqlite3.Connection, fir: str, station: str | None = None) -> sqlit
     """By fir_id first (indexed, unique); else by crime number, narrowed by station because a
     crime number repeats across stations."""
     con.row_factory = sqlite3.Row
-    today = date.today().isoformat()
+    from app.core import clock
+    today = clock.today().isoformat()
     row = con.execute(f"SELECT {_COLS} FROM FIRs WHERE fir_id = ? AND date <= ?", (fir, today)).fetchone()
     if row is None and station:
         row = con.execute(f"SELECT {_COLS} FROM FIRs WHERE TRIM(UPPER(station)) = TRIM(UPPER(?)) "
                           "AND CrimeNo = ? AND date <= ? LIMIT 1", (station, fir, today)).fetchone()
+    if row is None and fir.isdigit() and len(fir) >= 12:
+        # A crime number on its own, as chat answers and the case sheet print it. It carries
+        # the unit id, so it names one station; where a synthetic copy shares it, the real
+        # register row wins.
+        row = con.execute(f"SELECT {_COLS} FROM FIRs WHERE CrimeNo = ? AND date <= ? "
+                          "ORDER BY COALESCE(is_synthetic_row, 0), date DESC LIMIT 1", (fir, today)).fetchone()
     return row
 
 

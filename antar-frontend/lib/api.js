@@ -2,7 +2,7 @@ import { ADMIN_ID, ADMIN_ROLE } from "./auth";
 import { isWakingFailure, markUp, waitForServer } from "./serverStatus";
 
 // Hardcoded for production to prevent local environment variables from overriding it
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "");
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000");
 
 export async function fetchAPI(endpoint, options = {}) {
   const headers = new Headers(options.headers || {});

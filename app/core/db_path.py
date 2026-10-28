@@ -109,39 +109,24 @@ def _is_registry(path: str) -> bool:
         import sqlite3
         con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=10)
         try:
-            return con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'FIRs'").fetchone() is not None
+            # A view in the Cloud build (scripts/build_cloud_db.py: FIRs = rows up to today)
+            return con.execute("SELECT 1 FROM sqlite_master WHERE type IN ('table', 'view') "
+                               "AND name = 'FIRs'").fetchone() is not None
         finally:
             con.close()
     except Exception:
         return False
 
 
-# The Brain's corpus index ships beside the registry and is looked for beside the staged
-# one (app/second_brain/vec_store.py). Without this copy a deployed container searched an
-# empty index: 0 of 100,000 FIRs.
-_SIDECARS = ("brain_vectors.db", "brain_vectors.i8", "brain_vectors.ids", "brain_vectors.mult")
+# The Brain's corpus index ships beside the registry and is only read at runtime. On
+# Catalyst it is opened where the image put it (app/second_brain/vec_store.py) instead of
+# being copied into /tmp: AppSail's disk is capped at 1024 MB and the expanded registry
+# needs that room. Copying it cost 125 MB of it.
+SIDECARS_READ_ONLY = _ON_CATALYST
 
 
-def _stage_sidecars() -> None:
-    src_dir, dst_dir = os.path.dirname(_source_db), os.path.dirname(DB_PATH)
-    if os.path.abspath(src_dir) == os.path.abspath(dst_dir):
-        return
-    for name in _SIDECARS:
-        src, dst = os.path.join(src_dir, name), os.path.join(dst_dir, name)
-        try:
-            if not os.path.exists(src):
-                continue
-            if os.path.exists(dst) and os.path.getsize(dst) >= os.path.getsize(src):
-                continue                     # already staged (the store only grows)
-            tmp = f"{dst}.staging-{os.getpid()}"
-            shutil.copyfile(src, tmp)
-            for stale in (dst + "-wal", dst + "-shm"):
-                if os.path.exists(stale):
-                    os.remove(stale)
-            os.replace(tmp, dst)
-            print(f"[db_path] staged {name} ({os.path.getsize(dst) / 1048576:.0f} MB)")
-        except Exception as e:               # the Brain degrades; the registry still serves
-            print(f"[db_path] could not stage {name}: {e}")
+def sidecar_path(name: str) -> str:
+    return os.path.join(os.path.dirname(_source_db), name)
 
 
 def ensure_db_staged() -> str:
@@ -166,7 +151,6 @@ def ensure_db_staged() -> str:
             return DB_PATH
         if _is_registry(DB_PATH):
             _staged = True
-            _stage_sidecars()
             return DB_PATH
         # A file that is there but is not the registry was created by a connection that
         # opened the path before staging (sqlite creates on connect). Treating it as
@@ -201,7 +185,6 @@ def ensure_db_staged() -> str:
                   f"({os.path.getsize(DB_PATH) / 1048576:.0f} MB)")
             _staged = True
             _ensure_wal(DB_PATH)
-            _stage_sidecars()
         except Exception as e:
             print(f"[db_path] Failed to stage DB: {e}")
             try:

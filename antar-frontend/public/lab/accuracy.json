@@ -1,0 +1,82 @@
+{
+  "timestamp": "2026-10-28T00:14:07.578750+00:00",
+  "mode": "offline",
+  "database": "main_lab.db",
+  "as_of_today": "2026-10-28",
+  "total_items": 150,
+  "passed_items": 140,
+  "execution_accuracy_pct": 93.3,
+  "no_hallucinated_number_rate": 14.7,
+  "latency_p50_ms": 38,
+  "latency_p95_ms": 3892,
+  "elapsed_seconds": 903.23,
+  "by_language": {
+    "en": {
+      "total": 75,
+      "passed": 70,
+      "accuracy_pct": 93.3
+    },
+    "kn": {
+      "total": 75,
+      "passed": 70,
+      "accuracy_pct": 93.3
+    }
+  },
+  "by_category": {
+    "count": {
+      "total": 20,
+      "passed": 18,
+      "accuracy_pct": 90.0
+    },
+    "ranking": {
+      "total": 24,
+      "passed": 24,
+      "accuracy_pct": 100.0
+    },
+    "trend": {
+      "total": 16,
+      "passed": 16,
+      "accuracy_pct": 100.0
+    },
+    "comparison": {
+      "total": 16,
+      "passed": 16,
+      "accuracy_pct": 100.0
+    },
+    "rate": {
+      "total": 12,
+      "passed": 10,
+      "accuracy_pct": 83.3
+    },
+    "case": {
+      "total": 16,
+      "passed": 16,
+      "accuracy_pct": 100.0
+    },
+    "link": {
+      "total": 8,
+      "passed": 8,
+      "accuracy_pct": 100.0
+    },
+    "demographics": {
+      "total": 8,
+      "passed": 8,
+      "accuracy_pct": 100.0
+    },
+    "gap": {
+      "total": 10,
+      "passed": 8,
+      "accuracy_pct": 80.0
+    },
+    "refusal": {
+      "total": 10,
+      "passed": 6,
+      "accuracy_pct": 60.0
+    },
+    "relative": {
+      "total": 10,
+      "passed": 10,
+      "accuracy_pct": 100.0
+    }
+  }
+}

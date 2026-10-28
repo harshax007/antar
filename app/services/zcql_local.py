@@ -212,8 +212,8 @@ def _cached_virtual(spec: QuerySpec, fn):
 
 
 def _today_cap() -> str:
-    from datetime import date
-    return date.today().isoformat() + " 23:59"
+    from app.core import clock
+    return clock.today().isoformat() + " 23:59"
 
 
 def _in_clause(col_sql: str, values) -> tuple[str | None, list]:
@@ -790,19 +790,21 @@ def scan_rows(crime_type: str | None = None, period: str | None = None) -> list[
     if crime_type:
         where.append("UPPER(CrimeGroup_Name) = UPPER(?)")
         params.append(crime_type)
+    from app.core import clock
+    t_ref = clock.today()
     if period == "last_7_days":
         where.append("date >= ?")
-        params.append((date.today() - timedelta(days=7)).isoformat())
+        params.append((t_ref - timedelta(days=7)).isoformat())
     elif period == "this_month":
         where.append("date >= ?")
-        params.append(date.today().replace(day=1).isoformat())
+        params.append(t_ref.replace(day=1).isoformat())
     elif period in ("last_3_months", "last_3months"):
-        m = date.today().month - 3
-        y = date.today().year
+        m = t_ref.month - 3
+        y = t_ref.year
         if m <= 0:
             m += 12; y -= 1
         where.append("date >= ?")
-        params.append(date.today().replace(year=y, month=m, day=1).isoformat())
+        params.append(t_ref.replace(year=y, month=m, day=1).isoformat())
     sql = (
         "SELECT geo_lat AS lat, geo_lon AS lon, District_Name AS zone, "
         "CrimeGroup_Name AS crime_type, date AS occurred_at "

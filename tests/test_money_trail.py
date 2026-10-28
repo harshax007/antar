@@ -71,3 +71,45 @@ class TestEndpoint:
         r = TestClient(app).get(f"/api/funds/account/{upi}", headers={"X-Role": "Inspector"})
         assert r.status_code == 200 and r.json()["account"]["account_id"] == upi
         assert TestClient(app).get("/api/funds/trail?account=nope", headers={"X-Role": "Inspector"}).status_code == 404
+
+
+def test_every_account_kind_reads_including_complainants():
+    # a complainant's FIRs carried no district, and _flags read f["district"]: every one of
+    # the 1,822 complainant accounts answered "could not be read"
+    snap = m._snapshot()
+    for kind in ("complainant", "upi", "collector", "cash", "suspect"):
+        aid = next((a for a, v in snap["accounts"].items() if v["kind"] == kind), None)
+        if aid:
+            assert m.account(aid) is not None, kind
+
+
+def test_the_summary_states_the_counted_figures():
+    top = m.overview(5)["top"][0]["account_id"]
+    a = m.account(top)
+    s = a["summary"]
+    assert s["lines"] and s["next_steps"] and "not findings" in s["note"]
+    assert any(f"{a['count_in']} payments" in line for line in s["lines"])
+
+
+def test_linked_firs_say_how_they_are_linked():
+    top = m.overview(5)["top"][0]["account_id"]
+    a = m.account(top)
+    assert a["linked_firs"] and {f["how"] for f in a["linked_firs"]} <= {"named", "money", "named_and_money"}
+    named = {f["fir_id"] for f in a["firs"]}
+    assert named <= {f["fir_id"] for f in m._linked_firs(m._snapshot(), top, "upi",
+                                                          m._snapshot()["to"].get(top, []), m._snapshot()["from"].get(top, []))}
+
+
+def test_the_timeline_is_in_time_order_and_hold_times_are_never_negative():
+    top = m.overview(5)["top"][0]["account_id"]
+    tl = m.account(top)["timeline"]
+    assert [r["ts"] for r in tl] == sorted(r["ts"] for r in tl)
+    assert all(r["held_h"] >= 0 for r in tl if "held_h" in r)
+    assert all("held_h" not in r for r in tl if r["dir"] == "in")
+
+
+def test_the_trail_summarises_itself_and_lists_its_firs():
+    top = m.overview(5)["top"][0]["account_id"]
+    t = m.trail(top, 2)
+    assert t["summary"] and t["firs_total"] >= len(t["firs"]) > 0
+    assert all(s in {n["id"] for n in t["nodes"]} for s in t["sinks"])

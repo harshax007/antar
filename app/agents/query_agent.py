@@ -1564,8 +1564,8 @@ def _bound_to_today(spec) -> None:
     """
     if getattr(spec, "table", None) != "crimes":
         return
-    from datetime import date as _date
-    spec.filters.append(Filter("occurred_at", "<=", f"{_date.today().isoformat()} 23:59"))
+    from app.core import clock
+    spec.filters.append(Filter("occurred_at", "<=", f"{clock.today().isoformat()} 23:59"))
 
 
 def _execute(template_id: str, params: dict) -> list[dict]:

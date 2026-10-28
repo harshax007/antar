@@ -30,6 +30,96 @@ const PURPOSE = {
   payout: ["Paid out", "ಹೊರಪಾವತಿ"], cash_withdrawal: ["Cash withdrawn", "ನಗದು ಹಿಂಪಡೆತ"],
 };
 
+const HOW = {
+  named: ["UPI named in the FIR", "FIR ನಲ್ಲಿ UPI ಹೆಸರಿಸಲಾಗಿದೆ"],
+  money: ["Money from this complaint", "ಈ ದೂರಿನ ಹಣ"],
+  named_and_money: ["Named, and its money", "ಹೆಸರಿಸಲಾಗಿದೆ ಮತ್ತು ಹಣ"],
+};
+
+// The FIRs an account or a trail is tied to, newest first, with how each is tied.
+// A FIR this copy of the register does not hold (it keeps 2022 on) is shown, not opened.
+function FirList({ firs, L, onOpen, limit }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? firs : firs.slice(0, limit);
+  return (
+    <>
+      <ul className="mt-firs">
+        {shown.map((f) => {
+          const meta = [f.date, f.district, f.crime, f.stage].filter(Boolean).join(" · ");
+          return (
+            <li key={f.fir_id}>
+              <button type="button" onClick={() => onOpen(f.fir_id)} disabled={!f.date}>
+                <b>FIR {f.fir_id}{f.amount ? <em className="mt-fir-amt">{rupees(f.amount)}</em> : null}</b>
+                <span>{meta || L("Not in this copy of the register", "ಈ ನೋಂದಣಿ ಪ್ರತಿಯಲ್ಲಿ ಇಲ್ಲ")}</span>
+                {f.how && <span className="mt-how">{L(...HOW[f.how])}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {firs.length > limit && (
+        <button type="button" className="mt-more" onClick={() => setAll(!all)}>
+          {all ? L("Show fewer", "ಕಡಿಮೆ ತೋರಿಸಿ") : L(`Show all ${firs.length}`, `ಎಲ್ಲಾ ${firs.length} ತೋರಿಸಿ`)}
+        </button>
+      )}
+    </>
+  );
+}
+
+const holdText = (h, L) => (h < 1 ? L("left within the hour", "ಒಂದು ಗಂಟೆಯೊಳಗೆ ಹೊರಟಿತು")
+  : h <= 48 ? L(`left ${Math.round(h)} h after arriving`, `ಬಂದ ${Math.round(h)} ಗಂ. ನಂತರ ಹೊರಟಿತು`)
+  : L(`held ${Math.round(h / 24)} days`, `${Math.round(h / 24)} ದಿನ ಇತ್ತು`));
+
+// The account's money in time order, a day per group: what came in, what went on, and how
+// long it stayed - the hold time is what tells a mule from a real account.
+function Timeline({ rows, L, onPick }) {
+  const [all, setAll] = useState(false);
+  const days = useMemo(() => {
+    const out = [];
+    for (const r of rows) {
+      const d = String(r.ts).slice(0, 10);
+      if (!out.length || out[out.length - 1].day !== d) out.push({ day: d, rows: [], in: 0, out: 0 });
+      const g = out[out.length - 1];
+      g.rows.push(r);
+      g[r.dir] += r.amount;
+    }
+    return out;
+  }, [rows]);
+  if (!rows.length) return <p className="mt-sub">{L("No money moved through this account.", "ಈ ಖಾತೆಯ ಮೂಲಕ ಹಣ ಸಾಗಿಲ್ಲ.")}</p>;
+  const shown = all ? days : days.slice(-8);
+  const day = (d) => new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return (
+    <>
+      {days.length > shown.length && (
+        <button type="button" className="mt-more" onClick={() => setAll(true)}>
+          {L(`Show ${days.length - shown.length} earlier days`, `ಹಿಂದಿನ ${days.length - shown.length} ದಿನಗಳನ್ನು ತೋರಿಸಿ`)}
+        </button>
+      )}
+      <ol className="mt-tl">
+        {shown.map((g) => (
+          <li key={g.day}>
+            <div className="mt-tl-day">
+              <b>{day(g.day)}</b>
+              <span>{g.in ? <em className="in">+{rupees(g.in)}</em> : null}{g.out ? <em className="out">−{rupees(g.out)}</em> : null}</span>
+            </div>
+            <ul>
+              {g.rows.map((r, i) => (
+                <li key={i} className={r.dir}>
+                  <span className="t">{String(r.ts).slice(11, 16)}</span>
+                  <span className="amt">{r.dir === "in" ? "+" : "−"}{rupees(r.amount)}</span>
+                  <span className="who">{r.dir === "in" ? L("from", "ಇಂದ") : L("to", "ಗೆ")} <button type="button" onClick={() => onPick(r.other)}>{r.other}</button>
+                    <small>{r.channel} · {L(...(PURPOSE[r.purpose] || [r.purpose, r.purpose]))}{r.held_h != null ? ` · ${holdText(r.held_h, L)}` : ""}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
 export default function MoneyTrail() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -72,6 +162,7 @@ export default function MoneyTrail() {
   };
 
   const legend = useMemo(() => Object.entries(KIND), []);
+  const openFir = (id) => router.push(`/case?id=${encodeURIComponent(id)}`);
 
   if (err && !ov) {
     return (
@@ -155,6 +246,23 @@ export default function MoneyTrail() {
               <li className="note">{L("Arrow width: money moved", "ಬಾಣದ ಅಗಲ: ಸಾಗಿದ ಹಣ")}</li>
             </ul>
             {trail?.truncated && <p className="mt-sub">{L("Showing the 70 closest accounts. Pick one to follow it further.", "ಹತ್ತಿರದ 70 ಖಾತೆಗಳನ್ನು ತೋರಿಸಲಾಗಿದೆ.")}</p>}
+            {trail?.summary?.length > 0 && (
+              <div className="mt-plain">
+                <h3>{L("This trail in plain words", "ಈ ಜಾಡು ಸರಳವಾಗಿ")}</h3>
+                <ul>{trail.summary.map((s, i) => <li key={i}>{s}</li>)}</ul>
+                {trail.sinks?.length > 0 && (
+                  <p className="mt-sinks">{L("Where it stops:", "ಹಣ ನಿಲ್ಲುವ ಖಾತೆಗಳು:")}{" "}
+                    {trail.sinks.map((s) => <button key={s} type="button" onClick={() => setSel(s)}>{s}</button>)}
+                  </p>
+                )}
+              </div>
+            )}
+            {trail?.firs?.length > 0 && (
+              <details className="mt-trailfirs">
+                <summary>{L(`FIRs on this trail (${trail.firs_total})`, `ಈ ಜಾಡಿನ FIR ಗಳು (${trail.firs_total})`)}</summary>
+                <FirList firs={trail.firs} L={L} onOpen={openFir} limit={12} />
+              </details>
+            )}
           </section>
 
           <aside className="mt-detail" aria-live="polite" aria-labelledby="mt-h-acct">
@@ -171,25 +279,34 @@ export default function MoneyTrail() {
                   <div><dt>{L("Money out", "ಹೋದ ಹಣ")}</dt><dd>{rupees(acct.total_out)}<small>{L(`${acct.count_out} to ${acct.receivers} accounts`, `${acct.receivers} ಖಾತೆಗಳಿಗೆ ${acct.count_out}`)}</small></dd></div>
                   {acct.first && <div><dt>{L("Active", "ಸಕ್ರಿಯ")}</dt><dd className="sm">{when(acct.first).split(",")[0]} – {when(acct.last).split(",")[0]}</dd></div>}
                 </dl>
+                {acct.summary && (
+                  <div className="mt-plain">
+                    <h3>{L("What this account did", "ಈ ಖಾತೆ ಏನು ಮಾಡಿತು")}</h3>
+                    <ul>{acct.summary.lines.map((s, i) => <li key={i}>{s}</li>)}</ul>
+                    {acct.summary.next_steps.length > 0 && (
+                      <>
+                        <h4>{L("What to ask for next", "ಮುಂದೆ ಏನು ಕೇಳಬೇಕು")}</h4>
+                        <ol className="mt-steps">{acct.summary.next_steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+                      </>
+                    )}
+                    <p className="mt-note">{L(acct.summary.note, "ಎಣಿಸಿದ ವಹಿವಾಟುಗಳಿಂದ ಸುಳಿವುಗಳು, ತೀರ್ಮಾನಗಳಲ್ಲ. ಕ್ರಮಕ್ಕೆ ಮೊದಲು ಬ್ಯಾಂಕ್ ದಾಖಲೆಗಳೊಂದಿಗೆ ದೃಢೀಕರಿಸಿ.")}</p>
+                  </div>
+                )}
                 {acct.flags.length > 0 && (
                   <>
                     <h3>{L("Warning signs", "ಎಚ್ಚರಿಕೆ ಸೂಚನೆಗಳು")}</h3>
                     <ol className="mt-flags">{acct.flags.map((f, k) => <li key={f.key}><span className="n">{String(k + 1).padStart(2, "0")}</span><b>{f.title}</b><span className="d">{f.detail}</span></li>)}</ol>
                   </>
                 )}
-                {acct.firs.length > 0 && (
+                {(acct.linked_firs || acct.firs).length > 0 && (
                   <>
-                    <h3>{L("FIRs this account is in", "ಈ ಖಾತೆ ಇರುವ FIR ಗಳು")}</h3>
-                    <ul className="mt-firs">
-                      {acct.firs.slice(0, 12).map((f) => (
-                        <li key={f.fir_id}><button type="button" onClick={() => router.push(`/case?id=${encodeURIComponent(f.fir_id)}`)}>
-                          <b>FIR {f.fir_id}</b><span>{[f.date, f.district, f.crime, f.stage].filter(Boolean).join(" · ")}</span>
-                        </button></li>
-                      ))}
-                    </ul>
+                    <h3>{L(`Linked FIRs (${acct.linked_firs_total ?? acct.firs.length})`, `ಸಂಬಂಧಿತ FIR ಗಳು (${acct.linked_firs_total ?? acct.firs.length})`)}</h3>
+                    <FirList firs={acct.linked_firs || acct.firs} L={L} onOpen={openFir} limit={8} />
                   </>
                 )}
-                <h3>{L("Transactions", "ವಹಿವಾಟುಗಳು")}</h3>
+                <h3>{L("Timeline of the money", "ಹಣದ ಕಾಲರೇಖೆ")}</h3>
+                <Timeline rows={acct.timeline || []} L={L} onPick={setSel} />
+                {!acct.timeline && (
                 <ul className="mt-tx">
                   {acct.transactions.slice(0, 25).map((t) => {
                     const inbound = t.to_account === acct.account.account_id;
@@ -203,6 +320,7 @@ export default function MoneyTrail() {
                     );
                   })}
                 </ul>
+                )}
                 {acct.account.account_id !== root && (
                   <div className="mt-actions">
                     <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" onClick={() => setRoot(acct.account.account_id)}>

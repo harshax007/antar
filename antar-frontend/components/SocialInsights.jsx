@@ -141,7 +141,7 @@ export default function SocialInsights() {
   if (!d) return <main className="so-page is-loading" style={{ position: "relative" }}><BrainLoader kn={kn} steps={SOCIAL_STEPS} orbs={SOCIAL_ORBS} /></main>;
 
   const head = (key, label) => (
-    <th scope="col"><button type="button" onClick={() => setSort((s) => ({ key, dir: s.key === key ? -s.dir : -1 }))} aria-sort={sort.key === key ? (sort.dir < 0 ? "descending" : "ascending") : "none"}>
+    <th key={key} scope="col"><button type="button" onClick={() => setSort((s) => ({ key, dir: s.key === key ? -s.dir : -1 }))} aria-sort={sort.key === key ? (sort.dir < 0 ? "descending" : "ascending") : "none"}>
       {label}{sort.key === key ? (sort.dir < 0 ? " ↓" : " ↑") : ""}</button></th>
   );
   const vic = demo?.victims;

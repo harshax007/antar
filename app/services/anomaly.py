@@ -48,7 +48,8 @@ def _as_of_date() -> date:
         from app.forecast.asof import current
         return current().as_of
     except Exception:
-        return date.today()
+        from app.core import clock
+        return clock.today()
 from typing import Optional
 
 import numpy as np

@@ -608,9 +608,9 @@ def _crime_profile(groups, year, district, years=None) -> dict:
 
 
 @router.get("/graph")
-async def dataset_graph(limit: int = 3000) -> dict:
+async def dataset_graph(limit: int = 10000) -> dict:
     """Returns ONLY rows with linkage for the brain graph, in the shape crimeGraph.js expects."""
-    limit = max(1, min(limit, 5000))
+    limit = max(1, min(limit, 20000))
     # Read the curated intelligent_data.db (3,500 dense rows) if present; fall back to the
     # linked subset of the full DB so the endpoint still works before that DB is built.
     # Fail-soft: any DB error returns {"rows": []} (never a 500 that breaks the Brain),

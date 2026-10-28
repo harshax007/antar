@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLang, useTheme } from "@/components/Providers";
 import { User } from "lucide-react";
+import AdminData from "@/components/AdminData";
 import "@/components/editorial-account.css";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -150,8 +151,6 @@ export default function AccountPage() {
     { id: "s2", device: "Android · Antar Field App", ip: "Field Unit 4 · 10.20.4.88", last_seen: "2 hours ago", this: false },
   ]);
   const [revoking, setRevoking] = useState(null);
-  const [ingestFile, setIngestFile] = useState(null);
-  const [ingestStatus, setIngestStatus] = useState(null);
   const [pwOpen, setPwOpen] = useState(false);
   const [alertsList, setAlertsList] = useState([]);
   const [hitlPending, setHitlPending] = useState(0);
@@ -253,17 +252,6 @@ export default function AccountPage() {
     setSessions((prev) => prev.filter((s) => s.id !== id));
     setRevoking(null);
   }
-  async function handleIngest() {
-    if (!ingestFile) return;
-    setIngestStatus("loading");
-    try {
-      const form = new FormData();
-      form.append("file", ingestFile);
-      const res = await fetch(`${API}/api/upload`, { method: "POST", body: form });
-      await res.json().catch(() => {});
-      setIngestStatus(res.ok ? "ok" : "error");
-    } catch { setIngestStatus("error"); }
-  }
 
   const perms = [
     { name: kn ? "ಚಾಟ್ · ಪ್ರಶ್ನೆ" : "Chat · Query", level: "Full", color: "var(--green)" },
@@ -340,9 +328,9 @@ export default function AccountPage() {
       next: ["Pick the format you need.", "ಬೇಕಾದ ಸ್ವರೂಪವನ್ನು ಆರಿಸಿ."],
     },
     admin: {
-      en: "Load new FIR data into Antar. Admins only; this step is in preview.",
-      kn: "ಹೊಸ FIR ದತ್ತಾಂಶವನ್ನು ಅಂತರ್‌ಗೆ ಸೇರಿಸಿ. ನಿರ್ವಾಹಕರಿಗೆ ಮಾತ್ರ; ಪೂರ್ವವೀಕ್ಷಣೆ ಹಂತ.",
-      next: ["Choose a file, then upload it.", "ಫೈಲ್ ಆರಿಸಿ, ನಂತರ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ."],
+      en: "Add new FIRs to the register from a KSP export file. Admins only; every upload is recorded and can be undone.",
+      kn: "KSP ರಫ್ತು ಫೈಲ್‌ನಿಂದ ಹೊಸ FIR ಗಳನ್ನು ನೋಂದಣಿಗೆ ಸೇರಿಸಿ. ನಿರ್ವಾಹಕರಿಗೆ ಮಾತ್ರ; ಪ್ರತಿ ಅಪ್‌ಲೋಡ್ ದಾಖಲಾಗುತ್ತದೆ ಮತ್ತು ಹಿಂಪಡೆಯಬಹುದು.",
+      next: ["Download the template, check your file, then add the rows that pass.", "ಮಾದರಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ, ಫೈಲ್ ಪರಿಶೀಲಿಸಿ, ನಂತರ ಉತ್ತೀರ್ಣ ಸಾಲುಗಳನ್ನು ಸೇರಿಸಿ."],
     },
   };
   const secIdx = SECTIONS.findIndex((x) => x.key === activeSection);
@@ -754,20 +742,7 @@ export default function AccountPage() {
 
         {/* ADMIN · DATA (admin only) */}
         {activeSection === "admin" && isAdmin && (
-          <div className="ac-block">
-            <div className="ac-block-hd"><span className="ac-block-t"><Icon name="db" /> {kn ? "ಡೇಟಾ ಇಂಜೆಸ್ಟ್ (ಪೂರ್ವವೀಕ್ಷಣೆ)" : "Data Ingest (Preview)"}</span></div>
-            <p className="ac-block-sub" style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "16px" }}>
-              {kn ? "ಹೊಸ FIR ಡೇಟಾವನ್ನು CSV/JSON ಆಗಿ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ." : "Upload new FIR data as CSV/JSON."}
-            </p>
-            <div className="ac-ingest">
-              <input type="file" accept=".csv,.json" onChange={(e) => setIngestFile(e.target.files?.[0] || null)} />
-              <button className="ac-btn-primary" onClick={handleIngest} disabled={!ingestFile || ingestStatus === "loading"}>
-                {ingestStatus === "loading" ? (kn ? "ಅಪ್‌ಲೋಡ್…" : "Uploading…") : (kn ? "ಅಪ್‌ಲೋಡ್" : "Upload")}
-              </button>
-              {ingestStatus === "ok" && <span style={{ color: "var(--green)" }}> {kn ? "ಯಶಸ್ವಿ" : "Success"}</span>}
-              {ingestStatus === "error" && <span style={{ color: "var(--red)" }}> {kn ? "ವಿಫಲ" : "Failed"}</span>}
-            </div>
-          </div>
+          <AdminData kn={kn} />
         )}
       </div>
 

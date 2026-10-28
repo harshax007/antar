@@ -158,7 +158,7 @@ def _default_budget_s() -> float:
         return 20.0
 
 
-async def warm_up() -> bool:
+async def warm_up(job: str = "chat") -> bool:
     """Mint the OAuth token and wake the endpoint.
 
     The FIRST call of a process paid ~75s (token fetch + cold serving endpoint) while
@@ -168,12 +168,19 @@ async def warm_up() -> bool:
     import asyncio as _a
     try:
         await _a.wait_for(
-            quickml_chat_generate(system="ping", user="ping", max_tokens=8, retries=0,
-                                  budget_s=90.0),
+            quickml_generate(system="ping", user="ping", max_tokens=8, retries=0,
+                             budget_s=90.0, model=model_for(job)),
             timeout=95.0)
+        warm_up.last_error = ""
         return True
-    except Exception:
+    except Exception as e:
+        # why, for the startup log: the reason text is Zoho's reply or ours, never the
+        # credentials (those are only in the request body, which is not kept)
+        warm_up.last_error = f"{type(e).__name__}: {str(e)[:300]}"
         return False
+
+
+warm_up.last_error = ""
 
 
 async def quickml_generate(
@@ -356,6 +363,33 @@ async def quickml_default_generate(
         retries=retries,
         model=settings.QUICKML_DEFAULT_MODEL,
     )
+
+
+# Which model does which job. One table, so "what model wrote this?" has one answer, and a
+# chat screen cannot end up on the slower analysis model because a caller forgot `model=`.
+#   chat      - the chat screen: choosing the query template, writing the answer from its
+#               rows, translating, judging an answer. Fast, and on its own endpoint.
+#   analysis  - longer writing that merges several agents or explains a screen: the multi-
+#               agent synthesis, the map and Predict briefs, the Brain's query rewrite.
+#   vision    - scanned documents and photographs.
+JOBS = {"chat": "QUICKML_CHAT_MODEL", "analysis": "QUICKML_DEFAULT_MODEL",
+        "vision": "QUICKML_VISION_MODEL"}
+
+
+def model_for(job: str) -> str:
+    return getattr(settings, JOBS[job])
+
+
+def llm_for(job: str):
+    """An LLM callable (the shape agents take as `select_llm` / `compose_llm`) pinned to the
+    model for `job`."""
+    model = model_for(job)
+
+    async def _call(system: str, user: str, **kw) -> str:
+        kw.pop("model", None)
+        return await quickml_generate(system=system, user=user, model=model, **kw)
+    _call.job, _call.model = job, model
+    return _call
 
 
 # The endpoint validates `model` against Catalyst's internal deployment ids — friendly

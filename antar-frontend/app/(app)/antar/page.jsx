@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Orb from "@/components/Orb";
-import LangToggle from "@/components/LangToggle";
+import RunAntar from "@/components/RunAntar";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Paperclip, Globe, ArrowUp, X, Mic, MicOff, Brain, Network, Share2, Compass, CheckCircle2, Sparkles, RefreshCw, Copy, Download, ThumbsUp, ThumbsDown, Map as MapIcon, Search as SearchIcon, Languages, Square, Volume2, Loader2, Activity } from "lucide-react";
 import NetworkGraph from "@/components/NetworkGraph";
@@ -113,6 +113,22 @@ const STARTERS = {
     "FIRs with missing location coordinates",
     "Theft by hour of day in Bengaluru City",
     "Monthly burglary in Mysuru City in 2025",
+    "Compare theft in Bengaluru City and Mysuru City this year",
+    "Is burglary rising in Mysuru City this month?",
+    "Is crime rising in Kalaburagi this month?",
+    "How many FIRs were registered this week in Mysuru City?",
+    "Top crime types in Belagavi this year",
+    "Which districts have the most crimes against women this year?",
+    "Which districts have the most vehicle theft this year?",
+    "Which police stations in Mysuru City have the most burglary?",
+    "Top beats for chain snatching in Mysuru City",
+    "Top areas for robbery in Bengaluru City",
+    "Which day of the week has the most burglary in Mysuru City?",
+    "Monthly cybercrime in Bengaluru City in 2025",
+    "Case status breakdown in Mysuru City this year",
+    "Charge-sheet rate for cybercrime in Bengaluru City",
+    "Conviction rate for burglary in Mysuru City",
+    "Accused age groups in cybercrime cases",
   ],
   kn: [
     "ಇಂದು ಎಷ್ಟು FIR ದಾಖಲಾಗಿವೆ?",
@@ -143,6 +159,22 @@ const STARTERS = {
     "ಸ್ಥಳದ ನಿರ್ದೇಶಾಂಕಗಳಿಲ್ಲದ FIR ಗಳು",
     "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ದಿನದ ಯಾವ ಗಂಟೆಯಲ್ಲಿ ಕಳ್ಳತನ ಹೆಚ್ಚು?",
     "2025 ರಲ್ಲಿ ಮೈಸೂರು ನಗರದಲ್ಲಿ ತಿಂಗಳವಾರು ಮನೆಗಳ್ಳತನ ಪ್ರಕರಣಗಳು",
+    "ಈ ವರ್ಷ ಬೆಂಗಳೂರು ನಗರ ಮತ್ತು ಮೈಸೂರು ನಗರದಲ್ಲಿ ಕಳ್ಳತನ ಹೋಲಿಕೆ",
+    "ಈ ತಿಂಗಳು ಮೈಸೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚಾಗುತ್ತಿದೆಯೇ?",
+    "ಈ ತಿಂಗಳು ಕಲಬುರಗಿಯಲ್ಲಿ ಅಪರಾಧ ಹೆಚ್ಚಾಗುತ್ತಿದೆಯೇ?",
+    "ಈ ವಾರ ಮೈಸೂರು ನಗರದಲ್ಲಿ ಎಷ್ಟು FIR ದಾಖಲಾಗಿವೆ?",
+    "ಈ ವರ್ಷ ಬೆಳಗಾವಿಯಲ್ಲಿ ಅತಿ ಹೆಚ್ಚು ದಾಖಲಾದ ಅಪರಾಧ ಪ್ರಕಾರಗಳು",
+    "ಈ ವರ್ಷ ಮಹಿಳೆಯರ ವಿರುದ್ಧದ ಅಪರಾಧ ಹೆಚ್ಚು ಇರುವ ಜಿಲ್ಲೆಗಳು ಯಾವುವು?",
+    "ಈ ವರ್ಷ ವಾಹನ ಕಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಜಿಲ್ಲೆಗಳು ಯಾವುವು?",
+    "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚು ದಾಖಲಾದ ಪೊಲೀಸ್ ಠಾಣೆಗಳು ಯಾವುವು?",
+    "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಸರಗಳ್ಳತನ ಹೆಚ್ಚು ಇರುವ ಬೀಟ್‌ಗಳು",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ದರೋಡೆ ಹೆಚ್ಚು ಇರುವ ಪ್ರದೇಶಗಳು",
+    "ಮೈಸೂರು ನಗರದಲ್ಲಿ ವಾರದ ಯಾವ ದಿನ ಮನೆಗಳ್ಳತನ ಹೆಚ್ಚು?",
+    "2025 ರಲ್ಲಿ ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ತಿಂಗಳವಾರು ಸೈಬರ್ ಅಪರಾಧ ಪ್ರಕರಣಗಳು",
+    "ಈ ವರ್ಷ ಮೈಸೂರು ನಗರದಲ್ಲಿ ಪ್ರಕರಣಗಳ ಸ್ಥಿತಿ",
+    "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಸೈಬರ್ ಅಪರಾಧ ಪ್ರಕರಣಗಳ ದೋಷಾರೋಪ ಪಟ್ಟಿ ದರ",
+    "ಮೈಸೂರು ನಗರದಲ್ಲಿ ಮನೆಗಳ್ಳತನ ಪ್ರಕರಣಗಳ ಶಿಕ್ಷೆ ದರ",
+    "ಸೈಬರ್ ಅಪರಾಧ ಪ್ರಕರಣಗಳಲ್ಲಿ ಆರೋಪಿಗಳ ವಯಸ್ಸಿನ ಗುಂಪುಗಳು",
   ],
 };
 
@@ -359,7 +391,7 @@ function normalizeAnswerText(raw) {
 // sections and dates stand out wherever they appear - body, list items and table cells.
 // Every shape of FIR id in the register (app/agents/case_answer.py keeps the same list): an id
 // written anywhere in an answer opens that case's timeline.
-const FIR_ID_RE = /\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}|FIR-20\d\d-[\w-]{4,40})\b/g;
+const FIR_ID_RE = /\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}|FIR-20\d\d-[\w-]{4,40}|10001\d{11,13})\b/g;
 function WithCaseLinks({ text }) {
   const s = String(text ?? "");
   const out = [];
@@ -1230,7 +1262,7 @@ const MessageRow = memo(({
                             </div>
                             <AnswerBody text={m.altText} streaming={false} headline={m.layout?.headline} />
                           </div>
-                        ) : !m.streaming && m.layout?.sections?.bottom_line ? (
+                        ) : m.layout?.sections?.bottom_line ? (
                           <TemplateAnswer m={m} kn={kn} send={send} router={router} />
                         ) : worthSummary && !m.showFull ? (
                           <div className="cx-structured">
@@ -1751,6 +1783,19 @@ export default function ChatPage() {
     const id = setInterval(() => setPhIdx((i) => i + 1), 7500);
     return () => clearInterval(id);
   }, [messages.length === 0]);
+
+  // The suggested questions shuffle themselves while the screen is empty: a random first
+  // set, then the next six every 9s. They hold still while the pointer or focus is on them,
+  // while the officer is typing or the tab is hidden, so a chip never moves under a click.
+  const sqHold = useRef(false);
+  useEffect(() => { setStarterOffset(Math.floor(Math.random() * 1000) * 6); }, []);
+  useEffect(() => {
+    if (messages.length > 0 || input || loading) return;
+    const id = setInterval(() => {
+      if (!sqHold.current && !document.hidden) setStarterOffset((o) => o + 6);
+    }, 9000);
+    return () => clearInterval(id);
+  }, [messages.length === 0, !!input, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Typewriter style animation inside placeholder
   useEffect(() => {
@@ -2579,9 +2624,7 @@ export default function ChatPage() {
 
       {empty ? (
         <>
-        <style>{`@media (min-width: 821px) { .cx-pillnav { display: none !important; } }`}</style>
-        {/* the nav (and the switch in it) is hidden here on desktop, so the switch floats top right */}
-        <LangToggle float />
+        {/* the nav shows here at every width, as on phones and tablets: its own language switch, and every screen one click away */}
         <div className="cx-land" style={{
           position: "fixed",
           top: 0,
@@ -2619,6 +2662,8 @@ export default function ChatPage() {
                 width: "100%"
               }}
             >
+              <RunAntar pool={STARTERS[lang] || STARTERS.en} kn={lang === "kn"} busy={loading}
+                        onType={setInput} onRun={(q) => send(q, true)} />
               <h1 className="cx-hero-h1" style={{
                 fontSize: "clamp(26px, 5.5vw, 54px)",
                 fontWeight: 800,
@@ -2885,8 +2930,9 @@ export default function ChatPage() {
                 const off = list.length ? starterOffset % list.length : 0;
                 const shown = [...list.slice(off), ...list.slice(0, off)].slice(0, 6);
                 return (
-                  <div className="sq-row">
-                    <div className="sq-grid">
+                  <div className="sq-row" onMouseEnter={() => { sqHold.current = true; }} onMouseLeave={() => { sqHold.current = false; }}
+                         onFocus={() => { sqHold.current = true; }} onBlur={() => { sqHold.current = false; }}>
+                    <div className="sq-grid sq-fade" key={off}>
                       {shown.map((s) => (
                         <button key={s} type="button" className="sq-q" title={s} onClick={() => send(s)}>{s}</button>
                       ))}
@@ -3032,8 +3078,9 @@ export default function ChatPage() {
                   const off = list.length ? starterOffset % list.length : 0;
                   const shown = [...list.slice(off), ...list.slice(0, off)].slice(0, 6);
                   return (
-                    <div className="sq-row">
-                      <div className="sq-grid">
+                    <div className="sq-row" onMouseEnter={() => { sqHold.current = true; }} onMouseLeave={() => { sqHold.current = false; }}
+                         onFocus={() => { sqHold.current = true; }} onBlur={() => { sqHold.current = false; }}>
+                      <div className="sq-grid sq-fade" key={off}>
                         {shown.map((s) => (
                           <button key={s} type="button" className="sq-q" title={s} onClick={() => send(s)}>{s}</button>
                         ))}

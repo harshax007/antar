@@ -58,6 +58,8 @@ async def health_check():
     start_time = time.time()
 
     from app.second_brain.embedder import get_model
+    from app.core.edition import is_lab
+    from app.core import clock
     llm_ok = True  # will be tested by actual QuickML ping in Gate G4
 
     try:
@@ -70,6 +72,8 @@ async def health_check():
 
     return {
         "status": "ok" if embedder_ok else "degraded",
+        "edition": "lab" if is_lab() else "cloud",
+        "today": clock.today().isoformat(),
         "system": "Antar — Multi-Agent Crime Intelligence Platform",
         "version": "1.0.0",
         "brain_rows": brain_index.size,

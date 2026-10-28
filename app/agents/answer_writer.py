@@ -284,8 +284,9 @@ def _partial_months() -> set[str]:
     """
     import calendar
     from app.services.zcql_repo import real_data_today
+    from app.core import clock
     out: set[str] = set()
-    for anchor in (date.today(), real_data_today()):
+    for anchor in (clock.today(), real_data_today()):
         try:
             if anchor.day < calendar.monthrange(anchor.year, anchor.month)[1]:
                 out.add(anchor.strftime("%Y-%m"))
@@ -297,7 +298,8 @@ def _partial_months() -> set[str]:
 def _complete(series: list[tuple[str, int]]):
     """Split a monthly series into complete months and the one still in progress."""
     cut = _partial_months()
-    cur = date.today().strftime("%Y-%m")
+    from app.core import clock
+    cur = clock.today().strftime("%Y-%m")
     done = [(m, n) for m, n in series if m and m < cur and m not in cut]
     partial = next(((m, n) for m, n in series if m in cut), None)
     return done, partial

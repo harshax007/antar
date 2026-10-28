@@ -117,6 +117,10 @@ def render(bt: dict) -> str:
 
 
 def write(bt: dict, path: str = REPORT_PATH) -> str:
+    from app.core.edition import is_lab
+    if is_lab() and path == REPORT_PATH:
+        path = os.path.normpath(os.path.join(_HERE, "..", "..", "docs", "lab", "FORECAST_BACKTEST.md"))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(render(bt))
     return path

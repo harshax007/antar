@@ -10,6 +10,7 @@ import re
 
 import pytest
 
+from app.core.edition import is_lab
 from app.agents.officer_questions import OFFICER_QUESTIONS
 from tests.test_chat_qa_fixes import _stream
 
@@ -43,6 +44,22 @@ EXPECT = {
     "FIRs with missing location coordinates": {"UNRESOLVED"},
     "Theft by hour of day in Bengaluru City": {"UNRESOLVED"},
     "Monthly burglary in Mysuru City in 2025": {"T3"},
+    "Compare theft in Bengaluru City and Mysuru City this year": {"T27"},
+    "Is burglary rising in Mysuru City this month?": {"COMPARE"},
+    "Is crime rising in Kalaburagi this month?": {"COMPARE"},
+    "How many FIRs were registered this week in Mysuru City?": {"T1"},
+    "Top crime types in Belagavi this year": {"T13"},
+    "Which districts have the most crimes against women this year?": {"T11"},
+    "Which districts have the most vehicle theft this year?": {"T11"},
+    "Which police stations in Mysuru City have the most burglary?": {"T11"},
+    "Top beats for chain snatching in Mysuru City": {"T23"},
+    "Top areas for robbery in Bengaluru City": {"T23"},
+    "Which day of the week has the most burglary in Mysuru City?": {"T26"},
+    "Monthly cybercrime in Bengaluru City in 2025": {"T3"},
+    "Case status breakdown in Mysuru City this year": {"T24", "T8"},
+    "Charge-sheet rate for cybercrime in Bengaluru City": {"T22"},
+    "Conviction rate for burglary in Mysuru City": {"T22"},
+    "Accused age groups in cybercrime cases": {"T7"},
 }
 _KANNADA = re.compile(r"[ಀ-೿]")
 _CASES = [(q["en"], q["en"], "en") for q in OFFICER_QUESTIONS] + \
@@ -70,10 +87,17 @@ def test_similar_cases_are_listed_and_not_called_links():
     assert "similar cases" in answer and "not a link" in answer
 
 
+@pytest.mark.skipif(is_lab(), reason="counts are for the 10-lakh register")
 def test_a_small_conviction_rate_is_not_rounded_to_zero():
     # 89 convicted of 18,225 charge-sheeted is 0.5%; "0%" told the officer nobody was convicted
     answer, _ = _stream("Conviction rate for theft in Bengaluru City", "t-officer-conv")
     assert "**0%**" not in answer and "**0.5%**" in answer
+
+
+@pytest.mark.skipif(not is_lab(), reason="counts are for the Lab 20-lakh register")
+def test_a_small_conviction_rate_is_not_rounded_to_zero_lab():
+    answer, _ = _stream("Conviction rate for theft in Bengaluru City", "t-officer-conv-lab")
+    assert "**0%**" not in answer and "**0.6%**" in answer
 
 
 def test_hour_of_day_is_refused_honestly_not_listed():

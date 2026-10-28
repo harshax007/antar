@@ -6,7 +6,7 @@
    rest. On a phone (top bar + bottom tab bar) or a short laptop window the headline went
    under the nav. Now it scrolls, and centres only when there is room (auto margins). */
 .cx-land { overflow-y: auto !important; overflow-x: hidden !important; }
-.cx-land-center { justify-content: flex-start !important; min-height: 100%; flex: 1 0 auto !important; padding-top: 32px !important; padding-bottom: 32px !important; }
+.cx-land-center { justify-content: flex-start !important; min-height: 100%; flex: 1 0 auto !important; padding-top: 88px !important; padding-bottom: 32px !important; }   /* clear of the nav, which shows here at every width */
 .cx-land-center > :first-child { margin-top: auto; }
 .cx-land-center > :last-child { margin-bottom: auto; }
 .cx-land-input { padding-right: 64px !important; }   /* typed text stays clear of the Expert button */
@@ -102,4 +102,26 @@
 /* Brain data overview: the table bar wraps on a phone so the pager stays on screen */
 @media (max-width: 640px) {
   .ov-tablebar { flex-wrap: wrap; row-gap: 8px; }
+}
+
+/* ── Monitor & Projector Optimization (1080p, 1440p, 4K) ──
+   Ensures application pages center gracefully, prevent edge-to-edge stretching,
+   and maintain crisp laptop-like ergonomics without awkward empty gaps. */
+@media (min-width: 1200px) {
+  .px-page, .sx-page, .ac-page, .ab-page {
+    max-width: 1320px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .cx-pillnav {
+    max-width: 1280px !important;
+  }
+}
+
+@media (min-width: 1920px) {
+  .cx-land-center {
+    max-width: 1100px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
 }

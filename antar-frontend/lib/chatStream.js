@@ -1,7 +1,7 @@
 // Shared SSE chat-stream client for /antar (chat) and /docs (live briefing).
 // Mirrors the backend contract in app/api/chat_stream.py.
 
-export const API = (process.env.NEXT_PUBLIC_API_URL || "");
+export const API = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000");
 
 export function newAssistantMsg(lang) {
   return {
@@ -77,9 +77,18 @@ export function applyEvent(msg, evt) {
 // POST /api/chat/stream and invoke onEvent(evt) per SSE event. Returns when the
 // stream closes. Throws on transport/HTTP failure (caller decides the fallback).
 export async function streamChat({ text, sessionId = null, lang = "en", deepThink = false, onEvent, signal }) {
+  const headers = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    try {
+      const session = JSON.parse(sessionStorage.getItem("antar_session") || "{}");
+      if (session.token) headers["Authorization"] = `Bearer ${session.token}`;
+      if (session.officer) headers["X-Officer"] = session.officer;
+      if (session.role) headers["X-Role"] = session.role;
+    } catch {}
+  }
   const res = await fetch(`${API}/api/chat/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ text, lang, session_id: sessionId, deep_think: deepThink }),
     signal,
   });

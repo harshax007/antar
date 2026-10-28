@@ -75,7 +75,7 @@ const sameText = (a, b) => plainText(a).replace(/\s+/g, " ").toLowerCase() === p
 
 // Every shape of FIR id in the register (the chat uses the same list): an id written in the
 // brief opens that case's timeline.
-const FIR_ID_RE = /\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}|FIR-20\d\d-[\w-]{4,40})\b/g;
+const FIR_ID_RE = /\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}|FIR-20\d\d-[\w-]{4,40}|10001\d{11,13})\b/g;
 
 const XW_HILITE = /(\b\d{1,3}(?:,\d{3})+\b|\b\d+(?:\.\d+)?%|\bFIR[-\s]?\d[\w-]*|\b\d{4}\b|\b\d{2,}\b)/g;
 

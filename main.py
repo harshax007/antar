@@ -85,7 +85,7 @@ from app.api import (chat, chat_stream, graph, map_api, alerts, profile, brain, 
                      audit, voice, health, dashboard, analytics, social, pattern_predict, osint_api, upload_api, live_stream,
                      evidence, products, briefing, sentinel, corridors, linkage, vigil, hypothesis, ops,
                      session_api, feedback, translate, jobs, dataset, docs_questions, obs, sdar,
-                     forecast_api)
+                     forecast_api, accuracy_api)
 
 
 import asyncio
@@ -297,12 +297,19 @@ async def background_warmup():
         # warmup task, so it never delays port binding.
         import time as _t
         _w0 = _t.time()
-        from app.services.quickml import warm_up as _warm_up
-        if await _warm_up():
-            print(f"LLM warm-up OK (chat model) — {_t.time() - _w0:.1f}s")
-        else:
-            print(f"  LLM warm-up failed after {_t.time() - _w0:.1f}s — "
-                  "answers will use the deterministic path")
+        from app.services.quickml import warm_up as _warm_up, model_for as _model_for
+        if _llm.provider() == "quickml":
+            print("Models by job: " + " · ".join(f"{j}={_model_for(j)}" for j in ("chat", "analysis", "vision")))
+        # both text models: they sit on different endpoints and each has its own cold start
+        for _job in (("chat", "analysis") if _llm.provider() == "quickml" else ("chat",)):
+            _w0 = _t.time()
+            if await _warm_up(_job):
+                print(f"LLM warm-up OK ({_job} model) — {_t.time() - _w0:.1f}s")
+            else:
+                print(f"  LLM warm-up failed ({_job} model) after {_t.time() - _w0:.1f}s — "
+                      "answers will use the deterministic path")
+                if _warm_up.last_error:
+                    print(f"  LLM warm-up error: {_warm_up.last_error}")
 
     # Production orchestration
     try:
@@ -387,8 +394,10 @@ app = FastAPI(
 # CORS — allow the Next.js frontend (Web Client origin set via ALLOWED_ORIGINS env).
 # allow_credentials MUST stay False: the Catalyst AppSail gateway already injects its own
 # `Access-Control-Allow-Credentials` header, so enabling it here produces a DUPLICATE
-# credentials header that browsers reject. FastAPI still emits the Allow-Origin header
-# (the gateway does not), so cross-origin calls work with exactly one of each header.
+# credentials header that browsers reject. Since 2026-10-27 the gateway also injects
+# `Access-Control-Allow-Origin` for the Web Client origin, so that origin must NOT be in
+# ALLOWED_ORIGINS on AppSail (a second Allow-Origin header made every login fail as a
+# CORS error). ALLOWED_ORIGINS there holds only other origins, e.g. http://localhost:3000.
 # The app never relies on cross-origin cookies (session_id travels in the request body).
 app.add_middleware(
     CORSMiddleware,
@@ -473,6 +482,11 @@ app.include_router(dashboard.router,   prefix="/api/dashboard", tags=["Dashboard
 app.include_router(analytics.router,    prefix="/api/analytics", tags=["Analytics"])
 app.include_router(dataset.router,     prefix="/api/dataset",  tags=["Dataset"])
 app.include_router(docs_questions.router, prefix="/api/docs", tags=["Docs API"])
+app.include_router(accuracy_api.router,   prefix="/api/accuracy", tags=["Accuracy Benchmark"])
+from app.api import scale_api
+from app.api import schema_api
+app.include_router(scale_api.router,      prefix="/api/scale",    tags=["Scale Benchmark"])
+app.include_router(schema_api.router,     prefix="/api/schema",   tags=["Official ER Schema"])
 app.include_router(social.router,        prefix="/api/social",  tags=["Social"])
 app.include_router(voice.router,       prefix="/api/voice",  tags=["Voice"])
 app.include_router(graph.router,       prefix="/api/graph",  tags=["Graph"],   dependencies=_inspector)

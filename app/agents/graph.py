@@ -17,7 +17,7 @@ from app.agents.agentic_spine import (
 )
 from app.agents.query_agent import query_agent_run
 from app.agents.heuristics import heuristic_select
-from app.services.quickml import quickml_generate
+from app.services.quickml import quickml_generate, llm_for, model_for
 from app.core.security import public_message as _public_message
 from app.core import sessions
 
@@ -95,8 +95,8 @@ async def query_node(state: AgentState) -> dict:
         lang=state.get("lang", "en"),
         session_id=state.get("session_id", ""),
         history=sessions.recent_turns(state.get("session_id", "")),
-        select_llm=quickml_generate if use_llm else None,
-        compose_llm=quickml_generate if use_llm else None,
+        select_llm=llm_for("chat") if use_llm else None,
+        compose_llm=llm_for("chat") if use_llm else None,
         selector=None if use_llm else heuristic_select,
     )
     
@@ -434,7 +434,8 @@ async def synthesize_node(state: AgentState) -> dict:
                        f"Answer in the template: bottom line first, then context, evidence and limits.")
         
         try:
-            final_answer = await quickml_generate(system=sys_prompt, user=user_prompt, max_tokens=600)
+            final_answer = await quickml_generate(system=sys_prompt, user=user_prompt, max_tokens=600,
+                                                  model=model_for("analysis"))
         except Exception:
             final_answer = _synthesize(base_answer, results, claims)
     else:

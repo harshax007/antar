@@ -62,6 +62,7 @@ export default function LoginPage() {
     const interval = setInterval(updateTime, 1000);
     
     // Prefetch main routes to ensure the transition is instant
+    router.prefetch("/hook");
     router.prefetch("/antar");
     router.prefetch("/approvals");
     
@@ -109,7 +110,12 @@ export default function LoginPage() {
       localStorage.setItem("antar_login_count", loginCount.toString());
     } catch {}
     
-    router.push(homeFor(acct.role));
+    const hookSeen = typeof window !== "undefined" && localStorage.getItem("antar_hook_seen");
+    if (!hookSeen && acct.role !== "Approver") {
+      router.push("/hook");
+    } else {
+      router.push(homeFor(acct.role));
+    }
   }
 
   const busy = status !== "idle";

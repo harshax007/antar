@@ -79,12 +79,24 @@ def store_path() -> Path:
     override = os.getenv("ANTAR_BRAIN_DB")
     if override:
         return Path(override)
-    from app.core.db_path import get_db_path
+    from app.core.db_path import SIDECARS_READ_ONLY, get_db_path, sidecar_path
+    if SIDECARS_READ_ONLY:
+        return Path(sidecar_path("brain_vectors.db"))
     return Path(get_db_path()).with_name("brain_vectors.db")
+
+
+def _read_only() -> bool:
+    """On Catalyst the store is read in place from the image (app/core/db_path.py)."""
+    from app.core.db_path import SIDECARS_READ_ONLY
+    return SIDECARS_READ_ONLY and not os.getenv("ANTAR_BRAIN_DB")
 
 
 def _connect() -> sqlite3.Connection:
     path = store_path()
+    if _read_only():
+        # immutable: no -wal or -shm beside it, and no write that would copy the file
+        # into the container's writable layer.
+        return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro&immutable=1", uri=True)
     path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(path, timeout=30)
     con.executescript(_SCHEMA)

@@ -114,3 +114,26 @@ class TestKannada:
         assert k["long_date"] == (reg + timedelta(days=90)).isoformat()
         assert k["day"] == next(s for s in d["steps"] if s["key"] == "investigation")["days_open"]
         assert ct.timeline(_fir("Convicted"))["clock"] is None
+
+
+def test_a_case_opens_by_its_crime_number_alone():
+    # the case sheet prints the crime number and chat answers list FIRs by it; opening one
+    # needed the station too, so every such link was a 404
+    con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    try:
+        fid, crime_no = con.execute("SELECT fir_id, CrimeNo FROM FIRs WHERE is_synthetic_row = 0 AND LENGTH(CrimeNo) >= 16 "
+                                    "AND date <= date('now') LIMIT 1").fetchone()
+    finally:
+        con.close()
+    d = ct.timeline(crime_no)
+    assert d is not None and d["fir_id"] == fid
+    assert ct.timeline("99999999999999999") is None
+
+
+def test_the_layout_reaches_the_page_before_the_answer_text():
+    # sent after the tokens, it made the page draw the streamed text and then redraw it in
+    # the layout's shape: the answer visibly reformatted itself
+    import inspect
+    from app.api import chat_stream
+    src = inspect.getsource(chat_stream)
+    assert src.index('await q.emit("layout"') < src.index("async for chunk in token_stream(answer, delay_s=0.002)")

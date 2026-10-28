@@ -76,3 +76,8 @@ app/seeds/data/
 
 # public downloads used to build data/district_indicators.csv (scripts/build_district_indicators.py)
 data/external/
+
+# ── Antar Lab Edition ─────────────────────────────────────────────────────────
+main_lab.db*
+scale/
+docs/gold/runs/

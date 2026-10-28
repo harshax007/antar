@@ -15,7 +15,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GeoJSON, useMap } from "react-leaflet";
-import { Mascot } from "page-mascot";
+import { Mascot } from "@/components/SafeMascot";
 import { asset } from "@/lib/assets";
 
 export const MAP_AGENTS = [

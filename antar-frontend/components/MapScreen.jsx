@@ -22,6 +22,7 @@ import { MAP_AGENTS, MapAgentsMenu, AgentDropLayer, MapAgentResult } from "@/com
 import { FESTIVALS } from "@/lib/festivals";
 import "leaflet/dist/leaflet.css";
 import "./editorial-map.css";
+import { useEdition } from "@/lib/edition";
 import { asset } from "@/lib/assets";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -280,7 +281,7 @@ function CasePopup({ c, kn }) {
         <div className="mx-case-n">{people.map(([k, v]) => <div key={k}><b>{v}</b><span>{k}</span></div>)}</div>
       )}
       {!c.placed && <p className="mx-case-note">{kn ? "ಸ್ಥಳ ದಾಖಲಾಗಿಲ್ಲ: ಜಿಲ್ಲೆಯ ಕೇಂದ್ರದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ." : "No usable position on the FIR: the dot is at the district's centre."}</p>}
-      {c.fir_id && <Link className="mx-case-open" href={`/case?id=${encodeURIComponent(c.fir_id)}`}>{kn ? "ಪ್ರಕರಣದ ಕಾಲರೇಖೆ ತೆರೆಯಿರಿ →" : "Open the case timeline →"}</Link>}
+      {c.fir_id && <Link className="mx-case-open" href={`/case?id=${encodeURIComponent(c.fir_id)}`}>{kn ? "ಪ್ರಕರಣದ ಹರಿವು ತೆರೆಯಿರಿ →" : "Open the case flow →"}</Link>}
     </div>
   );
 }
@@ -467,16 +468,45 @@ export default function MapScreen() {
   const [flowOn, setFlowOn] = useState(false); // crime flow only when required
   const [reportOpen, setReportOpen] = useState(false);
 
-  const today = useMemo(() => new Date(), []);
-  const todayIso = useMemo(() => today.toISOString().slice(0, 10), [today]);
+  const { today: serverToday } = useEdition();
+
+  const parseServerDate = (dStr) => {
+    if (!dStr) return null;
+    const parts = dStr.split("-").map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    return null;
+  };
+
+  const today = useMemo(() => {
+    return parseServerDate(serverToday) || new Date();
+  }, [serverToday]);
+
+  const todayIso = useMemo(() => serverToday || today.toISOString().slice(0, 10), [serverToday, today]);
+
   const initDate = useMemo(() => {
     const s = sp?.get("date");
-    const d = s ? new Date(`${s}T00:00:00`) : today;
-    return isNaN(d.getTime()) || d > today ? today : d;
+    const parsed = parseServerDate(s);
+    if (parsed && !isNaN(parsed.getTime()) && parsed <= today) return parsed;
+    return today;
   }, [sp, today]);
+
   const [calYear, setCalYear] = useState(initDate.getFullYear());
   const [calMonth, setCalMonth] = useState(initDate.getMonth());
   const [selDay, setSelDay] = useState(initDate.getDate());
+
+  useEffect(() => {
+    if (!sp?.get("date") && serverToday) {
+      const parsed = parseServerDate(serverToday);
+      if (parsed) {
+        setCalYear(parsed.getFullYear());
+        setCalMonth(parsed.getMonth());
+        setSelDay(parsed.getDate());
+      }
+    }
+  }, [serverToday, sp]);
+
   const rawEnd = isoDate(calYear, calMonth, Math.min(selDay, daysInMonth(calYear, calMonth)));
   const endDate = rawEnd > todayIso ? todayIso : rawEnd;
   // The window the map counts over, ending on the selected day. A day is the morning crime
@@ -711,7 +741,7 @@ export default function MapScreen() {
     return Object.fromEntries(Object.entries(by).map(([g, fs]) => [g, makeContains({ features: fs })]));
   }, [geo]);
   const dayDots = useMemo(() => {
-    if (!dayView || dayCases?.date !== endDate) return [];
+    if (!dayView || !dayCases?.cases || (dayCases.date && dayCases.date !== endDate && dayCases.date !== todayIso)) return [];
     // A case is drawn where it was registered only when that point lies inside its own
     // district: a position in the sea or in the next district is a bad record, and a dot
     // there would put the case in the wrong place. Those, and cases with no position, go
@@ -1387,15 +1417,21 @@ export default function MapScreen() {
           ))}
 
           {!dayView && <ForecastLayer fc={fc} kn={kn} contains={karnatakaContains} stateView={!selectedDistrict} />}
+          {/* the dot as drawn: small at state zoom, and not the thing that takes the click */}
           {dayView && dayDots.map((c) => (
-            <CircleMarker key={"day" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 8 : 3.6}
+            <CircleMarker key={"dayd" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 8 : 3.6} interactive={false}
+              pathOptions={{ color: "#ffd2cf", weight: 1, fillColor: "#E14038", fillOpacity: 0.9 }} />
+          ))}
+          {/* an invisible ring around each dot takes the click, so a 7px dot is not a 7px target */}
+          {dayView && dayDots.map((c) => (
+            <CircleMarker key={"day" + c.fir_id} center={[c.lat, c.lon]} radius={selectedDistrict ? 12 : 10}
               eventHandlers={{
                 popupclose: () => {
                   if (selectedDistrict) setFlyBounds(gadmBounds(selectedDistrict));
                   else { setFlyBounds(null); setResetMapTrigger((v) => v + 1); }
                 }
               }}
-              pathOptions={{ color: "#ffd2cf", weight: 1, fillColor: "#E14038", fillOpacity: 0.9 }}>
+              pathOptions={{ stroke: false, fillColor: "#E14038", fillOpacity: 0, className: "mx-dot-hit" }}>
               <Popup className="mx-case-pop" maxWidth={320} minWidth={250} autoPanPadding={[24, 24]}>
                 <CasePopup c={c} kn={kn} />
               </Popup>
@@ -1403,7 +1439,7 @@ export default function MapScreen() {
                 <b>{crimeName(c.crime)}</b>{c.head && c.head.toUpperCase() !== c.crime.toUpperCase() ? ` · ${c.head}` : ""}
                 <br />{[c.station, c.area].filter(Boolean).join(" · ")}{c.stage ? ` · ${c.stage}` : ""}
                 {!c.placed && <><br /><i>{kn ? "ಸ್ಥಳ ದಾಖಲಾಗಿಲ್ಲ: ಜಿಲ್ಲೆಯ ಕೇಂದ್ರದಲ್ಲಿ ತೋರಿಸಲಾಗಿದೆ" : "No usable position on the FIR: shown at the district's centre"}</i></>}
-                <br /><small>{kn ? "ವಿವರಗಳಿಗೆ ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click for the case details"}</small>
+                <br /><small>{kn ? "ಪ್ರಕರಣ ತೆರೆಯಲು ಕ್ಲಿಕ್ ಮಾಡಿ" : "Click to open the case"}</small>
               </Tooltip>
             </CircleMarker>
           ))}

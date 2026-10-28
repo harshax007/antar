@@ -63,14 +63,23 @@ def real_record_end(conn: sqlite3.Connection) -> date | None:
 
 def resolve(conn: sqlite3.Connection, override: str | None = None,
             today: date | None = None) -> AsOf:
-    spec = (override or os.getenv(ENV) or "wallclock").strip().lower()
+    from app.core import clock
+    if not (override or os.getenv(ENV)):
+        if clock._spec() == "real":
+            spec = "real"
+        elif clock.is_fixed():
+            spec = clock._spec()
+        else:
+            spec = "wallclock"
+    else:
+        spec = (override or os.getenv(ENV) or "wallclock").strip().lower()
     real_end = real_record_end(conn)
     if spec == "real":
         if real_end is None:
             raise ValueError("the registry has no real records to anchor to")
         d, mode = real_end, "real"
     elif spec in ("wallclock", "today", "now"):
-        d, mode = today or date.today(), "wallclock"
+        d, mode = today or clock.today(), "wallclock"
     else:
         try:
             d = date.fromisoformat(spec)

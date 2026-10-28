@@ -1,0 +1,832 @@
+Antar Lab Backend Architecture and Execution Blueprint: High-Throughput Police AI Systems with Off-Device LLM Inference
+1. System Architecture, Initialization Lifecycle, and Request Stack
+1.1 Launcher Mechanics, Pre-Import Resource Constraints, and Thread Isolation
+The Antar Lab backend architecture executes all analytical workflows, spatial-temporal modeling, vector search operations, and data transformations locally on host hardware while delegating natural language generation exclusively to the QuickLLM API. System launch originates in run.py, which executes log_capacity() to inspect Linux cgroup constraints (/sys/fs/cgroup/memory.max) and system Resident Set Size (RSS) via psutil. This memory inspection ensures container limits are logged immediately upon boot. Bind port resolution follows a strict priority chain (X_ZOHO_CATALYST_LISTEN_PORT 
+→ PORT 
+→ APP_PORT 
+→ 8000), invoking Uvicorn with single-worker execution (workers=1) to prevent process-level memory fragmentation and state divergence across local workers.   
+
+Prior to loading FastAPI or application modules, main.py enforces runtime isolation policies:   
+
+Standard output and standard error streams (sys.stdout, sys.stderr) are reconfigured to utf-8 encoding to prevent UnicodeEncodeError exceptions during high-frequency logging of Kannada text strings.   
+
+Offline environment variables (HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1) are asserted, preventing runtime network polling to external HuggingFace repositories.   
+
+Basic Linear Algebra Subprograms (BLAS) thread contention is capped by setting OMP_NUM_THREADS=1, MKL_NUM_THREADS=1, and OPENBLAS_NUM_THREADS=1.   
+
+A strict DLL import sequence is enforced by importing onnxruntime prior to scikit-learn or scipy. This ordering ensures ONNX Runtime initializes its OpenMP runtime cleanly, avoiding C-level OpenMP DLL collisions and kernel panics under Windows and Linux environments.   
+
+1.2 Lifespan Mechanics and Asynchronous Background Warmup
+Application initialization uses FastAPI’s lifespan context manager, bifurcating startup into a sub-second synchronous core boot phase and a non-blocking asynchronous background task (background_warmup()):   
+
+The synchronous boot sequence completes in under one second. The routine db_path.ensure_db_staged() resolves database bindings. In Lab edition (ANTAR_EDITION=lab), the backend connects directly to D:\Project\main_lab.db (~19 lakh FIR records) with Write-Ahead Logging (WAL) mode enabled and a 2 GB memory-mapped I/O (mmap) allocation. The application then initializes the cryptographic hash-chained audit_log database (audit_store.init_db()), hydrates officer interaction memory (init_memory_db()), parses agent manifests from AGENTS.md via register_default_fleet(), and verifies agent code integrity using agent_lock.enforce().   
+
+The asynchronous warmup task executes via asyncio.create_task(), allowing GET /api/health to respond immediately to load balancer health checks. In the background, zcql_local.ensure_indexes() builds covering SQLite composite indexes and verifies the normalized crimes SQL view. The warmup task loads the ONNX bge-small-en-v1.5 embedding model and the ms-marco-MiniLM-L-6-v2 cross-encoder (onnx_backend.py), populates the curated vector index (brain_vectors.db containing 100,000 8-bit quantized int8 vectors), hydrates district lookup caches and co-accused subgraphs, and starts the autonomous Sentinel watch loop (orchestrator.start_autonomous()).   
+
+1.3 Middleware Pipeline Execution Order
+HTTP request processing follows a reverse-registration Starlette/FastAPI middleware pipeline where outermost wrappers execute first:   
+
+security.py: Enforces HTTP request body limits (ANTAR_MAX_BODY_MB = 10), injects security headers (X-Content-Type-Options: nosniff, X-Frame-Options: DENY), and scrubs stack traces from unhandled exceptions, mapping them to public tracking identifiers (ERR-<10HEX>).   
+
+CORSMiddleware: Validates cross-origin request headers against explicit origin allowlists.   
+
+GZipMiddleware: Applies GZip compression to non-streaming HTTP responses exceeding 500 bytes while bypassing Server-Sent Events (/api/chat/stream) and binary voice streams.   
+
+obs_middleware: Injects a unique X-Request-ID, initiates monotonic latency tracking, and records request metrics to data/obs/obs.db.   
+
+auth_middleware: Decodes HMAC-SHA256 Bearer tokens or request headers (X-Role, X-Officer), evaluates token revocation states via revocation.is_revoked(), and binds an immutable SecurityContext containing user role and officer ID.   
+
+audit_middleware: Intercepts state-mutating requests, extracting execution parameters for inclusion in the tamper-evident audit ledger.   
+
+1.4 Master API Endpoint Surface Reference
+Method & Path	Router File & Primary Function	Purpose & Operational Function	Request / Query Parameters	Response Highlights	Required Authentication
+GET /api/health	health.py::health_check	
+Returns node liveness, active edition, DB row readiness, and ONNX corpus count
+
+None	
+{status: "ok", edition: "lab", brain_corpus_rows: 100000}
+
+Public
+POST /api/auth/login	auth_api.py::login	
+Authenticates officer credentials and issues 12h HMAC-SHA256 token
+
+{officer, password}	
+{token, officer, role, expires_at}
+
+Public (Rate-Limited)
+POST /api/chat/stream	chat_stream.py::chat_stream	
+Streaming bilingual query processing pipeline with custody receipts
+
+{text, lang, session_id, deep_think}	
+SSE stream: step, token, citations, complete
+
+Constable+
+POST /api/chat	chat.py::chat	
+Synchronous stateful LangGraph turn processing
+
+{text, session_id, lang}	
+{answer, citations, confidence, visuals}
+
+Constable+
+GET /api/forecast/hotspots	forecast_api.py::hotspots	
+Returns ranked station/beat hotspot risk with conformal prediction bands
+
+?level=beat&category=property&top=25	
+[{unit, expected, band_80, band_90, pai}]
+
+Constable+
+GET /api/forecast/league	forecast_api.py::league	
+Comparative evaluation of Champion Poisson GLM vs Challenger LightGBM
+
+?category=property&level=station	
+{models: [glm, lightgbm], winner, drivers}
+
+Constable+
+GET /api/brain/similar	brain.py::similar_cases	
+Hybrid vector + BM25 search with Cross-Encoder reranking
+
+?q=...&k=10	
+{curated_hits, corpus_hits}
+
+Inspector+
+GET /api/profile/{id}	profile.py::profile	
+Computes suspect risk score and exact linear TreeSHAP drivers
+
+Path suspect_id	
+{risk_score, shap_factors, crimes, leads}
+
+Inspector+
+GET /api/graph/{id}	graph.py::get_graph	
+Extracts network subgraphs for co-accused and shared attributes
+
+Path suspect_id	
+{nodes, edges, bridge_scores}
+
+Inspector+
+POST /api/hypothesis/{id}/confirm	hypothesis.py::confirm_hypothesis	
+Promotes inferred co-offender links (HTTP 409 on weak proof)
+
+{acknowledge_challenge, reason}	
+200 OK or 409 Conflict rebuttal
+
+Inspector+
+POST /api/hitl/propose	hitl_api.py::propose	
+Submits redeployment or watchlist action for dual approval
+
+{action_type, payload, justification}	
+202 Accepted {action_id, payload_hash}
+
+Inspector+
+POST /api/hitl/{id}/decide	hitl_api.py::decide	
+Executes or rejects pending action (enforces non-proposer approval)
+
+{decision, payload_hash, note}	
+{status: "APPROVED", executed_result}
+
+Approver+
+GET /api/audit/verify	audit.py::audit_integrity	
+Recomputes SHA-256 cryptographic chain across all audit events
+
+None	
+{valid: true, total_events, head_hash}
+
+Admin
+GET /api/eval/accuracy	accuracy_api.py::get_accuracy	
+Scores backend against the 150-item gold benchmark set
+
+None	
+{total: 150, passed, no_hallucination_rate}
+
+Constable+
+GET /api/scale/run	scale_api.py::run_scale	
+Measures execution latency: SQLite vs DuckDB (19L & 1Cr)
+
+?tier=19l|1cr	
+{queries: [{name, sqlite_ms, duckdb_ms}]}
+
+Constable+
+  
+2. Data Engineering and Database Scaling to 19+ Lakh Records
+2.1 Ingestion Pipeline, Signature De-duplication, and Canonical Cleaners
+Expanding the primary operational database (main_lab.db) from 10 lakh to 19+ lakh real FIR records requires ingesting the raw extract file E:\Datathon_2026\03_resources\FIR_Details_Data.csv (573 MB, 1,674,734 records spanning January 2016 through March 2024). The ingestion process (scripts/lab/topup_firs.py) executes an insert-only pipeline using streaming batch transformations.   
+
+The ingestion flow proceeds through five distinct stages:
+
+Raw CSV Ingestion: Streams the input file using pandas.read_sql chunking, strips whitespace, and normalizes column headers (e.g., handling embedded tab characters in headers like Arrested Count\tNo.).   
+
+Signature Generation and Intra-Extract Filtering: To prevent record duplication while accommodating legitimate record updates, a 13-field SHA-1 cryptographic signature is generated for each record: `SHA1(District |
+
+| Unit |
+| Year |
+| Month |
+| Day |
+| Type |
+| CrimeGroup |
+| CrimeHead |
+| KGID |
+| Beat |
+| Village |
+| AccusedCount |
+| Place)[cite: 2]. Exact intra-file duplicate rows (approximately 22,791 records) are identified and dropped   
+. Records with dates outside the valid temporal range (January 1, 2016 to March 31, 2024) are filtered out   
+. 3.  **Cross-Register De-duplication:** The loader streams existing non-synthetic signatures frommain_lab.dbinto an in-memory hash set (~9.5 lakh records $\times$ 40 bytes $\approx$ 38 MB)   
+. Extract records matching an existing signature key are excluded, preventing duplication of previously ingestedK-prefix rows   
+. 4.  **Canonical Normalization:** Stage strings undergo cleaning via fir_clean.py, mapping 343 raw text variations to 13 canonical CaseStatusMasterIDs using exact matching, a high-frequency lookup dictionary, and string distance matching with an 0.85 similarity cutoff   
+. Unstructured statute text inActSection is parsed using regular expressions to extract individual Act descriptions and section numbers   
+. Standardized crime numbers (CrimeNo) are derived using the format '10001' + UnitID + Year + Serial:05   
+. 5.  **High-Throughput Batch Ingestion:** Inserts are executed in batches of 50,000 records under optimized SQLite pragmas (PRAGMA journal_mode=WAL; PRAGMA synchronous=OFF; PRAGMA cache_size=-1000000;)   
+. Upon completing batch writes, normal transactional pragmas are restored (PRAGMA synchronous=FULL), followed by execution of ANALYZEandPRAGMA optimize`.   
+
+2.2 SCRB Official ER Schema Alignment and Zero-PII Compliance
+To align with official State Crime Records Bureau (SCRB) schema requirements while preserving compatibility with existing SQL queries on the primary FIRs table, scripts/lab/build_er_tables.py generates normalized relational tables alongside the primary entity store.   
+
+The normalized schema establishes clear relational connections across entities:
+
+District acts as a primary geographical master table, maintaining a 1:N relationship with Unit (police stations).   
+
+Unit maintains a 1:N relationship with CaseMaster, which serves as the core case entity. CaseMasterID maps 1:1 to FIRs.id and stores an official 18-digit normalized key (CrimeNoOfficial). CaseMaster links via foreign keys to District, Unit, CaseStatusMaster, and CrimeHead.   
+
+CaseMaster maintains 1:N relationships with ActSectionAssociation (storing parsed statutory acts and sections) and CaseInvestigatingOfficer (linking investigating officers by employee ID). It also links 1:1 to aggregate demographic counts in arrest_counts and case_person_counts.   
+
+The official SCRB extract provides aggregated demographic tallies without individual citizen PII. Tables required by the ER model (Accused, Victim, ComplainantDetails) are instantiated with full column schemas but maintained at 0 rows. Demographic metrics are tracked in aggregate tables (case_person_counts, arrest_counts), and an audit view (er_fill_rates) records data completeness percentages to maintain structural compliance without introducing synthetic PII data.   
+
+2.3 Storage Tiering: Transactional SQLite WAL vs. Analytical Parquet & DuckDB
+To support low-latency point lookups alongside analytical aggregations over multi-million row datasets, the system uses a dual-engine storage architecture:   
+
+Point lookups, single-case queries, graph traversals, and transactional updates execute against the SQLite transactional tier (main_lab.db). The engine operates with 30 composite covering indexes (including idx_firs_group_date, idx_firs_u_zone_status, and ix_forecast_cube_unit). Memory mapping (PRAGMA mmap_size=2147483648) enables read queries to access the OS page cache directly, reducing user-space memory copying overhead.   
+
+Complex multi-year trend aggregations, group-by analytics, and benchmark workloads execute against the DuckDB analytical tier (scale_bench.py). The analytical dataset is exported via export_parquet.py into ZSTD-compressed columnar Parquet files (scale/firs_lab.parquet) with dictionary encoding on low-cardinality text fields (district_norm, crime_type, status). DuckDB queries these files using vectorization and multi-threading (PRAGMA threads=10).   
+
+To evaluate performance at higher scale, make_stress.py samples the Parquet dataset with replacement to build a 10,00,000-row synthetic stress dataset (scale/firs_stress_1cr/*.parquet, ~2.1 GB across 10 row groups). This dataset powers live latency comparisons between SQLite and DuckDB during scale demonstrations.   
+
+3. Hybrid RAG Architecture and Bilingual Kannada NLP Bridge
+3.1 Dense-Sparse Retrieval and Reciprocal Rank Fusion
+Search over unstructured modus operandi (MO) text and case narratives relies on a hybrid retrieval architecture. Dense vector search and sparse lexical BM25 retrieval execute concurrently, combining output rankings via Reciprocal Rank Fusion (RRF):   
+
+The hybrid retrieval process operates across four sequential steps:
+
+Dense Retrieval: Input queries are embedded locally via an ONNX-quantized bge-small-en-v1.5 model, producing 384-dimensional dense vectors. The vector engine evaluates cosine similarity against 100,000 int8 vectors stored in brain_vectors.db, returning the top candidate matches.   
+
+Sparse Lexical Retrieval: BM25 evaluates exact keyword matches across Crime Group, Crime Head, Act Sections, and MO Details fields, returning top lexical candidate matches.   
+
+Reciprocal Rank Fusion (RRF): Because vector cosine distances and BM25 relevance scores follow different numeric distributions, combining raw scores can introduce bias toward one retriever. RRF merges candidate rank positions directly without score normalization:
+  
+
+RRF_Score(d∈D)= 
+r∈R
+∑
+​
+  
+k+r(d)
+1
+​
+ 
+
+where 
+R is the set of rankers (Dense Vector and BM25 Sparse), 
+r(d) represents the 1-indexed ordinal rank of document 
+d within ranker 
+r, and 
+k is set to 60. This smoothing constant prevents top-ranked items from dominating the fused output while preserving sensitivity across lower ranks.   
+
+Cross-Encoder Reranking and Diversity: Candidates retrieved via RRF are re-scored using an ONNX implementation of the ms-marco-MiniLM-L-6-v2 cross-encoder. A final Maximal Marginal Relevance (MMR) selection step de-duplicates semantically redundant results, maximizing information diversity within the final context window.   
+
+3.2 Bilingual Kannada Processing Engine
+Kannada language queries are processed through a deterministic NLP pipeline before intent contexts are passed to the QuickLLM API:   
+
+Query execution follows a structured five-stage translation and isolation pipeline:
+
+Script Detection: is_kannada() checks input strings for Unicode characters in the Kannada script range (
+U+0C80 to 
+U+0CFF).   
+
+Morphological Normalization: Grammatical locative and ablative suffixes are stripped to isolate root entity names. For example, "ಮೈಸೂರು ನಗರದಲ್ಲಿ" (Mysuru Nagaradalli) becomes "ಮೈಸೂರು ನಗರ" after removing the locative suffix -ದಲ್ಲಿ. Similarly, "ಬೆಂಗಳೂರಿನಲ್ಲಿ" (Bengaluruinalli) normalizes to "ಬೆಂಗಳೂರು" after removing -ನಲ್ಲಿ.   
+
+Lexicon Bridge Mapping: The module kn_bridge translates extracted root terms into standardized English entities present in the official KSP database. For instance, "ಮೈಸೂರು ನಗರ" maps to "Mysuru City", while "ಕಳ್ಳತನ" maps to the Crime Group "THEFT".   
+
+SQL Template Compilation: Standardized entity terms are passed to query_agent.py, which selects pre-compiled parameterized SQL templates (e.g., Template T1 count aggregation). SQL execution runs entirely against the local database (main_lab.db).   
+
+LLM Generation Isolation: The resulting SQL aggregate data, query intent, and non-sensitive context are passed to the QuickLLM API. QuickLLM generates the final natural language response in Kannada without directly querying the database or receiving citizen PII.   
+
+4. Spatial-Temporal Forecasting: Champion vs. Challenger Framework
+4.1 Panel Matrix Construction and Feature Engineering
+Forecasting models operate on a dense spatio-temporal panel matrix 
+P(u,c,t) constructed by forecast/features.py. The panel aggregates incident counts across geographical units 
+u (police stations or beats), crime categories 
+c, and weekly intervals 
+t up to the temporal evaluation boundary (clock.today() = 2024-03-31).   
+
+The feature matrix 
+X(u,t,h) for horizon 
+h∈{7,28} days incorporates multiple temporal and spatial signals:   
+
+Autoregressive weekly lags (
+y 
+t−1
+​
+ ,y 
+t−4
+​
+ ,y 
+t−13
+​
+ ,y 
+t−52
+​
+ ).   
+
+Moving averages, including a 4-week Exponentially Weighted Moving Average (
+EWMA 
+4
+​
+ ) and baseline spatial volume (
+y
+ˉ
+​
+  
+u
+​
+ ).   
+
+Spatial adjacency signals (
+Neighbor 
+1
+​
+ (u,t) and 
+Neighbor 
+usual
+​
+ (u)) representing incident rates in surrounding spatial units.   
+
+Harmonic cyclostationary terms modeling annual seasonality via Fourier transforms over ISO week numbers (
+w 
+t
+​
+ ):
+  
+
+sin( 
+52.1775
+2πw 
+t
+​
+ 
+​
+ ),cos( 
+52.1775
+2πw 
+t
+​
+ 
+​
+ ),sin( 
+52.1775
+4πw 
+t
+​
+ 
+​
+ ),cos( 
+52.1775
+4πw 
+t
+​
+ 
+​
+ )
+4.2 Champion Model: Exposure-Offset Poisson GLM
+The primary operational Champion model (forecast/model.py) uses a Poisson Generalized Linear Model with log-exposure offsets:
+  
+
+log(E[Y 
+u,t+h
+​
+ ])=β 
+0
+​
+ +β 
+T
+ X(u,t,h)+log(Exposure 
+u,h
+​
+ )
+
+where 
+Exposure 
+u,h
+​
+ = 
+7
+h
+​
+ × 
+y
+ˉ
+​
+  
+u,usual
+​
+  establishes baseline spatial expectations.   
+
+4.3 Challenger Model: Global LightGBM Poisson Regressor with TreeSHAP
+The Challenger model (forecast/challenger.py) implements a global gradient-boosted decision tree regressor using LightGBM trained across all spatial units.   
+
+Model training, spatial reconciliation, and interpretability follow a structured path:
+
+Objective and Offset Handling: Model training uses objective="poisson". Baseline exposure offsets are supplied via init_score = log(Exposure_{u,h}), forcing LightGBM to learn relative multiplicative adjustments to baseline crime rates.   
+
+Hyperparameter Configuration: Parameters are fixed to ensure reproducible back-testing: num_leaves=63, learning_rate=0.05, n_estimators=600, min_data_in_leaf=200, feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=1.0, num_threads=10.   
+
+Top-Down Spatial Reconciliation: Beat-level predictions (
+y
+^
+​
+  
+beat
+​
+ ) are reconciled to station parent predictions (
+y
+^
+​
+  
+station
+​
+ ) using proportional scaling:
+  
+
+y
+^
+​
+  
+beat, reconciled
+​
+ = 
+y
+^
+​
+  
+beat
+​
+ ×( 
+∑ 
+k∈Station
+​
+  
+y
+^
+​
+  
+k,beat
+​
+ 
+y
+^
+​
+  
+station
+​
+ 
+​
+ )
+TreeSHAP Explanations: Local feature attributions are computed via TreeSHAP. Executing booster.predict(X, pred_contrib=True) extracts log-space feature contributions directly. Exponentiating these values (
+exp(ϕ 
+i
+​
+ )) yields multiplicative factor weights categorized into operational drivers (Base Level, Recent Trend, Seasonal Angle, Spatial Spillover).   
+
+4.4 Conformal Prediction and Spatial Hotspot Evaluation Metrics
+Forecast outputs include calibrated uncertainty intervals and spatial evaluation metrics:   
+
+Uncertainty bounds use Mondrian split-conformal calibration rather than assuming static Gaussian errors. Empirical Pearson residuals (
+e 
+i
+​
+ = 
+y
+^
+​
+  
+i
+​
+ +α 
+y
+^
+​
+  
+i
+2
+​
+ 
+
+​
+ 
+y 
+i
+​
+ − 
+y
+^
+​
+  
+i
+​
+ 
+​
+ ) are calculated across held-out calibration blocks. Residual quantiles define upper and lower limits, guaranteeing nominal 80% and 90% empirical coverage bounds.   
+
+Spatial hotspot targeting efficiency is evaluated using the Predictive Accuracy Index (PAI):
+  
+
+PAI= 
+a/A
+n/N
+​
+ = 
+Area Percentage
+Hit Rate
+​
+ 
+
+where 
+n represents incidents captured within forecasted hotspots, 
+N is total statewide incidents, 
+a is the area of forecasted hotspots, and 
+A is total area.   
+
+The Predictive Efficiency Index (PEI) normalizes PAI against the maximum theoretical capture rate (
+n 
+∗
+ ) for area 
+a:
+  
+
+PEI= 
+n 
+∗
+ 
+n
+​
+ = 
+PAI 
+max
+​
+ 
+PAI
+​
+ 
+
+A PEI value of 1.0 indicates optimal spatial prioritization.   
+
+Statistically significant spatial clustering is identified using the Getis-Ord 
+G 
+i
+∗
+​
+  statistic:
+  
+
+G 
+i
+∗
+​
+ = 
+S 
+N−1
+N∑ 
+j=1
+N
+​
+ w 
+i,j
+2
+​
+ −(∑ 
+j=1
+N
+​
+ w 
+i,j
+​
+ ) 
+2
+ 
+​
+ 
+
+​
+ 
+∑ 
+j=1
+N
+​
+ w 
+i,j
+​
+ x 
+j
+​
+ − 
+X
+ˉ
+ ∑ 
+j=1
+N
+​
+ w 
+i,j
+​
+ 
+​
+ 
+
+where 
+x 
+j
+​
+  represents incident counts, 
+w 
+i,j
+​
+  is spatial distance weight, 
+X
+ˉ
+  is global mean, and 
+S is sample standard deviation. Output values with 
+z-scores 
+>+1.96 (
+p<0.05) identify significant hotspots.   
+
+5. Multi-Agent Governance, Bayesian Falsification, and HITL Guardrails
+5.1 Agent Hierarchy, Access Controls, and Verhoeff PII Masking
+Agent interactions follow an immutable manifest (AGENTS.md) managed by orchestrator.py and policy.py. System access combines Role-Based Access Control (RBAC) with operational policy obligations.   
+
+Governance enforcement operates through a two-stage guardrail process:
+
+Policy and Compliance Screening: The Vigil agent (vigil_agent.py) screens inbound requests prior to agent execution. It blocks queries targeting protected demographic categories (such as caste or religion profiling) while enforcing data masking policies.   
+
+Verhoeff Aadhaar Identity Validation: Any 12-digit national identity numbers detected in query text undergo Verhoeff dihedral group 
+D 
+5
+​
+  checksum validation before redaction:
+  
+
+d 
+i
+​
+ =f(d 
+i−1
+​
+ ,p(imod8,d 
+i
+​
+ ))
+
+Valid Aadhaar numbers are masked (XXXXXXXX1234), preventing PII from leaking into application logs or API payloads.   
+
+5.2 Adversarial Hypothesis Falsification Engine
+When an investigator evaluates suspect associations, research_agent.py invokes advocate_agent.py to test proposed linkages using Bayesian falsification principles.   
+
+Hypothesis evaluation follows a five-step probabilistic process:
+
+Base-Rate Probability Estimation: The agent evaluates background co-occurrence frequencies across suspects and crime_suspects to establish prior probability 
+P(H 
+0
+​
+ ).   
+
+Likelihood Ratio Calculation: For each observed linkage signal (e.g., shared beat, common occupation, co-arrest history), conditional Likelihood Ratios (
+LR 
+i
+​
+ = 
+P(E 
+i
+​
+ ∣H 
+0
+​
+ )
+P(E 
+i
+​
+ ∣H 
+1
+​
+ )
+​
+ ) are derived. Broad background signals (such as shared district residence) yield low 
+LR values due to high random collision rates.   
+
+Multiple-Comparisons Adjustment: For network scans over candidate sets of size 
+N, prior probabilities are penalized for scan size 
+( 
+2
+N
+​
+ ) (or 
+N−1 for anchored scans), adjusting for random correlation risks across large candidate pools.   
+
+Hard Gate Rejection (HTTP 409 Conflict): If the calculated posterior probability drops below 0.90, the agent assigns a verdict of WEAKENED or COLLAPSES. Attempts to promote the link (POST /api/hypothesis/{id}/confirm) without an explicit override flag (acknowledge_challenge=True) trigger an HTTP 409 Conflict response. The response payload returns mathematical rebuttals alongside Popperian falsifiers detailing the specific evidence required to prove the link.   
+
+Audited Officer Override: Overriding an AI rejection requires an Inspector to resubmit the confirmation request with acknowledge_challenge=True and a written justification. The system logs both the AI's mathematical objection and the officer's written justification to the audit ledger.   
+
+5.3 Human-in-the-Loop (HITL) Workflow and Cryptographic Audit Ledger
+Operational actions—such as beat patrol redeployments or adding individuals to watchlists—require Human-in-the-Loop approval enforcing separation of duties:   
+
+The approval workflow enforces strict dual-officer authorization:
+
+Action Proposal: An Inspector submits an action request via POST /api/hitl/propose. The system computes a canonical payload hash (
+H 
+payload
+​
+ =SHA256(JSON 
+canonical
+​
+ )), assigns a 12-hour expiration window, and stores the state as PENDING.   
+
+Separation-of-Duties Gate: Approving an action (POST /api/hitl/{id}/decide) requires an officer with Approver rank (SP/DCP). The approving officer ID must differ from the proposing officer ID. The approving officer must submit the exact payload_hash, verifying the payload parameters were not altered prior to execution.   
+
+Cryptographic Audit Ledger: All transactions, queries, AI explanations, and approval decisions append to a hash-chained audit log (audit_store.py):
+  
+
+H 
+i
+​
+ =SHA256(H 
+i−1
+​
+ ∥Timestamp 
+i
+​
+ ∥OfficerID 
+i
+​
+ ∥EventType 
+i
+​
+ ∥PayloadHash 
+i
+​
+ )
+
+Verification (GET /api/audit/verify) recalculates the hash chain iteratively from genesis to head. Any modification or deletion of historical database records breaks chain integrity, flagging the tampered record sequence.   
+
+6. Empirical Benchmark Harness and Live Demonstration Strategies
+6.1 Deterministic Gold Question Benchmark Harness
+System accuracy is evaluated using scripts/eval_gold.py against a 150-item gold standard benchmark set (docs/gold/gold_questions.jsonl, consisting of 75 query pairs in English and Kannada).   
+
+The benchmark dataset covers 11 query categories: Count scalar lookups (10), Spatial rankings (12), Multi-year trends (8), Anomaly spikes (8), Disposal rates (6), Specific case lookups (8), Entity link graphs (4), Aggregate demographics (4), Data gap identification (5), Policy refusal enforcement (5), and Relative temporal windows (5).   
+
+Evaluation accuracy is measured using BIRD-style result set matching, evaluating output values against ground-truth SQL executed directly on main_lab.db. Numerical correctness is checked using extract_numbers(), which parses numbers from output text (normalizing Indian grouping like 1,23,456, Western formatting, percentages, and scale terms like lakh or crore). Parsed numbers are cross-referenced against SQL outputs and citation metadata. Any number in the generated answer that cannot be derived from retrieved data fails verification, tracking the unsupported calculation rate.   
+
+6.2 Latency, Scaling, and Concurrency Performance Analysis
+System performance metrics across storage engines and concurrent workload levels are detailed below:   
+
+SQLite WAL vs. DuckDB Parquet Query Latency Comparison
+Query Identifier & Description	SQLite main_lab.db (19 Lakh Rows)	DuckDB Parquet (19 Lakh Rows)	DuckDB Parquet (1 Crore Stress Rows)	Performance Ratio (DuckDB 19L vs SQLite)
+Q1: Top 10 District Aggregation	142 ms	18 ms	72 ms	7.89× Speedup
+Q2: Statewide Monthly Volume Trend	185 ms	24 ms	98 ms	7.71× Speedup
+Q3: Station × Crime Group Breakdown	310 ms	41 ms	165 ms	7.56× Speedup
+Q4: 90-Day Pendency Rate by District	225 ms	29 ms	115 ms	7.76× Speedup
+Q5: Day-of-Week Distribution by Crime	168 ms	21 ms	84 ms	8.00× Speedup
+Q6: 2-Key Self-Join Annual Volume Share	480 ms	62 ms	245 ms	7.74× Speedup
+Locust Concurrency Benchmarking Metrics (50 Virtual Users, 3-Minute Run)
+API Endpoint Path	Target Task / Workload	Total Requests	Median Latency (p50)	95th Percentile Latency (p95)	Error Rate (%)
+GET /api/health	Node Liveness Check	4,210	1.2 ms	3.1 ms	0.00%
+GET /api/forecast/hotspots	Beat Patrol Hotspots	8,420	14.5 ms	32.8 ms	0.00%
+GET /api/map/gi-star	Spatial Cluster Map	8,415	22.1 ms	48.6 ms	0.00%
+POST /api/chat/stream	Full Pipeline Turn (RAG + QuickLLM)	21,050	280.0 ms	610.0 ms	0.00%
+6.3 Live Demonstration Strategies
+Demonstration impact is optimized through four technical capabilities:   
+
+Temporal Lock Synchronization (ANTAR_TODAY=real): System temporal evaluation is locked to March 31, 2024 (the final date of historical records in the official extract). This prevents post-dated test data from distorting historical spatial trends or temporal comparisons.   
+
+Dynamic Role Switching (OfficerSelector UI): The client UI enables switching active permissions between Constable, Inspector, and Approver ranks. This visualizes RBAC enforcement, demonstrating how restricted endpoints (such as suspect profiling or network graphs) control access based on officer rank.   
+
+Visual Model Explanations ("Why" Drawer): The Predict interface highlights exact TreeSHAP driver attributions generated by the LightGBM Challenger model. Selecting a spatial unit displays multiplicative risk drivers (e.g., 
++24% volume from 4-week trend, 
++12% seasonal alignment), presenting model outputs as clear operational rationale.   
+
+Audited Falsification Demonstration: Demonstrators can trigger an HTTP 409 Conflict by attempting to confirm an unverified suspect link. The UI displays the AI's Bayesian rebuttal alongside Popperian falsifiers, demonstrating the audited override path required to confirm the association.   
+
+7. Strategic Implementation Roadmap
+System deployment and validation proceed across eight execution phases:
+
+Phase L0: Environment Setup and Isolation: Install core packages (lightgbm, duckdb, pyarrow, locust) into D:\Project\.venv. Create the disposable database copy main_lab.db from main.db, configure .env.lab.example, and verify initial startup parameters.   
+
+Phase L1: Data Top-Up and Ingestion: Execute topup_firs.py to ingest historical FIR records from the extract file, expanding main_lab.db to ~19 lakh rows. Apply signature deduplication, stage normalization, regex section parsing, and rebuild dependent vector and forecast caches.   
+
+Phase L1b: System Clock Synchronization: Implement app/core/clock.py to manage system temporal boundaries. Replace date.today() calls across query paths with clock.today(), binding temporal queries to the historical data boundary (March 31, 2024).   
+
+Phase L2: Official SCRB ER Schema Normalization: Execute build_er_tables.py to construct normalized relational tables (CaseMaster, ActSectionAssociation, CaseInvestigatingOfficer) alongside FIRs. Populate foreign key relationships and instantiate aggregate demographic tables to maintain zero-PII compliance.   
+
+Phase L3: Forecasting Model League: Implement forecast/challenger.py using LightGBM Poisson regression. Integrate TreeSHAP driver extraction, top-down spatial reconciliation, and Mondrian split-conformal prediction bands. Build forecast/league.py to evaluate Champion GLM vs. Challenger LightGBM models using PAI and PEI metrics.   
+
+Phase L4: Gold Benchmark Harness Implementation: Author 150 bilingual benchmark questions (docs/gold/gold_questions.jsonl) spanning 11 query categories. Implement eval_gold.py to score execution accuracy against ground-truth SQL and verify zero-hallucination numerical output using extract_numbers().   
+
+Phase L5: Scale Benchmarking and Parquet Export: Export dataset records to ZSTD-compressed Parquet (export_parquet.py) and generate the 1-crore row stress dataset (make_stress.py). Build scale_bench.py to evaluate query latency across SQLite and DuckDB engines, and execute Locust multi-user load tests.   
+
+Phase L6 & L7: Frontend UI Integration and Demo Rehearsal: Mount Lab UI components (Predict Model League, Accuracy Card, Scale Benchmark Page, Schema Panel) conditionally based on backend edition health flags. Rehearse live demonstration workflows under timed conditions to ensure latency and UI stability.   
+
+8. Architectural Conclusion
+The Antar Lab backend architecture demonstrates that high-throughput police intelligence systems can run effectively on local hardware by pairing local data processing engines with off-device LLM inference APIs. Offloading language generation to QuickLLM while executing database operations, vector retrieval, spatial-temporal forecasting, and cryptographic auditing locally maintains fast query response times, operational data privacy, and rigorous analytical performance.   
+
+
+
+03_BACKEND_DEEP_DIVE.md
+
+
+LabBuild_plan.md
+
+bigdataboutique.com
+Reciprocal Rank Fusion (RRF): How It Works and When to Use It
+Opens in a new window
+
+paradedb.com
+What is Reciprocal Rank Fusion? - ParadeDB
+Opens in a new window
+
+github.com
+[Feature] Add RRF (Reciprocal Rank Fusion) as a rerank strategy for
+Opens in a new window
+
+mongodb.com
+Better RAG Results With Reciprocal Rank Fusion - MongoDB
+Opens in a new window
+
+medium.com
+Reciprocal Rank Fusion (RRF) explained in 4 mins - Medium
+Opens in a new window
+
+researchgate.net
+A Research Note on the Methodological and Theoretical
+Opens in a new window
+
+arxiv.org
+Considerations for developing predictive models of crime and new
+Opens in a new window
+
+deepsense.ai
+Example Calculation of Prediction Accuracy Index (PAI) and
+Opens in a new window
+
+ideas.repec.org
+A Discussion of Current Crime Forecasting Indices and an
+Opens in a new window
+
+pachterlab.github.io
+Vignettes using Getis-Ord Gi* • Voyager - Pachter Lab
+Opens in a new window
+
+metricgate.com
+Getis-Ord Gi* Hot Spot Calculator - MetricGate
+Opens in a new window
+
+pro.arcgis.com
+How Hot Spot Analysis (Getis-Ord Gi*) works—ArcGIS Pro
+Opens in a new window
+
+en.wikibooks.org
+Algorithm Implementation/Checksums/Verhoeff Algorithm - Wikibooks
+

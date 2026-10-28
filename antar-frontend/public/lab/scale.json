@@ -1,0 +1,752 @@
+{
+  "timestamp": "2026-10-27T23:53:44.562697+00:00",
+  "edition": "lab",
+  "has_19l_parquet": true,
+  "has_stress_1cr": true,
+  "results": [
+    {
+      "query_id": "Q1",
+      "name": "District ranking",
+      "description": "COUNT(*) by district, descending, top 10",
+      "engine": "sqlite",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 2630.22,
+      "warm_median_ms": 2418.38,
+      "all_runs_ms": [
+        2630.22,
+        2418.38,
+        2378.52
+      ],
+      "result_count": 10,
+      "sample_rows": [
+        [
+          "Bengaluru City",
+          570759
+        ],
+        [
+          "Belagavi Dist",
+          83127
+        ],
+        [
+          "Bengaluru Dist",
+          76608
+        ],
+        [
+          "Tumakuru",
+          72037
+        ],
+        [
+          "Shivamogga",
+          68857
+        ]
+      ]
+    },
+    {
+      "query_id": "Q2",
+      "name": "Monthly trend",
+      "description": "Aggregated monthly FIR volume across all years",
+      "engine": "sqlite",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 2804.67,
+      "warm_median_ms": 2804.67,
+      "all_runs_ms": [
+        2804.67,
+        2556.53,
+        3091.54
+      ],
+      "result_count": 123,
+      "sample_rows": [
+        [
+          "2016-01",
+          20433
+        ],
+        [
+          "2016-02",
+          20088
+        ],
+        [
+          "2016-03",
+          19317
+        ],
+        [
+          "2016-04",
+          17309
+        ],
+        [
+          "2016-05",
+          18361
+        ]
+      ]
+    },
+    {
+      "query_id": "Q3",
+      "name": "Crime mix per station",
+      "description": "Station volume breakdown across crime types, top 50",
+      "engine": "sqlite",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 6769.82,
+      "warm_median_ms": 5980.28,
+      "all_runs_ms": [
+        6769.82,
+        5823.9,
+        5980.28
+      ],
+      "result_count": 50,
+      "sample_rows": [
+        [
+          "North CEN Crime PS",
+          "CYBER CRIME",
+          8377
+        ],
+        [
+          "NorthEast CEN Crime PS",
+          "CYBER CRIME",
+          7440
+        ],
+        [
+          "South CEN Crime PS",
+          "CYBER CRIME",
+          7207
+        ],
+        [
+          "Cyber Crime Police Station",
+          "CYBER CRIME",
+          6191
+        ],
+        [
+          "SouthEast CEN Crime PS",
+          "CYBER CRIME",
+          5765
+        ]
+      ]
+    },
+    {
+      "query_id": "Q4",
+      "name": "Pendency by district",
+      "description": "Share of cases Under Investigation older than 90 days",
+      "engine": "sqlite",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 18659.21,
+      "warm_median_ms": 22669.98,
+      "all_runs_ms": [
+        18659.21,
+        22669.98,
+        23848.66
+      ],
+      "result_count": 10,
+      "sample_rows": [
+        [
+          "CID",
+          0.7675507020280812
+        ],
+        [
+          "Coastal Security Police",
+          0.5836972343522562
+        ],
+        [
+          "Bengaluru City",
+          0.175603730619474
+        ],
+        [
+          "Karnataka Railways",
+          0.15116669464495552
+        ],
+        [
+          "Bagalkot",
+          0.14380008218615165
+        ]
+      ]
+    },
+    {
+      "query_id": "Q5",
+      "name": "Day of week pattern",
+      "description": "Theft incidents grouped by day of week",
+      "engine": "sqlite",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 1364.08,
+      "warm_median_ms": 1364.08,
+      "all_runs_ms": [
+        1364.08,
+        1344.42,
+        1663.49
+      ],
+      "result_count": 7,
+      "sample_rows": [
+        [
+          "0",
+          20493
+        ],
+        [
+          "1",
+          30731
+        ],
+        [
+          "2",
+          32414
+        ],
+        [
+          "3",
+          32005
+        ],
+        [
+          "4",
+          32099
+        ]
+      ]
+    },
+    {
+      "query_id": "Q6",
+      "name": "2-Key CTE Join",
+      "description": "District-year share of total annual crime (Self-join via CTE)",
+      "engine": "sqlite",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 10154.79,
+      "warm_median_ms": 11090.07,
+      "all_runs_ms": [
+        10154.79,
+        11090.07,
+        11206.57
+      ],
+      "result_count": 20,
+      "sample_rows": [
+        [
+          "Bengaluru City",
+          "2026",
+          3923,
+          17537,
+          22.37
+        ],
+        [
+          "Belagavi Dist",
+          "2026",
+          1544,
+          17537,
+          8.8
+        ],
+        [
+          "Belagavi City",
+          "2026",
+          675,
+          17537,
+          3.85
+        ],
+        [
+          "Karnataka Railways",
+          "2026",
+          653,
+          17537,
+          3.72
+        ],
+        [
+          "Bagalkot",
+          "2026",
+          627,
+          17537,
+          3.58
+        ]
+      ]
+    },
+    {
+      "query_id": "Q1",
+      "name": "District ranking",
+      "description": "COUNT(*) by district, descending, top 10",
+      "engine": "duckdb",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 19.31,
+      "warm_median_ms": 16.13,
+      "all_runs_ms": [
+        19.31,
+        15.59,
+        16.13
+      ],
+      "result_count": 10,
+      "sample_rows": [
+        [
+          "Bengaluru City",
+          570759
+        ],
+        [
+          "Belagavi Dist",
+          83127
+        ],
+        [
+          "Bengaluru Dist",
+          76608
+        ],
+        [
+          "Tumakuru",
+          72037
+        ],
+        [
+          "Shivamogga",
+          68857
+        ]
+      ]
+    },
+    {
+      "query_id": "Q2",
+      "name": "Monthly trend",
+      "description": "Aggregated monthly FIR volume across all years",
+      "engine": "duckdb",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 20.86,
+      "warm_median_ms": 19.77,
+      "all_runs_ms": [
+        20.86,
+        19.77,
+        18.44
+      ],
+      "result_count": 123,
+      "sample_rows": [
+        [
+          "2016-01",
+          20433
+        ],
+        [
+          "2016-02",
+          20088
+        ],
+        [
+          "2016-03",
+          19317
+        ],
+        [
+          "2016-04",
+          17309
+        ],
+        [
+          "2016-05",
+          18361
+        ]
+      ]
+    },
+    {
+      "query_id": "Q3",
+      "name": "Crime mix per station",
+      "description": "Station volume breakdown across crime types, top 50",
+      "engine": "duckdb",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 139.42,
+      "warm_median_ms": 139.42,
+      "all_runs_ms": [
+        139.42,
+        139.13,
+        159.18
+      ],
+      "result_count": 50,
+      "sample_rows": [
+        [
+          "North CEN Crime PS",
+          "CYBER CRIME",
+          8377
+        ],
+        [
+          "NorthEast CEN Crime PS",
+          "CYBER CRIME",
+          7440
+        ],
+        [
+          "South CEN Crime PS",
+          "CYBER CRIME",
+          7207
+        ],
+        [
+          "Cyber Crime Police Station",
+          "CYBER CRIME",
+          6191
+        ],
+        [
+          "SouthEast CEN Crime PS",
+          "CYBER CRIME",
+          5765
+        ]
+      ]
+    },
+    {
+      "query_id": "Q4",
+      "name": "Pendency by district",
+      "description": "Share of cases Under Investigation older than 90 days",
+      "engine": "duckdb",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 29.25,
+      "warm_median_ms": 29.33,
+      "all_runs_ms": [
+        29.25,
+        29.74,
+        29.33
+      ],
+      "result_count": 10,
+      "sample_rows": [
+        [
+          "CID",
+          0.7675507068634033
+        ],
+        [
+          "Coastal Security Police",
+          0.5836972594261169
+        ],
+        [
+          "Bengaluru City",
+          0.17363756895065308
+        ],
+        [
+          "Karnataka Railways",
+          0.15116669237613678
+        ],
+        [
+          "Bagalkot",
+          0.14380007982254028
+        ]
+      ]
+    },
+    {
+      "query_id": "Q5",
+      "name": "Day of week pattern",
+      "description": "Theft incidents grouped by day of week",
+      "engine": "duckdb",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 27.21,
+      "warm_median_ms": 27.21,
+      "all_runs_ms": [
+        27.21,
+        24.92,
+        31.76
+      ],
+      "result_count": 7,
+      "sample_rows": [
+        [
+          "0",
+          20493
+        ],
+        [
+          "1",
+          30731
+        ],
+        [
+          "2",
+          32414
+        ],
+        [
+          "3",
+          32005
+        ],
+        [
+          "4",
+          32099
+        ]
+      ]
+    },
+    {
+      "query_id": "Q6",
+      "name": "2-Key CTE Join",
+      "description": "District-year share of total annual crime (Self-join via CTE)",
+      "engine": "duckdb",
+      "dataset": "19lakh",
+      "n_rows_scanned": 2040002,
+      "cold_ms": 55.18,
+      "warm_median_ms": 49.4,
+      "all_runs_ms": [
+        55.18,
+        49.4,
+        46.72
+      ],
+      "result_count": 20,
+      "sample_rows": [
+        [
+          "Bengaluru City",
+          2026,
+          3923,
+          17537,
+          22.3700008392334
+        ],
+        [
+          "Belagavi Dist",
+          2026,
+          1544,
+          17537,
+          8.800000190734863
+        ],
+        [
+          "Belagavi City",
+          2026,
+          675,
+          17537,
+          3.8499999046325684
+        ],
+        [
+          "Karnataka Railways",
+          2026,
+          653,
+          17537,
+          3.7200000286102295
+        ],
+        [
+          "Bagalkot",
+          2026,
+          627,
+          17537,
+          3.5799999237060547
+        ]
+      ]
+    },
+    {
+      "query_id": "Q1",
+      "name": "District ranking",
+      "description": "COUNT(*) by district, descending, top 10",
+      "engine": "duckdb",
+      "dataset": "1cr",
+      "n_rows_scanned": 10000000,
+      "cold_ms": 87.75,
+      "warm_median_ms": 53.58,
+      "all_runs_ms": [
+        87.75,
+        51.37,
+        53.58
+      ],
+      "result_count": 10,
+      "sample_rows": [
+        [
+          "Bengaluru City",
+          2798911
+        ],
+        [
+          "Belagavi Dist",
+          407937
+        ],
+        [
+          "Bengaluru Dist",
+          375391
+        ],
+        [
+          "Tumakuru",
+          353123
+        ],
+        [
+          "Shivamogga",
+          337076
+        ]
+      ]
+    },
+    {
+      "query_id": "Q2",
+      "name": "Monthly trend",
+      "description": "Aggregated monthly FIR volume across all years",
+      "engine": "duckdb",
+      "dataset": "1cr",
+      "n_rows_scanned": 10000000,
+      "cold_ms": 69.25,
+      "warm_median_ms": 72.27,
+      "all_runs_ms": [
+        69.25,
+        72.27,
+        87.15
+      ],
+      "result_count": 123,
+      "sample_rows": [
+        [
+          "2016-01",
+          100290
+        ],
+        [
+          "2016-02",
+          98653
+        ],
+        [
+          "2016-03",
+          94837
+        ],
+        [
+          "2016-04",
+          85050
+        ],
+        [
+          "2016-05",
+          89920
+        ]
+      ]
+    },
+    {
+      "query_id": "Q3",
+      "name": "Crime mix per station",
+      "description": "Station volume breakdown across crime types, top 50",
+      "engine": "duckdb",
+      "dataset": "1cr",
+      "n_rows_scanned": 10000000,
+      "cold_ms": 730.57,
+      "warm_median_ms": 701.88,
+      "all_runs_ms": [
+        730.57,
+        633.82,
+        701.88
+      ],
+      "result_count": 50,
+      "sample_rows": [
+        [
+          "North CEN Crime PS",
+          "CYBER CRIME",
+          40953
+        ],
+        [
+          "NorthEast CEN Crime PS",
+          "CYBER CRIME",
+          36374
+        ],
+        [
+          "South CEN Crime PS",
+          "CYBER CRIME",
+          35430
+        ],
+        [
+          "Cyber Crime Police Station",
+          "CYBER CRIME",
+          30068
+        ],
+        [
+          "SouthEast CEN Crime PS",
+          "CYBER CRIME",
+          28241
+        ]
+      ]
+    },
+    {
+      "query_id": "Q4",
+      "name": "Pendency by district",
+      "description": "Share of cases Under Investigation older than 90 days",
+      "engine": "duckdb",
+      "dataset": "1cr",
+      "n_rows_scanned": 10000000,
+      "cold_ms": 162.82,
+      "warm_median_ms": 162.82,
+      "all_runs_ms": [
+        162.82,
+        166.72,
+        152.16
+      ],
+      "result_count": 10,
+      "sample_rows": [
+        [
+          "CID",
+          0.7711179852485657
+        ],
+        [
+          "Coastal Security Police",
+          0.5826631188392639
+        ],
+        [
+          "Bengaluru City",
+          0.17385044693946838
+        ],
+        [
+          "Karnataka Railways",
+          0.1525246649980545
+        ],
+        [
+          "Bagalkot",
+          0.14414295554161072
+        ]
+      ]
+    },
+    {
+      "query_id": "Q5",
+      "name": "Day of week pattern",
+      "description": "Theft incidents grouped by day of week",
+      "engine": "duckdb",
+      "dataset": "1cr",
+      "n_rows_scanned": 10000000,
+      "cold_ms": 141.55,
+      "warm_median_ms": 201.69,
+      "all_runs_ms": [
+        141.55,
+        205.01,
+        201.69
+      ],
+      "result_count": 7,
+      "sample_rows": [
+        [
+          "0",
+          100522
+        ],
+        [
+          "1",
+          150725
+        ],
+        [
+          "2",
+          158893
+        ],
+        [
+          "3",
+          157610
+        ],
+        [
+          "4",
+          157105
+        ]
+      ]
+    },
+    {
+      "query_id": "Q6",
+      "name": "2-Key CTE Join",
+      "description": "District-year share of total annual crime (Self-join via CTE)",
+      "engine": "duckdb",
+      "dataset": "1cr",
+      "n_rows_scanned": 10000000,
+      "cold_ms": 450.34,
+      "warm_median_ms": 328.17,
+      "all_runs_ms": [
+        450.34,
+        328.17,
+        311.57
+      ],
+      "result_count": 20,
+      "sample_rows": [
+        [
+          "Bengaluru City",
+          2026,
+          19456,
+          86026,
+          22.6200008392334
+        ],
+        [
+          "Belagavi Dist",
+          2026,
+          7683,
+          86026,
+          8.930000305175781
+        ],
+        [
+          "Belagavi City",
+          2026,
+          3299,
+          86026,
+          3.8299999237060547
+        ],
+        [
+          "Karnataka Railways",
+          2026,
+          3242,
+          86026,
+          3.7699999809265137
+        ],
+        [
+          "Bagalkot",
+          2026,
+          3080,
+          86026,
+          3.5799999237060547
+        ]
+      ]
+    }
+  ]
+}

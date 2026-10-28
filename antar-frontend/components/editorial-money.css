@@ -123,6 +123,41 @@ html[lang="kn"] .mt-detail h3 { letter-spacing: normal; text-transform: none; fo
 .mt-tx .when { color: var(--text-3); font-size: var(--fs-caption); }
 .mt-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-4); }
 
+/* plain-language summary, linked FIRs and the timeline */
+.mt-plain { margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); border-left: 2px solid var(--accent); background: rgba(34,230,240,.04); }
+.mt-plain h3 { margin-top: 0 !important; }
+.mt-plain h4 { margin: var(--sp-3) 0 var(--sp-1); font: 600 var(--fs-label) 'Inter', sans-serif; color: var(--text-2); }
+.mt-plain ul, .mt-steps { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: var(--fs-body-sm); line-height: 1.5; color: var(--text-1); }
+.mt-steps { color: var(--text-2); }
+.mt-note { margin: var(--sp-2) 0 0; font-size: var(--fs-caption); color: var(--text-3); }
+.mt-sinks { margin: var(--sp-2) 0 0; font-size: var(--fs-label); color: var(--text-3); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.mt-sinks button { padding: 1px 6px; border: 1px solid var(--rule-1); background: none; color: var(--text-1); font: 500 var(--fs-caption) 'JetBrains Mono', monospace; cursor: pointer; }
+.mt-sinks button:hover { border-color: var(--accent); color: var(--accent); }
+.mt-trailfirs { margin-top: var(--sp-4); }
+.mt-trailfirs summary { cursor: pointer; padding: var(--sp-2) 0; font: 600 var(--fs-label) 'Inter', sans-serif; color: var(--text-1); }
+.mt-firs button:disabled { cursor: default; opacity: .7; }
+.mt-firs b { display: flex; justify-content: space-between; gap: var(--sp-2); }
+.mt-fir-amt { font-style: normal; font-weight: 500; color: var(--text-2); }
+.mt-how { font-size: var(--fs-caption) !important; color: var(--accent) !important; opacity: .8; }
+.mt-more { padding: 6px 0; border: 0; background: none; color: var(--accent); font-size: var(--fs-label); cursor: pointer; }
+.mt-tl { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--rule-2); }
+.mt-tl > li { position: relative; padding: 0 0 var(--sp-3) var(--sp-3); }
+.mt-tl > li::before { content: ""; position: absolute; left: -4px; top: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.mt-tl-day { display: flex; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-label); }
+.mt-tl-day b { color: var(--text-1); }
+.mt-tl-day em { font: normal 500 var(--fs-caption) 'JetBrains Mono', monospace; margin-left: 8px; }
+.mt-tl-day .in, .mt-tl li.in .amt { color: #6FCFB4; }
+.mt-tl-day .out, .mt-tl li.out .amt { color: #FF8A5C; }
+.mt-tl ul { list-style: none; margin: 4px 0 0; padding: 0; }
+.mt-tl ul li { display: grid; grid-template-columns: 40px 78px minmax(0, 1fr); gap: 0 var(--sp-2); padding: 3px 0; font-size: var(--fs-label); }
+.mt-tl .t { color: var(--text-3); font: 500 var(--fs-caption) 'JetBrains Mono', monospace; padding-top: 1px; }
+.mt-tl .amt { font: 600 var(--fs-label) 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.mt-tl .who { color: var(--text-2); min-width: 0; overflow-wrap: anywhere; }
+.mt-tl .who button { padding: 0; border: 0; background: none; color: var(--text-1); font: 500 var(--fs-label) 'JetBrains Mono', monospace; cursor: pointer; }
+.mt-tl .who button:hover { color: var(--accent); }
+.mt-tl .who small { display: block; color: var(--text-3); font-size: var(--fs-caption); }
+[data-theme="light"] .mt-plain { background: rgba(14,116,144,.05); }
+
 /* ── smaller screens: the account drops under, then everything stacks ──── */
 @media (max-width: 1280px) {
   .mt-grid { grid-template-columns: 280px minmax(0, 1fr); }

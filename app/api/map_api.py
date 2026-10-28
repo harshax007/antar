@@ -485,7 +485,7 @@ def _summary_keep(key: str, text: str) -> None:
 async def view_summary(req: SummaryRequest):
     import json
     from app.core.rag_security import fence, detect_injection
-    from app.services.quickml import quickml_generate
+    from app.services.quickml import quickml_generate, model_for
     facts = _summary_facts(req)
     key = json.dumps(facts, sort_keys=True, ensure_ascii=False)
     cached = _summary_cached(key)
@@ -499,7 +499,8 @@ async def view_summary(req: SummaryRequest):
               + fence("map_view", json.dumps(facts, ensure_ascii=False), max_len=1200))
     try:
         summary = (await quickml_generate(system=system, user=prompt, temperature=0.3,
-                                          max_tokens=300, retries=1) or "").strip()
+                                          max_tokens=300, retries=1,
+                                          model=model_for("analysis")) or "").strip()
         # the summary is prose about a map: no links, no markup, a bounded length
         if not summary or detect_injection(summary) or re.search(r"https?://|<[a-z/!]|```", summary, re.I):
             raise ValueError("summary rejected")

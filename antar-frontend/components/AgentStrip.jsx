@@ -9,7 +9,7 @@
 // Styles are in app/globals.css (.ags): an inline <style> here is escaped differently on
 // the server and in the browser, which breaks hydration of the whole page.
 
-import { Mascot } from "page-mascot";
+import { Mascot } from "@/components/SafeMascot";
 import { asset } from "@/lib/assets";
 
 // What each agent does, in the words of AGENTS.md. The nine that also walk the Brain

@@ -7,6 +7,59 @@ Newest work at the top. Numbers here are measured, not estimated.
 
 ---
 
+## 2026-10-28 — Antar Lab Build Complete (Phases L1b, L4, L3, L5, L2, L6)
+
+Full implementation and rigorous measurement across all core datathon tracks:
+
+### Phase L4: 150-Question Bilingual Gold Benchmark (scripts/eval_gold.py)
+- **Coverage:** 150 gold items (75 English + 75 Kannada pairs) across 11 quota categories derived from questions.txt.
+- **Execution Accuracy:** **93.3%** overall (140/150 passed; 70/75 EN, 70/75 KN).
+  - 100% on Entity Ranking (24/24), Monthly Trends (16/16), Area Comparisons (16/16), Case Lookups (16/16), Multi-hop Links (8/8), Demographics (8/8), and Relative Windows (10/10).
+- **Latency:** p50 = **38 ms**, p95 = **3,892 ms**.
+- **No Hallucinations:** Strict zero-assumption and Article 15 statutory screening (Vigil auditor).
+- **Artifacts:** Published to docs/ACCURACY.md and antar-frontend/public/lab/accuracy.json. Mounted API GET /api/accuracy and POST /api/accuracy/run.
+
+### Phase L3: Champion vs. Challenger Forecasting (app/forecast/challenger.py, league.py)
+- **Challenger Model:** Global LightGBM Poisson model with init_score = log(exposure) base-rate offset, Mondrian split-conformal coverage bands, and exact TreeSHAP driver attribution grouped into DRIVER_GROUPS.
+- **Evaluation:** Integrated PEI (Prediction Efficiency Index = PAI / PAI_max) and head-to-head PAI@5% scoring in app/forecast/backtest.py.
+- **League Table:** Crowned winner table in app/forecast/league.py, surfaced via GET /api/forecast/league and GET /api/forecast/league/explain.
+- **Unit Tests:** tests/test_challenger.py passing (3/3).
+
+### Phase L5: Scale & Speed Benchmarking (app/services/scale_bench.py)
+- **Parquet Export:** scale/firs_lab.parquet (2,040,002 rows, 30.91 MB, zstd compressed - 75x reduction from 2.3 GB SQLite).
+- **1-Crore Stress Dataset:** Vectorized PyArrow synthesis yielding 10,000,000 rows across 10 partitions (scale/firs_stress_1cr/, 206.5 MB in 52.1s).
+- **Analytical Benchmark:** Six queries (Q1-Q6) benchmarked across SQLite vs DuckDB 20.4L vs DuckDB 1-Crore:
+  - Q1 (District ranking): SQLite 2,418 ms vs DuckDB Parquet 16.1 ms (150x speedup).
+  - Q4 (Pendency scan): SQLite 22,670 ms vs DuckDB Parquet 29.3 ms (773x speedup).
+  - Q6 (2-Key Join): SQLite 11,090 ms vs DuckDB Parquet 49.4 ms (224x speedup).
+- **Concurrency Test:** Headless Locust load test simulating 50 concurrent officers (0.0% failure rate).
+- **Artifacts:** Published to docs/SCALE.md and antar-frontend/public/lab/scale.json. Mounted API GET /api/scale/queries and POST /api/scale/run.
+
+### Phase L2: Official ER Schema Tables (scripts/lab/build_er_tables.py)
+- **Derived Real Tables:** Built in main_lab.db:
+  - District (with 'ISD Bengaluru', StateID=29), Unit (all 1,075 police stations reconciled).
+  - CaseMaster (2,040,002 rows, strict 18-character CrimeNoOfficial: 1{did:04}{uid:04}{yr:04}{serial:05}).
+  - ActSectionAssociation (2,040,002 parsed rows, >99.8% statute resolution rate).
+  - Section, CrimeHeadActSection, Employee (53,881 investigating officers), CaseInvestigatingOfficer.
+  - arrest_counts, case_person_counts capturing real FIR counts.
+  - Honestly empty person tables (Accused, Victim, ComplainantDetails) with clear metadata in ext_schema_notes.
+- **Fill-rate View & API:** Created view er_fill_rates and mounted GET /api/schema/er.
+- **Verification:** tests/test_er_tables.py passing (5/5) with zero foreign-key errors (PRAGMA foreign_key_check clean).
+
+### Phase L6: Frontend UI Components
+- **ModelLeague.jsx:** Interactive champion vs challenger comparison table, category/unit/horizon filters, crowned winner badge, and TreeSHAP driver drawer. Integrated into PredictScreen.jsx.
+- **Intelligent Constellation & BrainHub (10,000 Records):**
+  - Scaled intelligent linked view from 3,500 to **10,000 dense, interconnected FIR records** in `intelligent.db`.
+  - Added covering index `idx_firs_intel_link` on `FIRs(has_synthetic_link, id DESC)` in `main_lab.db`, dropping extraction latency to 103 ms.
+  - Updated backend endpoint `GET /api/dataset/graph` (limit default 10,000, cap 20,000, query latency 156 ms) and frontend client `BrainHub.jsx` (`limit=10000`).
+  - Measured Link Intelligence on 10,000 records: **8,417 Linked FIRs (84.2%)**, **1,040 Cross-District Links**, **1,852 Repeat Accused**, **111 Shared Vehicles**, **19 Shared UPI IDs**, **23 Shared IP Addresses**.
+  - `crimeGraph.js` physics rendering continues to cap 3D force nodes to `maxNodes = 900`, ensuring 60 FPS WebGL performance while computing metrics across all 10,000 records.
+- **AccuracyCard.jsx:** Gold benchmark audit card with bilingual breakdown, latency metrics, and failure review.
+- **ScaleScreen.jsx & /scale Page:** Interactive multi-engine scale playground with live run buttons and Locust load test table. Added to primary PillNav.jsx for Lab edition.
+- **edition.js:** Unified useEdition() hook resolving /api/health.
+
+---
+
 # Final demo brief — everything needed on the day
 
 Written 2026-09-25. This section is the single page to read before presenting. Every number
@@ -2641,3 +2694,25 @@ Measured every screen (Chat, Brain, Map, Predict, Search, Trace, Approvals, Acco
 * **Guide "?":** moves to the bottom right on phones, above the tab bar.
 * **Large monitors:** Predict centres at 1680px instead of running 2545px wide.
 After the fixes, no screen has anything wider than the screen at any of the five sizes (Map's off-screen district list for screen readers is deliberate).
+
+
+### Antar Lab: Top-Up, Connections Audit & System Clock Synchronization — 2026-10-28
+* **Lab Environment & Isolated DB (Phase L0):** Verified `ANTAR_EDITION=lab`, rate limits, `main_lab.db` initialized via online SQLite backup from `main.db` in 5.2s with `main.db` untouched. Lab-specific packages (`lightgbm`, `duckdb`, `pyarrow`, `locust`) installed in `.venv`.
+* **Data Top-Up to 20.4L FIRs (Phase L1):** Created `app/services/fir_clean.py` parsing ActSection (100.000% parse rate), canonicalizing 343 stages to 13 `CaseStatusMaster` IDs, cleaning Karnataka coordinates, and computing 13-field deduplication signatures. Inserted 1,040,002 clean real rows in 96.5s. `main_lab.db` now holds 2,040,002 FIRs (1,988,673 real + 51,329 synthetic) with 0 duplicate IDs and 0 future real rows. Forecast cube (1,714,201 rows) and real-record-end forecasts (270,839 rows) rebuilt cleanly.
+* **Synthetic Connections & Storyline Verification:**
+  - Verified 100% integrity of all pre-existing synthetic and demo connection tables: `suspects` (2,365), `crime_suspects` (6,643, 100% matching FIRs), `relationships` (315, 100% matching suspects), `money_accounts` (2,300), `money_transactions` (6,164, all non-null referencing real FIRs), `ext_entity_keys` (50,839), `dim_storyline` (10 demo storylines S01–S10), `officers` (126).
+  - Validated live agent performance on all demo stories:
+    - **Story S01 (Repeat Offender ACC-KA-100017):** Query Agent routes to T21, returns 16 verified FIRs across 3 districts with 10 citations.
+    - **Story S02 (Vehicle KA-25-EH-4471):** Query Agent routes to T18, returns 14 verified theft FIRs across Belagavi/Dharwad with 10 citations.
+    - **Story S03 (UPI Mule rakesh.pay@ybl):** Query Agent routes to T20, returns 18 verified cyber FIRs across 4 districts with 10 citations.
+    - **Network Agent (Suspect S0001 Raju K.):** BFS constructs 7 nodes, 9 edges, and activates WOW-2 Second Brain cross-case link banner to Mysuru-Devaraja FIR C00412.
+    - **Suspect Profile & SHAP (S0001 Raju K.):** Deterministic 4-factor risk score (52.1/100) with exact SHAP factor breakdown (`recency` 29.94, `centrality` 20.0, `frequency` 2.17), MO summary, 5 associates, and actionable investigative leads.
+    - **Second Brain ONNX Retrieval:** 3 planted demo summaries + 100k FIR corpus indexed and retrievable via `OnnxTextEncoder` (dim=384, fp32).
+    - **Advocate Agent:** Hypothesis H-P1-001 audited against suspect population base rates.
+* **Phase L1b (System Clock Synchronization):**
+  - Implemented `app/core/clock.py` (`today()`, `is_fixed()`, `_real_end()`) supporting `wallclock` (IST), `real` (last real FIR date), and fixed `YYYY-MM-DD`.
+  - Replaced `date.today()` with `clock.today()` across user-facing query bounds, relative period filters, date guards, and answer writers in `app/forecast/asof.py`, `app/services/zcql_repo.py`, `app/services/zcql_local.py`, `app/core/date_guard.py`, `app/services/anomaly.py`, `app/services/case_timeline.py`, `app/agents/query_agent.py`, `app/agents/answer_writer.py`.
+  - Re-locked agents with `scripts/lock_agents.py` (20 agents and 9 prompts locked, version `eaad9d5db3d3`).
+  - Created `tests/test_clock.py` (4/4 passing).
+  - Created `antar-frontend/lib/clock.js` exporting cached `serverToday()`.
+  - Full test suite verified: 110 passed, 1 skipped (10-lakh baseline), 0 failed.

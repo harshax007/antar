@@ -14,6 +14,8 @@ import { CATEGORIES, categorize, filterRecords, overviewStats } from "@/lib/crim
 const PAGE = 8;
 const CYAN = "#22E6F0";
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
+// Set by the Cloud build, which holds FIRs from this year on (scripts/build_cloud_db.py --slim).
+const FIRST_YEAR = Number(process.env.NEXT_PUBLIC_FIRST_YEAR) || null;
 
 const AXIS = { fontSize: 11, fill: "#8492A6", fontFamily: "Inter, system-ui, sans-serif" };
 const TIP = {
@@ -387,7 +389,10 @@ export default function DataOverview({ recs, sel, setSel, onJumpTop, onFocusBrai
                               {kn ? "ಎಲ್ಲಾ FIR ದಾಖಲೆಗಳು" : "Every FIR record in the registry."}
                             </b>
                             <small>
-                              {kn ? "ಫಿಲ್ಟರ್ ಮಾಡದ, ಸಂಪೂರ್ಣ ಡೇಟಾಬೇಸ್‌ಗೆ ಪ್ರವೇಶ. ಎಲ್ಲಾ ಐತಿಹಾಸಿಕ ದಾಖಲೆಗಳನ್ನು ಯಾವುದೇ ಮಾದರಿಯಿಲ್ಲದೆ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಿದೆ." : "Every row is counted, nothing is sampled. Years from 2016 to 2022 hold only part of each year, and rows after March 2024 are demonstration data."}
+                              {FIRST_YEAR
+                                ? (kn ? `ಪ್ರತಿ ಸಾಲನ್ನೂ ಎಣಿಸಲಾಗಿದೆ. ಈ ಆನ್‌ಲೈನ್ ಪ್ರತಿಯಲ್ಲಿ ${FIRST_YEAR} ರಿಂದ ದಾಖಲಾದ FIRಗಳಿವೆ; ಮಾರ್ಚ್ 2024 ರ ನಂತರದ ಸಾಲುಗಳು ಪ್ರಾತ್ಯಕ್ಷಿಕೆ ದಾಖಲೆಗಳು. 2016 ರಿಂದ ಪೂರ್ಣ ದಾಖಲೆ ಮುಖ್ಯ Antar ವ್ಯವಸ್ಥೆಯಲ್ಲಿದೆ.`
+                                      : `Every row is counted, nothing is sampled. This online copy holds FIRs from ${FIRST_YEAR} on, and rows after March 2024 are demonstration data. The full register, from 2016, is on the main Antar system.`)
+                                : (kn ? "ಫಿಲ್ಟರ್ ಮಾಡದ, ಸಂಪೂರ್ಣ ಡೇಟಾಬೇಸ್‌ಗೆ ಪ್ರವೇಶ. ಎಲ್ಲಾ ಐತಿಹಾಸಿಕ ದಾಖಲೆಗಳನ್ನು ಯಾವುದೇ ಮಾದರಿಯಿಲ್ಲದೆ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಿದೆ." : "Every row is counted, nothing is sampled. Years from 2016 to 2022 hold only part of each year, and rows after March 2024 are demonstration data.")}
                             </small>
                           </span>
                         )

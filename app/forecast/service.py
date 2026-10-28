@@ -153,6 +153,14 @@ def resolve_unit(conn: sqlite3.Connection, name: str, unit_type: str | None = No
 def _as_of(conn: sqlite3.Connection, override: str | None) -> tuple[asof_mod.AsOf, dict]:
     a = asof_mod.resolve(conn, override)
     info = R.run_info(conn, a.history_end.isoformat())
+    if not info and R.store._meta(conn, "frozen_signature"):
+        # Frozen forecasts are never refitted: past their week, serve the newest one held,
+        # dated as of its own Sunday so the officer sees how old it is.
+        held = conn.execute("SELECT MAX(as_of_week) FROM forecast_output WHERE as_of_week <= ?",
+                            (a.history_end.isoformat(),)).fetchone()[0]
+        if held:
+            a = asof_mod.resolve(conn, (date.fromisoformat(held) + timedelta(days=6)).isoformat())
+            info = R.run_info(conn, held)
     if not info:
         _prepare_async(override)
         raise NotReady(f"Forecasts as of {a.as_of} are being prepared (about a minute).")

@@ -92,7 +92,9 @@ class Settings(BaseSettings):
     BHASHINI_USER_ID: str = ""
 
     # App
-    ALLOWED_ORIGINS: str = "http://localhost:3000"   # comma-separated; use allowed_origins_list
+    ANTAR_EDITION: str = "cloud"       # "cloud" (default) | "lab"
+    ANTAR_LAB_RATE_LIMIT_BURST: int = 1000  # Elevated ceiling for Lab concurrency tests
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000"   # comma-separated; use allowed_origins_list
     DEMO_MODE: bool = False
     APP_PORT: int = 8000
     PROMPT_VERSION: str = "v1"

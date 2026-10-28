@@ -70,3 +70,25 @@ def test_generate_retries_then_raises(quickml_env):
         asyncio.run(quickml.quickml_generate(system="s", user="u", retries=1))
     assert calls["n"] == 2          # initial attempt + 1 retry
     assert "500" in str(ei.value)
+
+
+def test_each_job_runs_on_its_own_model(monkeypatch):
+    """The chat screen's template choice and answer go to the chat model, merges and screen
+    briefs to the analysis model, scans to the vision model - whatever a caller passes."""
+    monkeypatch.setattr(settings, "QUICKML_CHAT_MODEL", "GLM-4.7-Flash", raising=False)
+    monkeypatch.setattr(settings, "QUICKML_DEFAULT_MODEL", "Qwen-3.6-Instruct", raising=False)
+    monkeypatch.setattr(settings, "QUICKML_VISION_MODEL", "VL-Qwen3.6-35B-A3B", raising=False)
+    assert quickml.model_for("chat") == "GLM-4.7-Flash"
+    assert quickml.model_for("analysis") == "Qwen-3.6-Instruct"
+    assert quickml.model_for("vision") == "VL-Qwen3.6-35B-A3B"
+
+    seen = []
+
+    async def _fake(system, user, model=None, **kw):
+        seen.append(model)
+        return "ok"
+    monkeypatch.setattr(quickml, "quickml_generate", _fake)
+    chat = quickml.llm_for("chat")
+    asyncio.run(chat(system="s", user="u", json_mode=True, model="something else"))
+    asyncio.run(quickml.llm_for("analysis")(system="s", user="u"))
+    assert seen == ["GLM-4.7-Flash", "Qwen-3.6-Instruct"]

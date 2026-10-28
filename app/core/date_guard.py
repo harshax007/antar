@@ -32,7 +32,8 @@ def _dates_in(text: str) -> list[date]:
 
 def find_future_dates(obj: Any, today: date | None = None) -> list[str]:
     """Return every ISO date string strictly after *today* found in obj."""
-    today = today or date.today()
+    from app.core import clock
+    today = today or clock.today()
     found: list[str] = []
 
     def walk(v: Any) -> None:
@@ -55,7 +56,8 @@ def redact_future_dates(obj: Any, today: date | None = None) -> Any:
     A string that IS a bare future date becomes None; a string that merely
     CONTAINS one gets the date replaced with 'upcoming'.
     """
-    today = today or date.today()
+    from app.core import clock
+    today = today or clock.today()
 
     def scrub(v: Any) -> Any:
         if isinstance(v, str):

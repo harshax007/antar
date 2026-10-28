@@ -1,8 +1,17 @@
 # Antar - Reasoning Logger
 # Every agent appends a step here. "why?" replays this - the Explain capability (M9).
 
+import sys
 import time
 import structlog
+
+# Force UTF-8 stdout/stderr so Kannada in agent steps never crashes on Windows cp1252
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        if _stream and _stream.encoding and _stream.encoding.lower() not in ("utf-8", "utf8"):
+            _stream.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 log = structlog.get_logger()
 
@@ -17,7 +26,10 @@ def log_step(session_id, agent, step, input_digest, output_digest, ms):
         "ms": ms,
         "ts": int(time.time() * 1000),
     }
-    log.info("agent_step", **entry)
+    try:
+        log.info("agent_step", **entry)
+    except Exception:
+        pass
     
     from app.obs import trace as _obs
     _obs.add_span(agent, step, input_digest, output_digest, ms)

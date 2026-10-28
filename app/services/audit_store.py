@@ -376,6 +376,26 @@ def record_hypothesis_event(
                             "user_text": hypothesis_id, "answer": reason})
 
 
+def record_data_event(event_type: str, batch_id: str, officer: str, role: str, detail: str = "") -> dict:
+    """Record an Admin · Data change to the register: FIRs added from a file, or removed again."""
+    if event_type not in {"data_upload", "data_upload_removed"}:
+        raise ValueError(f"Invalid data event type: {event_type}")
+    payload = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "officer": officer,
+        "role": role,
+        "batch_id": batch_id,
+        "detail": detail,
+        "type": event_type,
+        "method": "DATA_UPLOAD",
+        "path": f"/upload/{batch_id}",
+        "status": 200,
+    }
+    return _write(payload, {"ts": payload["ts"], "officer": officer, "role": role, "method": payload["method"],
+                            "path": payload["path"], "status": 200, "type": event_type,
+                            "user_text": batch_id, "answer": detail})
+
+
 def get_answer_record(digest: str) -> dict | None:
     """The AI_REASONING entry with this hash, and whether its digest still verifies.
 

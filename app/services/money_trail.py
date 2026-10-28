@@ -16,6 +16,7 @@ Flags, each a pattern financial-crime units look for:
 """
 from __future__ import annotations
 
+import json
 import sqlite3
 import threading
 import time
@@ -79,6 +80,14 @@ def _snapshot() -> dict:
                     "AND date <= date('now','localtime') ORDER BY date DESC"):
                 firs[r["u"]].append({"fir_id": r["fir_id"], "date": r["d"], "district": r["district"], "crime": r["head"],
                                      "stage": " ".join(str(r["FIR_Stage"] or "").replace("_", " ").split()).title(), "accused_id": r["Accused_ID"] or None})
+            # the FIRs the money itself is tied to (money_transactions.fir_id), read once
+            tx_firs = sorted({t["fir_id"] for t in txns if t["fir_id"]})
+            fir_info = {r["fir_id"]: {"fir_id": r["fir_id"], "date": r["d"], "district": r["district"], "crime": r["head"],
+                                      "stage": " ".join(str(r["FIR_Stage"] or "").replace("_", " ").split()).title()}
+                        for r in con.execute(
+                            "SELECT fir_id, SUBSTR(date, 1, 10) AS d, COALESCE(district_norm, District_Name) AS district, "
+                            "COALESCE(CrimeHead_Name, crime_type) AS head, FIR_Stage FROM FIRs "
+                            "WHERE fir_id IN (SELECT value FROM json_each(?))", (json.dumps(tx_firs),))}
             suspects = {r["suspect_id"]: dict(r) for r in con.execute(
                 "SELECT suspect_id, full_name, alias, address_zone, prior_count FROM suspects "
                 "WHERE suspect_id IN (SELECT suspect_id FROM money_accounts WHERE suspect_id IS NOT NULL)")}
@@ -88,7 +97,8 @@ def _snapshot() -> dict:
         for t in txns:
             by_from[t["from_account"]].append(t)
             by_to[t["to_account"]].append(t)
-        _snap = {"accounts": accounts, "txns": txns, "from": by_from, "to": by_to, "firs": firs, "suspects": suspects}
+        _snap = {"accounts": accounts, "txns": txns, "from": by_from, "to": by_to, "firs": firs, "fir_info": fir_info,
+                 "suspects": suspects}
         _snap_at = time.time()
         return _snap
 
@@ -111,7 +121,7 @@ def _flags(account: str, kind: str, txin: list, txout: list, firs: list[dict]) -
     if len(near) >= 2:
         out.append({"key": "near_limit", "title": "Amounts just under Rs 50,000",
                     "detail": f"{len(near)} transactions between Rs 45,000 and Rs 49,999."})
-    districts = {f["district"] for f in firs if f["district"]}
+    districts = {f.get("district") for f in firs if f.get("district")}
     if len(firs) >= 2:
         out.append({"key": "many_firs", "title": "Named in several FIRs",
                     "detail": f"In {len(firs)} FIRs" + (f" across {len(districts)} districts." if len(districts) > 1 else ".")})
@@ -122,6 +132,125 @@ def _flags(account: str, kind: str, txin: list, txout: list, firs: list[dict]) -
     return out
 
 
+def _rs(n: int) -> str:
+    """Rs in lakh / crore, the way an officer reads an amount."""
+    n = int(n or 0)
+    if n >= 10_000_000:
+        return f"Rs {n / 10_000_000:.2f} crore"
+    if n >= 100_000:
+        return f"Rs {n / 100_000:.2f} lakh"
+    return f"Rs {n:,}"
+
+
+def _day(ts: str | None) -> str:
+    try:
+        return datetime.fromisoformat(ts).strftime("%d %b %Y").lstrip("0")
+    except (TypeError, ValueError):
+        return ts or ""
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def _linked_firs(snap: dict, account_id: str, kind: str, txin: list, txout: list) -> list[dict]:
+    """Every FIR this account is tied to, and how: named on the FIR (its UPI ID is in the
+    FIR), or the money it moved belongs to that FIR's complaint."""
+    out: dict[str, dict] = {}
+    if kind == "upi":
+        for f in snap["firs"].get(account_id, []):
+            out[f["fir_id"]] = dict(f, how="named")
+    money: dict[str, int] = defaultdict(int)
+    for t in txin + txout:
+        if t["fir_id"]:
+            money[t["fir_id"]] += t["amount_inr"]
+    for fid, amt in money.items():
+        rec = out.get(fid) or dict(snap["fir_info"].get(fid) or {"fir_id": fid}, how="money")
+        if rec["how"] == "named":
+            rec["how"] = "named_and_money"
+        rec["amount"] = amt
+        out[fid] = rec
+    return sorted(out.values(), key=lambda f: f.get("date") or "", reverse=True)
+
+
+def _timeline(account_id: str, txin: list, txout: list, limit: int = 80) -> list[dict]:
+    """The account's money in time order; each outgoing payment says how long after the
+    last arrival it left - the hold time that marks a mule."""
+    rows, last_in = [], None
+    for t in sorted(txin + txout, key=lambda t: t["ts"]):
+        inbound = t["to_account"] == account_id
+        row = {"ts": t["ts"], "dir": "in" if inbound else "out", "amount": t["amount_inr"],
+               "other": t["from_account"] if inbound else t["to_account"], "channel": t["channel"],
+               "purpose": t["purpose"], "fir_id": t["fir_id"]}
+        if inbound:
+            last_in = t["ts"]
+        elif last_in:
+            row["held_h"] = round(_hours(last_in, t["ts"]), 1)
+        rows.append(row)
+    return rows[-limit:]
+
+
+def _summary(a: dict, d: dict, firs: list[dict], timeline: list[dict]) -> dict:
+    """What the account did, in sentences an officer can read aloud, and what to ask next.
+    Every number is one of the counted figures shown beside it."""
+    kind, lines, steps = a["kind"], [], []
+    first, last = _day(d["first"]), _day(d["last"])
+    span = "" if not d["first"] else f" on {first}" if first == last else f" between {first} and {last}"
+    if kind == "complainant":
+        lines.append(f"This is a complainant's account. It paid out {_rs(d['total_out'])} in "
+                     f"{_plural(d['count_out'], 'payment')}{span}.")
+        if d["receivers"]:
+            lines.append(f"The money went to {_plural(d['receivers'], 'account')}; follow "
+                         f"{'it' if d['receivers'] == 1 else 'them'} to see where it went next.")
+        steps.append("Ask the receiving bank to freeze the beneficiary account and share its statement (BNSS Sec 106).")
+    else:
+        if d["count_in"]:
+            lines.append(f"Received {_rs(d['total_in'])} in {_plural(d['count_in'], 'payment')} "
+                         f"from {_plural(d['senders'], 'account')}{span}.")
+        if d["count_out"]:
+            held = sorted(r["held_h"] for r in timeline if r["dir"] == "out" and "held_h" in r)
+            fast = sum(1 for h in held if h <= 48)
+            sent = f"Sent {_rs(d['total_out'])} on to {_plural(d['receivers'], 'account')}"
+            if held:
+                med = held[len(held) // 2]
+                sent += (f"; half of the onward payments left within {med:.0f} hours of money arriving"
+                         if med >= 1 else "; half of the onward payments left within the hour money arrived")
+                if fast:
+                    sent += f", and {fast} of {len(held)} within two days"
+            lines.append(sent + ".")
+        kept = d["total_in"] - d["total_out"]
+        if d["total_in"] and kept > 0 and kind != "cash":
+            lines.append(f"{_rs(kept)} ({round(100 * kept / d['total_in'])}%) of what came in has not been seen "
+                         f"leaving; it may still be in the account.")
+        cash = sum(r["amount"] for r in timeline if r["dir"] == "out" and str(r["other"]).startswith("CASH-"))
+        if cash:
+            lines.append(f"{_rs(cash)} was taken out in cash, where the digital trail ends.")
+        if kind == "cash":
+            lines.append("This is a cash-out point: money that reaches it leaves the banking system.")
+    if firs:
+        districts = sorted({f.get("district") for f in firs if f.get("district")})
+        named = sum(1 for f in firs if f["how"] != "money")
+        txt = f"Tied to {_plural(len(firs), 'FIR')}"
+        if named:
+            txt += f" ({named} {'names' if named == 1 else 'name'} this account directly)"
+        if districts:
+            more = "…" if len(districts) > 4 else ""
+            txt += f" in {_plural(len(districts), 'district')}: " + ", ".join(districts[:4]) + more
+        lines.append(txt + ".")
+    if kind not in ("complainant", "cash") and d["count_in"]:
+        steps.append("Request the KYC and full statement for this account from its bank (BNSS Sec 94).")
+        if any(f["key"] == "pass_through" for f in d["flags"]) and d["total_in"] - d["total_out"] > 0:
+            steps.append("Ask the bank to place a debit freeze while the balance is still there (BNSS Sec 106).")
+        if any(f["key"] == "many_firs" for f in d["flags"]):
+            steps.append("Tell the other districts' investigating officers: their FIRs share this account.")
+    if kind == "cash":
+        steps.append("Ask the bank for the ATM or branch and CCTV for these withdrawals (BNSS Sec 94).")
+    if a.get("suspect_id"):
+        steps.append(f"Open the profile of {a['suspect_id']}, who holds this account.")
+    return {"lines": lines, "next_steps": steps,
+            "note": "Leads from counted transactions, not findings. Confirm with the bank's records before acting."}
+
+
 def account(account_id: str, tx_limit: int | None = 60) -> dict | None:
     snap = _snapshot()
     a = snap["accounts"].get(account_id)
@@ -130,11 +259,13 @@ def account(account_id: str, tx_limit: int | None = 60) -> dict | None:
     txin, txout = snap["to"].get(account_id, []), snap["from"].get(account_id, [])
     firs = snap["firs"].get(account_id, [])[:40] if a["kind"] == "upi" else []
     if a["kind"] == "complainant":
-        firs = [{"fir_id": f} for f in sorted({t["fir_id"] for t in txout if t["fir_id"]})]
+        firs = [snap["fir_info"].get(f) or {"fir_id": f} for f in sorted({t["fir_id"] for t in txout if t["fir_id"]})]
+    linked = _linked_firs(snap, account_id, a["kind"], txin, txout)
+    timeline = _timeline(account_id, txin, txout) if tx_limit else []
     suspect = None
     if a["suspect_id"]:
         suspect = snap["suspects"].get(a["suspect_id"]) or {"suspect_id": a["suspect_id"]}
-    return {
+    out = {
         "account": dict(a), "suspect": suspect,
         "total_in": sum(t["amount_inr"] for t in txin), "total_out": sum(t["amount_inr"] for t in txout),
         "count_in": len(txin), "count_out": len(txout),
@@ -144,7 +275,12 @@ def account(account_id: str, tx_limit: int | None = 60) -> dict | None:
         "flags": _flags(account_id, a["kind"], txin, txout, firs),
         "firs": firs,
         "transactions": sorted(txin + txout, key=lambda t: t["ts"], reverse=True)[:tx_limit],
+        "linked_firs": linked[:60], "linked_firs_total": len(linked),
+        "timeline": timeline,
     }
+    if tx_limit:
+        out["summary"] = _summary(a, out, linked, timeline)
+    return out
 
 
 def trail(account_id: str, depth: int = 2, max_nodes: int = 70) -> dict | None:
@@ -183,8 +319,29 @@ def trail(account_id: str, depth: int = 2, max_nodes: int = 70) -> dict | None:
         nodes.append({"id": a, "kind": v["kind"], "label": v["label"], "district": v["district"], "hop": seen[a],
                       "in": tot_in[a], "out": tot_out[a], "firs": len(snap["firs"].get(a, [])),
                       "suspect_id": v["suspect_id"]})
+    # the trail as a whole: how much moved, where it ended, and every FIR it touches
+    named = {f["fir_id"]: f for n in seen if snap["accounts"][n]["kind"] == "upi" for f in snap["firs"].get(n, [])[:40]}
+    fir_ids = {f for e in edges.values() for f in e["firs"]} | set(named)
+    firs = sorted((snap["fir_info"].get(f) or named.get(f) or {"fir_id": f} for f in fir_ids),
+                  key=lambda f: f.get("date") or "", reverse=True)
+    moved = sum(e["amount"] for e in edges.values())
+    cash = sum(e["amount"] for e in edges.values() if e["to"].startswith("CASH-"))
+    sinks = [n for n in nodes if n["in"] and not n["out"] and n["kind"] != "complainant"]
+    victims = sum(1 for n in nodes if n["kind"] == "complainant")
+    districts = sorted({f.get("district") for f in firs if f.get("district")})
+    lines = [f"{_plural(len(nodes), 'account')} within {_plural(depth, 'step')} of {account_id}; "
+             f"{_rs(moved)} moved between them in {_plural(sum(e['count'] for e in edges.values()), 'payment')}."]
+    if victims:
+        lines.append(f"{_plural(victims, 'complainant account')} paid into this trail.")
+    if sinks:
+        lines.append(f"The money stops at {_plural(len(sinks), 'account')} that received but sent nothing on"
+                     + (f", including {_rs(cash)} withdrawn in cash" if cash else "") + ".")
+    if firs:
+        lines.append(f"The trail touches {_plural(len(firs), 'FIR')}"
+                     + (f" in {_plural(len(districts), 'district')}" if districts else "") + ".")
     return {"root": account_id, "depth": depth, "nodes": nodes, "edges": list(edges.values()),
-            "truncated": len(seen) >= max_nodes}
+            "truncated": len(seen) >= max_nodes, "firs": firs[:60], "firs_total": len(firs),
+            "summary": lines, "sinks": [n["id"] for n in sorted(sinks, key=lambda n: -n["in"])[:8]]}
 
 
 def overview(limit: int = 30) -> dict:

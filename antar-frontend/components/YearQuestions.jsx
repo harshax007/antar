@@ -7,6 +7,11 @@
 
 export const YEARS = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
+// The Cloud build holds FIRs from 2022 on (scripts/build_cloud_db.py --slim) and sets
+// NEXT_PUBLIC_FIRST_YEAR=2022, so it never offers a year it cannot answer.
+const FIRST_YEAR = Number(process.env.NEXT_PUBLIC_FIRST_YEAR) || YEARS[0];
+const SHOWN_YEARS = YEARS.filter((y) => y >= FIRST_YEAR);
+
 export const TEMPLATES = {
   en: [
     "Which districts had the most theft in {y}?",
@@ -33,7 +38,7 @@ export default function YearQuestions({ lang = "en", year = null, onYear }) {
   return (
     <div className="yq-years" role="group" aria-label={kn ? "ವರ್ಷವಾರು ಪ್ರಶ್ನೆಗಳು" : "Questions by year"}>
       <span className="yq-lbl">{kn ? "ವರ್ಷ:" : "By year:"}</span>
-      {YEARS.map((y) => (
+      {SHOWN_YEARS.map((y) => (
         <button key={y} type="button" className={y === year ? "on" : ""} aria-pressed={y === year}
                 onClick={() => onYear?.(y === year ? null : y)}>{y}</button>
       ))}

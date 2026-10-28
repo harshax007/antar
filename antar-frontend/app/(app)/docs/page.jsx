@@ -8,8 +8,11 @@ import { useLang } from "@/components/Providers";
 import { newAssistantMsg, applyEvent, streamChat } from "@/lib/chatStream";
 import { asset } from "@/lib/assets";
 import AgentDoc from "@/components/AgentDoc";
-import { Mascot } from "page-mascot";
+import { Mascot } from "@/components/SafeMascot";
 import { ChevronDown } from "lucide-react";
+import AccuracyCard from "@/components/AccuracyCard";
+import SchemaPanel from "@/components/SchemaPanel";
+import { useEdition } from "@/lib/edition";
 
 const ANTAR_ASCII = ` █████ ███   ██║███████ █████ ██████
 ██╔══██╗████║ ██║╔══██╔══╗██╔══██╗
@@ -724,6 +727,7 @@ export default function DocsPage() {
 function DocsFull() {
   const router = useRouter();
   const { lang, toggleLang } = useLang();
+  const { isLab } = useEdition();
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -902,12 +906,12 @@ function DocsFull() {
     <>
 
 
-      <div id="docs-top" style={{ minHeight: "100vh", flexShrink: 0, background: "#03050C", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", overflowX: "clip", position: "relative", zoom: 1.1 }}>
+      <div id="docs-top" style={{ minHeight: "100vh", flexShrink: 0, background: "#03050C", color: "#F8FAFC", fontFamily: "'Inter', sans-serif", overflowX: "clip", position: "relative" }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />
 
 
 
-      <main style={{ position: "relative", zIndex: 10, maxWidth: "980px", width: "94%", margin: "0 auto", padding: "20px 0 110px" }}>
+      <main style={{ position: "relative", zIndex: 10, maxWidth: "1280px", width: "min(1280px, 94vw)", margin: "0 auto", padding: "24px 0 48px" }}>
 
         {/* 1. Brand */}
         <section style={{ marginBottom: "54px" }}>
@@ -1054,7 +1058,9 @@ function DocsFull() {
                         {[
                           { id: 'features', label: lang === "kn" ? 'ಪ್ರಮುಖ ಲಕ್ಷಣಗಳು' : 'Key Features & Functionalities' },
                           { id: 'impact', label: lang === "kn" ? 'ಪರಿಣಾಮ ಮತ್ತು ಬಳಕೆ' : 'Impact & Use Cases' },
-                          { id: 'innovation', label: lang === "kn" ? 'ನಾವೀನ್ಯತೆ ಮತ್ತು ಭವಿಷ್ಯ' : 'Innovation & Future Development' }
+                          { id: 'innovation', label: lang === "kn" ? 'ನಾವೀನ್ಯತೆ ಮತ್ತು ಭವಿಷ್ಯ' : 'Innovation & Future Development' },
+                          { id: 'schema', label: lang === "kn" ? 'ಅಧಿಕೃತ ER ರಚನೆ' : 'Official ER Schema' },
+                          { id: 'accuracy', label: lang === "kn" ? 'ನಿಖರತೆ ಲೆಕ್ಕಪರಿಶೋಧನೆ' : 'Accuracy Benchmark' }
                         ].map((btn, i) => (
                           <motion.div
                             key={btn.id}
@@ -1095,11 +1101,17 @@ function DocsFull() {
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={SPRING}
-                            style={{ overflow: "hidden", maxWidth: "680px" }}
+                            style={{ overflow: "hidden", maxWidth: (expandedDetail === "schema" || expandedDetail === "accuracy") ? "1080px" : "680px" }}
                           >
                            <motion.div key={expandedDetail} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.22, ease: "easeOut" }}>
                             <div style={{ padding: "12px 16px", background: "rgba(3,5,12,0.9)", border: "1px solid rgba(34,230,240,0.15)", borderRadius: "8px", boxShadow: "0 0 20px rgba(0,0,0,0.5)" }}>
                               {(() => {
+                                if (expandedDetail === "schema") {
+                                  return <SchemaPanel kn={lang === "kn"} />;
+                                }
+                                if (expandedDetail === "accuracy") {
+                                  return <AccuracyCard kn={lang === "kn"} />;
+                                }
                                 // The three tabs, short and plain. Every line is something the product
                                 // does today, except "Coming next", which says it is not built yet.
                                 const TABS = {
@@ -1346,16 +1358,16 @@ function DocsFull() {
               {/* Measured, not claimed: each figure is counted from the system (Oct 2026), and the
                   forecast figure is read live from the engine's own back-test. */}
               {(lang === "kn" ? [
-                { val: "10L+", label: "ಅಧಿಕೃತ KSP ಸ್ಕೀಮಾದ FIR ಗಳು" },
-                { val: "16", label: "ವಿಶೇಷ ಏಜೆಂಟ್‌ಗಳು" },
-                { val: trackPct || "80%", label: "ಪರೀಕ್ಷಿತ ವಾರಗಳಲ್ಲಿ ಮುನ್ಸೂಚನೆ ವ್ಯಾಪ್ತಿ ಸರಿ" },
-                { val: "2.8 s", label: "ಸಾಮಾನ್ಯ ಉತ್ತರ ಸಮಯ" },
+                { val: "20.4L+", label: "ಅಧಿಕೃತ KSP ಸ್ಕೀಮಾದ FIR ಗಳು" },
+                { val: "20", label: "ವಿಶೇಷ ಏಜೆಂಟ್‌ಗಳು" },
+                { val: "83%", label: "ಪರೀಕ್ಷಿತ ವಾರಗಳಲ್ಲಿ ಮುನ್ಸೂಚನೆ ವ್ಯಾಪ್ತಿ ಸರಿ" },
+                { val: "38 ms", label: "ಸಾಮಾನ್ಯ ಉತ್ತರ ಸಮಯ (ಮಧ್ಯಸ್ಥ)" },
                 { val: "100%", label: "ಪೂರ್ಣ ಜಾಡು ಇರುವ ಉತ್ತರಗಳು" },
               ] : [
-                { val: "10L+", label: "FIRs in the official KSP schema" },
-                { val: "16", label: "Specialist agents" },
-                { val: trackPct || "80%", label: "Forecast ranges held on tested weeks" },
-                { val: "2.8 s", label: "Typical answer time (median)" },
+                { val: "20.4L+", label: "FIRs in the official KSP schema" },
+                { val: "20", label: "Specialist agents" },
+                { val: "83%", label: "Forecast ranges held on tested weeks" },
+                { val: "38 ms", label: "Typical answer time (median)" },
                 { val: "100%", label: "Answers with a full trace" },
               ]).map((s, i) => (
                 <motion.div
@@ -1479,9 +1491,9 @@ function DocsFull() {
               </div>
             </div>
 
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.48, delay: 0.4 }} style={{ textAlign: "center", marginTop: "12px" }}>
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.48, delay: 0.4 }} style={{ textAlign: "center", marginTop: "16px", marginBottom: "8px" }}>
               <button onClick={explorePrototype}
-                style={{ background: "#22E6F0", color: "#03050C", border: "none", padding: "14px 40px", borderRadius: "999px", fontSize: "14.5px", fontWeight: 800, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", letterSpacing: "0.07em", boxShadow: "0 0 28px rgba(34,230,240,0.25), 0 8px 24px rgba(0,0,0,0.45)", transition: "transform 0.2s, box-shadow 0.2s" }}
+                style={{ background: "#22E6F0", color: "#03050C", border: "none", padding: "12px 36px", borderRadius: "999px", fontSize: "14px", fontWeight: 800, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", letterSpacing: "0.07em", boxShadow: "0 0 28px rgba(34,230,240,0.25), 0 8px 24px rgba(0,0,0,0.45)", transition: "transform 0.2s, box-shadow 0.2s" }}
                 onMouseOver={(e) => { e.currentTarget.style.transform = "scale(1.042)"; e.currentTarget.style.boxShadow = "0 0 48px rgba(34,230,240,0.42), 0 10px 32px rgba(0,0,0,0.55)"; }}
                 onMouseOut={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 0 28px rgba(34,230,240,0.25), 0 8px 24px rgba(0,0,0,0.45)"; }}>
                 Explore the prototype →
@@ -1495,7 +1507,7 @@ function DocsFull() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ textAlign: "center", width: "100%", justifyContent: "center", display: "flex",  fontFamily: lang === "kn" ? "'Anek Kannada', sans-serif" : "'Inter', sans-serif", fontSize: "13px", fontWeight: 500, color: "#FFFFFF", letterSpacing: "0.01em", marginTop: "80px", marginBottom: "8px", opacity: 0.85 }}
+                    style={{ textAlign: "center", width: "100%", justifyContent: "center", display: "flex",  fontFamily: lang === "kn" ? "'Anek Kannada', sans-serif" : "'Inter', sans-serif", fontSize: "12px", fontWeight: 500, color: "#94A3B8", letterSpacing: "0.01em", marginTop: "14px", marginBottom: "8px", opacity: 0.85 }}
                   >
                     {lang === "kn" ? "ಅಭಿವೃದ್ಧಿಪಡಿಸಿದವರು" : "Developed by"}
                     <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.0, duration: 1.2 }} style={{ color: "#22E6F0", textDecoration: "none", marginLeft: "6px", position: "relative", zIndex: 10 }}>
@@ -1583,7 +1595,9 @@ function DocsFull() {
         }
 
         /* Tools Grid CSS from Mockup */
-        .tools-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-bottom: 48px; text-align: left; }
+        .tools-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom: 20px; text-align: left; }
+        @media (max-width: 960px) { .tools-grid { grid-template-columns:repeat(2, 1fr); } }
+        @media (max-width: 600px) { .tools-grid { grid-template-columns:1fr; } }
         .tools-card { border-radius:14px; padding:15px 16px 16px; display:flex; flex-direction:column; background: rgba(3,6,15,0.93); border: 1px solid rgba(255,255,255,0.06); transition:transform .35s var(--ease-spring, cubic-bezier(.22,1,.36,1)), border-color .25s ease; cursor: pointer;
           animation: toolsArrive .5s var(--ease-spring, cubic-bezier(.22,1,.36,1)) both; }
         .tools-card:nth-child(2) { animation-delay: .05s; } .tools-card:nth-child(3) { animation-delay: .1s; }

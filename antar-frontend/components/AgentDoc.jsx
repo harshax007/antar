@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mascot } from "page-mascot";
+import { Mascot } from "@/components/SafeMascot";
 import { asset } from "@/lib/assets";
 import { fetchAPI } from "@/lib/api";
 import { AGENTS, LENS } from "@/components/AgentStrip";

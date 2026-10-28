@@ -19,6 +19,7 @@ import { AnimatePresence, AnimatePresence as PlanPresence, motion } from "framer
 import { MaterialBackdrop, MaterialPanel, SPRING } from "@/components/ui/MaterialPanel";
 import EngineOverall from "@/components/EngineOverall";
 import CaseLeads from "@/components/CaseLeads";
+import ModelLeague from "@/components/ModelLeague";
 import { crimeKn, dateKn, monthKn } from "@/lib/kn";
 
 const API = (process.env.NEXT_PUBLIC_API_URL || "");
@@ -2560,6 +2561,7 @@ const avgConf = predictions?.length
           </>}</span>
         </summary>
         <EngineConfidence eng={eng} open={engOpen} onToggle={() => setEngOpen((v) => !v)} anchor={confRef} kn={kn} />
+        <ModelLeague kn={kn} />
         <div className="px-built">
           <KnownData eng={eng} kn={kn} />
           <div className="pxd-card">

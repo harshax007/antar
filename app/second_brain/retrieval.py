@@ -126,11 +126,12 @@ async def decompose_query(query_text: str, use_llm: bool = False) -> list[str]:
         return [clean] if clean else []
         
     if use_llm:
-        from app.services.quickml import quickml_generate
+        from app.services.quickml import quickml_generate, model_for
         import json
         sys_prompt = "You are an AI query expander. Rewrite the user's crime query into 3 distinct, highly targeted search variations (synonyms, different angles) to maximize vector database recall. Output ONLY a valid JSON array of 3 strings."
         try:
-            raw = await quickml_generate(system=sys_prompt, user=clean, json_mode=True, max_tokens=150)
+            raw = await quickml_generate(system=sys_prompt, user=clean, json_mode=True, max_tokens=150,
+                                         model=model_for("analysis"))
             cleaned = raw.strip().strip("```json").strip("```").strip()
             variants = json.loads(cleaned)
             # the rewrites are search strings: short text only, or the question as asked

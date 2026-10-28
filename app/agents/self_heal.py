@@ -175,6 +175,45 @@ def _dead_end_message(intent: Intent, lang: str) -> str:
                    "• naming a crime type (theft, robbery…)\n• checking the spelling of the place or name")
 
 
+_covers_from: list = []
+
+
+def _register_starts() -> Optional[str]:
+    """First date a slim copy holds (scripts/build_cloud_db.py --slim), or None for the full register."""
+    if not _covers_from:
+        try:
+            conn = registry_connect(f"file:{DB_PATH}?mode=ro", uri=True)
+            try:
+                row = conn.execute("SELECT value FROM register_meta WHERE key = 'covers_from'").fetchone()
+            finally:
+                conn.close()
+            _covers_from.append(row[0] if row else None)
+        except sqlite3.Error:
+            _covers_from.append(None)
+    return _covers_from[0]
+
+
+def _before_coverage(params: dict) -> Optional[str]:
+    """The copy's start date when the asked period ends before it; else None."""
+    start = _register_starts()
+    if not start:
+        return None
+    end = str(params.get("date_to") or "")
+    if not end and str(params.get("year") or "").isdigit():
+        end = f"{params['year']}-12-31"
+    return start if end and end[:10] < start else None
+
+
+def _coverage_message(start: str, lang: str) -> str:
+    from datetime import date
+    d = date.fromisoformat(start)
+    if lang == "kn":
+        return (f"ಈ ಆನ್‌ಲೈನ್ ಪ್ರತಿಯಲ್ಲಿ {d.day} ಜನವರಿ {d.year} ರಿಂದ ದಾಖಲಾದ FIRಗಳು ಮಾತ್ರ ಇವೆ, ಆದ್ದರಿಂದ "
+                f"ಆ ಅವಧಿಯ ದಾಖಲೆಗಳು ಇಲ್ಲಿಲ್ಲ. 2016 ರಿಂದ ಪೂರ್ಣ ದಾಖಲೆ ಮುಖ್ಯ Antar ವ್ಯವಸ್ಥೆಯಲ್ಲಿದೆ.")
+    return (f"This online copy holds FIRs registered from {d.day} {d:%b %Y} on, so it has no "
+            f"records for that period. The full register, from 2016, is on the main Antar system.")
+
+
 async def self_heal(user_text: str, lang: str, template_id: str, params: dict,
                     rows: list, history: Optional[list] = None,
                     select_llm: Optional[LLM] = None,
@@ -182,6 +221,13 @@ async def self_heal(user_text: str, lang: str, template_id: str, params: dict,
     """Diagnose + repair an empty/ungrounded query. Never raises."""
     trace: list[dict] = [{"step": "self_heal",
                           "detail": f"'{template_id}' returned {len(rows)} usable row(s) — self-healing."}]
+    # A period this copy does not hold has no answer here. Relaxing the date or a fuzzy
+    # search would answer it with rows from other years.
+    start = _before_coverage(params or {})
+    if start:
+        trace.append({"step": "self_heal", "detail": f"Asked period ends before this copy starts ({start})."})
+        return SelfHealResult(rows=[], trace=trace, scenario="dead_end",
+                              dead_end_message=_coverage_message(start, lang))
     try:
         intent = await parse_intent(user_text, lang, llm=select_llm)
     except Exception:

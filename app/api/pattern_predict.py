@@ -682,9 +682,10 @@ async def predict_briefing() -> dict:
         return {"facts": facts, "reading": None}
     reading = None
     try:
-        from app.services.quickml import quickml_generate
+        from app.services.quickml import quickml_generate, model_for
         from app.core.rag_security import fence as _fence
         text = await quickml_generate(
+            model=model_for("analysis"),
             system=("You brief a police station officer on the next 7 days. Plain English, short "
                     "sentences, no jargon, no statistics terms, no markdown. Two or three sentences. "
                     "Use only the facts given: never add a number, a place or a cause that is not in "

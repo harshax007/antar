@@ -90,6 +90,12 @@ def ensure_geo_columns(conn: sqlite3.Connection) -> bool:
 
 
 def _signature(conn: sqlite3.Connection) -> str:
+    # The Cloud build (scripts/build_cloud_db.py) holds fewer FIRs than the forecasts were
+    # fitted on, behind a view that changes every day. It records the fitted signature as
+    # frozen, so the forecasts are served as fitted instead of refitted on the slim copy.
+    frozen = _meta(conn, "frozen_signature")
+    if frozen:
+        return frozen
     n, top = conn.execute("SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM FIRs").fetchone()
     return f"v{CUBE_VERSION}:{n}:{top}"
 

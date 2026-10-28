@@ -353,7 +353,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
 
     from app.agents.agentic_spine import _route
     from app.agents.heuristics import heuristic_select
-    from app.services.quickml import quickml_generate
+    from app.services.quickml import quickml_generate, llm_for
 
     routes, routing_conf = _route(query_text)
     if command:
@@ -401,7 +401,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
                 from app.agents.query_agent import select_template
                 from app.services.zcql_repo import TEMPLATES as _T
                 llm_choice = await asyncio.wait_for(
-                    select_template(text, lng, entities or {}, quickml_generate, history), 8.0)
+                    select_template(text, lng, entities or {}, llm_for("chat"), history), 8.0)
                 if llm_choice.get("template_id") in _T:
                     return llm_choice
             except Exception as e:
@@ -446,43 +446,42 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     brain_hits: list[dict] = []
     brain_banner: str | None = None
     brain_notes: list[dict] = []        # folded into extra_reasoning below
-    try:
-        from app.second_brain.retrieval import semantic_recall
-        # Both recalls are CPU-bound (an embed plus a matrix multiply) and were being
-        # awaited inline on the event loop, stalling every other request on the server
-        # for their duration. Measured ~110 ms for the corpus search alone.
-        hits = await asyncio.to_thread(semantic_recall, query_text, 3) or []
-        brain_hits = [h for h in hits if h.get("kind") in
-                      ("resolved_pattern", "case_summary", "suspect_profile")
-                      and h.get("score", 0.0) >= _BRAIN_HIT_FLOOR]
-        top = brain_hits[0] if brain_hits else None
-        if top and top.get("score", 0.0) >= _BRAIN_BANNER_MIN:
-            brain_banner = top.get("summary_text")
-    except Exception as exc:                # noqa: BLE001
-        # This used to be a bare `pass`. A Brain that failed and a Brain that found
-        # nothing then looked identical to the officer, and identical in the trace.
-        brain_notes.append({"agent": "brain", "step": "curated",
-                            "detail": _public_message(exc, "recall")})
-
-    # The 100,000-FIR corpus (P1-2) was INVISIBLE on this surface until now — which is the
-    # surface the app actually streams. `semantic_recall` reads the in-memory index, and
-    # the filter above only admits three curated kinds, so corpus rows (kind "fir") were
-    # excluded twice over. The headline Brain capability was reachable from /api/brain and
-    # from a BRAIN-routed graph turn, and from nowhere the officer was looking.
-    #
-    # Kept as a separate list rather than merged into `brain_hits`: a similar FIR is
-    # DERIVED evidence — a lead — and must not be presented with the weight of a curated,
-    # human-confirmed pattern. The class travels with the hit.
     corpus_hits: list[dict] = []
-    try:
-        from app.second_brain.retrieval import corpus_recall
-        _corpus = await asyncio.to_thread(corpus_recall, query_text, 3) or []
-        corpus_hits = [{**h, "tier": "corpus", "evidence_class": "D"}
-                       for h in _corpus
-                       if h.get("score", 0.0) >= _BRAIN_HIT_FLOOR]
-    except Exception as exc:                # noqa: BLE001
-        brain_notes.append({"agent": "brain", "step": "corpus",
-                            "detail": _public_message(exc, "corpus recall")})
+
+    async def _recall_curated():
+        try:
+            from app.second_brain.retrieval import semantic_recall
+            hits = await asyncio.to_thread(semantic_recall, query_text, 3) or []
+            return [h for h in hits if h.get("kind") in
+                    ("resolved_pattern", "case_summary", "suspect_profile")
+                    and h.get("score", 0.0) >= _BRAIN_HIT_FLOOR]
+        except Exception as exc:
+            brain_notes.append({"agent": "brain", "step": "curated",
+                                "detail": _public_message(exc, "recall")})
+            return []
+
+    async def _recall_corpus():
+        # Scan 100k corpus on disk when brain is in routes, or query is unrouted/case-similarity search
+        should_scan = ("brain" in routes) or (template_id in ("NONE", "UNRESOLVED", "BRIEFING")) or any(
+            w in query_text.lower() for w in ("similar", "mo", "pattern", "repeat", "modus", "resemble")
+        )
+        if not should_scan:
+            return []
+        try:
+            from app.second_brain.retrieval import corpus_recall
+            _corpus = await asyncio.to_thread(corpus_recall, query_text, 3) or []
+            return [{**h, "tier": "corpus", "evidence_class": "D"}
+                    for h in _corpus
+                    if h.get("score", 0.0) >= _BRAIN_HIT_FLOOR]
+        except Exception as exc:
+            brain_notes.append({"agent": "brain", "step": "corpus",
+                                "detail": _public_message(exc, "corpus recall")})
+            return []
+
+    brain_hits, corpus_hits = await asyncio.gather(_recall_curated(), _recall_corpus())
+    top = brain_hits[0] if brain_hits else None
+    if top and top.get("score", 0.0) >= _BRAIN_BANNER_MIN:
+        brain_banner = top.get("summary_text")
 
     _corpus_n = len(corpus_hits)
     _corpus_label = (_L(lang, f" · {_corpus_n} similar FIR(s)",
@@ -742,7 +741,7 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
         from app.agents.query_agent import compose_answer
         try:
             llm_answer, used, _viol = await compose_answer(query_text, rows, lang, template_id,
-                                                           quickml_generate, params=params)
+                                                           llm_for("chat"), params=params)
             if used:
                 answer = _synthesize(llm_answer, text_results, claims, lang=lang)
         except Exception as e:
@@ -776,6 +775,15 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     if identity["violations"]:
         logger.warning("antar_voice_violation", violations=identity["violations"])
 
+    # The layout goes out BEFORE the tokens: it decides the answer's final shape (the template
+    # card, or headline + facts), and sent after them the page drew the streamed text first
+    # and then redrew it in that shape - the answer visibly reformatted itself.
+    from app.agents.layout_composer import build_layout, build_custody, with_identity as _with_identity
+    layout = build_layout(answer, query, results)
+    layout = _with_identity(layout, identity)
+    if layout.get("headline"):
+        await q.emit("layout", data=layout)
+
     # ── Step 6: Token stream ──────────────────────────────────────────────────
     async for chunk in token_stream(answer, delay_s=0.002):
         await q.emit("token", content=chunk)
@@ -796,11 +804,6 @@ async def _run_pipeline(req: StreamChatRequest, q: SSEQueue, officer: str = "OF-
     for key, payload in visuals.items():
         await q.emit("visual", key=key, data=payload)
 
-    from app.agents.layout_composer import build_layout, build_custody, with_identity as _with_identity
-    layout = build_layout(answer, query, results)
-    layout = _with_identity(layout, identity)
-    if layout.get("headline"):
-        await q.emit("layout", data=layout)
 
     # Chain-of-custody strip — the evidentiary provenance of this answer (collapsed in UI).
     custody = build_custody(query, mode=mode)

@@ -8,7 +8,7 @@
 // start twenty polls.
 
 // same base as lib/api.js; not imported from there, because api.js imports this file
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "");
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000");
 
 const listeners = new Set();
 let status = "unknown";          // "unknown" | "up" | "waking"

@@ -610,11 +610,13 @@ def data_today() -> date:
             top = con.execute("SELECT MAX(date) FROM FIRs").fetchone()[0]
         finally:
             con.close()
+        from app.core import clock
         if top:
-            return min(date.fromisoformat(str(top)[:10]), date.today())
+            return min(date.fromisoformat(str(top)[:10]), clock.today())
     except Exception:
         pass
-    return date.today()
+    from app.core import clock
+    return clock.today()
 
 
 @lru_cache(maxsize=1)
@@ -636,8 +638,9 @@ def real_data_today() -> date:
                 "SELECT MAX(date) FROM FIRs WHERE is_synthetic_row = 0").fetchone()[0]
         finally:
             con.close()
+        from app.core import clock
         if top:
-            return min(date.fromisoformat(str(top)[:10]), date.today())
+            return min(date.fromisoformat(str(top)[:10]), clock.today())
     except Exception:
         pass
     return data_today()
@@ -1416,9 +1419,15 @@ class ScanWindow(BaseModel):
 
 
 def _t14(p: ScanWindow) -> QuerySpec:
+    filters = []
+    try:
+        from app.core import clock
+        if clock.is_fixed():
+            filters.append(Filter("occurred_at", "<=", clock.today().isoformat()))
+    except Exception:
+        pass
     return QuerySpec(table="crimes", select=["crime_id", "fir_number", "crime_type", "zone", "occurred_at"],
-                     order_by=("occurred_at", "desc"), limit=20000)
-
+                     filters=filters, order_by=("occurred_at", "desc"), limit=60000)
 
 class YearSummary(BaseModel):
     year: Optional[int] = None
@@ -1478,7 +1487,8 @@ class VehicleLookup(BaseModel):
 def _today_cap() -> str:
     """Upper date bound for queries on the raw FIRs table. _bound_to_today only guards the
     `crimes` view, and the data holds future-dated rows (up to 2026-12-31)."""
-    return date.today().isoformat() + " 23:59"
+    from app.core import clock
+    return clock.today().isoformat() + " 23:59"
 
 
 _NO_VALUE = "__NO_VALUE__"   # an empty lookup must match nothing, not every FIR with a blank field

@@ -23,9 +23,9 @@ import sqlite3
 from app.services import case_timeline
 
 # every shape of fir_id in the register (sampled), the official FIR-YYYY-... form, and the
-# 18-digit crime number
+# crime number (10001 + unit id + year + case no.: 16 to 18 digits)
 _FIR = re.compile(r"\b(K\d{7}|C\d{5,8}|SYN-[a-f0-9]{12}|SYN-20\d\d-\d{3,8}|(?:BG|HIST|FWD)-20\d\d-\d{3,8}"
-                  r"|FIR-20\d\d-[\w-]{4,40}|\d{18})\b", re.I)
+                  r"|FIR-20\d\d-[\w-]{4,40}|\d{18}|10001\d{11,13})\b", re.I)
 
 # Asked about one case, not held in the FIR register: said so, by name.
 _NOT_HELD = (

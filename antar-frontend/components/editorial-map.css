@@ -157,8 +157,12 @@ html[lang="kn"] .gi-todo span { letter-spacing: normal; text-transform: none; }
 [data-theme="light"] .gi-tag.recent { color: #0369A1; }
 
 /* the day-case card's way into the full case */
-.mx-case-open { display: inline-block; margin-top: 10px; font: 600 12.5px 'Inter', sans-serif; color: var(--accent, #22E6F0); text-decoration: none; }
-.mx-case-open:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* the way into the full case: a button across the card, not a line of small text */
+.mx-case-pop .mx-case-open, .mx-case-open { display: block; margin-top: 12px; padding: 9px 12px; border-radius: 8px; text-align: center; font: 600 12.5px 'Inter', sans-serif;
+  color: #04141a; background: var(--accent, #22E6F0); text-decoration: none; transition: filter .15s ease; }
+.mx-case-open:hover { filter: brightness(1.12); }
+.mx-dot-hit { cursor: pointer; }
+.mx-dot-hit:hover { fill-opacity: .18; }
 
 /* a selected day is marked by its fill, not a glow */
 .mx-page .mx-cal-grid td.sel .dn { box-shadow: none; }
