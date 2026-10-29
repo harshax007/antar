@@ -1,135 +1,136 @@
-# Antar (ಅಂತರ) — Sovereign Multi-Agent Crime Intelligence Architecture
-> **Top 10 Finalist — Karnataka State Police Datathon**  
-> *Mission-critical deterministic code execution for official law enforcement operations, replacing probabilistic LLM hallucinations with verified KSP schemas, Mondrian conformal forecasting, and zero-assumption evidence grounding.*
+<div align="center">
 
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB.svg?style=flat&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black.svg?style=flat&logo=next.js&logoColor=white)](https://nextjs.org)
-[![LangGraph](https://img.shields.io/badge/LangGraph-DAG_Orchestrator-blueviolet.svg?style=flat)](https://langchain-ai.github.io/langgraph/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-1.5.6-FFF000.svg?style=flat&logo=duckdb&logoColor=black)](https://duckdb.org)
-[![License](https://img.shields.io/badge/Security-Air--Gapped_Sovereign-red.svg?style=flat)](#sovereign-security--air-gapped-vault)
-[![Status](https://img.shields.io/badge/Audit_Chain-25%2C357%2F25%2C357_VERIFIED-success.svg?style=flat)](#cryptographic-audit-ledger)
+# Antar (ಅಂತರ)
+### An Intelligent Layer for FIR and Crime Data
+**Top 10 Finalist — Karnataka State Police Datathon 2026**
+
+*Mission-critical deterministic code execution for official law enforcement operations, replacing probabilistic chatbot guesses with verified KSP schemas, Mondrian conformal forecasting, and zero-assumption evidence grounding.*
 
 ---
 
-## 1. Executive Summary
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js 14](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
+[![LangGraph](https://img.shields.io/badge/LangGraph-DAG_Orchestrator-7928CA?style=flat-square)](https://langchain-ai.github.io/langgraph/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-1-Crore_Engine-FFF000?style=flat-square&logo=duckdb&logoColor=black)](https://duckdb.org)
+[![Security](https://img.shields.io/badge/Security-Air--Gapped_Sovereign-E11D48?style=flat-square)](#1-secure-ai)
+[![Audit](https://img.shields.io/badge/Audit_Chain-25%2C357_Verified-10B981?style=flat-square)](#key-mission-capabilities)
 
-For two years, police engineering teams struggled with modern Large Language Models: hallucinated FIR charges, ungrounded suspect links, non-reproducible answers, and the severe security hazard of free text-to-SQL execution. In legal proceedings and courtroom trials, an ungrounded claim destroys evidence admissibility and violates constitutional due process.
-
-**Antar replaces black-box probabilistic generation with a 20-agent deterministic orchestrator:**
-- **Zero Free SQL:** Natural language queries decompose into 26 hardened, whitelisted parameter templates (T1–T30) mapped directly to official Karnataka State Police schemas.
-- **Air-Gapped Sovereign Enclave:** 12-digit civilian identifiers are validated at the airlock via **Dihedral Group $D_5$ Verhoeff checksums**, masking citizen Aadhaar and phone numbers before any model sees them.
-- **Extreme Scale:** Columnar vectorized execution via **DuckDB Parquet** scans **10,00,000 (10 Lakhs)** to **1,00,00,000 (1-Crore)** records in **241 ms** (208× faster than SQLite).
-- **Cryptographic Human-in-the-Loop:** The AI can advise, but cannot execute real-world policing. Patrol redeployments require a supervising officer to sign the exact SHA-256 payload digest.
-- **Native Bilingual Kannada NLP:** Native Unicode tokenization and morphological stemming execute locally without third-party translation cloud leaks.
+</div>
 
 ---
 
-## 2. Empirical Performance Benchmarks
+## Overview
 
-All benchmarks are measured directly on bare metal (*Intel Core i7-9750H, 32 GB RAM, NVIDIA GeForce GTX 1650 4GB VRAM, Windows 11*):
+**Antar** is an intelligent layer engineered specifically for official First Information Report (FIR) registries and police operations.
+
+For years, police engineering teams struggled with generic Large Language Models: hallucinated penal charges, invented suspect links, non-reproducible answers, and the catastrophic security hazards of free text-to-SQL prompts. In official inquiries and judicial courtrooms, an ungrounded claim destroys evidence admissibility and violates constitutional due process.
+
+**Antar solves this by replacing probabilistic prompt guessing with deterministic multi-agent code execution:**
+
+```
+[ Officer Query (EN / KN) ] 
+          │
+          ▼
+[ Airlock Firewall: Dihedral Group D5 Verhoeff PII Masking ]
+          │
+          ▼
+[ Vigil Statutory Compliance Gate (Article 15 Anti-Targeting) ]
+          │
+          ▼
+[ Supervisor DAG Intent Router (app/agents/manifest.py & AGENTS.md) ]
+          │
+    ┌─────┴──────────────────────────────────────────────────────┐
+    ▼                                                            ▼
+[ System 1 Deterministic Fast-Path ]              [ Multi-Agent Synthesis ]
+• 26 Whitelisted SQL Templates (Zero Free SQL)     • Bipartite Criminal Graph
+• Sub-Millisecond SQLite B-Tree Indexes            • Motive SHAP Attribution
+• Mondrian Conformal Risk Forecaster               • Dual-Tier CUDA Vectors (4.1 ms)
+    │                                                            │
+    └─────────────────────────────┬──────────────────────────────┘
+                                  ▼
+[ Synthesize Node: G1 Numbers Guard + General Diary Citation ]
+                                  │
+                                  ▼
+[ Immutable SHA-256 Audit Chain (25,357 Cryptographically Verified) ]
+```
+
+---
+
+## Measured Performance Benchmarks
+
+All metrics are empirically benchmarked on bare-metal hardware (*Intel Core i7-9750H, 32 GB RAM, NVIDIA GeForce GTX 1650 4GB VRAM*):
 
 ### 1-Crore (10,000,000 Rows) Analytical Stress Benchmark
-*(Comparing SQLite across 20.4 Lakh rows vs DuckDB Parquet across 10 Million ZSTD-compressed partitions)*
+*Vectorized DuckDB C++ execution across 10 ZSTD Parquet partitions vs. standard SQLite WAL:*
 
-| # | Query Workload | Analytical Task | SQLite 20.4L (Warm) | DuckDB 20.4L (Warm) | DuckDB 1-Crore (10M Rows) | Speedup vs SQLite | Verification |
-|---|---|---|---|---|---|---|---|
-| **Q1** | **District Ranking** | `COUNT(*)` by district, top 10 descending | 1,462.36 ms | 12.56 ms | **38.61 ms** | **116.4×** | **100% PASS** |
-| **Q2** | **Monthly Trend** | 10-year monthly volume aggregation (`YYYY-MM`) | 8,540.21 ms | 31.11 ms | **118.65 ms** | **274.5×** | **100% PASS** |
-| **Q3** | **Crime Mix per Station** | Station × CrimeType breakdown, top 50 | 25,307.86 ms | 111.38 ms | **693.19 ms** | **227.2×** | **100% PASS** |
-| **Q4** | **Pendency by District** | Share of cases > 90 days under investigation | 14,565.24 ms | 33.51 ms | **125.94 ms** | **434.7×** | **100% PASS** |
-| **Q5** | **Day of Week Pattern** | Statewide incident distribution by weekday | 1,010.84 ms | 26.85 ms | **132.35 ms** | **37.6×** | **100% PASS** |
-| **Q6** | **2-Key CTE Join** | District-year share of annual total (self-join) | 5,994.94 ms | 56.97 ms | **340.88 ms** | **105.2×** | **100% PASS** |
-| **ALL** | **Full Analytical Suite** | **Cumulative 60,000,000 Row Scans** | **56,881.45 ms** | **272.38 ms** | **1,449.62 ms** | **208.8× avg** | **6/6 (100% PASS)** |
+| Workload | Analytical Target | SQLite 20.4L (Warm) | DuckDB Parquet (10M Rows) | Speedup vs SQLite | Status |
+|:---|:---|:---:|:---:|:---:|:---:|
+| **Q1. District Ranking** | Top 10 districts by incident count | `1,462.3 ms` | **`38.6 ms`** | **116.4×** | 100% PASS |
+| **Q2. Monthly Trend** | 10-year monthly volume rollups | `8,540.2 ms` | **`118.6 ms`** | **274.5×** | 100% PASS |
+| **Q3. Station Crime Mix** | Station × Crime Type breakdown | `25,307.8 ms` | **`693.1 ms`** | **227.2×** | 100% PASS |
+| **Q4. Pendency Scan** | Cases > 90 days under investigation | `14,565.2 ms` | **`125.9 ms`** | **434.7×** | 100% PASS |
+| **Q5. Weekday Pattern** | Statewide day-of-week distribution | `1,010.8 ms` | **`132.3 ms`** | **37.6×** | 100% PASS |
+| **Q6. 2-Key CTE Join** | District annual share self-join | `5,994.9 ms` | **`340.8 ms`** | **105.2×** | 100% PASS |
+| **Cumulative Benchmark** | **60,000,000 Row Scans Total** | **`56.88 s`** | **`1.44 s` (241 ms avg)** | **208.8× avg** | **6/6 PASS** |
 
-### Core Operational Latency
-- **Median Query Latency:** **38 ms** across 20.4 Lakh FIRs.
-- **District Table Pagination:** **0.46 ms** (via compound B-Tree covering index `idx_firs_district_date`).
-- **GPU Vector Recall:** **4.1 ms** across 100,000 384-dimensional dense vectors via PyTorch CUDA.
-- **Formal Evaluation Gold Set:** **93.3% accuracy** across 150 English and Kannada statutory inquiries with zero hallucinated penal codes.
-
----
-
-## 3. Architecture & Core Innovations
-
-```mermaid
-flowchart TD
-    OfficerQuery["Officer Query (English / Kannada)"] --> Airlock["Airlock Firewall & PII Masking<br/>(Dihedral Group D5 Verhoeff Checksum)"]
-    Airlock --> VigilGate["Vigil Statutory Compliance Gate<br/>(Article 15 Anti-Targeting + BNSS §94/106)"]
-    
-    VigilGate --> Supervisor["Supervisor DAG Intent Router<br/>(app/agents/manifest.py & AGENTS.md)"]
-    
-    Supervisor --> System1{"Execution Strategy"}
-    
-    System1 -->|"Single-Agent Deterministic"| FastPath["Fast Code Execution<br/>• Vault: 26 Parameterized SQL Templates (T1-T30)<br/>• Link: Bipartite Criminal Network Graph<br/>• Motive: Exact Linear SHAP Attribution<br/>• Core: Mondrian Split-Conformal Forecast<br/>• Brain: Hybrid BM25 + PyTorch CUDA Vectors"]
-    
-    System1 -->|"Multi-Source Required"| MultiAgent["Multi-Agent Fan-Out"]
-    MultiAgent --> FastPath
-    FastPath --> Synthesize["Synthesize Node<br/>(G1 Numbers Guard + General Diary Citation)"]
-    
-    Synthesize --> Audit["Cryptographic SHA-256 Audit Chain<br/>(25,357 Immutable Ledger Entries)"]
-    Audit --> FinalAnswer["Courtroom-Grounded Officer Answer"]
-    
-    FastPath -.->|"Patrol Action Proposed"| HITL["Dual-Officer HITL Gate<br/>(Sign SHA-256 Payload Hash · 12h Expiry)"]
-```
-
-### 1. Secure AI & Air-Gapped Sovereign Vault
-Confidential police FIR records remain strictly partitioned behind an air-gap firewall. Incoming queries pass through an airlock where 12-digit numbers are validated against Dihedral Group $D_5$ permutations, immediately redacting civilian Aadhaar, phone numbers, and bank details before any intelligence model or analyst sees them.
-
-### 2. AGENTS.md & Executable Contract
-In Antar, `AGENTS.md` is not static documentation—it is an executable contract parsed at startup by `app/agents/manifest.py`. The supervisor route table, orchestrator fleet registry, and role access policies are compiled directly from it. If documentation and the LangGraph DAG disagree, automated tests fail immediately (`scripts/lock_agents.py`), eliminating phantom agents.
-
-### 3. System 1 Approach (Deterministic First)
-Human cognition utilizes fast, deterministic reflexes (System 1) for routine decisions and slower deliberation (System 2) only when synthesizing multiple conflicting signals. Antar implements this exact paradigm: 90%+ of officer queries execute via deterministic single-agent fast paths without invoking an LLM. Language models are reserved strictly for synthesizing multi-agent findings, protected by strict numbers-grounding guardrails.
-
-### 4. Cryptographic Human-in-the-Loop (HITL)
-To prevent rogue autonomous decision-making, the AI is barred from executing real-world police orders. High-consequence recommendations (such as patrol redeployments or watchlist additions) generate cryptographic proposals. A supervising officer must inspect and sign the exact SHA-256 payload digest. Proposals expire in 12 hours, and self-approval is rejected at the protocol level.
-
-### 5. Adversarial Bayesian Defense (Advocate Agent)
-Confirmation bias is the leading cause of wrongful police investigations. Antar deploys an LLM-free **Advocate Agent** that actively challenges inferred suspect links. It prices every co-occurrence signal against population base rates, applies multiple-comparisons corrections, and identifies what evidence would falsify the lead.
+### Operational Latencies
+- **Median Query Latency:** **38 ms** across 20.4 Lakh FIR records.
+- **District Table Pagination:** **0.46 ms** via compound covering B-Tree index (`idx_firs_district_date`).
+- **Semantic Vector Recall:** **4.1 ms** across 100,000 384-dimensional vectors on local CUDA GPU.
+- **Formal Evaluation Gold Set:** **93.3% execution accuracy** across 150 English and Kannada inquiries.
 
 ---
 
-## 4. Repository Structure
+## 4 Core Architectural Advantages
 
-```
-antar/
-├── app/
-│   ├── agents/               # 20 LangGraph micro-agents (query, network, profile, advocate, etc.)
-│   │   ├── manifest.py       # Compiles fleet from AGENTS.md at startup
-│   │   ├── supervisor.py     # Intent classification and route dispatch
-│   │   └── graph.py          # Compiled LangGraph DAG state machine
-│   ├── api/                  # FastAPI modular endpoints (dataset, map, forecast, scale, auth)
-│   ├── core/                 # Airlock PII sanitizer (Verhoeff), HITL service, RBAC security
-│   ├── forecast/             # Mondrian split-conformal prediction & temporal anomaly models
-│   ├── second_brain/         # PyTorch CUDA vector search & RRF hybrid recall
-│   └── services/             # DuckDB scale benchmarks, entity resolution, evidence ledgers
-├── antar-frontend/           # Next.js 14 production UI
-│   ├── app/                  # App router pages (/antar, /antarBrain, /map, /predict, /scale, /demo)
-│   ├── components/           # 3D isometric Three.js architecture cards, Leaflet map, Recharts
-│   └── lib/                  # Token authentication, bilingual Kannada strings, crime graphs
-├── docs/                     # Technical specifications, audit reports, back-tests, and run-sheets
-├── scale/                    # 10 ZSTD Parquet partitions for 1-Crore stress scaling
-├── scripts/                  # Automated verification suites (demo_check.py, lock_agents.py)
-├── tests/                    # 1,900+ automated unit and integration tests
-├── AGENTS.md                 # Executable agent architecture manifest
-├── main.py                   # FastAPI server entrypoint with background warmup
-└── requirements.txt          # Python core dependencies
-```
+### 1. Secure AI
+*Air-gapped database isolation with automatic civilian PII masking.*  
+Confidential police FIR records remain behind an air-gap firewall. Incoming inquiries pass through an airlock where 12-digit numbers are validated via **Dihedral Group $D_5$ Verhoeff checksums**, automatically masking citizen Aadhaar and phone numbers before any intelligence model sees them, backed by strict rank-based access controls.
+
+### 2. Agents.md & Identity
+*Executable architecture contract that compiles agent roles and routes with zero drift.*  
+We use [`AGENTS.md`](file:///D:/Project/AGENTS.md) as an executable contract defining every agent's identity, role permissions, and data sensitivity. At startup, `app/agents/manifest.py` compiles the fleet directly from this document. If code and documentation drift, automated tests fail immediately—preventing ghost agents and silent route errors.
+
+### 3. Agent Routing & Searching
+*Parallel dispatch across verified database templates, network graphs, and vector memory.*  
+The supervisor DAG routes inquiries across specialized engines concurrently: Vault deterministic template queries (T1–T30, Zero Free SQL), bipartite criminal network graphs, hybrid BM25 + ONNX vector recall, and Spatio-Temporal risk models, bounded by strict orchestrator timeouts.
+
+### 4. System 1 Approach
+*Fast deterministic code execution, reserving language models only for multi-source synthesis.*  
+Just as human cognition relies on fast, deterministic reflexes for routine tasks and slower deliberation only when required, Antar executes queries through fast deterministic code paths, reserving language models strictly for synthesizing multi-agent findings with rigorous numbers-grounding guardrails.
 
 ---
 
-## 5. Quickstart & Installation
+## Key Mission Capabilities
 
-### Prerequisites
-- Python 3.11+
-- Node.js 18+ & npm
-- SQLite 3.35+
-- (Optional) NVIDIA GPU with CUDA for sub-5ms vector recall
+- **26 Whitelisted Parameterized Templates (Zero Free SQL):** Natural language translates into strongly typed AST parameters, eliminating prompt injection and server-crashing full table scans.
+- **Cryptographic Human-in-the-Loop (HITL):** High-consequence recommendations (patrol redeployments, watchlist additions) generate proposals requiring a supervising officer to sign the exact SHA-256 payload digest. Proposals expire in 12 hours; self-approval is barred.
+- **Native Bilingual Kannada NLP:** Native Unicode morphological normalization and phonetic stemming run locally without third-party cloud translation API leaks.
+- **Adversarial Bayesian Defense (Advocate Agent):** An LLM-free statistical agent prices every co-occurrence signal against population base rates, applying false-discovery corrections to prevent confirmation bias.
+- **Mondrian Split-Conformal Forecasting:** Outputs calibrated prediction intervals holding 80%+ of the time, replacing ungrounded calendar date guesses.
+
+---
+
+## Application Modules & Interfaces
+
+| Screen | Route | Capabilities & Tech Stack |
+|:---|:---|:---|
+| **Investigation Chat** | `/antar` | Natural language inquiry, 20-agent LangGraph orchestrator, 26 whitelisted templates, Article 15 statutory filter. |
+| **Full Dataset in Focus** | `/antarBrain` | Real-time KPI overview, BNSS §187 chargesheet deadline clock, 0.46 ms indexed table pagination across 10 Lakh FIRs. |
+| **Geospatial Hotspots** | `/map` | Statewide incident mapping, boundary-agnostic Uber H3 resolution-10 hexagonal binning, repeat location clustering. |
+| **Predictive Intelligence** | `/predict` | Spatio-temporal risk forecasting, $z = 4.05$ Rajajinagar anomaly spike alert, dual-officer HITL patrol proposal. |
+| **Intelligence Workbench** | `/search` | Bipartite criminal syndicate graph, Indian phonetic name matching (18 spelling variants), sandboxed OSINT airlock. |
+| **1-Crore Scale Engine** | `/scale` | Live analytical stress benchmark executing 6 mission-critical SQL aggregations over 10,000,000 rows in 241 ms. |
+| **3D Architecture Showcase** | `/demo` | Live Three.js isometric simulation of Antar's 4 core architectural pillars with the complete executive pitch. |
+
+---
+
+## Quickstart & Installation
 
 ### Backend Setup
 ```bash
-# 1. Clone repository
+# 1. Clone the repository
 git clone https://github.com/harshax007/antar.git
 cd antar
 
@@ -140,11 +141,11 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Verify agent lock & demo day scenarios
+# 4. Verify system integrity (0 fail, 0 warn)
 python scripts/lock_agents.py --check
 python scripts/demo_check.py --date 2026-10-29
 
-# 5. Start backend daemon
+# 5. Start the backend daemon
 python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -153,40 +154,43 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000
 # 1. Navigate to frontend directory
 cd antar-frontend
 
-# 2. Install packages
+# 2. Install dependencies
 npm install
 
 # 3. Start Next.js development server
 npm run dev
-# The UI will be accessible at http://localhost:3000
+# Open http://localhost:3000 in your browser
 ```
 
 ---
 
-## 6. Verification & System Health
-
-Antar includes automated test harnesses to guarantee that code, agent prompts, and data registers remain synchronized without drift:
+## System Health & Verification
 
 ```bash
-# Verify prompt versions against SHA-256 hashes
+# Verify prompt lock against SHA-256 signatures
 python scripts/lock_agents.py --check
-# Expected: prompt version eaad9d5db3d3 · in step with the lock
+# Output: prompt version: eaad9d5db3d3 · in step with the lock
 
-# Run end-to-end Demo Day scenario validation
+# Run full end-to-end scenario validation
 python scripts/demo_check.py --date 2026-10-29
-# Expected: READY for 2026-10-29: 0 fail, 0 warn (all 25,357 audit entries verified)
+# Output: READY for 2026-10-29: 0 fail, 0 warn (all 25,357 audit entries verified)
 ```
 
 ---
 
-## 7. Open for Collaboration & Research
+## Enterprise Transferability
 
-Antar is engineered as a foundational framework for **Deterministic Enterprise AI and Sovereign Security**. The techniques implemented here—Dihedral Group $D_5$ airlock scrubbing, zero-SQL parameterized DAG execution, and adversarial base-rate falsification—are directly applicable to:
-- **FinTech & Banking:** Anti-Money Laundering (AML) cross-jurisdiction syndicate tracking.
-- **Healthcare & Clinical Trials:** Zero-hallucination statutory prescription verification with doctor-in-the-loop approvals.
-- **Defense & Supply Chain:** Air-gapped, tamper-evident inventory tracking over billion-row telemetry.
+The deterministic, zero-hallucination paradigm built into Antar transfers directly to other high-liability enterprise domains:
+- **FinTech & Banking:** Anti-Money Laundering (AML) multi-hop cross-district mule account syndicate discovery.
+- **Healthcare & Clinical Trials:** Zero-hallucination statutory drug contraindication checking with strict doctor-in-the-loop sign-offs.
+- **Defense & Supply Chain:** Air-gapped, tamper-evident logistics tracing over multi-million row sensor telemetry.
 
-We welcome feedback, issues, and discussions on production-grade agentic architectures.
+---
+
+<div align="center">
 
 **Author:** [Harsha (@harshax007)](https://github.com/harshax007)  
-*Karnataka State Police Datathon 2026 — Top 10 Finalist*
+*Built for the Karnataka State Police Datathon 2026 · Top 10 Finalist*  
+*Open for collaboration, enterprise research, and feedback.*
+
+</div>
