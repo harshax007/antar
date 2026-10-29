@@ -35,46 +35,20 @@ Antar was designed from the ground up to solve these fundamental issues by repla
 ## System Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Ingestion ["1. Sovereign Security & Ingestion Airlock"]
-        Q["Officer Query<br/>(English or Native Kannada Natural Language)"]
-        AIR["Airlock PII Firewall<br/>Dihedral Group D5 Verhoeff Checksums (Citizen Aadhaar Masking)"]
-        VIG["Vigil Statutory Compliance Gate<br/>Article 15 Constitutional Shield (Demographic Filter)"]
-        Q --> AIR --> VIG
-    end
+flowchart LR
+    %% Ingestion Pipeline
+    Q["Officer Query<br/>(English / Kannada)"] --> AIR["Airlock Firewall<br/>(Verhoeff D5 Checksum)"]
+    AIR --> VIG["Vigil Compliance Gate<br/>(Article 15 Shield)"]
+    VIG --> SUP{"Supervisor DAG<br/>(AGENTS.md)"}
 
-    subgraph Routing ["2. Orchestration & Route Resolution"]
-        SUP{"Supervisor DAG Router<br/>Strict Intent Classification (manifest.py & AGENTS.md)"}
-        VIG --> SUP
-    end
+    %% Dual-Path Execution
+    SUP -->|Deterministic| S1["System 1: Fast-Path (Sub-50ms)<br/>• 26 Whitelisted SQL Templates<br/>• SQLite Covering B-Tree Indexes<br/>• Mondrian Conformal Forecaster"]
+    SUP -->|Synthesis| S2["System 2: Deep Synthesis<br/>• Bipartite Syndicate Graph (Network)<br/>• Motive SHAP Attribution (Profile)<br/>• Dual-Tier CUDA Vectors (4.1ms)"]
 
-    subgraph Execution ["3. Dual-Engine Execution Layer"]
-        subgraph FastPath ["System 1: Deterministic Fast-Path (Sub-50ms)"]
-            TPL["26 Whitelisted SQL Templates<br/>(T1–T30 Parameterized Slots — Zero Free SQL)"]
-            BTREE["SQLite Covering B-Tree Indexes<br/>Covering (district, crime_group, incident_date)"]
-            CONF["Mondrian Conformal Risk Forecaster<br/>(80% & 90% Calibrated Prediction Intervals)"]
-            TPL --- BTREE --- CONF
-        end
-
-        subgraph DeepSynth ["System 2: Deep Multi-Agent Synthesis"]
-            NET["Network Agent (Link)<br/>Bipartite Syndicate Graph (Vehicles, CDRs, Common Nodes)"]
-            PROF["Profile Agent (Motive)<br/>Exact Linear SHAP Attribution (100 * wi * fi) & Bias Screen"]
-            BRN["Second Brain Agent (Vault)<br/>Dual-Tier Lexical BM25 + 4.1ms PyTorch CUDA Vectors"]
-            PAT["Pattern & Geo Agents<br/>Uber H3 Hexagonal Binning & Repeat Incident Corridors"]
-            NET --- PROF --- BRN --- PAT
-        end
-    end
-
-    SUP -->|Single-Agent Deterministic Query| FastPath
-    SUP -->|Multi-District Deep Synthesis| DeepSynth
-
-    subgraph AuditGate ["4. Grounding, Synthesis & Cryptographic Ledger"]
-        SYN["Synthesize Node<br/>G1 Numerical Grounding Guard & General Diary Citations"]
-        AUD["SHA-256 Tamper-Evident Audit Chain<br/>25,357 Cryptographically Verified Ledger Blocks"]
-        FastPath --> SYN
-        DeepSynth --> SYN
-        SYN --> AUD
-    end
+    %% Grounding & Output
+    S1 --> SYN["Synthesize Guard<br/>(G1 Provenance Check)"]
+    S2 --> SYN
+    SYN --> AUD["SHA-256 Audit Chain<br/>(25,357 Cryptographic Blocks)"]
 
     classDef default fill:#0d1117,stroke:#30363d,stroke-width:1px,color:#c9d1d9;
     classDef gate fill:#161b22,stroke:#58a6ff,stroke-width:1.5px,color:#f0f6fc;
@@ -84,8 +58,8 @@ flowchart TD
 
     class Q,AIR,VIG gate;
     class SUP default;
-    class TPL,BTREE,CONF fast;
-    class NET,PROF,BRN,PAT deep;
+    class S1 fast;
+    class S2 deep;
     class SYN,AUD audit;
 ```
 
@@ -95,7 +69,7 @@ flowchart TD
 
 ### 1. Ingestion Airlock and Sovereign Security
 Every interaction begins at the Sovereign Gateway before any database query or reasoning model is initialized:
-- **Verhoeff Checksum Airlock:** Civilian identifiers, specifically 12-digit Aadhaar numbers, are validated against Dihedral Group $D_5$ permutation matrices. Detected civilian identifiers, personal phone numbers, and financial tokens are masked at ingestion.
+- **Verhoeff Checksum Airlock:** Civilian identifiers, specifically 12-digit Aadhaar numbers, are validated against Dihedral Group D5 permutation matrices. Detected civilian identifiers, personal phone numbers, and financial tokens are masked at ingestion.
 - **Vigil Statutory Gate:** The query text is screened for statutory compliance. Any query attempting to correlate crime frequency with religious communities, castes, or protected demographics is intercepted and returned with an explicit legal citation: *"Antar does not answer demographic queries per Article 15 of the Constitution of India."* Prohibited attempts are written to the audit chain.
 
 ### 2. Executable Contract Architecture (`AGENTS.md`)
@@ -111,12 +85,12 @@ Operational policing workloads exhibit two distinct access patterns, requiring t
 Over 85% of real-world police queries are structured lookups (incident counts, beat pendency, jurisdictional trends, specific FIR records). 
 - **Zero Free SQL:** Natural language queries decompose into strongly typed parameter slots that bind to **26 hardened, pre-compiled SQL templates (T1–T30)** mapped to verified Karnataka State Police schemas.
 - **Execution Speed:** Queries run directly against covering SQLite B-tree indexes or DuckDB columnar storage in under 50 milliseconds, completely bypassing LLM inference.
-- **5-Step Self-Healing Escalation:** When a user's query does not cleanly map to a template, the system walks a deterministic escalation path: template reroute $ightarrow$ SQL miner relaxation $ightarrow$ dense vector recall $ightarrow$ hybrid BM25 $ightarrow$ honest dead-end. The system provides an honest dead-end rather than inventing a plausible result.
+- **5-Step Self-Healing Escalation:** When a user's query does not cleanly map to a template, the system walks a deterministic escalation path: template reroute -> SQL miner relaxation -> dense vector recall -> hybrid BM25 -> honest dead-end. The system provides an honest dead-end rather than inventing a plausible result.
 
 #### System 2: Deep Multi-Agent Synthesis
 Complex criminal investigations require correlating disconnected signals across multiple jurisdictions:
 - **Network Agent (Bipartite Graph):** Maps relationships between accused individuals, shared vehicles, phone number hashes, and criminal syndicates across police stations.
-- **Profile Agent (Risk Attribution):** Suspect risk scoring uses linear-additive features, enabling exact mathematical SHAP attribution ($100 	imes w_i 	imes f_i$) without approximation. Bias screens run on generated profiles before leaving the node.
+- **Profile Agent (Risk Attribution):** Suspect risk scoring uses linear-additive features, enabling exact mathematical SHAP attribution (100 * w_i * f_i) without approximation. Bias screens run on generated profiles before leaving the node.
 - **Second Brain (Semantic Recall):** A dual-tier vector store that keeps curated intelligence (Modus Operandi, syndicates) separated from the 100,000 raw FIR narrative corpus. Reranking combines BM25 lexical search with 384-dimensional ONNX/CUDA embeddings in **4.1 ms**.
 - **Conformal Risk Forecasting:** Crime incident forecasting uses split-conformal prediction intervals (80% and 90% confidence bands) paired with Uber H3 hexagonal spatial binning, avoiding arbitrary boundary rounding errors.
 
@@ -148,7 +122,7 @@ Vectorized DuckDB C++ execution across 10 ZSTD Parquet partitions compared again
 ### Latency Profiles Across Subsystems
 | Subsystem | Underlying Technology | Measured Latency | Standard LLM RAG | Operational Impact |
 |:---|:---|:---:|:---:|:---|
-| **Airlock Scrubbing** | Verhoeff Dihedral Group $D_5$ | `< 2 ms` | Not Implemented | Strict citizen PII protection |
+| **Airlock Scrubbing** | Verhoeff Dihedral Group D5 | `< 2 ms` | Not Implemented | Strict citizen PII protection |
 | **Statutory Vigil Gate** | Statutory Rules Matrix | `< 4 ms` | 1,200 ms | Instant constitutional filter |
 | **Intent Supervisor** | Compiled LangGraph DAG Router | `< 8 ms` | 1,500 ms | Deterministic agent dispatch |
 | **Template Query (T1-T30)** | SQLite B-Tree Covered Indexes | `< 12 ms` | 4,200 ms | Zero SQL injection risk |
@@ -176,7 +150,7 @@ The following queries highlight specific architectural capabilities across the 1
 | Legal & Security Mandate | Implementation in Antar | Verification Method |
 |:---|:---|:---|
 | **Article 15, Constitution of India** | Vigil gateway blocks demographic and community-based targeting queries. | `tests/test_vigil.py` |
-| **Digital Personal Data Protection (DPDP) Act 2023** | Dihedral Group $D_5$ Verhoeff checksum airlock masks citizen Aadhaar and phone numbers. | `tests/test_airlock.py` |
+| **Digital Personal Data Protection (DPDP) Act 2023** | Dihedral Group D5 Verhoeff checksum airlock masks citizen Aadhaar and phone numbers. | `tests/test_airlock.py` |
 | **Judicial Evidence Admissibility (IEA)** | Zero free SQL execution; G1 numbers guardrail prevents numerical drift between data and response. | `tests/test_guardrails.py` |
 | **Executive Governance** | Human-in-the-Loop cryptographic approval required for patrol redeployments and watchlist additions. | `tests/test_hitl.py` |
 | **Tamper-Evident Accountability** | Every system turn, parameter bind, and officer action is appended to a SHA-256 hash-chained ledger. | `25,357 verified audit blocks` |
