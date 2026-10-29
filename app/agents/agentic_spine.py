@@ -244,7 +244,9 @@ def _suspect_id_from_text(text: str) -> str | None:
     low = text.casefold()
     for s in _world().get("suspects", []):
         values = (s.get("suspect_id", ""), s.get("full_name", ""), s.get("alias", ""))
-        if any(v and len(v.strip()) > 2 and re.search(r"\b" + re.escape(v.strip().casefold()) + r"\b", low) for v in values):
+        # The substring test is a necessary condition for the word-bounded match and is
+        # nearly free; without it every question compiled ~7,000 regexes (~0.6 s).
+        if any(v and len(v.strip()) > 2 and v.strip().casefold() in low and re.search(r"\b" + re.escape(v.strip().casefold()) + r"\b", low) for v in values):
             return s["suspect_id"]
     # "Raju" alone is the planted demo suspect (S0001, alias Yellappa, matched above), but it
     # is also a common first name: "complainant Raju reported a phone theft" is not about

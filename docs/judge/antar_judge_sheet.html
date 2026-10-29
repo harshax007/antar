@@ -1,0 +1,448 @@
+<title>Antar Judge Sheet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+Kannada:wght@500&display=swap">
+<style>
+/* Layout: sticky section bar on top, then one screenshot-sized panel per section on control-room navy; amber = key fact */
+:root{
+  --bg:#070C18; --panel:#0D1526; --panel2:#111C31; --line:#1E2B45; --line2:#2A3B5C;
+  --fg:#E6ECF7; --muted:#93A1BC; --dim:#64728F;
+  --teal:#2EE6C8; --amber:#F2B34A; --amber-bg:rgba(242,179,74,.12); --violet:#A99BFF;
+  --display:"Archivo","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --kn:"Noto Sans Kannada","Nirmala UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(28px,4.2vw,44px);font-weight:800;line-height:1.08}
+h2{font-size:clamp(22px,2.6vw,30px);font-weight:700}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+mark{background:var(--amber-bg);color:var(--amber);padding:0 .25em;border-radius:4px;font-weight:600}
+.mono{font-family:var(--mono)}
+
+/* sticky bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(7,12,24,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px;padding-block:10px}
+.logo{font:800 13px/1 var(--display);letter-spacing:.22em;border:1.5px solid var(--teal);color:var(--teal);padding:7px 10px;border-radius:7px;text-decoration:none;flex:none}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{flex:none;display:flex;gap:7px;align-items:center;font:500 13px/1 var(--body);color:var(--muted);text-decoration:none;padding:9px 11px;border-radius:8px;border:1px solid transparent}
+.tabs a kbd{font:600 10.5px/1 var(--mono);color:var(--dim);border:1px solid var(--line2);border-radius:4px;padding:3px 5px}
+.tabs a:hover{color:var(--fg);background:var(--panel)}
+.tabs a.on{color:var(--fg);background:var(--panel2);border-color:var(--line2)}
+.tabs a.on kbd{color:var(--teal);border-color:var(--teal)}
+.tabs a:focus-visible,.ctl:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.ctl{flex:none;font:500 12px/1 var(--mono);color:var(--muted);background:none;border:1px solid var(--line2);border-radius:8px;padding:9px 10px;cursor:pointer}
+.ctl[aria-pressed="true"]{color:var(--teal);border-color:var(--teal)}
+@media (max-width:760px){.tabs a kbd{display:none}.hint{display:none}}
+
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:26px;padding-block:24px 60px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section,header.hero{scroll-margin-top:76px}
+.panel,.hero{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px clamp(18px,3vw,34px);display:grid;gap:18px;min-width:0}
+.phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.eyebrow{font:600 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+.next{font:500 12px/1 var(--mono);color:var(--dim);text-decoration:none;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;white-space:nowrap}
+.next:hover{color:var(--teal);border-color:var(--teal)}
+.code{display:none;font:11.5px/1.45 var(--mono);color:var(--violet);overflow-wrap:anywhere}
+body.show-code .code{display:block}
+
+/* hero */
+.brand{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.kn{font-family:var(--kn);color:var(--muted)}
+.tag{font:600 11px/1 var(--mono);letter-spacing:.08em;padding:6px 9px;border-radius:6px;border:1px solid var(--line2);color:var(--muted)}
+.lede{font-size:17px;color:#C9D3E6;max-width:68ch}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;display:grid;gap:4px}
+.stat b{font:700 26px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.stat b em{font-style:normal;color:var(--teal)}
+.stat span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.stat.key{border-color:rgba(242,179,74,.5)}
+.stat.key b em{color:var(--amber)}
+@media (max-width:820px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* coverage */
+.goals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.goal{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:5px;align-content:start;min-width:0}
+.goal .ok{font:600 10.5px/1 var(--mono);letter-spacing:.1em;color:var(--teal);text-transform:uppercase}
+.goal b{font:600 14px/1.3 var(--body)}
+.goal span{font-size:12.5px;color:var(--muted);line-height:1.4}
+@media (max-width:980px){.goals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.scr{font:600 12px/1.3 var(--mono);color:var(--amber)}
+.cov{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.covrow{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:8px;align-content:start;min-width:0}
+.covrow h3{display:flex;gap:10px;align-items:baseline;font-size:15px}
+.covrow h3 .n{font:600 12px/1 var(--mono);color:var(--teal)}
+.covrow ul{margin:0;padding-left:16px;font-size:13.5px;line-height:1.5;color:#C9D3E6}
+.covrow li+li{margin-top:3px}
+.covrow .foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
+@media (max-width:820px){.cov{grid-template-columns:1fr}}
+
+/* architecture */
+.diagram{overflow-x:auto}
+.diagram svg{display:block;width:100%;min-width:720px;height:auto}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* fallback */
+.ladder{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rung{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;display:grid;gap:6px;align-content:start;min-width:0}
+.rung .if{font:600 11px/1.3 var(--mono);letter-spacing:.06em;color:var(--amber);text-transform:uppercase}
+.rung b{font:600 14.5px/1.35 var(--body)}
+.rung small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.rung.key{border-color:rgba(242,179,74,.5)}
+@media (max-width:980px){.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.ladder{grid-template-columns:1fr}}
+.heal{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;counter-reset:s}
+.heal div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13px;line-height:1.4;counter-increment:s;min-width:0}
+.heal div::before{content:"Step " counter(s);display:block;font:600 10.5px/1 var(--mono);letter-spacing:.1em;color:var(--teal);margin-bottom:7px;text-transform:uppercase}
+.heal div:last-child::before{content:"Last";color:var(--amber)}
+.sub{font:600 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+@media (max-width:820px){.heal{grid-template-columns:1fr 1fr}}
+
+/* security */
+.layers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.layer{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;display:grid;gap:6px;align-content:start;min-width:0}
+.layer h3{display:flex;gap:10px;align-items:baseline;font-size:15px}
+.layer h3 .n{font:600 11px/1 var(--mono);color:var(--teal)}
+.layer p{font-size:13.5px;color:#C2CCDF;line-height:1.5}
+.layer .use{font-size:12.5px;color:var(--amber);font-family:var(--mono)}
+.layer .use b{color:var(--dim);font-weight:600;margin-right:4px}
+.layer.key{border-color:rgba(242,179,74,.5)}
+.layer.key h3 .n{color:var(--amber)}
+@media (max-width:980px){.layers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.layers{grid-template-columns:1fr}}
+
+/* templates */
+.tgroups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tg{display:grid;gap:6px;align-content:start;min-width:0}
+.tg h3{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px}
+.t{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.t b{font:600 12.5px/1 var(--mono);color:var(--teal)}
+.t span{font-size:13.5px;line-height:1.4}
+.t i{display:block;font-style:normal;color:var(--dim);font-size:12px;font-family:var(--mono)}
+.t.key{border-color:rgba(242,179,74,.5)}
+.t.key b{color:var(--amber)}
+@media (max-width:820px){.tgroups{grid-template-columns:1fr}}
+
+/* stack */
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+td:first-child{color:var(--muted);white-space:nowrap;font:12px var(--mono)}
+td b{font-weight:600}
+
+/* boundaries */
+.honest{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.honest div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-size:13.5px;line-height:1.5;color:#C2CCDF;min-width:0}
+.honest b{display:block;color:var(--fg);margin-bottom:3px}
+@media (max-width:900px){.honest{grid-template-columns:1fr 1fr}}
+@media (max-width:620px){.honest{grid-template-columns:1fr}}
+footer{color:var(--dim);font:12px/1.5 var(--mono);text-align:center}
+.top{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;font:600 12px/1 var(--mono);color:var(--fg);background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:10px 13px;text-decoration:none}
+.top:hover{border-color:var(--teal);color:var(--teal)}
+</style>
+
+<nav class="bar" aria-label="Sections">
+  <div class="bar-in">
+    <a class="logo" href="#overview">ANTAR</a>
+    <div class="tabs" id="tabs">
+      <a href="#overview"><kbd>1</kbd>Overview</a>
+      <a href="#coverage"><kbd>2</kbd>Challenge coverage</a>
+      <a href="#architecture"><kbd>3</kbd>Architecture</a>
+      <a href="#fallback"><kbd>4</kbd>Offline &amp; fallback</a>
+      <a href="#security"><kbd>5</kbd>Security</a>
+      <a href="#ai"><kbd>6</kbd>Core AI &amp; ML</a>
+      <a href="#stack"><kbd>7</kbd>Tech stack</a>
+      <a href="#limits"><kbd>8</kbd>Boundaries</a>
+    </div>
+    <span class="hint mono" style="font-size:11px;color:var(--dim);flex:none">← → to move</span>
+    <button class="ctl" id="codeBtn" type="button" aria-pressed="false">Code files</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- 1 OVERVIEW -->
+<header class="hero" id="overview">
+  <div class="brand"><span class="eyebrow" style="margin:0">Karnataka State Police · Datathon 2026</span><span class="kn">ಅಂತರ್</span></div>
+  <h1>Ask the FIR register in English or Kannada. <span style="color:var(--teal)">Every number comes with its source.</span></h1>
+  <p class="lede">Antar runs an <mark>approved query</mark> on the register, <mark>checks every number</mark> against the rows it got back, and sends any real-world action to a <mark>second officer</mark> for approval.</p>
+  <div class="stats">
+    <div class="stat key"><b>20.4<em> lakh</em></b><span>FIRs searched live in the Lab (10 lakh in the cloud)</span></div>
+    <div class="stat key"><b>~1<em> s</em></b><span>per answer once warm</span></div>
+    <div class="stat key"><b>93.3<em>%</em></b><span>correct on a 150-question gold set</span></div>
+    <div class="stat key"><b>26</b><span>approved SQL templates. The AI never writes SQL</span></div>
+    <div class="stat"><b>20</b><span>agents, checked against a manifest at build time</span></div>
+    <div class="stat"><b>1<em> crore</em></b><span>rows in the scale test, each query under 1 s</span></div>
+    <div class="stat"><b>1.7<em> ms</em></b><span>GPU search over 100,000 FIR vectors</span></div>
+    <div class="stat"><b>14</b><span>security layers, all enforced in code</span></div>
+  </div>
+</header>
+
+<!-- 2 COVERAGE -->
+<section class="panel" id="coverage">
+  <div class="phead"><div><p class="eyebrow">Challenge coverage</p><h2>All 10 areas of the KSP challenge are built</h2></div><a class="next" href="#architecture">Next: Architecture →</a></div>
+  <div class="goals">
+    <div class="goal"><span class="ok">✓ Built</span><b>Crime pattern discovery</b><span>Trends, hotspots, MO, festivals</span><span class="scr">/trends · /map</span></div>
+    <div class="goal"><span class="ok">✓ Built</span><b>Criminal network analysis</b><span>Shared keys, gang groups</span><span class="scr">/network</span></div>
+    <div class="goal"><span class="ok">✓ Built</span><b>Socio-demographic insights</b><span>Census indicators, aggregate only</span><span class="scr">/search · social</span></div>
+    <div class="goal"><span class="ok">✓ Built</span><b>Behavioural profiling</b><span>History, MO, explained risk score</span><span class="scr">/profiles</span></div>
+    <div class="goal"><span class="ok">✓ Built</span><b>Proactive prevention</b><span>Alerts, forecasts, approved patrols</span><span class="scr">/predict · /approvals</span></div>
+  </div>
+  <div class="cov">
+    <div class="covrow"><h3><span class="n">01</span>Conversational interface</h3><ul>
+      <li>Chat in <mark>English and ಕನ್ನಡ</mark>, same numbers in both</li>
+      <li>FIRs, accused, victims, station, status, criminal history</li>
+      <li><mark>Follow-up questions</mark> keep context ("and in Mysuru?")</li>
+      <li><mark>PDF</mark> of the conversation saved locally</li>
+      <li><mark>Voice</mark>: speak the question, hear the answer</li></ul>
+      <div class="foot"><span class="scr">/antar</span><span class="code">chat_stream.py · sessions.py · export_api.py · voice.py</span></div></div>
+    <div class="covrow"><h3><span class="n">02</span>Network &amp; relationships</h3><ul>
+      <li>Links between accused, victims, places, accounts, cases</li>
+      <li><mark>Every link names its shared key</mark>: vehicle, phone, UPI, IP</li>
+      <li>Gang groups found by <mark>Louvain community detection</mark></li>
+      <li>Key players ranked by PageRank; 2D and 3D graphs</li></ul>
+      <div class="foot"><span class="scr">/network · /antarBrain</span><span class="code">network_agent.py · graph_cache.py</span></div></div>
+    <div class="covrow"><h3><span class="n">03</span>Patterns &amp; trends</h3><ul>
+      <li>Trends by time, place, crime type and MO</li>
+      <li>Hotspots by <mark>Gi* statistics</mark>; <mark>repeat locations</mark> in 76 m H3 cells</li>
+      <li>Day-of-week and payday patterns</li>
+      <li><mark>Festival effect</mark>: Deepavali, Dasara, Ganesha, Ugadi…</li></ul>
+      <div class="foot"><span class="scr">/trends · /map</span><span class="code">map_api.py · repeat_locations.py · pattern_agent.py</span></div></div>
+    <div class="covrow"><h3><span class="n">04</span>Sociological insights</h3><ul>
+      <li>Age and gender breakdowns, <mark>aggregate only</mark></li>
+      <li>Crime vs <mark>urbanisation, migration, literacy</mark>, schooling</li>
+      <li>Each link also shown with urbanisation held constant</li>
+      <li>Community targeting is <mark>refused</mark> (Article 15)</li></ul>
+      <div class="foot"><span class="scr">/search · social</span><span class="code">social_agent.py · social_indicators.py</span></div></div>
+    <div class="covrow"><h3><span class="n">05</span>Offender profiling</h3><ul>
+      <li>Repeat offenders and habitual criminals</li>
+      <li>Behaviour from crime history and MO</li>
+      <li><mark>Risk score 0–100</mark> showing how many points each factor added</li>
+      <li>Bias check and masking on every profile</li></ul>
+      <div class="foot"><span class="scr">/profiles</span><span class="code">profile_agent.py</span></div></div>
+    <div class="covrow"><h3><span class="n">06</span>Investigator support</h3><ul>
+      <li><mark>Case timeline</mark> and printable case sheet</li>
+      <li><mark>Similar past FIRs</mark> and how they ended</li>
+      <li><mark>Leads</mark>: the unknown gaps worth collecting</li>
+      <li>An agent that <mark>argues against</mark> weak hypotheses</li></ul>
+      <div class="foot"><span class="scr">/case · /antarBrain</span><span class="code">case_api.py · research_agent.py · advocate_agent.py</span></div></div>
+    <div class="covrow"><h3><span class="n">07</span>Financial crime</h3><ul>
+      <li><mark>Money trail</mark> across accounts and cases</li>
+      <li>UPI IDs shared across districts, e.g. <mark>one UPI ID on 18 FIRs in 4 districts</mark></li>
+      <li>Workflow: propose a watchlist, a second officer approves, new FIRs raise alerts</li></ul>
+      <div class="foot"><span class="scr">/search · money</span><span class="code">money_api.py · hitl.py</span></div></div>
+    <div class="covrow"><h3><span class="n">08</span>Forecasting &amp; early warning</h3><ul>
+      <li>Weekly scan flags <mark>unusual spikes</mark></li>
+      <li>Forecasts with a <mark>calibrated range</mark> (conformal)</li>
+      <li>Watchlist tripwires for people, patterns, corridors</li>
+      <li>Patrols are <mark>proposed, never ordered</mark></li></ul>
+      <div class="foot"><span class="scr">/predict</span><span class="code">forecast_agent.py · app/forecast/ · sentinel_agent.py</span></div></div>
+    <div class="covrow"><h3><span class="n">09</span>Explainable AI</h3><ul>
+      <li><mark>Citations on every answer</mark>: FIR IDs and rows</li>
+      <li>A number not found in the rows is <mark>removed</mark></li>
+      <li>Every answer can be <mark>replayed step by step</mark></li>
+      <li>Tamper-evident audit log</li></ul>
+      <div class="foot"><span class="scr">/antar · /trace</span><span class="code">answer_guardrails.py · audit_store.py</span></div></div>
+    <div class="covrow"><h3><span class="n">10</span>Roles &amp; governance</h3><ul>
+      <li><mark>6 roles</mark>: Constable, Inspector, Analyst, Approver, Admin, Superintendent</li>
+      <li>Each agent checks rank <mark>before it runs</mark></li>
+      <li><mark>DPDP</mark>: Aadhaar, phone, UPI, PAN, account masked</li>
+      <li>Real-world actions need <mark>two officers</mark></li></ul>
+      <div class="foot"><span class="scr">/governance · /admin</span><span class="code">policy.py · auth_middleware.py · guardrails.py</span></div></div>
+  </div>
+</section>
+
+<!-- 3 ARCHITECTURE -->
+<section class="panel" id="architecture">
+  <div class="phead"><div><p class="eyebrow">Architecture</p><h2>How one question travels</h2></div><a class="next" href="#fallback">Next: Offline &amp; fallback →</a></div>
+  <div class="diagram">
+  <svg viewBox="0 0 1100 560" role="img" aria-label="Antar architecture: officer browser, gate, LangGraph agents, guardrails, data and models">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#64728F" stroke-width="1.6" stroke-linecap="round"/></marker></defs>
+    <style>
+      .bx{fill:#111C31;stroke:#2A3B5C}.tl{font:700 15px Archivo,sans-serif;fill:#E6ECF7}.st{font:400 12.5px 'IBM Plex Sans',sans-serif;fill:#93A1BC}
+      .ln{stroke:#64728F;stroke-width:1.4;fill:none}.gt{fill:#0F2A2A;stroke:#2EE6C8}.ag{fill:#121F38;stroke:#3C5583}.dt{fill:#1D1A12;stroke:#6B5521}.zn{fill:none;stroke:#1E2B45;stroke-dasharray:4 5}
+      .zl{font:600 11px 'JetBrains Mono',monospace;fill:#64728F;letter-spacing:.12em}
+    </style>
+    <rect class="bx" x="20" y="30" width="200" height="74" rx="10"/>
+    <text class="tl" x="40" y="60">Officer</text><text class="st" x="40" y="82">Next.js · English / ಕನ್ನಡ · voice</text>
+    <rect class="zn" x="250" y="14" width="830" height="430" rx="14"/>
+    <text class="zl" x="268" y="36">FASTAPI + LANGGRAPH · CATALYST APPSAIL</text>
+    <rect class="gt" x="270" y="52" width="170" height="74" rx="10"/><text class="tl" x="288" y="82">Signed token</text><text class="st" x="288" y="104">HMAC · rank · rate limit</text>
+    <rect class="gt" x="458" y="52" width="170" height="74" rx="10"/><text class="tl" x="476" y="82">Vigil</text><text class="st" x="476" y="104">Refuses targeting</text>
+    <rect class="gt" x="646" y="52" width="170" height="74" rx="10"/><text class="tl" x="664" y="82">Supervisor</text><text class="st" x="664" y="104">Router, LLM only if stuck</text>
+    <rect class="gt" x="834" y="52" width="226" height="74" rx="10"/><text class="tl" x="852" y="82">Policy per agent</text><text class="st" x="852" y="104">Deny below min rank</text>
+    <path class="ln" d="M220 67 H266" marker-end="url(#ar)"/>
+    <path class="ln" d="M440 89 H454" marker-end="url(#ar)"/><path class="ln" d="M628 89 H642" marker-end="url(#ar)"/><path class="ln" d="M816 89 H830" marker-end="url(#ar)"/>
+    <path class="ln" d="M947 126 V150 H352"/>
+    <path class="ln" d="M352 150 V170" marker-end="url(#ar)"/><path class="ln" d="M528 150 V170" marker-end="url(#ar)"/><path class="ln" d="M704 150 V170" marker-end="url(#ar)"/><path class="ln" d="M880 150 V170" marker-end="url(#ar)"/>
+    <rect class="ag" x="270" y="174" width="164" height="92" rx="10"/><text class="tl" x="288" y="204">Query</text><text class="st" x="288" y="226">26 approved templates</text><text class="st" x="288" y="246">self-heal if empty</text>
+    <rect class="ag" x="446" y="174" width="164" height="92" rx="10"/><text class="tl" x="464" y="204">Network · Profile</text><text class="st" x="464" y="226">links by shared key</text><text class="st" x="464" y="246">explained risk score</text>
+    <rect class="ag" x="622" y="174" width="164" height="92" rx="10"/><text class="tl" x="640" y="204">Forecast</text><text class="st" x="640" y="226">geo · predict · pattern</text><text class="st" x="640" y="246">alerts (propose only)</text>
+    <rect class="ag" x="798" y="174" width="262" height="92" rx="10"/><text class="tl" x="816" y="204">Brain · Research · Advocate</text><text class="st" x="816" y="226">similar FIRs, dossier, and an</text><text class="st" x="816" y="246">LLM-free agent that argues back</text>
+    <path class="ln" d="M352 266 V296" marker-end="url(#ar)"/><path class="ln" d="M528 266 V296" marker-end="url(#ar)"/><path class="ln" d="M704 266 V296" marker-end="url(#ar)"/><path class="ln" d="M929 266 V296" marker-end="url(#ar)"/>
+    <rect class="gt" x="270" y="300" width="790" height="74" rx="10"/>
+    <text class="tl" x="288" y="330">Synthesize + guardrails</text>
+    <text class="st" x="288" y="352">Every number checked against the rows · IDs verbatim · PII masked · no future dates · sources attached</text>
+    <path class="ln" d="M270 337 H120 V108" marker-end="url(#ar)"/>
+    <text class="st" x="40" y="160">answer streams back</text><text class="st" x="40" y="178">with citations</text>
+    <rect class="bx" x="20" y="300" width="200" height="74" rx="10"/><text class="tl" x="40" y="330">Second officer</text><text class="st" x="40" y="352">approves real actions</text>
+    <path class="ln" d="M352 374 V472" marker-end="url(#ar)"/><path class="ln" d="M560 374 V472" marker-end="url(#ar)"/><path class="ln" d="M768 374 V472" marker-end="url(#ar)"/><path class="ln" d="M976 374 V472" marker-end="url(#ar)"/>
+    <rect class="dt" x="270" y="476" width="180" height="70" rx="10"/><text class="tl" x="288" y="504">FIR register</text><text class="st" x="288" y="526">SQLite · DuckDB (Lab)</text>
+    <rect class="dt" x="478" y="476" width="180" height="70" rx="10"/><text class="tl" x="496" y="504">Brain index</text><text class="st" x="496" y="526">ONNX · int8 · CUDA</text>
+    <rect class="dt" x="686" y="476" width="180" height="70" rx="10"/><text class="tl" x="704" y="504">QuickML LLMs</text><text class="st" x="704" y="526">GLM chat · Qwen analysis</text>
+    <rect class="dt" x="894" y="476" width="166" height="70" rx="10"/><text class="tl" x="912" y="504">Audit chain</text><text class="st" x="912" y="526">hash-linked log</text>
+    <path class="ln" d="M120 374 V511 H266" marker-end="url(#ar)"/>
+    <text class="st" x="40" y="430">approval queue:</text><text class="st" x="40" y="448">hash-locked payload</text>
+  </svg>
+  </div>
+  <div class="legend"><span><i style="background:#2EE6C8"></i>Checks every request passes</span><span><i style="background:#3C5583"></i>Agents</span><span><i style="background:#6B5521"></i>Data and models</span></div>
+</section>
+
+<!-- 4 FALLBACK -->
+<section class="panel" id="fallback">
+  <div class="phead"><div><p class="eyebrow">Offline &amp; fallback</p><h2>When something fails, Antar degrades. It never invents.</h2></div><a class="next" href="#security">Next: Security →</a></div>
+  <div class="ladder">
+    <div class="rung key"><span class="if">If the AI model is down</span><b>Still answers from the register</b><small>Rule router + approved templates write the answer from the rows. The model gets an 8 s cap.</small></div>
+    <div class="rung key"><span class="if">If there is no internet</span><b>Runs fully on-premise</b><small>Point it at a local model (Ollama, vLLM, llama.cpp): no case text leaves the machine.</small></div>
+    <div class="rung key"><span class="if">If a query finds nothing</span><b>Self-heals, then says "none found"</b><small>Five repair steps below. Never fills the gap with other years' data.</small></div>
+    <div class="rung"><span class="if">If an agent keeps failing</span><b>Circuit breaker, 60 s</b><small>The step shows as skipped; the rest of the answer still arrives.</small></div>
+    <div class="rung"><span class="if">If there is no GPU</span><b>Same search on the CPU</b><small>62 ms instead of 1.7 ms, identical results.</small></div>
+    <div class="rung"><span class="if">If the server restarts</span><b>The conversation resumes</b><small>Every turn is checkpointed to disk.</small></div>
+  </div>
+  <p class="sub">Self-heal ladder</p>
+  <div class="heal">
+    <div>Reroute to the right template</div><div>Relax the query step by step</div><div>Meaning-based match</div><div>Keyword + meaning fragments</div><div>Honest "none found" with nearest hint</div>
+  </div>
+</section>
+
+<!-- 5 SECURITY -->
+<section class="panel" id="security">
+  <div class="phead"><div><p class="eyebrow">Security &amp; governance</p><h2>14 layers, each enforced in code</h2></div><a class="next" href="#ai">Next: Core AI &amp; ML →</a></div>
+  <div class="layers">
+    <div class="layer key"><h3><span class="n">01</span>No free SQL</h3><p>The AI only picks one of 26 approved templates. It cannot write or change a query.</p></div>
+    <div class="layer key"><h3><span class="n">02</span>Every number checked</h3><p>A number not found in the returned rows is removed. FIR IDs must match exactly.</p></div>
+    <div class="layer key"><h3><span class="n">03</span>Vigil refuses targeting</h3><p>Questions aimed at a community are refused (Article 15) and logged.</p></div>
+    <div class="layer key"><h3><span class="n">04</span>PII masked (DPDP)</h3><p>Aadhaar (Verhoeff check), phone, email, UPI, account and PAN masked before the AI sees text.</p></div>
+    <div class="layer key"><h3><span class="n">05</span>Two-person approval</h3><p>Patrols and watchlists need a second officer, a written reason and the exact payload hash.</p></div>
+    <div class="layer key"><h3><span class="n">06</span>Tamper-evident audit</h3><p>Every request and decision is on a hash chain. One edited row breaks it.</p></div>
+    <div class="layer"><h3><span class="n">07</span>Signed identity</h3><p>HMAC-signed tokens, 8-hour expiry, revoked on sign-out.</p></div>
+    <div class="layer"><h3><span class="n">08</span>Rank before every agent</h3><p>Each agent declares a minimum rank and refuses below it.</p></div>
+    <div class="layer"><h3><span class="n">09</span>Prompt-injection defence</h3><p>FIR text treated as data; hidden instructions quarantined; leak canary.</p></div>
+    <div class="layer"><h3><span class="n">10</span>Egress allow-list</h3><p>Every outbound call is checked against a list and counted.</p></div>
+    <div class="layer"><h3><span class="n">11</span>Hardened HTTP</h3><p>Security headers, size cap, rate limit, no stack traces to users.</p></div>
+    <div class="layer"><h3><span class="n">12</span>An agent that argues back</h3><p>Base-rate challenge before a hypothesis is confirmed. No AI model, so no hallucination.</p></div>
+    <div class="layer"><h3><span class="n">13</span>Places, not people</h3><p>Forecasts are for places and times. No future dates leave the server.</p></div>
+    <div class="layer"><h3><span class="n">14</span>Locked agents &amp; prompts</h3><p>A changed prompt stops the production server from starting.</p></div>
+    <div class="layer"><h3><span class="n">+</span>Open web kept apart</h3><p>OSINT findings stay labelled UNVERIFIED, never merged into FIRs.</p></div>
+  </div>
+</section>
+
+<!-- 6 CORE AI & ML -->
+<section class="panel" id="ai">
+  <div class="phead"><div><p class="eyebrow">Core AI &amp; ML</p><h2>Which models run, and where each one is used</h2></div><a class="next" href="#stack">Next: Tech stack →</a></div>
+  <p class="sub">Generative AI (language models)</p>
+  <div class="layers">
+    <div class="layer key"><h3><span class="n">01</span>GLM-4.7-Flash</h3><p>Fast chat model on Catalyst QuickML. Picks the template and fills the slots (place, crime, dates) from the question. It never writes SQL.</p><p class="use"><b>Used in</b> /antar chat · 8 s cap, then the rule path</p></div>
+    <div class="layer"><h3><span class="n">02</span>Qwen 3.6 35B</h3><p>Analysis model. Writes the final answer when several agents return results, from their rows only.</p><p class="use"><b>Used in</b> multi-agent answers · Brain · case summaries</p></div>
+    <div class="layer"><h3><span class="n">03</span>Qwen 3.6 VL (vision)</h3><p>Reads scanned documents and photos of evidence.</p><p class="use"><b>Used in</b> document upload</p></div>
+    <div class="layer"><h3><span class="n">04</span>Local LLM option</h3><p>Ollama, vLLM or llama.cpp instead of QuickML, so no case text leaves the building.</p><p class="use"><b>Used in</b> offline / on-premise mode</p></div>
+  </div>
+  <p class="sub">Machine learning &amp; statistics</p>
+  <div class="layers">
+    <div class="layer key"><h3><span class="n">05</span>BGE-small embeddings (ONNX, int8)</h3><p>Turns every FIR into a 384-number vector so similar cases can be found by meaning, not just words.</p><p class="use"><b>Used in</b> Brain recall over 1 lakh FIRs · CUDA GPU in 1.7 ms</p></div>
+    <div class="layer"><h3><span class="n">06</span>Hybrid search + reranker</h3><p>BM25 keywords and vectors merged (RRF), reranked by an MS-MARCO cross-encoder, then MMR for variety.</p><p class="use"><b>Used in</b> /antarBrain · similar past cases</p></div>
+    <div class="layer key"><h3><span class="n">07</span>Rule router + Kannada normaliser</h3><p>Deterministic intent rules route most questions with no AI call; Kannada is normalised before routing.</p><p class="use"><b>Used in</b> every question · English and ಕನ್ನಡ</p></div>
+    <div class="layer key"><h3><span class="n">08</span>Poisson GLM forecast + conformal range</h3><p>Expected crime per station and beat for 7 and 28 days, with a split-conformal range that holds ~80% of the time.</p><p class="use"><b>Used in</b> /predict</p></div>
+    <div class="layer"><h3><span class="n">09</span>LightGBM challenger</h3><p>Gradient-boosted model that competes with the GLM in a backtest league; it ships only if it wins.</p><p class="use"><b>Used in</b> /predict · Model League (Lab)</p></div>
+    <div class="layer key"><h3><span class="n">10</span>Anomaly detection</h3><p>Robust z-score with seasonal detrending flags unusual weekly spikes, and also unusual silences.</p><p class="use"><b>Used in</b> /predict alerts · patrol proposals</p></div>
+    <div class="layer"><h3><span class="n">11</span>Hotspot statistics</h3><p>Getis-Ord Gi* hotspots, KDE heat and Uber H3 cells (~76 m) for repeat locations.</p><p class="use"><b>Used in</b> /map · /trends</p></div>
+    <div class="layer"><h3><span class="n">12</span>Graph analytics</h3><p>Louvain community detection finds gang groups; PageRank and betweenness rank key players.</p><p class="use"><b>Used in</b> /network · /antarBrain</p></div>
+    <div class="layer key"><h3><span class="n">13</span>Explainable risk score + SHAP</h3><p>Linear risk score 0–100, so each factor's SHAP points are exact, not estimated.</p><p class="use"><b>Used in</b> /profiles</p></div>
+    <div class="layer"><h3><span class="n">14</span>Bayesian Advocate (no LLM)</h3><p>Prices each link against its base rate and corrects for how many pairs were scanned, then argues against weak hypotheses.</p><p class="use"><b>Used in</b> hypothesis confirm gate · /antarBrain</p></div>
+  </div>
+  <p class="sub" style="text-transform:none;letter-spacing:0;font-family:var(--body);font-size:12.5px">Language models choose and explain. The numbers always come from the register, the statistics and the ML models above.</p>
+</section>
+
+<!-- 7 STACK -->
+<section class="panel" id="stack">
+  <div class="phead"><div><p class="eyebrow">Tech stack</p><h2>What runs where</h2></div><a class="next" href="#limits">Next: Boundaries →</a></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Layer</th><th>Technology</th><th>Role in Antar</th></tr></thead>
+    <tbody>
+      <tr><td>Hosting</td><td><b>Zoho Catalyst</b> AppSail · Web Client · Data Store · Stratus</td><td>API, website, storage</td></tr>
+      <tr><td>AI models</td><td><b>Catalyst QuickML</b>: GLM-4.7-Flash · Qwen · Qwen VL</td><td>One model per job: chat, analysis, documents</td></tr>
+      <tr><td>Agents</td><td><b>LangGraph</b> · FastAPI</td><td>20 agents, durable case memory, streaming answers</td></tr>
+      <tr><td>Data</td><td><b>SQLite</b> · <b>DuckDB + Parquet</b></td><td>20.4 lakh FIRs; 1-crore benchmark under 1 s per query</td></tr>
+      <tr><td>Search</td><td><b>ONNX</b> embeddings · BM25 · reranker · <b>CUDA GPU</b></td><td>Similar FIRs in 1.7 ms on the GPU</td></tr>
+      <tr><td>Forecasting</td><td>scikit-learn · <b>LightGBM</b> · conformal ranges</td><td>Risk by place and time with a calibrated range</td></tr>
+      <tr><td>Maps</td><td><b>Uber H3</b> · Gi* · Leaflet</td><td>Repeat locations, hotspots</td></tr>
+      <tr><td>Graphs</td><td>NetworkX · Three.js · vis-network</td><td>Gang groups, 3D Brain, network view</td></tr>
+      <tr><td>Language</td><td>Kannada router · <b>Bhashini</b> · speech · gTTS</td><td>Kannada and voice</td></tr>
+      <tr><td>Frontend</td><td><b>Next.js 14</b> · React 18 · Recharts · React Flow</td><td>All screens</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 8 BOUNDARIES -->
+<section class="panel" id="limits">
+  <div class="phead"><div><p class="eyebrow">Boundaries</p><h2>What Antar will not do</h2></div><a class="next" href="#overview">Back to top ↑</a></div>
+  <div class="honest">
+    <div><b>Forecast people</b>Risk is for places and times only.</div>
+    <div><b>Act on its own</b>Patrols and watchlists wait for a second officer.</div>
+    <div><b>Target communities</b>Refused before any data is read, and logged.</div>
+    <div><b>Mix the open web into FIRs</b>Web findings stay labelled UNVERIFIED.</div>
+    <div><b>Present a lead as a finding</b>Similar FIRs are tagged as leads, all the way into the answer.</div>
+    <div><b>Hide demo data</b>Seeded records such as Raju K are marked; the 1-crore set is a speed-test copy.</div>
+  </div>
+</section>
+
+<footer>Antar · checked against the code and live databases, 29 Oct 2026</footer>
+</div>
+
+<a class="top" href="#overview" aria-label="Back to top">↑ Top</a>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('#tabs a'));
+  var ids = links.map(function (a) { return a.getAttribute('href').slice(1); });
+  var secs = ids.map(function (id) { return document.getElementById(id); });
+  var cur = 0;
+  function mark(i) {
+    cur = i;
+    links.forEach(function (a, j) { a.classList.toggle('on', j === i); if (j === i) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+    var a = links[i]; if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  function onScroll() {
+    var y = window.innerHeight * 0.3, best = 0;
+    secs.forEach(function (s, i) { if (s && s.getBoundingClientRect().top - y <= 0) best = i; });
+    if (best !== cur) mark(best);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  mark(0); onScroll();
+  function go(i) { i = Math.max(0, Math.min(secs.length - 1, i)); secs[i].scrollIntoView(); mark(i); }
+  document.addEventListener('keydown', function (e) {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === 'j') { e.preventDefault(); go(cur + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'k') { e.preventDefault(); go(cur - 1); }
+    else if (/^[1-8]$/.test(e.key)) { go(Number(e.key) - 1); }
+    else if (e.key === 'c') { toggle(); }
+  });
+  var btn = document.getElementById('codeBtn');
+  function set(on) { document.body.classList.toggle('show-code', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.textContent = on ? 'Hide code files' : 'Code files'; try { localStorage.setItem('antar-code', on ? '1' : '0'); } catch (e) {} }
+  function toggle() { set(!document.body.classList.contains('show-code')); }
+  btn.addEventListener('click', toggle);
+  try { if (localStorage.getItem('antar-code') === '1') set(true); } catch (e) {}
+})();
+</script>

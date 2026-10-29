@@ -1,6 +1,6 @@
 /**
- * AccuracyCard.jsx — Gold Benchmark Accuracy & No-Hallucination Audit Card (Phase L6)
- * Displays execution accuracy across 150 gold items (75 EN + 75 KN), 100% no-hallucination rate,
+ * AccuracyCard.jsx — Gold Benchmark Accuracy & Data Grounding Audit Card (Phase L6)
+ * Displays execution accuracy across 150 gold items (75 EN + 75 KN), 100% verified grounding,
  * p50/p95 latencies, and category quotas.
  */
 import React, { useState, useEffect } from "react";
@@ -116,7 +116,7 @@ export default function AccuracyCard({ kn = false }) {
         </div>
 
         <div className="rounded-lg bg-background/50 border border-border/40 p-4">
-          <div className="text-xs text-muted-foreground">{kn ? "ಶೂನ್ಯ-ಭ್ರಮೆ ದರ" : "No-Hallucination Rate"}</div>
+          <div className="text-xs text-muted-foreground">{kn ? "ದೃಢೀಕರಿಸಿದ ಮಾಹಿತಿ ದರ" : "Verified Grounding Rate"}</div>
           <div className="mt-1 text-2xl font-black text-emerald-400">{noHalRate}%</div>
           <div className="mt-1 text-[11px] text-muted-foreground">
             {kn ? "0 ಕೃತಕ ಅಂಕಿಅಂಶಗಳು" : "0 invented numbers"}

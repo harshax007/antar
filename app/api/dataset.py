@@ -124,7 +124,7 @@ def _where(year: int | None, district: str | None, groups: list[str] | None,
     # PROTECTION: never surface future-dated FIRs on query paths. Rows dated after today stay
     # hidden and "unlock" automatically at midnight. Null dates pass.
     if gate:
-        clauses.append("(date IS NULL OR date <= date('now','localtime'))")
+        clauses.append("date <= date('now','localtime')")
     if exclude_synthetic:
         clauses.append("is_synthetic_row = 0")
     if year:

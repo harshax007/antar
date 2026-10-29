@@ -141,15 +141,16 @@ export default function ApprovalsPage() {
   return (
     <div className="ac-page">
       <AccountSidebar activeSection="approvals" hitlBadge={pendingN} />
-      <div className="ac-main ap-page" style={{ padding: "var(--sp-8) var(--sp-6) var(--sp-10)", overflowY: "auto", minHeight: "100vh" }}>
+      <div className="ac-main ap-page" style={{ padding: "var(--sp-8) var(--sp-6) var(--sp-10)", overflowY: "auto" }}>
         <div className="ap-wrap">
         <header className="ap-head">
           <div className="ap-hero">
+            <p className="ap-kicker">{kn ? "ಅಧಿಕಾರಿ ನಿರ್ಧಾರದ ಸರಪಳಿಯಲ್ಲಿ · ಎರಡನೇ ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆ" : "Officer in the loop · two-person approval"}</p>
             <h1>{approver
               ? (pendingN > 0
-                  ? (kn ? <><em>{pendingN}</em> ಕ್ರಮ ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ.</> : <><em>{pendingN} {pendingN === 1 ? "action" : "actions"}</em> waiting for your decision.</>)
-                  : (kn ? "ನಿಮ್ಮ ನಿರ್ಧಾರಕ್ಕೆ ಏನೂ ಬಾಕಿ ಇಲ್ಲ." : "Nothing is waiting for your decision."))
-              : (kn ? <>ಎರಡನೇ ಅಧಿಕಾರಿಗಾಗಿ <em>ಕಾಯುತ್ತಿರುವ ಕ್ರಮಗಳು</em></> : <>Actions waiting for <em>a second officer</em></>)}</h1>
+                  ? (kn ? <>ನೀವೇ ನಿರ್ಧಾರಕರು: <em>{pendingN}</em> ಕ್ರಮ ಕಾಯುತ್ತಿದೆ.</> : <>Officer in the loop: <em>{pendingN} {pendingN === 1 ? "action" : "actions"}</em> need your decision.</>)
+                  : (kn ? "ಅಧಿಕಾರಿ ನಿರ್ಧಾರದ ಸರಪಳಿಯಲ್ಲಿ. ಈಗ ಏನೂ ಬಾಕಿ ಇಲ್ಲ." : "Officer in the loop. Nothing is waiting for you right now."))
+              : (kn ? <>ಅಧಿಕಾರಿ ನಿರ್ಧಾರದ ಸರಪಳಿಯಲ್ಲಿ: <em>ಎರಡನೇ ಅಧಿಕಾರಿಗಾಗಿ</em> ಕಾಯುತ್ತಿರುವ ಕ್ರಮಗಳು</> : <>Officer in the loop: actions waiting for <em>a second officer</em></>)}</h1>
             <p>{kn
               ? "ಅಧಿಕಾರಿಯ ಅನುಮೋದನೆಯಿಲ್ಲದೆ ಏನೂ ಜಾರಿಯಾಗುವುದಿಲ್ಲ. ಗಸ್ತು ಮರುನಿಯೋಜನೆ ಮತ್ತು ವೀಕ್ಷಣಾ ಪಟ್ಟಿ ನವೀಕರಣಗಳಿಗೆ ಸ್ವತಂತ್ರ ಮೇಲ್ವಿಚಾರಕ ಅಧಿಕಾರಿಯ ಲಿಖಿತ ಸಹಿ ಅಗತ್ಯ."
               : "Nothing executes without an officer's approval. Patrol redeployments and watchlist updates require written sign-off from an independent supervising officer."}</p>

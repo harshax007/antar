@@ -678,7 +678,11 @@ async def heuristic_select(user_text: str, lang: str, entities: dict | None = No
     if _kt != "any" and re.search(
             r"\b(shared|appear\w*|used|common|repeat\w*|recurring|linked)\b[^.?!]{0,40}"
             r"\b(multiple|more than one|several|many|different|other|two or more)\s+(?:[a-z-]+\s+){0,2}(cases?|firs?|frauds?|complaints?|crimes?)\b",
-            low):
+            low) or (_kt in ("upi", "ip", "vehicle") and re.search(
+            # "which UPI IDs repeat (across FIRs)?" reached the LLM fallback, whose 8 s cap
+            # expired and left the officer with a clarifying question after 15 s.
+            r"\b(repeat\w*|recurr\w*|reused|reappear\w*)\b|\b(shared|common)\s+(across|between|in)\s+(firs?|cases?)\b",
+            low)):
         return choice("T19", {"key_type": _kt, "min_districts": 2, "zones": zones,
                               "crime_types": [c for c in ct if c != "VEHICLE_THEFT"], "limit": limit_val})
 

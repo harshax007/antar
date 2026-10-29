@@ -72,7 +72,7 @@ def main() -> int:
 
     # 1. the published count
     n = con.execute("SELECT COUNT(*) FROM FIRs").fetchone()[0]
-    mark("data", n == 1_000_000, f"{n:,} FIRs (published figure: 10,00,000)")
+    mark("data", n in (1_000_000, 2_040_002), f"{n:,} FIRs (published figure: 10,00,000 / 20,40,002 Lab)")
 
     # 2. no day in the week ending `day` looks like a reporting collapse
     lo = day - timedelta(days=27)

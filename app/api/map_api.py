@@ -213,7 +213,14 @@ async def repeat_locations_api(crime_type: Optional[str] = None, days: int = 90,
         # one police district, or several (a map shape such as Belagavi holds City and Dist)
         names = [d.strip() for d in district.split(",") if d.strip()][:8]
         dists = [z for z in resolve_zones(names) if z not in POLICE_UNITS] or names
-    return await asyncio.to_thread(repeat_locations, anchor, days, crime_filter, dists)
+    from app.services import product_store
+    cache_key = f"map:repeat_locations:{crime_type or ''}:{days}:{anchor.isoformat()}:{','.join(dists or [])}"
+    cached = product_store.get_product(cache_key)
+    if cached:
+        return cached
+    res = await asyncio.to_thread(repeat_locations, anchor, days, crime_filter, dists)
+    product_store.put_product(cache_key, res, ttl=21600)
+    return res
 
 
 _FIR_NO = re.compile(r"^\d{4}-[A-Z]{2,5}-\d{1,6}$")

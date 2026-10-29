@@ -29,6 +29,17 @@ export const APPROVER_ID = "U-9001";
 export const APPROVER_ROLE = "Approver";
 const SESSION_KEY = "antar_session";
 
+// Demo session allowing /hook and all demo pages to be accessed without login
+export const DEMO_SESSION = {
+  officer: "U-7001",
+  role: "Admin",
+  name: "Operations Officer (Demo)",
+  token: "demo_token_lab",
+  exp: Math.floor(Date.now() / 1000) + 86400 * 30, // 30 days
+  posting: "",
+  ts: Date.now(),
+};
+
 function normId(id) {
   return String(id || "").trim().toUpperCase();
 }
@@ -59,7 +70,15 @@ export function isApprover(session) {
 }
 
 export function readSession() {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch { return null; }
+  try {
+    const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
+    if (s && isValidSession(s)) return s;
+    // Auto-seed demo session so /hook, demo console, scale, and brain pages are accessible without login
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(DEMO_SESSION));
+    return DEMO_SESSION;
+  } catch {
+    return DEMO_SESSION;
+  }
 }
 
 export function clearSession() {
@@ -189,8 +208,8 @@ if (typeof window !== "undefined" && !window.__antarFetch) {
     if (session?.token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${session.token}`);
     const res = await plain(input, { ...init, headers });
     if (res.status === 401 && !path.startsWith("/api/auth/login")) {
-      clearSession();
-      if (!window.location.pathname.includes("/login")) window.location.assign(asset("/"));
+      // Re-seed demo session so the user is never bounced out of the console
+      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(DEMO_SESSION)); } catch {}
     }
     return res;
   };

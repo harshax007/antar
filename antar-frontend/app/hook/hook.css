@@ -1,4 +1,4 @@
-/* Hook Presentation Page Styling - 1:1 match to console.typesafe.ai/hook */
+/* Hook Presentation Page Styling - Pure Minimal White with Product Cyan Accents */
 
 /* Sleek modern minimalist scrollbars */
 .hook-page-root ::-webkit-scrollbar {
@@ -13,22 +13,30 @@
   border-radius: 999px;
 }
 .hook-page-root ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: #0A7E8C;
+}
+
+.hook-page-root {
+  background-color: #FFFFFF;
+  color: #111827;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
 }
 
 .hook-left {
-  scrollbar-width: none; /* Hide scrollbar for clean manifesto presentation */
-}
-.hook-left::-webkit-scrollbar {
-  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
 }
 
 /* Header */
 .hook-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 44px;
+  justify-content: flex-end;
+  padding: 12px 44px;
   border-bottom: 1px solid #E5E7EB;
   background-color: #FFFFFF;
   position: sticky;
@@ -42,32 +50,36 @@
   gap: 12px;
 }
 
-.hook-tabs {
+.hook-header-logo {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: invert(1);
+}
+
+.hook-brand-text {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background-color: #F3F4F6;
-  padding: 4px;
-  border-radius: 10px;
+  gap: 8px;
 }
 
-.hook-tab-btn {
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 7px;
-  border: none;
-  background-color: transparent;
-  color: #6B7280;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.hook-tab-btn.active {
-  background-color: #FFFFFF;
+.hook-brand-title {
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.04em;
   color: #111827;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.hook-brand-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(10, 126, 140, 0.08);
+  color: #0A7E8C;
+  border: 1px solid rgba(10, 126, 140, 0.2);
 }
 
 .hook-skip-btn {
@@ -82,11 +94,12 @@
   color: #FFFFFF;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .hook-skip-btn:hover {
   background-color: #000000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 /* Main Split Screen */
@@ -95,11 +108,11 @@
   display: flex;
   flex-direction: row;
   width: 100%;
-  max-width: 1600px;
+  max-width: 1680px;
   margin: 0 auto;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 860px) {
   .hook-main {
     flex-direction: column;
   }
@@ -107,9 +120,9 @@
 
 /* Left Column */
 .hook-left {
-  width: 440px;
-  min-width: 400px;
-  padding: 36px 48px;
+  width: 480px;
+  min-width: 420px;
+  padding: 36px 44px;
   border-right: 1px solid #E5E7EB;
   display: flex;
   flex-direction: column;
@@ -121,7 +134,7 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 860px) {
   .hook-left {
     width: 100%;
     min-width: 0;
@@ -132,38 +145,51 @@
   }
 }
 
+.hook-manifesto-container {
+  padding-bottom: 24px;
+}
+
 .hook-logo-box {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+.hook-hero-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: invert(1);
 }
 
 .hook-kicker {
+  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #6B7280;
-  margin-bottom: 12px;
+  letter-spacing: 0.14em;
+  color: #0A7E8C;
+  margin-bottom: 10px;
 }
 
 .hook-title {
-  font-size: 56px;
+  font-size: 48px;
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.05;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   color: #111827;
 }
 
 .hook-subhead {
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.35;
   color: #1F2937;
-  margin: 0 0 24px 0;
+  margin: 0 0 22px 0;
+  letter-spacing: -0.015em;
 }
 
 .hook-copy {
-  font-size: 14.5px;
+  font-size: 14px;
   line-height: 1.68;
   color: #4B5563;
 }
@@ -177,34 +203,348 @@
   font-weight: 600;
 }
 
-.hook-closing {
-  margin-top: 24px;
-  font-size: 14px;
+.hook-lead {
+  font-size: 14.5px;
+  color: #374151;
+}
+
+/* 4 Core Architectural Showcase Cards (Full Information & Live 3D, No Clicking Needed) */
+.pillar-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 14px 0 22px 0;
+}
+
+.pillar-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-left: 3px solid #0A7E8C;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.pillar-card:hover {
+  border-color: #CBD5E1;
+  border-left-color: #0891B2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+}
+
+.pillar-card-header {
+  padding: 12px 16px 11px 16px;
+  background: #FAFAFB;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.pillar-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pillar-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pillar-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0A7E8C;
+}
+
+.pillar-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.pillar-subtitle {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #0A7E8C;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  margin-top: 1px;
+}
+
+.pillar-3d-stage {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: #F8FAFC;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.pillar-3d-stage:active {
+  cursor: grabbing;
+}
+
+.pillar-canvas-container {
+  width: 100%;
+  height: 100%;
+}
+
+.pillar-drag-hint {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  color: #94A3B8;
+  pointer-events: none;
+}
+
+.pillar-card-content {
+  padding: 12px 16px 14px 16px;
+  background: #FFFFFF;
+}
+
+.pillar-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #4B5563;
+  margin: 0;
+}
+
+/* Architectural Advantages & 3D Interactive Simulation */
+.arch3d-wrapper {
+  margin: 12px 0 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arch3d-tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  background: #F3F4F6;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.arch3d-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.arch3d-tab-btn:hover {
+  color: #111827;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.arch3d-tab-btn.active {
+  background: #FFFFFF;
+  color: #0A7E8C;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.arch3d-stage {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  background: #FAFAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.arch3d-stage:active {
+  cursor: grabbing;
+}
+
+.arch3d-canvas-container {
+  width: 100%;
+  height: 100%;
+}
+
+.arch3d-overlay-badge {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(10, 126, 140, 0.25);
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #0A7E8C;
+}
+
+.arch3d-drag-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #94A3B8;
+  pointer-events: none;
+}
+
+.arch3d-caption-card {
+  padding: 10px 12px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-left: 3px solid #0A7E8C;
+  border-radius: 6px;
+}
+
+.arch3d-headline {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.arch3d-subtext {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #4B5563;
+  margin: 0;
+}
+
+/* Technical Implementations Cards inside Manifesto */
+.hook-tech-stack {
+  margin: 22px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hook-tech-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #0A7E8C;
+  margin-bottom: 4px;
+}
+
+.hook-tech-icon {
+  color: #0A7E8C;
+}
+
+.hook-tech-card {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-left: 3px solid #0A7E8C;
+  border-radius: 7px;
+  padding: 11px 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.hook-tech-card:hover {
+  background: #F3F4F6;
+  border-left-color: #0891B2;
+  transform: translateX(2px);
+}
+
+.hook-tech-card.active-3d-card {
+  background: #FFFFFF;
+  border-color: #0A7E8C;
+  border-left-width: 4px;
+  box-shadow: 0 4px 12px rgba(10, 126, 140, 0.12);
+  transform: translateX(2px);
+}
+
+.hook-tech-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.hook-3d-indicator {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #0A7E8C;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hook-tech-item-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.hook-tech-item-desc {
+  font-size: 12px;
+  line-height: 1.55;
   color: #4B5563;
 }
 
-.hook-signature-box {
-  margin-top: 14px;
-  margin-bottom: 24px;
+.hook-closing-note {
+  font-size: 13px;
+  color: #6B7280;
+  font-style: italic;
+  margin-top: 18px;
+  border-top: 1px dashed #E5E7EB;
+  padding-top: 14px;
 }
 
-.hook-sig-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #9CA3AF;
-  margin-top: 6px;
-}
-
+/* Officer Pill */
 .hook-officer-pill {
-  padding-top: 20px;
-  border-top: 1px solid #F3F4F6;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
   color: #6B7280;
+  margin-top: 20px;
+}
+
+.hook-officer-pill strong {
+  color: #111827;
+}
+
+.hook-status-dot {
+  width: 7.5px;
+  height: 7.5px;
+  border-radius: 50%;
+  background-color: #10B981;
+  display: inline-block;
 }
 
 /* Right Column */
@@ -220,7 +560,7 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 860px) {
   .hook-right {
     height: auto;
     max-height: none;
@@ -229,33 +569,54 @@
 }
 
 .hook-view-content {
-  padding: 44px 56px;
+  padding: 40px 52px;
   overflow-y: auto;
   flex: 1;
 }
 
-/* Accordion Section matching console.typesafe.ai/hook */
+/* Accordion Section */
 .hook-section {
-  margin-bottom: 40px;
+  margin-bottom: 38px;
+}
+
+.hook-section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .hook-section-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #111827;
-  margin: 0 0 6px 0;
+  margin: 0;
+}
+
+.hook-pitch-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 3px 9px;
+  background: rgba(10, 126, 140, 0.08);
+  color: #0A7E8C;
+  border-radius: 5px;
+  border: 1px solid rgba(10, 126, 140, 0.22);
 }
 
 .hook-section-desc {
-  font-size: 14px;
+  font-size: 13.5px;
   color: #6B7280;
   margin: 0 0 16px 0;
   line-height: 1.5;
 }
 
 .hook-acc-item {
-  padding: 16px 0;
+  padding: 15px 0;
   border-top: 1px solid #F3F4F6;
 }
 
@@ -272,20 +633,20 @@
 }
 
 .hook-acc-name {
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 500;
   color: #111827;
   transition: color 0.15s ease;
 }
 
 .hook-acc-header:hover .hook-acc-name {
-  color: #2563EB;
+  color: #0A7E8C;
 }
 
 .hook-acc-icon {
-  font-size: 20px;
-  font-weight: 300;
-  color: #9CA3AF;
+  font-size: 18px;
+  font-weight: 400;
+  color: #0A7E8C;
   margin-left: 16px;
   line-height: 1;
 }
@@ -293,16 +654,17 @@
 .hook-acc-body {
   margin-top: 10px;
   font-size: 13.5px;
-  line-height: 1.62;
+  line-height: 1.64;
   color: #4B5563;
-  padding-right: 28px;
-  border-left: 2px solid #E5E7EB;
-  padding-left: 14px;
+  padding: 10px 16px;
+  border-left: 2px solid #0A7E8C;
+  background: #F9FAFB;
+  border-radius: 0 8px 8px 0;
 }
 
-/* Bottom Pinned Bar matching console.typesafe.ai/hook */
+/* Bottom Pinned Bar */
 .hook-bottom-bar {
-  padding: 20px 56px;
+  padding: 18px 52px;
   border-top: 1px solid #E5E7EB;
   display: flex;
   align-items: center;
@@ -314,7 +676,7 @@
 }
 
 .hook-bottom-prompt {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #111827;
@@ -324,7 +686,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 28px;
+  padding: 13px 28px;
   background-color: #111827;
   color: #FFFFFF;
   border-radius: 9px;
@@ -332,91 +694,84 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
   box-shadow: 0 4px 14px rgba(0,0,0,0.1);
 }
 
 .hook-enter-btn:hover {
-  background-color: #000000;
+  background-color: #0A7E8C;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+  box-shadow: 0 6px 20px rgba(10, 126, 140, 0.25);
 }
 
-/* 3D Breakdown Controls & Container */
-.hook-3d-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+/* ── PROJECTOR & SCREEN BREAKPOINTS (1024x768, 1280x720, 1280x800, 1920x1080) ── */
+@media (min-width: 861px) and (max-width: 1280px) {
+  .hook-left {
+    width: 400px;
+    min-width: 360px;
+    padding: 24px 28px;
+  }
+  .hook-view-content {
+    padding: 26px 34px;
+  }
+  .hook-bottom-bar {
+    padding: 15px 34px;
+  }
+  .hook-title {
+    font-size: 38px;
+  }
+  .hook-bottom-prompt {
+    font-size: 19px;
+  }
 }
 
-.hook-3d-box {
-  position: relative;
-  width: 100%;
-  height: 380px;
-  background-color: #F9FAFB;
-  border: 1px solid #E5E7EB;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+@media (max-height: 850px) {
+  .hook-header {
+    height: 50px;
+    padding: 0 28px;
+  }
+  .hook-left {
+    height: calc(100vh - 51px);
+    max-height: calc(100vh - 51px);
+    padding: 18px 24px;
+  }
+  .hook-right {
+    height: calc(100vh - 51px);
+    max-height: calc(100vh - 51px);
+  }
+  .hook-view-content {
+    padding: 20px 32px;
+  }
+  .hook-title {
+    font-size: 34px;
+  }
+  .hook-subhead {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+  .hook-section {
+    margin-bottom: 22px;
+  }
+  .hook-section-title {
+    font-size: 20px;
+  }
+  .hook-bottom-bar {
+    padding: 12px 32px;
+  }
+  .hook-bottom-prompt {
+    font-size: 18px;
+  }
+  .hook-enter-btn {
+    padding: 10px 22px;
+    font-size: 13.5px;
+  }
 }
 
-.hook-layer-card {
-  margin-top: 16px;
-  padding: 16px 20px;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  background-color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.hook-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #F3F4F6;
-}
-
-.hook-stat-item {
-  background-color: #F9FAFB;
-  padding: 8px 10px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-/* Flow Step Cards */
-.hook-flow-step {
-  display: flex;
-  gap: 18px;
-  padding: 16px 20px;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  background-color: #FFFFFF;
-}
-
-.hook-flow-num {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 20px;
-  font-weight: 800;
-  color: #9CA3AF;
-}
-
-/* Benchmarks */
-.hook-bench-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-
-.hook-bench-card {
-  padding: 18px 20px;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  background-color: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+/* key numbers and achievements in Why / How / What */
+.hook-hl {
+  background: rgba(10, 126, 140, 0.12);
+  color: #075E69;
+  font-weight: 600;
+  padding: 0 0.22em;
+  border-radius: 4px;
 }

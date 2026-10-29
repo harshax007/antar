@@ -240,6 +240,22 @@ async def background_warmup():
     except Exception as e:
         print(f"  Gi* surface warmup skipped: {e}")
 
+    # Pre-warm repeat locations station default points (avoids 2.7s lag on Map page)
+    try:
+        from app.services.repeat_locations import station_default_points
+        _sdp = await asyncio.to_thread(station_default_points)
+        print(f"  Repeat location station defaults cached — {len(_sdp)} points")
+    except Exception as e:
+        print(f"  repeat locations warm skipped: {e}")
+
+    # Pre-warm demographics (avoids 4.4s lag on Social Insights)
+    try:
+        from app.api.social import demographics as _demo_fn
+        await _demo_fn()
+        print("  Social demographics cached")
+    except Exception as e:
+        print(f"  social demographics warm skipped: {e}")
+
     # Map forecasting store (geo_ok columns, geo_units, forecast_cube). Current → one
     # signature query; after an ingest or on a fresh deploy it rebuilds (~35 s at 1M FIRs).
     try:
@@ -300,6 +316,8 @@ async def background_warmup():
         from app.services.quickml import warm_up as _warm_up, model_for as _model_for
         if _llm.provider() == "quickml":
             print("Models by job: " + " · ".join(f"{j}={_model_for(j)}" for j in ("chat", "analysis", "vision")))
+        from app.second_brain.vec_store import cuda_status as _cuda_status
+        print(f"Brain vector search on: {_cuda_status()}")
         # both text models: they sit on different endpoints and each has its own cold start
         for _job in (("chat", "analysis") if _llm.provider() == "quickml" else ("chat",)):
             _w0 = _t.time()

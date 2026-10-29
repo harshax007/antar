@@ -699,8 +699,7 @@ export default function MapScreen() {
   const session = useMemo(() => readSession() || {}, []);
   const prefKey = `antar_my_district:${session.officer || "anon"}`;
   const [myDistrict, setMyDistrict] = useState(() => {
-    if (session.posting) return session.posting;
-    try { return localStorage.getItem(prefKey) || ""; } catch { return ""; }
+    return "";
   });
   const myGadm = myDistrict ? (ZONE_TO_GADM_DISTRICT[myDistrict] || myDistrict) : null;
   const deepLinked = !!(sp?.get("unit") || sp?.get("zone") || sp?.get("district"));
@@ -904,7 +903,7 @@ export default function MapScreen() {
   // A link that names an area (Predict's "Open on map": ?zone=Bagalkot) opens on that area
   // instead; before, it only stopped the map opening on mine and then showed the whole state.
   const linkZone = sp?.get("zone") || sp?.get("district") || "";
-  const startGadm = linkZone ? (ZONE_TO_GADM_DISTRICT[linkZone] || linkZone) : (!deepLinked ? myGadm : null);
+  const startGadm = linkZone ? (ZONE_TO_GADM_DISTRICT[linkZone] || linkZone) : null;
   const startBounds = useMemo(() => (geo && startGadm && !openedMine.current ? gadmBounds(startGadm) : null),
     [geo]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -917,6 +916,7 @@ export default function MapScreen() {
     setSelectedDistrict(null);
     setDistrictDetail(null);
     setFlyBounds(null);
+    setMyDistrict("");
     setRightWidth(340);
     setResetMapTrigger((v) => v + 1);
     setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch {} }, 50);

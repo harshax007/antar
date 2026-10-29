@@ -35,6 +35,34 @@ async def list_scale_queries() -> Dict[str, Any]:
     return {"queries": out, "engines": ["sqlite", "duckdb"], "datasets": ["19lakh", "1cr"]}
 
 
+@router.get("/benchmark")
+async def get_scale_benchmark() -> Dict[str, Any]:
+    """Return the structured 19L and 1-Crore benchmark results and queries for the Scale screen."""
+    import json
+    from pathlib import Path
+
+    json_path = Path(__file__).resolve().parent.parent.parent / "antar-frontend" / "public" / "lab" / "scale.json"
+    if json_path.exists():
+        try:
+            return json.loads(json_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    # Construct on the fly if scale.json is absent
+    queries_list = [
+        {"id": qid, "name": qdata["name"], "desc": qdata["description"]}
+        for qid, qdata in BENCHMARK_QUERIES.items()
+    ]
+    return {
+        "edition": "lab",
+        "has_19l_parquet": True,
+        "has_stress_1cr": True,
+        "queries": queries_list,
+        "benchmarks": {},
+        "results": [],
+    }
+
+
 @router.post("/run")
 async def run_scale_query(req: RunRequest) -> Dict[str, Any]:
     """Execute one benchmark query and return execution time and sample rows."""

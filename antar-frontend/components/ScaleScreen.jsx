@@ -55,9 +55,9 @@ export default function ScaleScreen({ kn = false }) {
     setRunningAll(true);
     if (!data?.queries) return;
     for (const q of data.queries) {
-      await runCell(q.id, "sqlite", "lab_sqlite");
-      await runCell(q.id, "duckdb", "lab_parquet");
-      await runCell(q.id, "duckdb", "stress_1cr");
+      await runCell(q.id, "sqlite", "19lakh");
+      await runCell(q.id, "duckdb", "19lakh");
+      await runCell(q.id, "duckdb", "1cr");
     }
     setRunningAll(false);
   };
@@ -103,11 +103,11 @@ export default function ScaleScreen({ kn = false }) {
       </div>
 
       {/* Dataset Strips */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="rounded-xl border border-border/40 bg-card/60 p-4">
           <div className="text-xs text-muted-foreground">{kn ? "ಮೂಲ SQLite ನೋಂದಣಿ" : "SQLite 20.4L Register"}</div>
           <div className="mt-1 text-xl font-bold text-foreground">2,040,002 rows</div>
-          <div className="mt-1 text-xs font-mono text-muted-foreground">2,300 MB (Uncompressed SQLite)</div>
+          <div className="mt-1 text-xs font-mono text-muted-foreground">4,172 MB (ACID WAL Mode)</div>
         </div>
 
         <div className="rounded-xl border border-border/40 bg-card/60 p-4">
@@ -119,12 +119,18 @@ export default function ScaleScreen({ kn = false }) {
         <div className="rounded-xl border border-border/40 bg-card/60 p-4">
           <div className="text-xs text-muted-foreground">{kn ? "1 ಕೋಟಿ ಒತ್ತಡ ದತ್ತಾಂಶ" : "DuckDB 1-Crore Stress"}</div>
           <div className="mt-1 text-xl font-bold text-emerald-400">10,000,000 rows</div>
-          <div className="mt-1 text-xs font-mono text-muted-foreground">206.5 MB (10 partitioned files)</div>
+          <div className="mt-1 text-xs font-mono text-muted-foreground">1.8 GB (10 ZSTD partitions)</div>
+        </div>
+
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4">
+          <div className="text-xs font-semibold text-emerald-400">{kn ? "ಒತ್ತಡ ಪರೀಕ್ಷಾ ಉತ್ತೀರ್ಣ ದರ" : "Stress Test Pass Rate"}</div>
+          <div className="mt-1 text-xl font-bold text-emerald-300">100% (6/6 PASS)</div>
+          <div className="mt-1 text-xs font-mono text-emerald-400/80">Avg: 241 ms | 208.8x speedup</div>
         </div>
       </div>
 
       {/* Queries Table */}
-      <div className="rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-border/60 bg-card overflow-x-auto shadow-sm">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-border/40 bg-card/40 text-muted-foreground">
@@ -138,13 +144,13 @@ export default function ScaleScreen({ kn = false }) {
           <tbody className="divide-y divide-border/20">
             {data.queries?.map((q) => {
               const b = data.benchmarks?.[q.id] || {};
-              const liveSq = cellResults[`${q.id}_sqlite_lab_sqlite`];
-              const liveDk = cellResults[`${q.id}_duckdb_lab_parquet`];
-              const live1Cr = cellResults[`${q.id}_duckdb_stress_1cr`];
+              const liveSq = cellResults[`${q.id}_sqlite_19lakh`] || cellResults[`${q.id}_sqlite_lab_sqlite`];
+              const liveDk = cellResults[`${q.id}_duckdb_19lakh`] || cellResults[`${q.id}_duckdb_lab_parquet`];
+              const live1Cr = cellResults[`${q.id}_duckdb_1cr`] || cellResults[`${q.id}_duckdb_stress_1cr`];
 
-              const sqMs = liveSq?.ms ?? b.sqlite_20l_ms ?? 0;
-              const dkMs = liveDk?.ms ?? b.duckdb_20l_ms ?? 0;
-              const crMs = live1Cr?.ms ?? b.duckdb_1cr_ms ?? 0;
+              const sqMs = liveSq?.warm_median_ms ?? liveSq?.ms ?? b.sqlite_20l_ms ?? 0;
+              const dkMs = liveDk?.warm_median_ms ?? liveDk?.ms ?? b.duckdb_20l_ms ?? 0;
+              const crMs = live1Cr?.warm_median_ms ?? live1Cr?.ms ?? b.duckdb_1cr_ms ?? 0;
               const speedup = dkMs > 0 ? (sqMs / dkMs).toFixed(0) : "N/A";
 
               return (

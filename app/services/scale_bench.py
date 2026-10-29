@@ -128,7 +128,7 @@ def run_benchmark_query(
 
     elif engine == "duckdb":
         d_conn = get_duckdb_conn()
-        if dataset in ("1cr", "stress"):
+        if dataset in ("1cr", "stress", "stress_1cr", "1crore"):
             src = STRESS_PARQUET_GLOB
             rows_scanned = 10_000_000
         else:

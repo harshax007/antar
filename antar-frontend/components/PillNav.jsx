@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEdition } from "@/lib/edition";
 import { useLang } from "@/components/Providers";
 import { BookOpen, MessageSquare, Brain, Map, TrendingUp, Search , ChevronDown, ChevronRight} from "lucide-react";
 import OfficerSelector from "@/components/OfficerSelector";
@@ -16,7 +15,6 @@ export default function PillNav() {
   const { lang, toggleLang } = useLang();
   const kn = lang === "kn";
   const [navHidden, setNavHidden] = useState(false);
-  const { isLab } = useEdition();
 
   // Pending human-in-the-loop decisions, for the APPROVALS badge. Polled lightly, and
   // refreshed instantly when the Approvals screen reports a change.
@@ -146,8 +144,8 @@ export default function PillNav() {
     { en: "MAP", kn: "ನಕ್ಷೆ", href: "/map" },
     { en: "PREDICT", kn: "ಮುನ್ಸೂಚನೆ", href: "/predict" },
     { en: "SEARCH", kn: "ಹುಡುಕಾಟ", href: "/search" },
-    ...(isLab ? [{ en: "SCALE", kn: "ಪ್ರಮಾಣ", href: "/scale" }] : []),
   ];
+  // SCALE is off the bar for the demo; /scale still opens by its address.
   // APPROVALS used to sit here. It now lives inside Account (the queue is personal to the
   // officer, not a screen of the investigation), and its pending count rides on ACCOUNT.
 

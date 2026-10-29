@@ -119,7 +119,7 @@ export default function BrainHub() {
     let raf1 = 0, raf2 = 0, timer = 0;
     raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
-        timer = setTimeout(() => setContentReady(true), 700);
+        timer = setTimeout(() => setContentReady(true), 100);
       });
     });
     return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); clearTimeout(timer); };

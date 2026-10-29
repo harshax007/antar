@@ -109,6 +109,9 @@
    and maintain crisp laptop-like ergonomics without awkward empty gaps. */
 @media (min-width: 1200px) {
   .px-page, .sx-page, .ac-page, .ab-page {
+    /* width: auto margins inside the flex-column .ax-main shrink a page to its content,
+       so /trace collapsed to a sliver while its dashboard was still loading */
+    width: 100%;
     max-width: 1320px;
     margin-left: auto !important;
     margin-right: auto !important;

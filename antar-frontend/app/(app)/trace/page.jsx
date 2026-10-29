@@ -20,7 +20,7 @@ export default function TracePage() {
   return (
     <div className="ac-page">
       <AccountSidebar activeSection="trace" />
-      <div className="ac-main" style={{ padding: 0, overflowY: "auto", minHeight: "100vh", background: "var(--void, #060910)" }}>
+      <div className="ac-main" style={{ padding: 0, overflowY: "auto", background: "var(--void, #060910)" }}>
         <TrustDashboard />
       </div>
     </div>

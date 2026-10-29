@@ -748,5 +748,83 @@
         ]
       ]
     }
-  ]
+  ],
+  "queries": [
+    {
+      "id": "Q1",
+      "name": "District ranking",
+      "desc": "COUNT(*) by district, descending, top 10",
+      "sqlite_sql": "SELECT district_norm, COUNT(*) as c FROM FIRs WHERE district_norm IS NOT NULL GROUP BY district_norm ORDER BY c DESC LIMIT 10",
+      "duckdb_sql": "SELECT district_norm, COUNT(*) as c FROM '{source}' WHERE district_norm IS NOT NULL GROUP BY district_norm ORDER BY c DESC LIMIT 10"
+    },
+    {
+      "id": "Q2",
+      "name": "Monthly trend",
+      "desc": "Aggregated monthly FIR volume across all years",
+      "sqlite_sql": "SELECT substr(date, 1, 7) as ym, COUNT(*) as c FROM FIRs WHERE date IS NOT NULL GROUP BY ym ORDER BY ym",
+      "duckdb_sql": "SELECT substr(date, 1, 7) as ym, COUNT(*) as c FROM '{source}' WHERE date IS NOT NULL GROUP BY ym ORDER BY ym"
+    },
+    {
+      "id": "Q3",
+      "name": "Crime mix per station",
+      "desc": "Station volume breakdown across crime types, top 50",
+      "sqlite_sql": "SELECT station, crime_type, COUNT(*) as c FROM FIRs WHERE station IS NOT NULL AND crime_type IS NOT NULL GROUP BY station, crime_type ORDER BY c DESC LIMIT 50",
+      "duckdb_sql": "SELECT station, crime_type, COUNT(*) as c FROM '{source}' WHERE station IS NOT NULL AND crime_type IS NOT NULL GROUP BY station, crime_type ORDER BY c DESC LIMIT 50"
+    },
+    {
+      "id": "Q4",
+      "name": "Pendency by district",
+      "desc": "Share of cases Under Investigation older than 90 days",
+      "sqlite_sql": "SELECT district_norm, ROUND(100.0 * SUM(CASE WHEN status LIKE '%Investig%' AND julianday(:today) - julianday(date) > 90 THEN 1 ELSE 0 END) / COUNT(*), 2) as pendency_pct, COUNT(*) as total FROM FIRs GROUP BY district_norm ORDER BY total DESC LIMIT 10",
+      "duckdb_sql": "SELECT district_norm, ROUND(100.0 * SUM(CASE WHEN status LIKE '%Investig%' AND DATEDIFF('day', CAST(date AS DATE), CAST('{today}' AS DATE)) > 90 THEN 1 ELSE 0 END) / COUNT(*), 2) as pendency_pct, COUNT(*) as total FROM '{source}' GROUP BY district_norm ORDER BY total DESC LIMIT 10"
+    },
+    {
+      "id": "Q5",
+      "name": "Day of week pattern",
+      "desc": "Weekly incident distribution statewide",
+      "sqlite_sql": "SELECT strftime('%w', date) as dow, COUNT(*) as c FROM FIRs WHERE date IS NOT NULL GROUP BY dow ORDER BY CAST(dow AS INT)",
+      "duckdb_sql": "SELECT CAST(DAYOFWEEK(CAST(date AS DATE)) - 1 AS VARCHAR) as dow, COUNT(*) as c FROM '{source}' WHERE date IS NOT NULL GROUP BY dow ORDER BY CAST(dow AS INT)"
+    },
+    {
+      "id": "Q6",
+      "name": "2-Key CTE Join",
+      "desc": "District-year share of annual total (self-join CTE)",
+      "sqlite_sql": "WITH yearly AS (SELECT FIR_YEAR, COUNT(*) as yr_total FROM FIRs WHERE FIR_YEAR IS NOT NULL GROUP BY FIR_YEAR), dist_yr AS (SELECT district_norm, FIR_YEAR, COUNT(*) as dy_count FROM FIRs WHERE district_norm IS NOT NULL AND FIR_YEAR IS NOT NULL GROUP BY district_norm, FIR_YEAR) SELECT dy.district_norm, dy.FIR_YEAR, dy.dy_count, y.yr_total, ROUND(100.0 * dy.dy_count / y.yr_total, 2) as pct_of_year FROM dist_yr dy JOIN yearly y ON dy.FIR_YEAR = y.FIR_YEAR ORDER BY dy.FIR_YEAR DESC, dy.dy_count DESC LIMIT 20",
+      "duckdb_sql": "WITH yearly AS (SELECT FIR_YEAR, COUNT(*) as yr_total FROM '{source}' WHERE FIR_YEAR IS NOT NULL GROUP BY FIR_YEAR), dist_yr AS (SELECT district_norm, FIR_YEAR, COUNT(*) as dy_count FROM '{source}' WHERE district_norm IS NOT NULL AND FIR_YEAR IS NOT NULL GROUP BY district_norm, FIR_YEAR) SELECT dy.district_norm, dy.FIR_YEAR, dy.dy_count, y.yr_total, ROUND(100.0 * dy.dy_count / y.yr_total, 2) as pct_of_year FROM dist_yr dy JOIN yearly y ON dy.FIR_YEAR = y.FIR_YEAR ORDER BY dy.FIR_YEAR DESC, dy.dy_count DESC LIMIT 20"
+    }
+  ],
+  "benchmarks": {
+    "Q1": {
+      "sqlite_20l_ms": 2418.38,
+      "duckdb_20l_ms": 16.13,
+      "duckdb_1cr_ms": 53.58
+    },
+    "Q2": {
+      "sqlite_20l_ms": 2804.67,
+      "duckdb_20l_ms": 19.77,
+      "duckdb_1cr_ms": 72.27
+    },
+    "Q3": {
+      "sqlite_20l_ms": 5980.28,
+      "duckdb_20l_ms": 139.42,
+      "duckdb_1cr_ms": 701.88
+    },
+    "Q4": {
+      "sqlite_20l_ms": 22669.98,
+      "duckdb_20l_ms": 29.33,
+      "duckdb_1cr_ms": 162.82
+    },
+    "Q5": {
+      "sqlite_20l_ms": 1364.08,
+      "duckdb_20l_ms": 27.21,
+      "duckdb_1cr_ms": 201.69
+    },
+    "Q6": {
+      "sqlite_20l_ms": 11090.07,
+      "duckdb_20l_ms": 49.4,
+      "duckdb_1cr_ms": 328.17
+    }
+  },
+  "pass_rate": "100% (6/6 Passing)",
+  "total_rows_stress": 10000000
 }

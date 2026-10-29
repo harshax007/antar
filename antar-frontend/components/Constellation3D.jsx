@@ -86,6 +86,7 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
   const introUntil = useRef(0);      // until when the arrival owns the camera
   const appliedRef = useRef(null);   // the constellation the graph is currently drawing
   const [lateTick, setLateTick] = useState(0);   // bumps when the arrival lands, to apply held data
+  const [glFailed, setGlFailed] = useState(false); // browser refused a WebGL context (GPU off, or too many open)
   const lateTickSeen = useRef(0);
   const threeRef = useRef(null);
   const focusRef = useRef(null);
@@ -221,7 +222,17 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
 
       // Antialiasing is what separates a scatter of specks from a crawling set of
       // stair-stepped dots, and it costs little at this node count.
-      const fg = ForceGraph3D({ rendererConfig: { antialias: true, powerPreference: "high-performance" } })(containerRef.current)
+      // The browser can refuse a context (GPU disabled, or its ~16-context cap hit).
+      // Show the fallback instead of throwing the whole screen away.
+      let base;
+      try {
+        base = ForceGraph3D({ rendererConfig: { antialias: true, powerPreference: "high-performance" } })(containerRef.current);
+      } catch (e) {
+        console.warn("Constellation3D: WebGL unavailable", e);
+        setGlFailed(true);
+        return;
+      }
+      const fg = base
         .width(containerRef.current.offsetWidth)
         .height(containerRef.current.offsetHeight)
         .backgroundColor("rgba(0,0,0,0)")
@@ -251,10 +262,20 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
         .linkVisibility(linkVisible)
         .linkWidth((l) => (l.kind === "agent" ? 0.5 : l.kind === "inferred" || l.kind === "unsub" ? 0.6 : 0.8))
         .linkOpacity(0.55)
-        .linkDirectionalParticles((l) => l.kind === "agent" ? 1 : 0)
-        .linkDirectionalParticleSpeed(0.012)
-        .linkDirectionalParticleWidth(1.4)
-        .linkDirectionalParticleColor(() => "rgba(255,255,255,0.85)")
+        .linkDirectionalParticles((l) => {
+          if (l.kind === "agent") return 1;
+          if (l.kind === "inferred" || l.kind === "unsub") return 1;
+          if (l.kind === "cross_case" || l.kind === "shared_key") return 1;
+          return 0;
+        })
+        .linkDirectionalParticleSpeed((l) => (l.kind === "agent" ? 0.012 : 0.007))
+        .linkDirectionalParticleWidth((l) => (l.kind === "agent" ? 1.4 : 1.1))
+        .linkDirectionalParticleColor((l) => {
+          if (l.kind === "agent") return "rgba(0, 245, 212, 0.95)";
+          if (l.kind === "inferred") return "rgba(34, 230, 240, 0.85)";
+          if (l.kind === "cross_case" || l.kind === "shared_key") return "rgba(232, 163, 61, 0.85)";
+          return "rgba(255, 255, 255, 0.75)";
+        })
         .linkLabel((l) => linkCard(l, knRef.current))
         .onNodeClick((n) => {
           if (n.kind === "agent") { onAgent?.(n.agent); return; }
@@ -289,6 +310,20 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
           })
           .catch(() => {});   // a missing post-processing module must never break the graph
       }
+
+      // Dual-rim illumination. No fog: FogExp2 at 0.0008 hid ~90% of every dot's colour at
+      // the default camera distance (~2000), and the whole constellation read as black.
+      try {
+        const sc = fg.scene?.();
+        if (sc && THREE) {
+          const rim = new THREE.DirectionalLight(0x22E6F0, 0.35);
+          rim.position.set(200, 300, 400);
+          sc.add(rim);
+          const warmFill = new THREE.DirectionalLight(0xE8A33D, 0.18);
+          warmFill.position.set(-200, -100, -300);
+          sc.add(warmFill);
+        }
+      } catch {}
 
       fg.d3Force("charge").strength(-45);
       const linkForce = fg.d3Force("link");
@@ -384,7 +419,15 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
       if (zoomTimer) clearTimeout(zoomTimer);
       if (rotateTimer) clearTimeout(rotateTimer);
       if (flightRef.current) cancelAnimationFrame(flightRef.current);
-      try { fgRef.current?._destructor?.(); } catch {}
+      // _destructor stops the loop but keeps the GL context; free it, or every visit
+      // to this screen leaks one until the browser refuses to make another.
+      try {
+        const r = fgRef.current?.renderer?.();
+        fgRef.current?._destructor?.();
+        r?.dispose?.();
+        r?.forceContextLoss?.();
+        r?.domElement?.remove?.();
+      } catch {}
       fgRef.current = null;
     };
   }, [constel === null]); // eslint-disable-line
@@ -487,5 +530,14 @@ export default function Constellation3D({ graph, groupBy = "evidence", active, k
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  if (glFailed) {
+    return (
+      <div className="bsx-3d-canvas" style={{ display: "grid", placeItems: "center", textAlign: "center", padding: 24, color: "rgba(255,255,255,0.7)", fontSize: 14 }}>
+        {kn
+          ? "3D ನೋಟ ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಲಭ್ಯವಿಲ್ಲ. ಇತರ 3D ಟ್ಯಾಬ್‌ಗಳನ್ನು ಮುಚ್ಚಿ ಪುಟವನ್ನು ಮರುಲೋಡ್ ಮಾಡಿ."
+          : "The 3D view isn't available in this browser right now. Close other 3D tabs and reload the page."}
+      </div>
+    );
+  }
   return <div ref={containerRef} className="bsx-3d-canvas" />;
 }

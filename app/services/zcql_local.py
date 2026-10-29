@@ -780,18 +780,47 @@ def _world() -> dict:
     return world
 
 
+_scan_cache: dict[tuple, tuple[float, list[dict]]] = {}
+_SCAN_TTL_S = 600
+_group_names: list[str] = []
+
+
+def _groups_matching(conn, crime_type: str) -> list[str]:
+    """Exact CrimeGroup_Name spellings equal to crime_type ignoring case.
+
+    UPPER(CrimeGroup_Name) = UPPER(?) cannot use idx_firs_group_date, so on the Lab
+    register (20 lakh rows) every geo question paid a ~1.7 s full scan. Matching the
+    distinct names first and filtering with IN (...) keeps the same rows on the index.
+    """
+    if not _group_names:
+        _group_names.extend(r["CrimeGroup_Name"] for r in conn.execute(
+            "SELECT DISTINCT CrimeGroup_Name FROM FIRs WHERE CrimeGroup_Name IS NOT NULL").fetchall())
+    want = crime_type.upper()
+    return [g for g in _group_names if g.upper() == want]
+
+
 def scan_rows(crime_type: str | None = None, period: str | None = None) -> list[dict]:
     """Shared helper: fetch lat/lon crime rows for geo/pattern agents using fast numeric columns."""
     from datetime import date, timedelta
+    from app.core import clock
+    t_ref = clock.today()
+    # The sample is a random 10,000 of the matching rows; re-drawing it per question cost
+    # ~1.6 s on the Lab register and only made the map shimmer between identical asks.
+    key = ((crime_type or "").upper(), period, t_ref.isoformat(), str(DB_PATH))
+    hit = _scan_cache.get(key)
+    if hit and time.time() - hit[0] < _SCAN_TTL_S:
+        return [dict(r) for r in hit[1]]
     conn = registry_connect(DB_PATH)
     conn.row_factory = _dict_factory
     where = ["geo_ok = 1"]
     params: list = []
     if crime_type:
-        where.append("UPPER(CrimeGroup_Name) = UPPER(?)")
-        params.append(crime_type)
-    from app.core import clock
-    t_ref = clock.today()
+        names = _groups_matching(conn, crime_type)
+        if not names:
+            conn.close()
+            return []
+        where.append(f"CrimeGroup_Name IN ({','.join('?' * len(names))})")
+        params.extend(names)
     if period == "last_7_days":
         where.append("date >= ?")
         params.append((t_ref - timedelta(days=7)).isoformat())
@@ -812,4 +841,5 @@ def scan_rows(crime_type: str | None = None, period: str | None = None) -> list[
     )
     rows = conn.execute(sql, params).fetchall()
     conn.close()
-    return rows
+    _scan_cache[key] = (time.time(), rows)
+    return [dict(r) for r in rows]

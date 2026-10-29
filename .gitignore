@@ -81,3 +81,5 @@ data/external/
 main_lab.db*
 scale/
 docs/gold/runs/
+
+scratch/
