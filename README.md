@@ -28,31 +28,24 @@ For years, police engineering teams struggled with generic Large Language Models
 
 **Antar solves this by replacing probabilistic prompt guessing with deterministic multi-agent code execution:**
 
-```
-[ Officer Query (EN / KN) ] 
-          │
-          ▼
-[ Airlock Firewall: Dihedral Group D5 Verhoeff PII Masking ]
-          │
-          ▼
-[ Vigil Statutory Compliance Gate (Article 15 Anti-Targeting) ]
-          │
-          ▼
-[ Supervisor DAG Intent Router (app/agents/manifest.py & AGENTS.md) ]
-          │
-    ┌─────┴──────────────────────────────────────────────────────┐
-    ▼                                                            ▼
-[ System 1 Deterministic Fast-Path ]              [ Multi-Agent Synthesis ]
-• 26 Whitelisted SQL Templates (Zero Free SQL)     • Bipartite Criminal Graph
-• Sub-Millisecond SQLite B-Tree Indexes            • Motive SHAP Attribution
-• Mondrian Conformal Risk Forecaster               • Dual-Tier CUDA Vectors (4.1 ms)
-    │                                                            │
-    └─────────────────────────────┬──────────────────────────────┘
-                                  ▼
-[ Synthesize Node: G1 Numbers Guard + General Diary Citation ]
-                                  │
-                                  ▼
-[ Immutable SHA-256 Audit Chain (25,357 Cryptographically Verified) ]
+```mermaid
+flowchart TD
+    Q["Officer Query (English / Kannada)"]
+    AIR["Airlock Firewall<br/><i>Dihedral Group D5 Verhoeff PII Masking</i>"]
+    VIG["Vigil Compliance Gate<br/><i>Article 15 Statutory Anti-Targeting Shield</i>"]
+    SUP{"Supervisor DAG Router<br/><i>manifest.py & AGENTS.md</i>"}
+
+    Q --> AIR
+    AIR --> VIG
+    VIG --> SUP
+
+    SUP -->|System 1 · Sub-2s| S1["<b>Deterministic Fast-Path</b><br/>• 26 Whitelisted SQL Templates (Zero Free SQL)<br/>• Sub-Millisecond SQLite B-Tree Indexes<br/>• Mondrian Conformal Risk Bands"]
+    SUP -->|System 2 · Deep Synthesis| S2["<b>Multi-Agent Deep Synthesis</b><br/>• Bipartite Criminal Graph (Network Agent)<br/>• Motive SHAP Attribution (Profile Agent)<br/>• Dual-Tier CUDA Vectors (4.1 ms)"]
+
+    S1 --> SYN["<b>Synthesize Node</b><br/><i>G1 Numbers Guard + General Diary Citation</i>"]
+    S2 --> SYN
+
+    SYN --> AUD["<b>Immutable SHA-256 Audit Chain</b><br/>25,357 Cryptographically Verified Ledger Entries"]
 ```
 
 ---
