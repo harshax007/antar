@@ -1,22 +1,49 @@
 <div align="center">
 
+<a href="https://github.com/harshax007/antar">
+  <img src="docs/diagrams/antar_logo.svg" alt="Antar Logo" width="110" height="68" />
+</a>
+
 # Antar (ಅಂತರ)
-### Intelligent Layer for FIR and Crime Registries
+### Sovereign Multi-Agent Crime Intelligence & FIR Analytics Architecture
 **Top 10 Finalist — Karnataka State Police Datathon 2026**
 
 *Deterministic multi-agent execution engine for law enforcement operations, replacing generative hallucinations with verified police schemas, conformal risk forecasting, and zero-assumption evidence grounding.*
 
 <br/>
 
-[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Next.js 14](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
-[![LangGraph](https://img.shields.io/badge/LangGraph-20--Agent_DAG-7928CA?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-1--Crore_Engine-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)](https://duckdb.org)
-[![Security](https://img.shields.io/badge/Security-Air--Gapped_Sovereign-E11D48?style=for-the-badge)](#statutory-compliance-and-security-architecture)
-[![Audit](https://img.shields.io/badge/Audit_Ledger-25%2C357_Verified-10B981?style=for-the-badge)](#immutable-audit-chain)
+<p align="center">
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.11-1e293b?style=flat-square&logo=python&logoColor=38bdf8" alt="Python 3.11"></a>
+  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.110+-1e293b?style=flat-square&logo=fastapi&logoColor=34d399" alt="FastAPI"></a>
+  <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-14-1e293b?style=flat-square&logo=next.js&logoColor=f8fafc" alt="Next.js 14"></a>
+  <a href="https://langchain-ai.github.io/langgraph/"><img src="https://img.shields.io/badge/LangGraph-20--Agent_DAG-1e293b?style=flat-square&logo=git&logoColor=a78bfa" alt="LangGraph DAG"></a>
+  <a href="https://duckdb.org"><img src="https://img.shields.io/badge/DuckDB-10M_Rows_%C2%B7_241ms-1e293b?style=flat-square&logo=duckdb&logoColor=facc15" alt="DuckDB Engine"></a>
+  <a href="#statutory-compliance-and-security-architecture"><img src="https://img.shields.io/badge/Security-Air--Gapped_Sovereign-1e293b?style=flat-square&logo=auth0&logoColor=f87171" alt="Sovereign Security"></a>
+  <a href="#measured-performance-benchmarks"><img src="https://img.shields.io/badge/Audit_Chain-25%2C357_Verified-1e293b?style=flat-square&logo=blockchain.com&logoColor=4ade80" alt="Audit Ledger"></a>
+</p>
+
+<p align="center">
+  <a href="#1-system-architecture">Architecture</a> ·
+  <a href="#2-20-agent-langgraph-fleet--orchestration">Agent Fleet</a> ·
+  <a href="#3-storage-architecture--1-crore-row-benchmark">Storage & Scale</a> ·
+  <a href="#measured-performance-benchmarks">Benchmarks</a> ·
+  <a href="#live-demonstration-scenarios">Live Demos</a> ·
+  <a href="#getting-started">Quickstart</a>
+</p>
 
 </div>
+
+---
+
+### Core Mission Specifications
+
+| Capability | Engineering Target | Architectural Implementation | Operational Assurance |
+|:---|:---|:---|:---|
+| **Zero Free SQL** | Judicial Evidence Admissibility | 26 Parameterized Whitelisted Templates (T1–T30) | Zero SQL injection; zero query hallucination |
+| **Airlock Security** | DPDP Act 2023 Compliance | Dihedral Group D5 Verhoeff Checksum Validation | 12-digit civilian Aadhaar & phone masking |
+| **Statutory Gate** | Article 15 Constitution of India | Vigil Pre-Execution Filter at Sovereign Gateway | Blocks demographic & communal targeting |
+| **1-Crore Scale** | High-Throughput Analytics | Columnar Vectorized DuckDB Parquet Partitioning | 10,000,000 records scanned in 241 ms avg |
+| **Audit Provenance** | Tamper-Evident Chain of Custody | SHA-256 Hash-Chained Cryptographic Ledger | 25,357 verified turn records & parameter hashes |
 
 ---
 
@@ -103,7 +130,7 @@ Vectorized DuckDB C++ execution across 10 ZSTD Parquet partitions compared again
 | **Q6. 2-Key CTE Join** | District annual volume share self-join | `5,994.9 ms` | **`340.8 ms`** | **105.2x** | PASS |
 | **Total Benchmark** | **60,000,000 Row Scans Cumulative** | **`56.88 s`** | **`1.44 s` (241 ms avg)** | **208.8x avg** | **6/6 PASS** |
 
-### Latency Profiles Across Subsystems
+### Live Operational Latency
 | Subsystem | Underlying Technology | Measured Latency | Standard LLM RAG | Operational Impact |
 |:---|:---|:---:|:---:|:---|
 | **Airlock Scrubbing** | Verhoeff Dihedral Group D5 | `< 2 ms` | Not Implemented | Strict citizen PII protection |
