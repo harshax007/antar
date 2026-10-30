@@ -5,7 +5,7 @@
 </a>
 
 # Antar (ಅಂತರ)
-### Sovereign Multi-Agent Crime Intelligence & FIR Analytics Architecture
+### An Intelligent Layer for FIR and Crime Data
 **Top 10 Finalist — Karnataka State Police Datathon 2026**
 
 *Deterministic multi-agent execution engine for law enforcement operations, replacing generative hallucinations with verified police schemas, conformal risk forecasting, and zero-assumption evidence grounding.*
