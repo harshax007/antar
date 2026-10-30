@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1140 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="antar-data-title antar-data-desc" id="data-engine-root">
+        <title id="antar-data-title">Antar Big Data Engine Architecture</title>
+        <desc id="antar-data-desc">Storage architecture diagram showing DuckDB analytical tier, SQLite transactional tier, dual-tier vector memory, and privacy airlock.</desc>
+        
+        <defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
+      #data-engine-root { --color-paper:   #0d1117;
+      --color-paper-2: #161b22;
+      --color-ink:     #f0f6fc;
+      --color-muted:   #8b949e;
+      --color-soft:    #6e7681;
+      --color-accent:  #f08a59;
+      --color-link:    #58a6ff;
+      --color-success: #3fb950;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace; }
+      #data-engine-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #data-engine-root .subtitle { font-size: 0.92rem;
+      color: var(--color-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5; }
+      #data-engine-root .diagram-container { width: 100%;
+      overflow-x: auto;
+      background: var(--color-paper-2);
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 8px;
+      padding: 1.25rem; }</style>
+          <pattern id="data-engine-data-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1" fill="#f0f6fc" fill-opacity="0.06"/>
+          </pattern>
+          <marker id="data-engine-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8b949e"/></marker>
+          <marker id="data-engine-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f08a59"/></marker>
+          <marker id="data-engine-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/></marker>
+          <marker id="data-engine-arrow-success" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#3fb950"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#0d1117" rx="6"/>
+        <rect width="100%" height="100%" fill="url(#data-engine-data-dots)" rx="6"/>
+
+        <!-- TIER 1 ZONE: DUCKDB PARQUET -->
+        <rect x="24" y="32" width="344" height="436" rx="8" fill="#fff000" stroke="#fff000" stroke-width="1" fill-opacity="0.02" stroke-opacity="0.18"/>
+        <rect x="36" y="36" width="180" height="14" rx="2" fill="#0d1117"/>
+        <text x="40" y="46" fill="#ffd700" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">TIER 1 · 1-CRORE ANALYTICS</text>
+
+        <!-- TIER 2 ZONE: SQLITE WAL -->
+        <rect x="396" y="32" width="344" height="436" rx="8" fill="#58a6ff" stroke="#58a6ff" stroke-width="1" fill-opacity="0.02" stroke-opacity="0.18"/>
+        <rect x="408" y="36" width="188" height="14" rx="2" fill="#0d1117"/>
+        <text x="412" y="46" fill="#58a6ff" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">TIER 2 · RELATIONAL REGISTRY</text>
+
+        <!-- TIER 3 ZONE: VECTOR MEMORY -->
+        <rect x="768" y="32" width="348" height="436" rx="8" fill="#f08a59" stroke="#f08a59" stroke-width="1" fill-opacity="0.02" stroke-opacity="0.18"/>
+        <rect x="780" y="36" width="184" height="14" rx="2" fill="#0d1117"/>
+        <text x="784" y="46" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">TIER 3 · SECOND BRAIN VECTORS</text>
+
+        <!-- TIER 1 CONTENT (DUCKDB) -->
+        <rect x="40" y="68" width="312" height="110" rx="6" fill="#161b22" stroke="#fff000" stroke-width="1.2" stroke-opacity="0.24"/>
+        <text x="54" y="92" fill="#ffd700" font-size="12" font-family="'Geist', sans-serif" font-weight="600">DuckDB Columnar Engine</text>
+        <text x="54" y="108" fill="#f0f6fc" font-size="8.5" font-family="'Geist Mono', monospace">10,000,000 Rows · 10 ZSTD Parquet Shards</text>
+        <line x1="54" y1="116" x2="338" y2="116" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="54" y="132" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Vectorized C++ SIMD Execution</text>
+        <text x="54" y="146" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Out-of-core streaming algorithms</text>
+        <text x="54" y="160" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">241 ms Average Analytical Query (208.8x vs SQLite)</text>
+
+        <rect x="40" y="196" width="312" height="252" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.12"/>
+        <text x="54" y="218" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">Empirical Benchmark Targets (6/6 PASS)</text>
+        <line x1="54" y1="226" x2="338" y2="226" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        
+        <text x="54" y="246" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace">Q1. District Ranking (Top 10):</text>
+        <text x="268" y="246" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">38.6 ms (116x)</text>
+
+        <text x="54" y="270" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace">Q2. Monthly 10-Yr Volume Trend:</text>
+        <text x="268" y="270" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">118.6 ms (275x)</text>
+
+        <text x="54" y="294" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace">Q3. Station x Crime Type Mix:</text>
+        <text x="268" y="294" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">693.1 ms (227x)</text>
+
+        <text x="54" y="318" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace">Q4. Pendency Scan (&gt; 90 Days):</text>
+        <text x="268" y="318" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">125.9 ms (435x)</text>
+
+        <text x="54" y="342" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace">Q5. Statewide Weekday Pattern:</text>
+        <text x="268" y="342" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">132.3 ms (38x)</text>
+
+        <text x="54" y="366" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace">Q6. 2-Key CTE Self-Join:</text>
+        <text x="268" y="366" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">340.8 ms (105x)</text>
+
+        <line x1="54" y1="384" x2="338" y2="384" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="54" y="404" fill="#ffd700" font-size="8.5" font-family="'Geist Mono', monospace">Cumulative Scans: 60,000,000 Rows</text>
+        <text x="54" y="420" fill="#3fb950" font-size="8.5" font-family="'Geist Mono', monospace">Total Time: 1.44 s (vs 56.88 s in SQLite)</text>
+        <text x="54" y="436" fill="#8b949e" font-size="7.5" font-family="'Geist', sans-serif">Direct disk-mapped Parquet zero-copy reads</text>
+
+        <!-- TIER 2 CONTENT (SQLITE WAL) -->
+        <rect x="412" y="68" width="312" height="150" rx="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="426" y="92" fill="#58a6ff" font-size="12" font-family="'Geist', sans-serif" font-weight="600">SQLite Transactional Vault</text>
+        <text x="426" y="108" fill="#f0f6fc" font-size="8.5" font-family="'Geist Mono', monospace">10,00,000 Official FIRs (KSP Register)</text>
+        <line x1="426" y1="116" x2="710" y2="116" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="426" y="132" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• 26 Parameterized SQL Templates (T1–T30)</text>
+        <text x="426" y="148" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Write-Ahead Logging (WAL) concurrency</text>
+        <text x="426" y="164" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Sub-millisecond covering B-tree indexes:</text>
+        <text x="426" y="180" fill="#58a6ff" font-size="7.5" font-family="'Geist Mono', monospace">  idx_crimes_covering (district, crime_group, date)</text>
+        <text x="426" y="196" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">Execution Latency: &lt; 12 ms per turn</text>
+
+        <rect x="412" y="236" width="312" height="212" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.12"/>
+        <text x="426" y="258" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">Sovereign Data Protection Airlock</text>
+        <line x1="426" y1="266" x2="710" y2="266" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="426" y="284" fill="#58a6ff" font-size="8.5" font-family="'Geist', sans-serif"><b>• Verhoeff Checksum (Dihedral Group D5)</b></text>
+        <text x="426" y="300" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Mathematical error detection for 12-digit Aadhaar</text>
+        <text x="426" y="316" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Permanent scrubbing before ingestion into main.db</text>
+        <text x="426" y="336" fill="#f08a59" font-size="8.5" font-family="'Geist', sans-serif"><b>• DPDP Act 2023 Minimization</b></text>
+        <text x="426" y="352" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Masks phone, bank, and civilian identity fields</text>
+        <text x="426" y="368" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Retains judicial FIR IDs and accused records</text>
+        <text x="426" y="388" fill="#3fb950" font-size="8.5" font-family="'Geist', sans-serif"><b>• Synthetic Isolation (is_synthetic_row = 1)</b></text>
+        <text x="426" y="404" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Live demo week scenarios isolated from history</text>
+        <text x="426" y="420" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Zero contamination of official historical records</text>
+
+        <!-- TIER 3 CONTENT (VECTOR MEMORY) -->
+        <rect x="784" y="68" width="316" height="176" rx="6" fill="#161b22" stroke="#f08a59" stroke-width="1.2"/>
+        <text x="798" y="92" fill="#f08a59" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Dual-Tier Second Brain Recall</text>
+        <text x="798" y="108" fill="#f0f6fc" font-size="8.5" font-family="'Geist Mono', monospace">100,000 Vectors · 384 Dimensions</text>
+        <line x1="798" y1="116" x2="1086" y2="116" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="798" y="132" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Tier 1: Curated Intelligence Tier</b></text>
+        <text x="798" y="146" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Modus Operandi summaries &amp; syndicate briefs</text>
+        <text x="798" y="160" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  RRF hybrid BM25 lexical + Cross-Encoder rerank</text>
+        <text x="798" y="178" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Tier 2: 100,000-FIR Corpus Tier</b></text>
+        <text x="798" y="192" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Direct memory-mapped int8 index (brain_vectors.i8)</text>
+        <text x="798" y="206" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Hits marked DERIVED (D) as investigative leads</text>
+        <text x="798" y="226" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">GPU CUDA Tensor Scan: 4.1 ms Latency</text>
+
+        <rect x="784" y="260" width="316" height="188" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.12"/>
+        <text x="798" y="282" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">Vector Search Execution Pipeline</text>
+        <line x1="798" y1="290" x2="1086" y2="290" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="798" y="308" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">1. Tokenize query text (English / Kannada)</text>
+        <text x="798" y="324" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">2. Sparse BM25 keyword matching across FIR narratives</text>
+        <text x="798" y="340" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">3. Dense ONNX/CUDA int8 cosine similarity matrix scan</text>
+        <text x="798" y="356" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">4. Reciprocal Rank Fusion: 1 / (60 + rank_bm25) + 1 / (60 + rank_dense)</text>
+        <text x="798" y="372" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">5. Maximal Marginal Relevance (MMR) deduplication</text>
+        <text x="798" y="388" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">6. Attention Centrality cross-corroboration scoring</text>
+        <text x="798" y="412" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">Zero External API Calls · 100% On-Premise GPU</text>
+      </svg>

@@ -32,79 +32,63 @@ Antar was designed from the ground up to solve these fundamental issues by repla
 
 ---
 
-## System Architecture
+## 1. System Architecture
 
-```mermaid
-flowchart LR
-    %% Ingestion Pipeline
-    Q["Officer Query<br/>(English / Kannada)"] --> AIR["Airlock Firewall<br/>(Verhoeff D5 Checksum)"]
-    AIR --> VIG["Vigil Compliance Gate<br/>(Article 15 Shield)"]
-    VIG --> SUP{"Supervisor DAG<br/>(AGENTS.md)"}
+An editorial, high-throughput pipeline designed to isolate user input from data stores through mathematical airlocks, deterministic routing, and immutable audit logs:
 
-    %% Dual-Path Execution
-    SUP -->|Deterministic| S1["System 1: Fast-Path (Sub-50ms)<br/>• 26 Whitelisted SQL Templates<br/>• SQLite Covering B-Tree Indexes<br/>• Mondrian Conformal Forecaster"]
-    SUP -->|Synthesis| S2["System 2: Deep Synthesis<br/>• Bipartite Syndicate Graph (Network)<br/>• Motive SHAP Attribution (Profile)<br/>• Dual-Tier CUDA Vectors (4.1ms)"]
+<div align="center">
+  <img src="docs/diagrams/system-architecture.svg" alt="Antar System Architecture Diagram" width="100%" />
+  <p><em>Figure 1: End-to-End System Architecture — Ingestion Airlock, Intent Router, Dual-Path Parallel Engine, and Cryptographic SHA-256 Audit Chain. (<a href="docs/diagrams/system-architecture.html">View Interactive HTML</a>)</em></p>
+</div>
 
-    %% Grounding & Output
-    S1 --> SYN["Synthesize Guard<br/>(G1 Provenance Check)"]
-    S2 --> SYN
-    SYN --> AUD["SHA-256 Audit Chain<br/>(25,357 Cryptographic Blocks)"]
-
-    classDef default fill:#0d1117,stroke:#30363d,stroke-width:1px,color:#c9d1d9;
-    classDef gate fill:#161b22,stroke:#58a6ff,stroke-width:1.5px,color:#f0f6fc;
-    classDef fast fill:#0d1f17,stroke:#2ea043,stroke-width:1.5px,color:#f0f6fc;
-    classDef deep fill:#1c122c,stroke:#bc8cff,stroke-width:1.5px,color:#f0f6fc;
-    classDef audit fill:#161b22,stroke:#3fb950,stroke-width:2px,color:#f0f6fc;
-
-    class Q,AIR,VIG gate;
-    class SUP default;
-    class S1 fast;
-    class S2 deep;
-    class SYN,AUD audit;
-```
+### Architectural Stages:
+- **Ingestion Airlock:** Dihedral Group D5 Verhoeff checksum airlock masks 12-digit civilian Aadhaar numbers and contact tokens prior to engine exposure.
+- **Vigil Statutory Gate:** Screens the prompt before any data agent runs. Prohibited demographic targeting is blocked with statutory citations to Article 15.
+- **Supervisor DAG Router:** Resolves intent against the executable `AGENTS.md` manifest with state isolation (`CLEAR` sentinels).
+- **Dual-Engine Execution:** Single-agent lookups resolve through System 1 in under 50ms (Zero Free SQL); multi-agent inquiries invoke System 2 deep synthesis.
+- **Synthesize & Audit Chain:** G1 numbers guardrail prevents numeric drift between database rows and composed text; writes turn digest to an immutable SHA-256 ledger.
 
 ---
 
-## Architectural Breakdown
+## 2. 20-Agent LangGraph Fleet & Orchestration
 
-### 1. Ingestion Airlock and Sovereign Security
-Every interaction begins at the Sovereign Gateway before any database query or reasoning model is initialized:
-- **Verhoeff Checksum Airlock:** Civilian identifiers, specifically 12-digit Aadhaar numbers, are validated against Dihedral Group D5 permutation matrices. Detected civilian identifiers, personal phone numbers, and financial tokens are masked at ingestion.
-- **Vigil Statutory Gate:** The query text is screened for statutory compliance. Any query attempting to correlate crime frequency with religious communities, castes, or protected demographics is intercepted and returned with an explicit legal citation: *"Antar does not answer demographic queries per Article 15 of the Constitution of India."* Prohibited attempts are written to the audit chain.
+The orchestrator fleet is compiled directly from `AGENTS.md` at application boot time. It features discrete specialist workers, a composite forecast node, an adversarial review agent, and human-in-the-loop executive gates:
 
-### 2. Executable Contract Architecture (`AGENTS.md`)
-Antar implements documentation-as-code. The file `AGENTS.md` is an executable specification parsed at runtime by `app/agents/manifest.py`:
-- The orchestrator fleet registry, route maps, timeouts, permissions, and guardrails are compiled directly from the manifest.
-- If an agent exists in code but is absent from `AGENTS.md`, or if an unmapped route label appears, the test suite (`tests/test_agents_manifest.py`) immediately halts the build.
-- Enforces Role-Based Access Control (RBAC) at the agent boundary, ensuring roles such as `Constable`, `Inspector`, or `Superintendent` can only trigger authorized intelligence paths.
+<div align="center">
+  <img src="docs/diagrams/agent-orchestration.svg" alt="Antar 20-Agent LangGraph Fleet Topology" width="100%" />
+  <p><em>Figure 2: 20-Agent Orchestration Topology — Supervisor, Deterministic Workers, Composite Forecast Node, Adversarial Layer, and HITL Executive Governance. (<a href="docs/diagrams/agent-orchestration.html">View Interactive HTML</a>)</em></p>
+</div>
 
-### 3. Dual-Engine Execution: System 1 vs. System 2
-Operational policing workloads exhibit two distinct access patterns, requiring two specialized execution paths:
-
-#### System 1: Deterministic Fast-Path (Sub-50ms)
-Over 85% of real-world police queries are structured lookups (incident counts, beat pendency, jurisdictional trends, specific FIR records). 
-- **Zero Free SQL:** Natural language queries decompose into strongly typed parameter slots that bind to **26 hardened, pre-compiled SQL templates (T1–T30)** mapped to verified Karnataka State Police schemas.
-- **Execution Speed:** Queries run directly against covering SQLite B-tree indexes or DuckDB columnar storage in under 50 milliseconds, completely bypassing LLM inference.
-- **5-Step Self-Healing Escalation:** When a user's query does not cleanly map to a template, the system walks a deterministic escalation path: template reroute -> SQL miner relaxation -> dense vector recall -> hybrid BM25 -> honest dead-end. The system provides an honest dead-end rather than inventing a plausible result.
-
-#### System 2: Deep Multi-Agent Synthesis
-Complex criminal investigations require correlating disconnected signals across multiple jurisdictions:
-- **Network Agent (Bipartite Graph):** Maps relationships between accused individuals, shared vehicles, phone number hashes, and criminal syndicates across police stations.
-- **Profile Agent (Risk Attribution):** Suspect risk scoring uses linear-additive features, enabling exact mathematical SHAP attribution (100 * w_i * f_i) without approximation. Bias screens run on generated profiles before leaving the node.
-- **Second Brain (Semantic Recall):** A dual-tier vector store that keeps curated intelligence (Modus Operandi, syndicates) separated from the 100,000 raw FIR narrative corpus. Reranking combines BM25 lexical search with 384-dimensional ONNX/CUDA embeddings in **4.1 ms**.
-- **Conformal Risk Forecasting:** Crime incident forecasting uses split-conformal prediction intervals (80% and 90% confidence bands) paired with Uber H3 hexagonal spatial binning, avoiding arbitrary boundary rounding errors.
-
-### 4. Human-in-the-Loop (HITL) Governance
-Antar operates under an advisory mandate. The system can identify patterns and suggest actions, but it possesses zero autonomous execution authority:
-- **Cryptographic Proposals:** Operational suggestions, such as patrol redeployments or watchlist additions, are staged as cryptographic proposals (`POST /api/hitl/propose`).
-- **Supervisory Review:** Execution requires explicit approval from an authorized supervising officer. Self-approval by the proposer is cryptographically blocked.
-- **Integrity Validation:** Approvals must echo the exact SHA-256 payload hash reviewed by the officer, and unexecuted proposals automatically expire after 12 hours.
+### Fleet Composition & Role Boundaries:
+- **Supervisor Node (Entrypoint):** Dispatches to worker nodes using exact confidence thresholds (`confidence >= 0.8`).
+- **query_agent (Vault):** Whitelisted SQL templates (T1–T30) over verified KSP schemas. Escalates through a 5-step self-healing ladder (template reroute -> SQL miner relaxation -> dense vector recall -> hybrid BM25 -> honest dead-end).
+- **network_agent (Link):** Bipartite criminal syndicate graph across jurisdictions, tracking shared vehicles, phone hashes, and criminal associates.
+- **profile_agent (Motive):** Linear-additive suspect risk scoring with exact mathematical SHAP attribution (100 * w_i * f_i) and bias screening.
+- **forecast_node (Composite Host):** Runs four agents internally (`geo`, `predict`, `pattern`, `alert_suggest`) to prevent quadruple database scans. Uses Uber H3 hexagonal spatial binning and 80%/90% split-conformal risk bands.
+- **research_node & advocate_agent (Adversarial Layer):** An LLM-free adversary that audits investigative dossiers against population base-rates to prevent false-positive syndicate anchoring.
+- **Human-in-the-Loop (HITL) Gate:** Enforces that patrol redeployments and watchlist tripwires are staged as cryptographic proposals. Proposers cannot self-approve; proposals expire automatically after 12 hours.
 
 ---
 
-## Performance Benchmarks
+## 3. Storage Architecture & 1-Crore Row Benchmark
 
-All performance figures are empirically measured on bare-metal hardware (*Intel Core i7-9750H, 32 GB RAM, NVIDIA GeForce GTX 1650 4GB VRAM*):
+Antar employs a tri-engine storage architecture to handle both sub-50ms operational lookups and 1-Crore (10,000,000 rows) state-level analytical stress workloads:
+
+<div align="center">
+  <img src="docs/diagrams/data-engine.svg" alt="Antar Big Data Engine Architecture" width="100%" />
+  <p><em>Figure 3: Multi-Tier Storage Architecture — DuckDB Columnar Parquet Engine, SQLite Transactional Vault, and PyTorch CUDA Vector Memory. (<a href="docs/diagrams/data-engine.html">View Interactive HTML</a>)</em></p>
+</div>
+
+### Multi-Tier Storage Specifications:
+1. **Tier 1: DuckDB Columnar Parquet (1-Crore Analytics):** 10,000,000 rows partitioned across 10 ZSTD Parquet files. Executes vectorized C++ aggregations in 241 ms average query latency (208.8x faster than traditional disk-bound databases).
+2. **Tier 2: SQLite Transactional Store (WAL Mode):** 1,00,000 official FIR records with covering composite B-Tree indexes on `(district, crime_group, incident_date)` providing sub-12ms transactional query latency.
+3. **Tier 3: Dual-Tier Second Brain Vector Memory:** Separates curated MO pattern summaries (RRF hybrid BM25) from the 100,000-FIR narrative corpus. Powered by PyTorch CUDA int8 tensor multiplications, scanning 100,000 384-dimensional vectors in **4.1 ms**.
+
+---
+
+## Measured Performance Benchmarks
+
+All performance metrics are empirically benchmarked on bare-metal hardware (*Intel Core i7-9750H, 32 GB RAM, NVIDIA GeForce GTX 1650 4GB VRAM*):
 
 ### 1-Crore (10,000,000 Rows) Analytical Stress Benchmark
 Vectorized DuckDB C++ execution across 10 ZSTD Parquet partitions compared against standard SQLite WAL:

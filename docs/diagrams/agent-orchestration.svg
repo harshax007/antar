@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1140 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="antar-fleet-title antar-fleet-desc" id="agent-orchestration-root">
+        <title id="antar-fleet-title">Antar 20-Agent LangGraph Fleet</title>
+        <desc id="antar-fleet-desc">Topology diagram of the Antar agent fleet showing supervisor, worker agents, composite forecast node, advocate agent, hitl governance, and synthesis.</desc>
+        
+        <defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
+      #agent-orchestration-root { --color-paper:   #0d1117;
+      --color-paper-2: #161b22;
+      --color-ink:     #f0f6fc;
+      --color-muted:   #8b949e;
+      --color-soft:    #6e7681;
+      --color-accent:  #f08a59;
+      --color-link:    #58a6ff;
+      --color-success: #3fb950;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace; }
+      #agent-orchestration-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #agent-orchestration-root .subtitle { font-size: 0.92rem;
+      color: var(--color-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5; }
+      #agent-orchestration-root .diagram-container { width: 100%;
+      overflow-x: auto;
+      background: var(--color-paper-2);
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 8px;
+      padding: 1.25rem; }</style>
+          <pattern id="agent-orchestration-fleet-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1" fill="#f0f6fc" fill-opacity="0.06"/>
+          </pattern>
+          <marker id="agent-orchestration-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8b949e"/></marker>
+          <marker id="agent-orchestration-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f08a59"/></marker>
+          <marker id="agent-orchestration-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/></marker>
+          <marker id="agent-orchestration-arrow-hitl" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ff7b72"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#0d1117" rx="6"/>
+        <rect width="100%" height="100%" fill="url(#agent-orchestration-fleet-dots)" rx="6"/>
+
+        <!-- ZONE: SUPERVISOR ENTRY -->
+        <rect x="24" y="32" width="180" height="496" rx="8" fill="#f0f6fc" stroke="#f0f6fc" stroke-width="1" fill-opacity="0.02" stroke-opacity="0.14"/>
+        <rect x="36" y="36" width="112" height="14" rx="2" fill="#0d1117"/>
+        <text x="40" y="46" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">1. SUPERVISOR</text>
+
+        <!-- ZONE: SPECIALIST WORKERS -->
+        <rect x="228" y="32" width="608" height="496" rx="8" fill="#58a6ff" stroke="#58a6ff" stroke-width="1" fill-opacity="0.02" stroke-opacity="0.18"/>
+        <rect x="240" y="36" width="168" height="14" rx="2" fill="#0d1117"/>
+        <text x="244" y="46" fill="#58a6ff" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">2. SPECIALIST WORKERS</text>
+
+        <!-- ZONE: TERMINAL SYNTHESIS & HITL -->
+        <rect x="860" y="32" width="256" height="496" rx="8" fill="#3fb950" stroke="#3fb950" stroke-width="1" fill-opacity="0.02" stroke-opacity="0.18"/>
+        <rect x="872" y="36" width="144" height="14" rx="2" fill="#0d1117"/>
+        <text x="876" y="46" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">3. SYNTHESIS &amp; HITL</text>
+
+        <!-- SUPERVISOR NODE -->
+        <rect x="40" y="210" width="148" height="130" rx="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="52" y="234" fill="#58a6ff" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Supervisor Node</text>
+        <text x="52" y="250" fill="#f0f6fc" font-size="8" font-family="'Geist Mono', monospace">Topology Entrypoint</text>
+        <line x1="52" y1="258" x2="176" y2="258" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="52" y="274" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Route Resolution</text>
+        <text x="52" y="288" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• CLEAR Sentinels</text>
+        <text x="52" y="302" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Role Boundary Check</text>
+        <text x="52" y="318" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">SqliteSaver Thread ID</text>
+
+        <!-- FAN-OUT PATHS FROM SUPERVISOR -->
+        <!-- To Query (Top) -->
+        <path d="M 188,230 H 212 Q 220,230 220,222 V 104 Q 220,96 228,96 H 244" fill="none" stroke="#58a6ff" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow-link)"/>
+        <!-- To Network -->
+        <path d="M 188,250 H 216 Q 224,250 224,242 V 192 Q 224,184 232,184 H 244" fill="none" stroke="#58a6ff" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow-link)"/>
+        <!-- To Profile -->
+        <line x1="188" y1="275" x2="244" y2="275" stroke="#58a6ff" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow-link)"/>
+        <!-- To Forecast (Composite) -->
+        <path d="M 188,300 H 216 Q 224,300 224,308 V 366 Q 224,374 232,374 H 244" fill="none" stroke="#f08a59" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow-accent)"/>
+        <!-- To Research (Bottom) -->
+        <path d="M 188,320 H 212 Q 220,320 220,328 V 456 Q 220,464 228,464 H 244" fill="none" stroke="#58a6ff" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow-link)"/>
+
+        <!-- WORKER NODES -->
+        <!-- Worker 1: Query Agent -->
+        <rect x="244" y="64" width="260" height="72" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="256" y="86" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">query_agent (Vault)</text>
+        <text x="440" y="86" fill="#58a6ff" font-size="8" font-family="'Geist Mono', monospace">Constable+</text>
+        <text x="256" y="102" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">26 Parameterized SQL Templates (T1–T30) · Zero Free SQL</text>
+        <text x="256" y="118" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">5-Step Self-Healing Escalation · G1 Numbers Guard</text>
+
+        <!-- Worker 2: Network Agent -->
+        <rect x="244" y="150" width="260" height="72" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="256" y="172" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">network_agent (Link)</text>
+        <text x="440" y="172" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace">Inspector+</text>
+        <text x="256" y="188" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Bipartite criminal syndicate graph across jurisdictions</text>
+        <text x="256" y="204" fill="#8b949e" font-size="7.5" font-family="'Geist Mono', monospace">Shared vehicles, CDR phone hashes, valid no-op updates</text>
+
+        <!-- Worker 3: Profile Agent -->
+        <rect x="244" y="236" width="260" height="72" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="256" y="258" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">profile_agent (Motive)</text>
+        <text x="440" y="258" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace">Inspector+</text>
+        <text x="256" y="274" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Linear additive suspect risk scoring (100 * wi * fi)</text>
+        <text x="256" y="290" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">Exact mathematical SHAP attribution &amp; bias screen</text>
+
+        <!-- Worker 4: Composite Forecast Node -->
+        <rect x="244" y="322" width="260" height="106" rx="6" fill="#161b22" stroke="#f08a59" stroke-width="1.2"/>
+        <text x="256" y="342" fill="#f08a59" font-size="11" font-family="'Geist', sans-serif" font-weight="600">forecast_node (Composite)</text>
+        <text x="440" y="342" fill="#58a6ff" font-size="8" font-family="'Geist Mono', monospace">Hosts 4 Agents</text>
+        <line x1="256" y1="348" x2="492" y2="348" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="256" y="362" fill="#f0f6fc" font-size="8" font-family="'Geist', sans-serif"><b>• geo_agent:</b> Uber H3 hexagonal spatial crime binning</text>
+        <text x="256" y="376" fill="#f0f6fc" font-size="8" font-family="'Geist', sans-serif"><b>• prediction_agent:</b> 80% &amp; 90% conformal risk bands</text>
+        <text x="256" y="390" fill="#f0f6fc" font-size="8" font-family="'Geist', sans-serif"><b>• pattern_agent:</b> MO repeat incident detector</text>
+        <text x="256" y="406" fill="#ff7b72" font-size="8" font-family="'Geist Mono', monospace"><b>• alert_suggest:</b> Patrol advisor (HITL Enforced)</text>
+
+        <!-- Worker 5: Research & Adversarial Node -->
+        <rect x="244" y="442" width="260" height="74" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="256" y="462" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">research_node (Trace Dossier)</text>
+        <text x="440" y="462" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace">Inspector+</text>
+        <text x="256" y="478" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif"><b>advocate_agent (Adversary):</b> LLM-free base-rate audit</text>
+        <text x="256" y="494" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">Gates Inferred to Known transitions via likelihood ratios</text>
+
+        <!-- SECOND BRAIN & AUTONOMOUS REAR -->
+        <!-- Second Brain -->
+        <rect x="528" y="104" width="288" height="114" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="542" y="126" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">brain_node (Second Brain)</text>
+        <text x="734" y="126" fill="#58a6ff" font-size="8" font-family="'Geist Mono', monospace">CUDA 4.1ms</text>
+        <line x1="542" y1="134" x2="802" y2="134" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="542" y="148" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif"><b>Tier 1 (Curated):</b> MO summaries via RRF hybrid BM25</text>
+        <text x="542" y="164" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif"><b>Tier 2 (Corpus):</b> 100,000 FIR vectors in 384-dim int8</text>
+        <text x="542" y="180" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Centrality reranking, DERIVED (D) evidentiary tag</text>
+        <text x="542" y="196" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">Direct Memory-Mapped Index · Zero Hallucination</text>
+
+        <!-- Autonomous Loop (Sentinel & Products) -->
+        <rect x="528" y="246" width="288" height="182" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="542" y="268" fill="#f0f6fc" font-size="11" font-family="'Geist', sans-serif" font-weight="600">Autonomous Services (No Direct Routes)</text>
+        <line x1="542" y1="276" x2="802" y2="276" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="542" y="294" fill="#ff7b72" font-size="8.5" font-family="'Geist', sans-serif"><b>• sentinel_agent:</b> Watchlist tripwire scanner</text>
+        <text x="542" y="308" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Proposes watchlist_add actions; HITL approval enforced</text>
+        <text x="542" y="326" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• corridor_agent:</b> Inter-district transit hotspot compiler</text>
+        <text x="542" y="344" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• linkage_agent:</b> MO case-matcher on shared evidence keys</text>
+        <text x="542" y="362" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• products:</b> Master Orchestrator cache compiler</text>
+        <text x="542" y="380" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Pre-computes high-frequency analytics in background</text>
+        <text x="542" y="404" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">Vigil Pre-Screened · Non-Targeting Verified</text>
+
+        <!-- CONVERGENCE TO SYNTHESIS -->
+        <path d="M 504,100 H 836 Q 844,100 844,108 V 212 Q 844,220 852,220 H 876" fill="none" stroke="#8b949e" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow)"/>
+        <path d="M 504,186 H 828 Q 836,186 836,194 V 232 Q 836,240 844,240 H 876" fill="none" stroke="#8b949e" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow)"/>
+        <path d="M 504,272 H 876" stroke="#8b949e" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow)"/>
+        <path d="M 504,375 H 828 Q 836,375 836,367 V 300 Q 836,292 844,292 H 876" fill="none" stroke="#8b949e" stroke-width="1.2" marker-end="url(#agent-orchestration-arrow)"/>
+
+        <!-- SYNTHESIZE TERMINAL NODE -->
+        <rect x="876" y="190" width="224" height="130" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="1.4"/>
+        <text x="890" y="214" fill="#3fb950" font-size="12" font-family="'Geist', sans-serif" font-weight="600">synthesize_node (Terminal)</text>
+        <text x="890" y="230" fill="#f0f6fc" font-size="8.5" font-family="'Geist Mono', monospace">Answer Composition &amp; Guard</text>
+        <line x1="890" y1="238" x2="1086" y2="238" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="890" y="254" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Multi-agent LLM merge ONLY when &gt; 1 agent</text>
+        <text x="890" y="268" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Single-agent responses bypass LLM (Zero drift)</text>
+        <text x="890" y="282" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• G1 numbers guardrail &amp; GD citation</text>
+        <text x="890" y="302" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace">Reaches END in LangGraph</text>
+
+        <!-- HITL GOVERNANCE GATE -->
+        <rect x="876" y="340" width="224" height="150" rx="6" fill="#161b22" stroke="#ff7b72" stroke-width="1.4"/>
+        <text x="890" y="364" fill="#ff7b72" font-size="12" font-family="'Geist', sans-serif" font-weight="600">HITL Executive Gate</text>
+        <text x="890" y="380" fill="#f0f6fc" font-size="8.5" font-family="'Geist Mono', monospace">Human-in-the-Loop Governance</text>
+        <line x1="890" y1="388" x2="1086" y2="388" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="890" y="404" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Staged as cryptographic proposal</text>
+        <text x="890" y="418" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Proposer CANNOT self-approve</text>
+        <text x="890" y="432" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Approver must echo SHA-256 hash</text>
+        <text x="890" y="446" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Proposals expire after 12 hours</text>
+        <text x="890" y="468" fill="#ff7b72" font-size="7.5" font-family="'Geist Mono', monospace">Enforced on Patrol &amp; Watchlist Moves</text>
+
+        <!-- Arrow from Forecast to HITL -->
+        <path d="M 504,395 H 856 Q 864,395 864,403 V 415 Q 864,423 872,423 H 876" fill="none" stroke="#ff7b72" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#agent-orchestration-arrow-hitl)"/>
+      </svg>

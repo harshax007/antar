@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1140 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="antar-arch-title antar-arch-desc" id="system-architecture-root">
+        <title id="antar-arch-title">Antar System Architecture</title>
+        <desc id="antar-arch-desc">Architecture diagram of Antar showing Officer Query passing through Verhoeff PII masking, Vigil statutory shield, Supervisor router, System 1 deterministic templates, System 2 multi-agent synthesis, and immutable audit chain.</desc>
+        
+        <defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
+      #system-architecture-root { --color-paper:   #0d1117;
+      --color-paper-2: #161b22;
+      --color-ink:     #f0f6fc;
+      --color-muted:   #8b949e;
+      --color-soft:    #6e7681;
+      --color-accent:  #f08a59;
+      --color-link:    #58a6ff;
+      --color-success: #3fb950;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace; }
+      #system-architecture-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #system-architecture-root .subtitle { font-size: 0.92rem;
+      color: var(--color-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5; }
+      #system-architecture-root .diagram-container { width: 100%;
+      overflow-x: auto;
+      background: var(--color-paper-2);
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 8px;
+      padding: 1.25rem; }</style>
+          <pattern id="system-architecture-grid-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1" fill="#f0f6fc" fill-opacity="0.06"/>
+          </pattern>
+          <marker id="system-architecture-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8b949e"/></marker>
+          <marker id="system-architecture-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f08a59"/></marker>
+          <marker id="system-architecture-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/></marker>
+          <marker id="system-architecture-arrow-success" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#3fb950"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#0d1117" rx="6"/>
+        <rect width="100%" height="100%" fill="url(#system-architecture-grid-dots)" rx="6"/>
+
+        <!-- ZONE 1: SOVEREIGN INGESTION AIRLOCK -->
+        <rect x="24" y="32" width="232" height="456" rx="8" fill="#58a6ff" stroke="#58a6ff" stroke-width="1" fill-opacity="0.03" stroke-opacity="0.22"/>
+        <rect x="36" y="36" width="136" height="14" rx="2" fill="#0d1117"/>
+        <text x="40" y="46" fill="#58a6ff" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">1. INGESTION AIRLOCK</text>
+
+        <!-- ZONE 2: SUPERVISOR INTENT ROUTER -->
+        <rect x="280" y="32" width="176" height="456" rx="8" fill="#f0f6fc" stroke="#f0f6fc" stroke-width="1" fill-opacity="0.02" stroke-opacity="0.12"/>
+        <rect x="292" y="36" width="128" height="14" rx="2" fill="#0d1117"/>
+        <text x="296" y="46" fill="#8b949e" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">2. INTENT ROUTER</text>
+
+        <!-- ZONE 3: DUAL-ENGINE EXECUTION LAYER -->
+        <rect x="480" y="32" width="376" height="456" rx="8" fill="#f08a59" stroke="#f08a59" stroke-width="1" fill-opacity="0.03" stroke-opacity="0.22"/>
+        <rect x="492" y="36" width="168" height="14" rx="2" fill="#0d1117"/>
+        <text x="496" y="46" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">3. DUAL-ENGINE EXECUTION</text>
+
+        <!-- ZONE 4: SYNTHESIS &amp; AUDIT CHAIN -->
+        <rect x="880" y="32" width="236" height="456" rx="8" fill="#3fb950" stroke="#3fb950" stroke-width="1" fill-opacity="0.03" stroke-opacity="0.22"/>
+        <rect x="892" y="36" width="154" height="14" rx="2" fill="#0d1117"/>
+        <text x="896" y="46" fill="#3fb950" font-size="8" font-family="'Geist Mono', monospace" font-weight="600" letter-spacing="0.14em">4. SYNTHESIS &amp; AUDIT</text>
+
+        <!-- CONNECTING ARROWS -->
+        <!-- Q -> AIR -->
+        <line x1="140" y1="136" x2="140" y2="180" stroke="#58a6ff" stroke-width="1.4" marker-end="url(#system-architecture-arrow-link)"/>
+        <!-- AIR -> VIG -->
+        <line x1="140" y1="268" x2="140" y2="312" stroke="#58a6ff" stroke-width="1.4" marker-end="url(#system-architecture-arrow-link)"/>
+        <!-- VIG -> SUP (Horizontal Right) -->
+        <line x1="240" y1="360" x2="296" y2="360" stroke="#58a6ff" stroke-width="1.4" marker-end="url(#system-architecture-arrow-link)"/>
+
+        <!-- SUP -> System 1 (Branch Up Right) -->
+        <path d="M 440,230 H 488 Q 496,230 496,222 V 168 Q 496,160 504,160 H 512" fill="none" stroke="#f08a59" stroke-width="1.4" marker-end="url(#system-architecture-arrow-accent)"/>
+        
+        <!-- SUP -> System 2 (Branch Down Right) -->
+        <path d="M 440,290 H 488 Q 496,290 496,298 V 342 Q 496,350 504,350 H 512" fill="none" stroke="#58a6ff" stroke-width="1.4" marker-end="url(#system-architecture-arrow-link)"/>
+
+        <!-- System 1 -> SYN -->
+        <path d="M 832,160 H 856 Q 864,160 864,168 V 220 Q 864,228 872,228 H 900" fill="none" stroke="#8b949e" stroke-width="1.4" marker-end="url(#system-architecture-arrow)"/>
+        
+        <!-- System 2 -> SYN -->
+        <path d="M 832,350 H 856 Q 864,350 864,342 V 290 Q 864,282 872,282 H 900" fill="none" stroke="#8b949e" stroke-width="1.4" marker-end="url(#system-architecture-arrow)"/>
+
+        <!-- SYN -> AUD -->
+        <line x1="1000" y1="316" x2="1000" y2="360" stroke="#3fb950" stroke-width="1.4" marker-end="url(#system-architecture-arrow-success)"/>
+
+        <!-- ARROW LABELS -->
+        <rect x="100" y="148" width="80" height="14" rx="2" fill="#0d1117"/>
+        <text x="140" y="158" fill="#58a6ff" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">AIRLOCK PASS</text>
+
+        <rect x="96" y="280" width="88" height="14" rx="2" fill="#0d1117"/>
+        <text x="140" y="290" fill="#58a6ff" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">LEGAL SCREEN</text>
+
+        <rect x="450" y="184" width="76" height="14" rx="2" fill="#0d1117"/>
+        <text x="488" y="194" fill="#f08a59" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">SYSTEM 1 (SUB-50ms)</text>
+
+        <rect x="450" y="306" width="76" height="14" rx="2" fill="#0d1117"/>
+        <text x="488" y="316" fill="#58a6ff" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">SYSTEM 2 (SYNTHESIS)</text>
+
+        <rect x="946" y="328" width="108" height="14" rx="2" fill="#0d1117"/>
+        <text x="1000" y="338" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">CRYPTOGRAPHIC BIND</text>
+
+        <!-- NODES - ZONE 1 -->
+        <!-- Node 1: Officer Query -->
+        <rect x="40" y="68" width="200" height="68" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="52" y="90" fill="#f0f6fc" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Officer Query</text>
+        <text x="52" y="106" fill="#8b949e" font-size="8.5" font-family="'Geist Mono', monospace">EN / Native Kannada (KN)</text>
+        <text x="52" y="122" fill="#58a6ff" font-size="8" font-family="'Geist Mono', monospace">Role-Verified (Constable to SP)</text>
+
+        <!-- Node 2: Airlock PII Firewall -->
+        <rect x="40" y="180" width="200" height="88" rx="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="52" y="202" fill="#58a6ff" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Airlock PII Firewall</text>
+        <text x="52" y="218" fill="#f0f6fc" font-size="8.5" font-family="'Geist Mono', monospace">Verhoeff D5 Checksum</text>
+        <text x="52" y="234" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">12-Digit Aadhaar Masking</text>
+        <text x="52" y="248" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Phone &amp; UPI Token Scrubbing</text>
+
+        <!-- Node 3: Vigil Gate -->
+        <rect x="40" y="312" width="200" height="96" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.18"/>
+        <text x="52" y="334" fill="#f0f6fc" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Vigil Statutory Gate</text>
+        <text x="52" y="350" fill="#f08a59" font-size="8.5" font-family="'Geist Mono', monospace">Article 15 Constitutional Shield</text>
+        <text x="52" y="366" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Blocks Prohibited Targeting</text>
+        <text x="52" y="380" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Zero Communal Profiling</text>
+        <text x="52" y="394" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">Statutory Refusal &amp; Audit Emit</text>
+
+        <!-- NODES - ZONE 2 -->
+        <!-- Supervisor Node -->
+        <rect x="296" y="180" width="144" height="152" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1.2" stroke-opacity="0.24"/>
+        <text x="308" y="206" fill="#f0f6fc" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Supervisor DAG</text>
+        <text x="308" y="222" fill="#58a6ff" font-size="8.5" font-family="'Geist Mono', monospace">manifest.py &amp; AGENTS.md</text>
+        <text x="308" y="242" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Deterministic Intent Parser</text>
+        <text x="308" y="258" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Zero Stale State (CLEAR)</text>
+        <text x="308" y="274" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Role Permission Check</text>
+        <text x="308" y="290" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• 100% Unambiguous Route</text>
+        <text x="308" y="312" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace">Conf &gt; 0.8 Gate</text>
+
+        <!-- NODES - ZONE 3 -->
+        <!-- System 1 Node -->
+        <rect x="512" y="68" width="320" height="172" rx="6" fill="#161b22" stroke="#f08a59" stroke-width="1.2"/>
+        <text x="528" y="92" fill="#f08a59" font-size="12" font-family="'Geist', sans-serif" font-weight="600">System 1 · Deterministic Fast-Path</text>
+        <text x="528" y="108" fill="#8b949e" font-size="8.5" font-family="'Geist Mono', monospace">Vault Node (query_agent) · Sub-50ms Execution</text>
+        <line x1="528" y1="116" x2="816" y2="116" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="528" y="132" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• 26 Whitelisted SQL Templates (Zero Free SQL)</b></text>
+        <text x="528" y="148" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Strongly typed parameters (T1–T30) mapped to KSP schema</text>
+        <text x="528" y="164" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Covering SQLite B-Tree Indexes</b></text>
+        <text x="528" y="180" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Composite indexes on (district, crime_group, incident_date)</text>
+        <text x="528" y="196" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Mondrian Conformal Risk Forecaster</b></text>
+        <text x="528" y="212" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  80% &amp; 90% calibrated prediction intervals across beats</text>
+        <text x="528" y="228" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">5-Step Self-Healing Escalation (Never Invented Data)</text>
+
+        <!-- System 2 Node -->
+        <rect x="512" y="260" width="320" height="200" rx="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="528" y="284" fill="#58a6ff" font-size="12" font-family="'Geist', sans-serif" font-weight="600">System 2 · Deep Multi-Agent Synthesis</text>
+        <text x="528" y="300" fill="#8b949e" font-size="8.5" font-family="'Geist Mono', monospace">Network, Profile, Brain, Research, Geo Agents</text>
+        <line x1="528" y1="308" x2="816" y2="308" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="528" y="324" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Bipartite Criminal Graph (Link Agent)</b></text>
+        <text x="528" y="338" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Cross-district syndicate vehicles, CDRs &amp; shared phones</text>
+        <text x="528" y="354" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Motive SHAP Attribution (Profile Agent)</b></text>
+        <text x="528" y="368" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  Exact linear additive attribution (100 * wi * fi) &amp; bias screen</text>
+        <text x="528" y="384" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Dual-Tier Second Brain Recall</b></text>
+        <text x="528" y="398" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  BM25 lexical + PyTorch CUDA vector search (100k FIRs in 4.1ms)</text>
+        <text x="528" y="414" fill="#f0f6fc" font-size="8.5" font-family="'Geist', sans-serif"><b>• Adversarial Advocate Agent</b></text>
+        <text x="528" y="428" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">  LLM-free base-rate falsification audit over dossiers</text>
+        <text x="528" y="446" fill="#f08a59" font-size="7.5" font-family="'Geist Mono', monospace">HITL Approval Required for Action Proposals</text>
+
+        <!-- NODES - ZONE 4 -->
+        <!-- Synthesize Node -->
+        <rect x="900" y="180" width="200" height="136" rx="6" fill="#161b22" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.2"/>
+        <text x="914" y="206" fill="#f0f6fc" font-size="12" font-family="'Geist', sans-serif" font-weight="600">Synthesize Node</text>
+        <text x="914" y="222" fill="#58a6ff" font-size="8.5" font-family="'Geist Mono', monospace">G1 Numbers Grounding</text>
+        <line x1="914" y1="230" x2="1086" y2="230" stroke="#f0f6fc" stroke-width="1" stroke-opacity="0.08"/>
+        <text x="914" y="246" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Verifies every cited figure</text>
+        <text x="914" y="260" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Binds General Diary records</text>
+        <text x="914" y="274" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Drops ungrounded claims</text>
+        <text x="914" y="288" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">• Preserves evidence chain</text>
+        <text x="914" y="304" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">Judicial Admissibility Standard</text>
+
+        <!-- Immutable Audit Chain -->
+        <rect x="900" y="360" width="200" height="92" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="914" y="384" fill="#3fb950" font-size="12" font-family="'Geist', sans-serif" font-weight="600">SHA-256 Audit Chain</text>
+        <text x="914" y="400" fill="#f0f6fc" font-size="8.5" font-family="'Geist Mono', monospace">25,357 Verified Blocks</text>
+        <text x="914" y="416" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Tamper-evident hash-linked ledger</text>
+        <text x="914" y="430" fill="#8b949e" font-size="8" font-family="'Geist', sans-serif">Records user, query, template &amp; hash</text>
+        <text x="914" y="444" fill="#3fb950" font-size="7.5" font-family="'Geist Mono', monospace">100% Cryptographic Auditability</text>
+      </svg>
